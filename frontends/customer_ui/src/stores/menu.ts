@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { Category, FoodItem } from '@/types'
-import { mockCategories, mockFoodItems } from '@/data/mockMenu'
+import { adaptedCategories, adaptedFoodItems } from '@/data/menuAdapter'
 
 export const useMenuStore = defineStore('menu', () => {
   const categories = ref<Category[]>([])
@@ -25,8 +25,8 @@ export const useMenuStore = defineStore('menu', () => {
     isLoading.value = true
     // Simulate a short network delay so the loading skeleton is visible.
     await new Promise((resolve) => setTimeout(resolve, 400))
-    categories.value = mockCategories
-    foodItems.value = mockFoodItems
+    categories.value = adaptedCategories
+    foodItems.value = adaptedFoodItems
     const firstCategory = sortedCategories.value[0]
     if (!activeCategoryId.value && firstCategory) {
       activeCategoryId.value = firstCategory.id
