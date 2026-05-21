@@ -44,5 +44,88 @@ The pipeline consists of three main stages:
 - [ ] Voice Integration
 - [ ] Final Deployment
 
+## Development Environment Setup
+
+This repo ships with a one-command setup so any teammate can clone and get an
+identical environment. Lock files (`package-lock.json`, `uv.lock`) pin exact
+dependency versions across machines.
+
+### Team environment
+
+- **OS:** Ubuntu 22.04 LTS
+- **Python:** 3.10 (system default, also used by ROS2)
+- **Node.js:** 22.x (managed via nvm, pinned in `.nvmrc`)
+- **Package managers:** `uv` for Python, `npm` for Node.js
+
+### Clone and run — fresh machine (no Node/nvm/uv yet)
+
+Use this on a new Ubuntu machine that does not yet have the toolchain. The
+setup script installs everything for you.
+
+```bash
+git clone <repo-url>
+cd AI_Waiter        # the cloned folder
+make setup          # runs ./setup.sh: installs nvm + Node 22 + uv, npm ci, creates .env
+source ~/.bashrc    # reload the shell so node/nvm are on PATH
+make frontend       # start the dev server at http://localhost:5173
+```
+
+`make setup` automatically:
+- Installs nvm (Node Version Manager) if not present
+- Installs Node.js v22 via nvm (pinned in `.nvmrc`)
+- Installs uv (Python package manager) if not present
+- Runs `npm ci` in `frontends/customer_ui` (exact versions from `package-lock.json`)
+- Creates `.env` from `.env.example`
+- Skips the backend step gracefully until a `backend/` folder exists
+
+> Note: `setup.sh` only runs on Linux (Ubuntu 22.04). On macOS/Windows, install
+> Node 22 manually (e.g. via nvm), then follow the "already have Node" steps below.
+
+### Clone and run — machine that already has Node 22
+
+If the toolchain is already installed, skip the setup script:
+
+```bash
+git clone <repo-url>
+cd AI_Waiter/frontends/customer_ui
+npm ci              # install exact versions from package-lock.json
+npm run dev         # opens at http://localhost:5173
+```
+
+Or, from the repo root, use the Makefile shortcuts:
+
+```bash
+make install        # npm ci for the frontend
+make frontend       # start the dev server
+```
+
+### Makefile shortcuts
+
+```bash
+make help        # List all commands
+make setup       # First-time setup
+make frontend    # Start the customer_ui dev server
+make install     # Reinstall deps after pulling code
+make update      # git pull + reinstall
+make clean       # Remove node_modules / .venv
+```
+
+### Environment variables
+
+`frontends/customer_ui` uses a `.env` file (never committed). On first setup it
+is created from `frontends/customer_ui/.env.example`. Edit the values to match
+your local backend / rosbridge endpoints.
+
+> Note: the root `.env.template` (HF token, model config) is separate and used by
+> the Python pipeline; copy it to `.env` and fill in your own values.
+
+### Files to commit
+
+Commit: `.nvmrc`, `.gitignore`, `setup.sh`, `Makefile`, `README.md`, the whole
+`frontends/customer_ui/` source tree (including `package.json` +
+`package-lock.json` and `.env.example`).
+
+Never commit: any `.env`, `node_modules/`, `dist/`.
+
 ---
 University Student - Ho Chi Minh City
