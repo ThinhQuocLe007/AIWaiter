@@ -93,3 +93,21 @@ scratch/
 # Logs and Runtime Traces
 *.log
 logs/
+log/
+install/
+.ipynb_checkpoints/
+*.log
+*.txt
+*.text
+*.json
+!robot_ws/**/package.xml
+!robot_ws/**/setup.py
+!data/raw/menu.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation
+*.docx
+*.pdf
