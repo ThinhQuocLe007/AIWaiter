@@ -57,50 +57,49 @@ dependency versions across machines.
 - **Node.js:** 22.x (managed via nvm, pinned in `.nvmrc`)
 - **Package managers:** `uv` for Python, `npm` for Node.js
 
-### First-time setup
+### Clone and run — fresh machine (no Node/nvm/uv yet)
 
-After cloning the repository, run the setup script once:
-
-```bash
-chmod +x setup.sh
-./setup.sh
-```
-
-This will automatically:
-- Install nvm (Node Version Manager) if not present
-- Install Node.js v22 via nvm
-- Install uv (Python package manager) if not present
-- Install frontend dependencies for `frontends/customer_ui` (once it is scaffolded)
-- Create `.env` files from `.env.example` templates
-- Skip the backend step gracefully until a `backend/` folder exists
-
-After setup completes, reload your shell:
+Use this on a new Ubuntu machine that does not yet have the toolchain. The
+setup script installs everything for you.
 
 ```bash
-source ~/.bashrc
+git clone <repo-url>
+cd AI_Waiter        # the cloned folder
+make setup          # runs ./setup.sh: installs nvm + Node 22 + uv, npm ci, creates .env
+source ~/.bashrc    # reload the shell so node/nvm are on PATH
+make frontend       # start the dev server at http://localhost:5173
 ```
 
-### Scaffolding the frontend (one time)
+`make setup` automatically:
+- Installs nvm (Node Version Manager) if not present
+- Installs Node.js v22 via nvm (pinned in `.nvmrc`)
+- Installs uv (Python package manager) if not present
+- Runs `npm ci` in `frontends/customer_ui` (exact versions from `package-lock.json`)
+- Creates `.env` from `.env.example`
+- Skips the backend step gracefully until a `backend/` folder exists
 
-The `frontends/customer_ui` folder is a placeholder. To create the Vue 3 app:
+> Note: `setup.sh` only runs on Linux (Ubuntu 22.04). On macOS/Windows, install
+> Node 22 manually (e.g. via nvm), then follow the "already have Node" steps below.
+
+### Clone and run — machine that already has Node 22
+
+If the toolchain is already installed, skip the setup script:
 
 ```bash
-cd frontends/customer_ui
-npm create vue@latest .
-npm install
+git clone <repo-url>
+cd AI_Waiter/frontends/customer_ui
+npm ci              # install exact versions from package-lock.json
+npm run dev         # opens at http://localhost:5173
 ```
 
-`./setup.sh` will then pick it up automatically on subsequent runs.
-
-### Running the project
+Or, from the repo root, use the Makefile shortcuts:
 
 ```bash
-cd frontends/customer_ui
-npm run dev
-# Opens at http://localhost:5173
+make install        # npm ci for the frontend
+make frontend       # start the dev server
 ```
 
-Or use the Makefile shortcuts:
+### Makefile shortcuts
 
 ```bash
 make help        # List all commands
@@ -122,11 +121,11 @@ your local backend / rosbridge endpoints.
 
 ### Files to commit
 
-Commit: `.nvmrc`, `.gitignore`, `setup.sh`, `Makefile`, `README.md`,
-`frontends/customer_ui/.env.example`, and (after scaffolding)
-`frontends/customer_ui/package.json` + `package-lock.json`.
+Commit: `.nvmrc`, `.gitignore`, `setup.sh`, `Makefile`, `README.md`, the whole
+`frontends/customer_ui/` source tree (including `package.json` +
+`package-lock.json` and `.env.example`).
 
-Never commit: any `.env`, `node_modules/`.
+Never commit: any `.env`, `node_modules/`, `dist/`.
 
 ---
 University Student - Ho Chi Minh City

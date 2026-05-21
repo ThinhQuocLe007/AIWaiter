@@ -103,6 +103,11 @@ install/
 !robot_ws/**/package.xml
 !robot_ws/**/setup.py
 !data/raw/menu.json
+# Re-include frontend manifests — MUST be committed for reproducible installs.
+# (node_modules/ is an excluded directory so its internal .json files stay ignored.)
+!**/package.json
+!**/package-lock.json
+!frontends/**/*.json
 
 # OS files
 .DS_Store
