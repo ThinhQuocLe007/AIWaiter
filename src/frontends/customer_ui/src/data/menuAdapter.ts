@@ -1,4 +1,4 @@
-import rawItems from '../../../../assets/data/menu.json'
+import rawItems from '../../../../../assets/data/menu.json'
 import type { Category, FoodItem } from '@/types'
 
 interface RawMenuItem {
