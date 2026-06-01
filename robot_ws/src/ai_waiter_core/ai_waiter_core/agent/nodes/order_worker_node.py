@@ -2,16 +2,12 @@ import logging
 from typing import Dict, Any
 
 from langchain_ollama import ChatOllama
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import AIMessage
 
 from ai_waiter_core.agent.state import AgentState
 from ai_waiter_core.config import settings
-from ai_waiter_core.utils import trace_latency
-from ai_waiter_core.utils.prompt_utils import load_prompt
-
-# Import the Menu constants from the path you created in Step 1
-from ai_waiter_core.agent.tools.utils.extract_menu import MENU_NAMES
+from ai_waiter_core.utils import trace_latency, MENU_NAMES
+from ai_waiter_core.utils.prompt_utils import build_system_prompt, build_dynamic_suffix
 
 # Import the native ordering tools
 from ai_waiter_core.agent.tools.ordering.sync_cart import sync_cart
@@ -20,20 +16,8 @@ from ai_waiter_core.agent.tools.ordering.confirmation import confirm_order
 logger = logging.getLogger(__name__)
 
 # ------------------------------------------------------------
-# Chain building (compiled once at module level)
+# LLM Initialization
 # ------------------------------------------------------------
-
-def _build_order_prompt() -> ChatPromptTemplate:
-    skeleton = load_prompt("order_worker_agent.md")
-    hospitality = load_prompt("hospitality.md", "skills")
-    
-    # We combine them into a single system prompt template
-    system_template = f"{skeleton}\n\n{hospitality}\n\n{{context_block}}"
-    
-    return ChatPromptTemplate.from_messages([
-        ("system", system_template),
-        MessagesPlaceholder(variable_name="messages")
-    ])
 
 _llm = ChatOllama(
     model=settings.WORKER_MODEL,
@@ -41,18 +25,38 @@ _llm = ChatOllama(
     metadata={"ls_model_name": settings.WORKER_MODEL, "ls_provider": "ollama"}
 ).bind_tools([sync_cart, confirm_order])
 
-_order_prompt = _build_order_prompt()
-_order_chain = _order_prompt | _llm
-
 # ------------------------------------------------------------
-# Context Builder Helper
+# Context Builder Helper (Dynamic Suffix Part)
 # ------------------------------------------------------------
 
-def _build_context_block(state: AgentState) -> str:
-    """Cleanly assembles dynamic context without messy string concatenation."""
+def _build_dynamic_context_block(state: AgentState, order_stage: str) -> str:
+    """
+    Assembles the dynamic session details (current order stage, active menu list,
+    current cart items, and system validation feedback) into a structured text block.
+    This dynamic block is passed as suffix context to keep the core prompt prefix cached.
+
+    Example Output Structure (Scenario: Active drafting with misspelling feedback):
+    -----------------------------------------------------------------------------
+    Trạng thái đơn hàng (Current Stage): DRAFTING
+
+    ### RESTAURANT MENU:
+    You must strictly match items to these exact names:
+    - Phở Bò Đặc Biệt
+    - Trà Đá Ít Đường
+
+    ### SYSTEM FEEDBACK (MANDATORY FIX):
+    Lỗi: Món 'trà đá' viết chưa đúng tên khớp với thực đơn. Vui lòng hỏi khách...
+    Politely apologize and clarify with the user.
+
+    ### CURRENT ACTIVE CART:
+    [CartItem(name='Phở Bò Đặc Biệt', quantity=1, price=80000.0)]
+    -----------------------------------------------------------------------------
+    """
     menu_str = "\n".join([f"- {name}" for name in MENU_NAMES])
     
     blocks = [
+        f"Trạng thái đơn hàng (Current Stage): {order_stage}",
+        "",
         "### RESTAURANT MENU:",
         "You must strictly match items to these exact names:",
         menu_str
@@ -86,15 +90,23 @@ def order_worker_node(state: AgentState) -> Dict[str, Any]:
     """
     table_id = state.get("table_id", "T1")
     order_stage = state.get("order_stage", "IDLE")
-    context_block = _build_context_block(state)
+    context_block = _build_dynamic_context_block(state, order_stage)
+    
+    # 1. Compile KV-Cache optimized static prompt elements
+    static_system_message = build_system_prompt("order_worker_agent.md", ["hospitality.md"])
+    
+    # 2. Compile dynamic suffix elements (table metadata, active cart, and validation errors)
+    dynamic_suffix_message = build_dynamic_suffix(table_id=table_id, dynamic_context=context_block)
+    
+    # 3. Assemble complete message array preserving prefix caching
+    input_messages = (
+        [static_system_message] 
+        + [dynamic_suffix_message] 
+        + state["messages"]
+    )
     
     try:
-        ai_msg = _order_chain.invoke({
-            "table_id": table_id,
-            "order_stage": order_stage,
-            "context_block": context_block,
-            "messages": state["messages"]
-        })
+        ai_msg = _llm.invoke(input_messages)
     except Exception as e:
         logger.error(f"Order Worker Failed: {e}")
         ai_msg = AIMessage(content="Xin lỗi, em xử lý thông tin bị lỗi. Anh/chị có thể nhắc lại được không ạ?")

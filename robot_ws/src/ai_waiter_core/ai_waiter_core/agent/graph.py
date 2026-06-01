@@ -9,14 +9,13 @@ from ai_waiter_core.agent.memory.checkpointer import get_checkpointer, create_th
 # Import nodes directly from the clean, flat nodes/ folder
 from ai_waiter_core.agent.nodes.hybrid_router_node import hybrid_router_node
 from ai_waiter_core.agent.nodes.order_worker_node import order_worker_node
-from ai_waiter_core.agent.nodes.menu_worker_node import menu_worker_node
+from ai_waiter_core.agent.nodes.search_worker_node import search_worker_node
 from ai_waiter_core.agent.nodes.payment_worker_node import payment_worker_node
 from ai_waiter_core.agent.nodes.chat_worker_node import chat_worker_node
 from ai_waiter_core.agent.nodes.deterministic_validator_node import deterministic_validator_node
 
 # Import the updated tools
-from ai_waiter_core.agent.tools.ordering.sync_cart import sync_cart
-from ai_waiter_core.agent.tools.ordering.confirmation import confirm_order
+from ai_waiter_core.agent.tools import search, sync_cart, confirm_order, request_payment
 
 def state_updater_node(state: AgentState) -> Dict[str, Any]:
     """
@@ -55,35 +54,41 @@ class AIWaiterGraph:
         # --- 1. ADD NODES ---
         workflow.add_node("router", hybrid_router_node) 
         workflow.add_node("order_worker", order_worker_node)
-        workflow.add_node("menu_worker", menu_worker_node)
+        workflow.add_node("search_worker", search_worker_node)
         workflow.add_node("payment_worker", payment_worker_node)
         workflow.add_node("chat_worker", chat_worker_node)
         workflow.add_node("validator", deterministic_validator_node)
         
         # Standard ToolNode
-        workflow.add_node("tools", ToolNode([sync_cart, confirm_order]))
+        workflow.add_node("tools", ToolNode([search, sync_cart, confirm_order, request_payment]))
         workflow.add_node("state_updater", state_updater_node)
         
         # --- 2. ADD EDGES ---
         workflow.add_edge(START, "router")
         
         # Dynamic Intent-Based worker selector
-        def route_to_worker(state: AgentState) -> Literal["order_worker", "menu_worker", "payment_worker", "chat_worker"]:
-            intent = state.get("current_intent")
-            if intent == "ORDER":
+        def route_to_worker(state: AgentState) -> Literal["order_worker", "search_worker", "payment_worker", "chat_worker"]:
+            intents = state.get("current_intents") or []
+            if not intents:
+                return "chat_worker"
+            
+            # Select the most important worker node based on predicted intents.
+            # Priority: ORDER > PAYMENT > SEARCH > CHAT
+            if any(i in ("ORDER", "COMPLEX") for i in intents):
                 return "order_worker"
-            elif intent == "MENU":
-                return "menu_worker"
-            elif intent == "PAYMENT":
+            elif "PAYMENT" in intents:
                 return "payment_worker"
-            return "chat_worker"  # Safe default for CHAT, COMPLEX, or fallback
+            elif any(i in ("SEARCH", "MENU") for i in intents):
+                return "search_worker"
+
+            return "chat_worker"
 
         workflow.add_conditional_edges(
             "router", 
             route_to_worker,
             {
                 "order_worker": "order_worker",
-                "menu_worker": "menu_worker",
+                "search_worker": "search_worker",
                 "payment_worker": "payment_worker",
                 "chat_worker": "chat_worker"
             }
@@ -116,11 +121,52 @@ class AIWaiterGraph:
         
         # After tool execution, intercept the output to update the global State, then loop back to worker
         workflow.add_edge("tools", "state_updater")
-        workflow.add_edge("state_updater", "order_worker")
+        
+        # Route after State Updater back to the corresponding worker
+        def route_after_updater(state: AgentState) -> Literal["order_worker", "search_worker", "payment_worker"]:
+            last_msg = state["messages"][-1]
+            if last_msg.type == "tool":
+                tool_name = last_msg.name
+                if tool_name == "search":
+                    return "search_worker"
+                elif tool_name == "request_payment":
+                    return "payment_worker"
+            # Fallback/Default for sync_cart or confirm_order is order_worker
+            return "order_worker"
+
+        workflow.add_conditional_edges(
+            "state_updater",
+            route_after_updater,
+            {
+                "order_worker": "order_worker",
+                "search_worker": "search_worker",
+                "payment_worker": "payment_worker"
+            }
+        )
         
         # Non-ordering flows completely bypass the validation loops to minimize latency
-        workflow.add_edge("menu_worker", END)
-        workflow.add_edge("payment_worker", END)
+        def route_after_search(state: AgentState) -> Literal["tools", "end"]:
+            last_msg = state["messages"][-1]
+            if hasattr(last_msg, 'tool_calls') and last_msg.tool_calls:
+                return "tools"
+            return "end"
+
+        def route_after_payment(state: AgentState) -> Literal["tools", "end"]:
+            last_msg = state["messages"][-1]
+            if hasattr(last_msg, 'tool_calls') and last_msg.tool_calls:
+                return "tools"
+            return "end"
+
+        workflow.add_conditional_edges(
+            "search_worker",
+            route_after_search,
+            {"tools": "tools", "end": END}
+        )
+        workflow.add_conditional_edges(
+            "payment_worker",
+            route_after_payment,
+            {"tools": "tools", "end": END}
+        )
         workflow.add_edge("chat_worker", END)
         
         return workflow

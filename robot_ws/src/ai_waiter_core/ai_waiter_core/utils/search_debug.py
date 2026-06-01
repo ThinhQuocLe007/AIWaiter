@@ -1,6 +1,8 @@
+import logging
 from typing import List
-from ai_waiter_core.utils import logger
 from ai_waiter_core.schemas import SearchResult
+
+logger = logging.getLogger(__name__)
 
 def print_database_summary(documents: List):
     """

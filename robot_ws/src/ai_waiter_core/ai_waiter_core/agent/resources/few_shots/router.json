@@ -1,117 +1,72 @@
 [
   {
-    "query": "Gọi 1 Bánh Xèo Miền Tây và 2 ly Trà Đào Cam Sả",
-    "reasoning": "The user is explicitly asking to order specific menu items using the ordering verb 'Gọi'.",
-    "intent": "ORDER"
-  },
-  {
-    "query": "Lấy cho mình 3 ly Sinh Tố Bơ Dừa nhé, ghi chú ít đá",
-    "reasoning": "The user is requesting to order drink items using the ordering action verb 'Lấy cho mình'.",
-    "intent": "ORDER"
-  },
-  {
-    "query": "Phở Bò Đặc Biệt giá bao nhiêu vậy?",
-    "reasoning": "The user is asking for the price of a specific dish. This is an inquiry about the menu, not an instruction to place an order.",
-    "intent": "MENU"
-  },
-  {
-    "query": "Hôm nay quán có gì đặc biệt không?",
-    "reasoning": "The user is asking for recommendations or daily specials from the menu.",
-    "intent": "MENU"
-  },
-  {
-    "query": "Gợi ý cho bàn mình set 4 người ăn tầm 500 nghìn được không?",
-    "reasoning": "The user is asking for menu recommendations within a budget. This is a menu inquiry, not an order placement.",
-    "intent": "MENU"
-  },
-  {
     "query": "Bàn mình chờ lâu quá, món gần xong chưa?",
     "reasoning": "The user is asking about the status of their order or complaining about wait time. This is customer service conversation, not placing a new order.",
-    "intent": "CHAT"
+    "intents": ["CHAT"]
   },
   {
-    "query": "Mình đã đặt món rồi mà sao chưa thấy lên nhỉ?",
-    "reasoning": "The user is using past tense 'đã đặt rồi' to refer to a previously placed order and asking about its status. This is CHAT, not a new ORDER.",
-    "intent": "CHAT"
+    "query": "Cho tôi 2 bát Phở Bò Đặc Biệt nhé",
+    "reasoning": "The user is explicitly ordering food with quantity and names. This is a direct ordering action.",
+    "intents": ["ORDER"]
   },
   {
-    "query": "Tôi thấy bàn bên cạnh gọi món hấp dẫn quá",
-    "reasoning": "The user is making a casual comment about another table's food. There is no action verb indicating they want to place an order.",
-    "intent": "CHAT"
+    "query": "Quán mình có những món nào chay vậy bạn?",
+    "reasoning": "The user is asking about vegetarian options on the menu. This is a search query.",
+    "intents": ["SEARCH"]
   },
   {
-    "query": "Bàn mình hết bao nhiêu tiền? Tính tiền giùm mình bằng ví MoMo.",
-    "reasoning": "The user is asking for the bill total and requesting payment via MoMo. This belongs to billing/checkout.",
-    "intent": "PAYMENT"
-  },
-  {
-    "query": "Quán có nhận chuyển khoản ngân hàng không?",
-    "reasoning": "The user is asking about available payment methods. Even though it's a question, it relates to the payment/checkout process.",
-    "intent": "PAYMENT"
-  },
-  {
-    "query": "Bàn mình gọi 3 món rồi, tổng hết bao nhiêu rồi nhỉ?",
-    "reasoning": "The user mentions past orders ('gọi 3 món rồi' in past tense) and asks for the total bill. The primary intent is checking the bill amount, which is PAYMENT.",
-    "intent": "PAYMENT"
-  },
-  {
-    "query": "Hủy Mực Nướng rồi gọi Sườn Non thay vào, và cho tôi xem menu đồ uống",
-    "reasoning": "This query blends two distinct actions: modifying an order ('Hủy... gọi...') AND requesting the menu ('xem menu'). Two different intent categories means COMPLEX.",
-    "intent": "COMPLEX"
+    "query": "Tính tiền giùm bàn 12 đi bạn ơi",
+    "reasoning": "The user is requesting the check and checkout. This is a payment action.",
+    "intents": ["PAYMENT"]
   },
   {
     "query": "Cho tôi 1 Phở Bò và tính tiền luôn",
-    "reasoning": "This query contains ORDER ('Cho tôi 1 Phở Bò') AND PAYMENT ('tính tiền luôn'). The connector 'và...luôn' links two distinct actions. COMPLEX.",
-    "intent": "COMPLEX"
+    "reasoning": "The user orders a Phở Bò (ORDER) and requests payment immediately after (PAYMENT).",
+    "intents": ["ORDER", "PAYMENT"]
   },
   {
-    "query": "Cho mình xem tổng hóa đơn, nếu dưới 200k thì gọi thêm Chè Khúc Bạch",
-    "reasoning": "PAYMENT ('xem tổng hóa đơn') + conditional ORDER ('nếu... thì gọi thêm'). The 'nếu...thì' conditional linking two intents = COMPLEX.",
-    "intent": "COMPLEX"
-  },
-  {
-    "query": "Lấy thêm 1 Miến Xào Cua và 1 Soda Chanh Muối, xong tính tiền nhé",
-    "reasoning": "ORDER ('Lấy thêm...') + PAYMENT ('xong tính tiền'). The sequential connector 'xong' chains two distinct actions. COMPLEX.",
-    "intent": "COMPLEX"
-  },
-  {
-    "query": "Món Cá Lăng Kho Tộ có ngon không? Nếu ngon thì cho mình 1 phần, không thì tư vấn món cá khác",
-    "reasoning": "MENU inquiry ('có ngon không?') + conditional ORDER ('nếu ngon thì cho mình 1 phần') + fallback MENU ('tư vấn món khác'). Multiple intents = COMPLEX.",
-    "intent": "COMPLEX"
-  },
-  {
-    "query": "Hủy Canh Chua Cá Lóc, đổi sang Súp Bắp Hải Sản, rồi check bill giùm",
-    "reasoning": "ORDER modification ('Hủy... đổi...') + PAYMENT ('check bill'). The connector 'rồi' chains two distinct actions. COMPLEX.",
-    "intent": "COMPLEX"
-  },
-  {
-    "query": "Món Gà Bó Xôi bên mình làm mất bao lâu và gồm những nguyên liệu gì?",
-    "reasoning": "The user is asking specific questions about the cooking time and ingredients of a menu item.",
-    "intent": "MENU"
-  },
-  {
-    "query": "Wifi quán tên gì, pass bao nhiêu bạn ơi?",
-    "reasoning": "The user is asking for general restaurant information (WiFi details). Even though the query contains the word 'bao nhiêu', it is asking for a password, not food prices or bills. Therefore, it belongs to CHAT.",
-    "intent": "CHAT"
-  },
-  {
-    "query": "Phở Bò có mấy loại, và cứ gọi loại đắt nhất cho mình 2 tô",
-    "reasoning": "This query blends a menu classification inquiry ('có mấy loại') with an immediate order placement ('gọi loại đắt nhất...'). Since there are multiple intents, it must be COMPLEX.",
-    "intent": "COMPLEX"
+    "query": "Phở bò có cay không? Nếu không cay thì lấy cho 2 tô nhé",
+    "reasoning": "The user asks about the spice level of Phở bò (SEARCH) and conditionally places an order based on the response (ORDER).",
+    "intents": ["SEARCH", "ORDER"]
   },
   {
     "query": "Mình muốn gọi 2 Bò Nướng Đá Cuội, nhưng trước đó cho hỏi phần này ăn mấy người?",
-    "reasoning": "This blends a menu inquiry ('phần này ăn mấy người?') with an ordering action ('gọi 2 Bò Nướng'). Multiple intents = COMPLEX.",
-    "intent": "COMPLEX"
+    "reasoning": "The user indicates they want to order 2 Bò Nướng (ORDER) but first inquires about the portion size (SEARCH) to verify feasibility.",
+    "intents": ["SEARCH", "ORDER"]
   },
   {
-    "query": "Cơm Chiên Trái Thơm có tôm không? Mình dị ứng tôm nên nếu có thì cho đổi Cơm Tấm Sườn Bì Chả",
-    "reasoning": "This blends an ingredients inquiry ('có tôm không?') with a conditional order swap ('nếu có thì cho đổi...'). Multiple intents = COMPLEX.",
-    "intent": "COMPLEX"
+    "query": "Bên mình chuyển khoản qua ngân hàng được không? Thanh toán giùm bàn mình nhé",
+    "reasoning": "The user is asking about the bank transfer payment method and requesting checkout. Both actions represent PAYMENT, which deduplicates into a single PAYMENT intent.",
+    "intents": ["PAYMENT"]
   },
   {
-    "query": "Mình dị ứng tôm, quán có món nào thay thế cho Tôm Sú Chiên Xù không?",
-    "reasoning": "The user is inquiring about menu alternatives due to an allergy. There is no instruction or request to place an order, only asking for suggestions. Therefore, this is strictly a MENU inquiry.",
-    "intent": "MENU"
+    "query": "Chào bạn, quán hôm nay mấy giờ đóng cửa vậy?",
+    "reasoning": "This is a basic greeting and general question about operating hours. This belongs to SEARCH.",
+    "intents": ["SEARCH"]
+  },
+  {
+    "query": "Gợi ý cho mình set ăn 4 người khoảng 500k đi bạn",
+    "reasoning": "The user is asking for menu recommendations and budget advice. This belongs to SEARCH.",
+    "intents": ["SEARCH"]
+  },
+  {
+    "query": "Hủy giùm mình 1 Coca và gọi thêm 2 ly Trà Đá",
+    "reasoning": "The user is modifying their order by cancelling an item and adding other items. Both represent order adjustments, which is ORDER.",
+    "intents": ["ORDER"]
+  },
+  {
+    "query": "Lấy thêm 1 Miến Xào Cua và 1 Soda Chanh Muối, xong tính tiền nhé",
+    "reasoning": "The user adds food/drinks to their order (ORDER) and specifies they want the bill immediately after (PAYMENT).",
+    "intents": ["ORDER", "PAYMENT"]
+  },
+  {
+    "query": "Xác nhận nhé",
+    "reasoning": "The user is confirming the draft order to place it. Order confirmation belongs to ORDER intent.",
+    "intents": ["ORDER"]
+  },
+  {
+    "query": "Đúng rồi, chốt đi em",
+    "reasoning": "The user confirms the drafted cart to finalize it. This is part of the order confirmation flow and belongs to ORDER intent.",
+    "intents": ["ORDER"]
   }
 ]

@@ -1,7 +1,7 @@
 from typing import List, Tuple
 from langchain_core.documents import Document
 from ai_waiter_core.schemas.search import SearchResult
-from ai_waiter_core.agent.tools.search.engines.scoring import (
+from ..utils.normalization import (
     calculate_hybrid_score,
     normalize_bm25_batch
 )
@@ -23,7 +23,6 @@ class WeightedFusion(BaseFusion):
         threshold = kwargs.get("threshold", 0.3)
 
         # 1. Map documents by content hash
-        # structure: hash -> {doc, bm25_raw, vector_raw}
         lookup = {}
 
         for doc, score in bm25_results:

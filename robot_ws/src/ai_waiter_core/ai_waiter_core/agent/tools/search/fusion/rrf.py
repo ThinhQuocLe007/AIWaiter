@@ -1,7 +1,8 @@
 from typing import List, Tuple
 from langchain_core.documents import Document
 from ai_waiter_core.schemas.search import SearchResult
-from ..scoring import compute_reciprocal_rank
+from ai_waiter_core.utils import logger
+from ..utils.rrf import compute_reciprocal_rank
 from .base import BaseFusion
 
 class RRFFusion(BaseFusion):
@@ -11,7 +12,44 @@ class RRFFusion(BaseFusion):
              k: int, 
              **kwargs) -> List[SearchResult]:
         
+        query = kwargs.get("query", "")
         rrf_k = kwargs.get("rrf_k", 60)
+        
+        # --- 1. DUAL-LANE GATEKEEPER (NO INFORMATION SHIELD) ---
+        top_vector_score = vector_results[0][1] if vector_results else 0.0
+        semantic_match = top_vector_score >= 0.35
+        
+        # Clean query, split on commas first to preserve multi-word phrases, otherwise split by words
+        lexical_match = False
+        clean_query = query.lower().replace("?", "").replace(".", "")
+        keywords = [kw.strip() for kw in clean_query.split(",") if kw.strip()]
+        if len(keywords) == 1 and " " in keywords[0]:
+            keywords = [w.strip() for w in keywords[0].split() if w.strip()]
+            
+        if keywords:
+            # Check if any core keyword is present exactly inside the top BM25 or top Vector document
+            top_docs_text = ""
+            if bm25_results:
+                top_docs_text += bm25_results[0][0].page_content.lower()
+            if vector_results:
+                top_docs_text += " " + vector_results[0][0].page_content.lower()
+                
+            if any(kw in top_docs_text for kw in keywords):
+                lexical_match = True
+                
+        # Gatekeeper evaluation: Trigger NO INFORMATION fallback if both lanes fail
+        if not semantic_match and not lexical_match:
+            logger.info(
+                f"[GATEKEEPER] Rejected query: '{query}' "
+                f"(Top Vector Similarity: {top_vector_score:.3f} < 0.35, Lexical Match: {lexical_match})"
+            )
+            return []
+            
+        logger.info(
+            f"[GATEKEEPER] Approved query: '{query}' "
+            f"(Top Vector Similarity: {top_vector_score:.3f}, Lexical Match: {lexical_match})"
+        )
+
         fusion_scores = {} # page_content_hash -> dict
 
         # 1. Process BM25

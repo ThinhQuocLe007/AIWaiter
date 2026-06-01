@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from ai_waiter_core.agent.base import AIWaiterAgent
+from ai_waiter_core.agent import AIWaiterGraph
 from ai_waiter_core.utils import flush_traces, log_struct
 
 # 1. Load environment variables (including LangSmith keys)
@@ -9,8 +9,8 @@ load_dotenv()
 def main():
     log_struct("Starting AI Waiter Test Session")
     
-    # 2. Initialize the Agent
-    agent = AIWaiterAgent()
+    # 2. Initialize the Agent Graph
+    agent = AIWaiterGraph()
     
     # 3. Simulate a conversation
     table_id = "Table_01"

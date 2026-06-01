@@ -48,6 +48,23 @@ def main():
 
     logging.info(f"Starting Router Evaluation for {len(cases)} cases.")
     
+    # --- ADD WARM-UP RUN TO ELIMINATE COLD START BIAS ---
+    logging.info("Warming up Semantic and SLM models (Cold Start Initialization)...")
+    warmup_state = {
+        "messages": [HumanMessage(content="Xin chào")],
+        "table_id": "T1",
+        "loop_count": 0,
+        "is_valid": True,
+        "order_stage": "IDLE"
+    }
+    try:
+        # Run a dummy classification to load PyTorch weights & Ollama channels
+        hybrid_router_node(warmup_state)
+        logging.info("Warm-up complete. All models loaded and warmed up.")
+    except Exception as e:
+        logging.warning(f"Warm-up failed: {e}")
+    # ----------------------------------------------------
+
     results = []
     correct_count = 0
     latencies = defaultdict(list)
@@ -55,10 +72,17 @@ def main():
     slm_count = 0
 
     for case in tqdm(cases, desc="Evaluating Router Node"):
-        expected = case["expected_route"]
-        # Map dataset 'ORDER_CONFIRM' to 'ORDER' which is expected by the AgentState schema
-        if expected == "ORDER_CONFIRM":
-            expected = "ORDER"
+        case_id = case["id"]
+        raw_expected = case["expected_route"]
+        
+        # 1. Standardize expected route as a list of strings
+        if isinstance(raw_expected, list):
+            expected = raw_expected
+        else:
+            if raw_expected == "ORDER_CONFIRM":
+                raw_expected = "ORDER"
+            expected = [raw_expected]
+
 
         state = {
             "messages": [HumanMessage(content=case["input"])],
@@ -68,7 +92,7 @@ def main():
             "order_stage": "IDLE"
         }
 
-        logging.info(f"Evaluating Case {case['id']}: '{case['input']}'")
+        logging.info(f"Evaluating Case {case_id}: '{case['input']}'")
         logging.info(f"  Expected: {expected}")
         
         # Call the router node with latency tracking
@@ -78,12 +102,13 @@ def main():
             output = hybrid_router_node(state)
             latency = time.time() - start_time
             
-            predicted = output.get("current_intent", "UNKNOWN")
+            # The hybrid router node now returns a list of intents: current_intents
+            predicted = output.get("current_intents", ["UNKNOWN"])
             routing_meta = output.get("routing_meta", {})
-            latencies[expected].append(latency)
+            latencies[str(expected)].append(latency)
         except Exception as e:
-            logging.error(f"  Error evaluating case {case['id']}: {e}")
-            predicted = "ERROR"
+            logging.error(f"  Error evaluating case {case_id}: {e}")
+            predicted = ["ERROR"]
             latency = 0.0
 
         decided_by = routing_meta.get("decided_by", "N/A")
@@ -103,7 +128,7 @@ def main():
             logging.warning(f"  [FAILURE] expected={expected} got={predicted} | by={decided_by} | sem_conf={sem_conf:.4f} | sem_intent={sem_intent} | {latency:.2f}s")
 
         results.append({
-            "id": case["id"],
+            "id": case_id,
             "input": case["input"],
             "expected": expected,
             "predicted": predicted,
@@ -113,7 +138,7 @@ def main():
             "decided_by": decided_by,
             "semantic_confidence": sem_conf,
             "semantic_intent": sem_intent,
-            "slm_intent": routing_meta.get("slm_intent"),
+            "slm_intents": routing_meta.get("slm_intents"),
         })
 
     accuracy = correct_count / len(cases) * 100
@@ -122,9 +147,9 @@ def main():
     avg_latency = {}
     total_latency = 0
     total_cases = 0
-    for intent, l_list in latencies.items():
+    for intent_str, l_list in latencies.items():
         if l_list:
-            avg_latency[intent] = sum(l_list) / len(l_list)
+            avg_latency[intent_str] = sum(l_list) / len(l_list)
             total_latency += sum(l_list)
             total_cases += len(l_list)
     
@@ -150,8 +175,8 @@ def main():
     logging.info(f"Accuracy: {accuracy:.2f}%")
     logging.info(f"Overall Avg Latency: {overall_avg_latency:.2f}s")
     logging.info(f"Routing Decisions: SEMANTIC={semantic_count} | SLM={slm_count}")
-    for intent, lat in avg_latency.items():
-        logging.info(f"  - {intent}: {lat:.2f}s")
+    for intent_str, lat in avg_latency.items():
+        logging.info(f"  - {intent_str}: {lat:.2f}s")
 
     # Save JSON report
     with open(JSON_PATH, "w", encoding="utf-8") as f:

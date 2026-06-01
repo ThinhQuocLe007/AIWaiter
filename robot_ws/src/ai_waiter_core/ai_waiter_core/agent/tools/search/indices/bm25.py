@@ -122,7 +122,6 @@ class BM25Index(SearchIndex):
             tokenized_query = underthesea.word_tokenize(query.lower(), format="text").split()
             scores = self.bm25.get_scores(tokenized_query)
 
-
             # Get top-k
             doc_scores = []
             for idx, score in enumerate(scores):

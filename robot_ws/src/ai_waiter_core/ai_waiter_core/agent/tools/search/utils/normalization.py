@@ -1,8 +1,7 @@
 import math
-from ai_waiter_core.utils import logger
 from typing import List
+from ai_waiter_core.utils import logger
 
-# sigmoid normalization for  bm25_score 
 def sigmoid_normalize(score: float, mean: float = 0.0, scale: float = 1.0) -> float:
     """
     Normalize BM25 score to 0-1 range using sigmoid function
@@ -15,7 +14,6 @@ def sigmoid_normalize(score: float, mean: float = 0.0, scale: float = 1.0) -> fl
     Returns:
         Normalized score in 0-1 range
     """
-    
     try: 
         # Clamp exponent to prevent overflow
         exponent = -scale * (score - mean)
@@ -27,13 +25,12 @@ def sigmoid_normalize(score: float, mean: float = 0.0, scale: float = 1.0) -> fl
         logger.error(f'sigmoid_normalize: {e}')
         return 0.5
 
-# calculate the hybird score 
 def calculate_hybrid_score(bm25_score: float, vector_score: float, 
                         bm25_mean: float = 0.0, bm25_scale: float = 1.0,
                         bm25_weight: float = 0.6, vector_weight: float = 0.4) -> float:
     """
-    Calculate the hybird score using the formula: 
-    hybird_score = (bm25_score_normalization * bm25_weight) + (vector_score * vector_weight)
+    Calculate the hybrid score using the formula: 
+    hybrid_score = (bm25_score_normalization * bm25_weight) + (vector_score * vector_weight)
     
     Args:
         bm25_score: BM25 score to normalize
@@ -42,7 +39,7 @@ def calculate_hybrid_score(bm25_score: float, vector_score: float,
         vector_weight: Weight for vector score (default 0.4)
     
     Returns:
-        Hybird score in 0-1 range
+        Hybrid score in 0-1 range
     """
     try: 
         bm25_score_normalization = sigmoid_normalize(bm25_score, bm25_mean, bm25_scale)
@@ -51,8 +48,7 @@ def calculate_hybrid_score(bm25_score: float, vector_score: float,
     except Exception as e:
         logger.error(f'calculate_hybrid_score: {e}')
         return 0.0
-    
-    
+
 def normalize_vector_score(distance: float) -> float:
     """
     Normalize vector score to 0-1 range using sigmoid function
@@ -65,25 +61,8 @@ def normalize_vector_score(distance: float) -> float:
     """
     return 1.0 / (1.0 + distance)
 
-
 def normalize_bm25_batch(scores: List[float]) -> List[float]:
     """ Takes a list of raw BM25 scores and returns them all normalized by Sigmoid """
     if not scores: return []
     mean = sum(scores) / len(scores)
     return [sigmoid_normalize(s, mean) for s in scores]
-
-def compute_reciprocal_rank(rank: int, k: int = 60) -> float:
-    """
-    Computes the Reciprocal Rank Fusion (RRF) score for a given rank.
-    RRF score = 1 / (k + rank)
-    
-    Args:
-        rank (int): 1-indexed ranking position of the document.
-        k (int): Smoothing constant, commonly set to 60.
-        
-    Returns:
-        float: RRF fused score component.
-    """
-    # Defensive programming: ensure rank is strictly positive
-    rank = max(1, rank)
-    return 1.0 / (k + rank)

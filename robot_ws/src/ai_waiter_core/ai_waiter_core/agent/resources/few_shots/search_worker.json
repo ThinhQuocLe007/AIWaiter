@@ -1,0 +1,70 @@
+[
+  {
+    "role": "user",
+    "content": "Hôm nay trời lạnh quá, tôi muốn món nào ấm bụng"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "search",
+        "args": {
+          "query": "cháo, lẩu, súp nóng, món ấm bụng"
+        },
+        "id": "call_rewrite_1"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "Thời tiết nóng nực này uống gì cho mát bạn nhỉ?"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "search",
+        "args": {
+          "query": "nước ép, sinh tố, trà đá, thanh nhiệt"
+        },
+        "id": "call_rewrite_2"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "Quán mình có mạng wifi gì không?"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "search",
+        "args": {
+          "query": "wifi, mật khẩu, ssid"
+        },
+        "id": "call_rewrite_3"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "Bên mình mở cửa đến mấy giờ thế?"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "search",
+        "args": {
+          "query": "giờ mở cửa, giờ đóng cửa, thời gian hoạt động"
+        },
+        "id": "call_rewrite_4"
+      }
+    ]
+  }
+]

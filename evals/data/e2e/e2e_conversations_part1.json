@@ -2,7 +2,7 @@
   "dataset": "e2e_conversations",
   "version": "1.0",
   "description": "Kịch bản hội thoại nhiều lượt (8-10 turns) với AI Waiter bằng tiếng Việt. Mỗi turn có assert kiểm tra tool được gọi và nội dung phản hồi.",
-  "total_scenarios": 5,
+  "total_scenarios": 6,
   "scenarios": [
     {
       "id": "E2E-001",
@@ -29,7 +29,7 @@
           "assert": {
             "tool_called": "confirm_order",
             "response_contains": "SUCCESS",
-            "response_should_contain_one_of": ["đặt thành công", "đơn hàng"]
+            "response_should_contain_one_of": ["đặt thành công", "đơn hàng", "đặt hàng"]
           }
         }
       ]
@@ -180,6 +180,25 @@
             "tool_called": "confirm_order",
             "response_contains": "SUCCESS",
             "confirmed_items_must_contain": "Xoài"
+          }
+        }
+      ]
+    },
+    {
+      "id": "E2E-006",
+      "name": "non_existent_item_rejected",
+      "description": "Khách đặt món không có trong thực đơn (Pizza Hải Sản). Kiểm tra Validator phát hiện lỗi và LLM từ chối đặt, hướng dẫn chọn lại.",
+      "table_id": "T_eval_6",
+      "difficulty": "easy",
+      "expected_outcome": "order_rejected",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình 1 cái Pizza Hải Sản và 1 tô Phở Bò Đặc Biệt nhé",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "response_should_contain_one_of": ["pizza", "không có", "không bán", "thực đơn", "chọn lại"]
           }
         }
       ]

@@ -1,5 +1,6 @@
 from typing import Literal
-from ai_waiter_core.agent.tools.utils.extract_menu import MENU_NAMES
+from ai_waiter_core.utils import MENU_NAMES
+
 
 # Use to control the order_worker
 # It can only select values in MenuItemLiteral when using tools: sync_cart 

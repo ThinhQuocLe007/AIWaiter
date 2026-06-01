@@ -1,0 +1,27 @@
+{
+  "dataset": "pizza_e2e_test",
+  "version": "1.0",
+  "description": "Test case for out-of-menu item (Pizza Hải Sản) rejection validation.",
+  "total_scenarios": 1,
+  "scenarios": [
+    {
+      "id": "PIZZA-001",
+      "name": "non_existent_item_rejected",
+      "description": "Khách đặt món không có trong thực đơn (Pizza Hải Sản). Kiểm tra Validator phát hiện lỗi và LLM từ chối đặt, hướng dẫn chọn lại.",
+      "table_id": "T_pizza_test",
+      "difficulty": "easy",
+      "expected_outcome": "order_rejected",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình 1 cái Pizza Hải Sản và 1 tô Phở Bò Đặc Biệt nhé",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "response_should_contain_one_of": ["pizza", "không có", "không bán", "thực đơn", "chọn lại", "chưa có"]
+          }
+        }
+      ]
+    }
+  ]
+}

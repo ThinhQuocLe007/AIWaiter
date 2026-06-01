@@ -31,7 +31,7 @@ def _build_router_prompt() -> ChatPromptTemplate:
     for ex in raw_examples:
         examples.append({
             "input": ex["query"],
-            "output": json.dumps({"intent": ex["intent"], "reasoning": ex["reasoning"]}, ensure_ascii=False)
+            "output": json.dumps({"intents": ex["intents"], "reasoning": ex["reasoning"]}, ensure_ascii=False)
         })
 
     example_prompt = ChatPromptTemplate.from_messages([
@@ -90,7 +90,7 @@ _router_chain = _router_prompt | _llm
 @trace_latency("SLM Router Node", run_type="chain")
 def slm_router_node(state: AgentState) -> Dict[str, Any]:
     """
-    Classify the latest user message and return the predicted intent.
+    Classify the latest user message and return the predicted intents.
     """
     # Extract the last user query
     user_message = next(
@@ -99,7 +99,7 @@ def slm_router_node(state: AgentState) -> Dict[str, Any]:
     )
     if not user_message:
         logger.warning("No user message found, defaulting to CHAT")
-        return {"current_intent": "CHAT"}
+        return {"current_intents": ["CHAT"]}
 
     query = user_message.content
     chat_history = _format_last_n_turns(state["messages"], n=5)
@@ -109,10 +109,10 @@ def slm_router_node(state: AgentState) -> Dict[str, Any]:
             "query": query,
             "chat_history": chat_history or "No previous history.",
         })
-        intent = result.intent or "CHAT"
-        logger.info(f"Router Output: {intent} | reason: {result.reasoning}")
+        intents = result.intents or ["CHAT"]
+        logger.info(f"SLM Router Output: {intents} | reason: {result.reasoning}")
     except Exception:
-        logger.exception("Router LLM call failed, defaulting to CHAT")
-        intent = "CHAT"
+        logger.exception("SLM Router LLM call failed, defaulting to CHAT")
+        intents = ["CHAT"]
 
-    return {"current_intent": intent}
+    return {"current_intents": intents}

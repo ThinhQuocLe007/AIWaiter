@@ -1,104 +1,66 @@
 import logging
+import time
 from typing import Dict, Any
 
-from langchain_core.messages import HumanMessage
 from ai_waiter_core.agent.state import AgentState
-from ai_waiter_core.agent.nodes.semantic_router_node import SemanticRouterNode
+from ai_waiter_core.agent.nodes.semantic_router_node import semantic_router_node
 from ai_waiter_core.agent.nodes.slm_router_node import slm_router_node
 from ai_waiter_core.utils import trace_latency
 
 logger = logging.getLogger(__name__)
 
-# Pre-instantiate globally to avoid loading embeddings on every turn
-_semantic_router_instance = None
-
-# Confidence threshold for fast-tracking. Lowered to 0.75 to catch ORDER queries
-# with specific menu item names that previously fell below 0.82.
-HYBRID_CONFIDENCE_THRESHOLD = 0.75
-
-def is_potentially_complex_or_non_order(text: str) -> bool:
-    """
-    Lightweight heuristic to detect multi-intent (COMPLEX), past-tense comments,
-    or tricky conditional structures that should be routed to the SLM safety net.
-    """
-    text_lower = text.lower()
-    
-    # 1. Past tense comments or casual observation
-    if "bàn bên cạnh" in text_lower or "thấy bàn" in text_lower or "đã đặt" in text_lower:
-        return True
-        
-    # 2. Sequential triggers combined with order
-    if "rồi" in text_lower or "xong" in text_lower or "sau đó" in text_lower:
-        return True
-        
-    # 3. Conditional triggers
-    if "nếu" in text_lower or "nếu không" in text_lower:
-        return True
-        
-    # 4. Payment indicators
-    if any(kw in text_lower for kw in ["tính tiền", "thanh toán", "check bill", "in bill", "hóa đơn", "bill"]):
-        return True
-        
-    # 5. Menu questions or comparison indicators
-    if any(kw in text_lower for kw in ["bao nhiêu", "giá", "ngon không", "chay không", "mấy người", "hỏi"]):
-        return True
-        
-    return False
+# The confidence similarity threshold for fast-tracking simple queries
+HYBRID_CONFIDENCE_THRESHOLD = 0.85
 
 @trace_latency("Hybrid Router Node", run_type="chain")
 def hybrid_router_node(state: AgentState) -> Dict[str, Any]:
     """
-    Combines high-speed Semantic Routing with high-accuracy SLM Routing.
-    If the vector similarity is high (>= threshold) and the intent is not COMPLEX,
-    it returns instantly. Otherwise, it delegates to the SLM.
-    
-    Returns routing_meta with confidence score and which engine decided.
+    Orchestrates routing using semantic similarity. Fast-tracks simple, high-confidence
+    queries directly. Delegates low-confidence or multi-intent queries to local SLM.
     """
-    global _semantic_router_instance
-    if _semantic_router_instance is None:
-        _semantic_router_instance = SemanticRouterNode()
+    query = state["messages"][-1].content
+    start_time = time.time()
+    
+    # 1. Execute fast semantic routing
+    semantic_result = semantic_router_node(state)
+    
+    # Extract the legacy metadata dictionary safely
+    metadata = semantic_result.get("metadata", {})
+    sem_intent = metadata.get("intent")
+    sem_conf = metadata.get("confidence", 0.0)
+    
+    # 2. Hybrid Decision Flow
+    # If cosine similarity is highly confident, we fast-track it as a single intent list
+    if sem_conf >= HYBRID_CONFIDENCE_THRESHOLD and sem_intent:
+        logger.info(f"[Hybrid Router] Fast-tracked by SEMANTIC. Intent: {sem_intent} (Confidence: {sem_conf:.4f})")
+        decided_by = "SEMANTIC"
+        current_intents = [sem_intent]
+        slm_predicted = None
+    else:
+        # Fallback to local Ollama SLM for detailed multi-intent parsing
+        logger.info(f"[Hybrid Router] Falling back to SLM. Semantic confidence: {sem_conf:.4f}")
+        slm_result = slm_router_node(state)
         
-    last_user_message = next(
-        (m.content for m in reversed(state["messages"]) if isinstance(m, HumanMessage)), 
-        ""
-    )
-    
-    # 1. Try Fast Semantic Routing
-    semantic_result = _semantic_router_instance.route(last_user_message)
-    sem_intent = semantic_result.get("raw_intent")
-    sem_confidence = semantic_result.get("confidence", 0.0)
-    
-    logger.info(f"Semantic Router predicted {sem_intent} with confidence: {sem_confidence:.4f}")
-    
-    # If confidence is high and it's a simple intent (and has no complex features), use it!
-    # We always pass COMPLEX to SLM because COMPLEX needs deeper structural understanding.
-    if (
-        sem_confidence >= HYBRID_CONFIDENCE_THRESHOLD 
-        and sem_intent 
-        and sem_intent != "COMPLEX" 
-        and (sem_intent != "ORDER" or not is_potentially_complex_or_non_order(last_user_message))
-    ):
-        logger.info(f"Hybrid Router: Fast-tracking {sem_intent} (Conf: {sem_confidence:.2f} >= {HYBRID_CONFIDENCE_THRESHOLD})")
-        return {
-            "current_intent": sem_intent,
-            "routing_meta": {
-                "decided_by": "SEMANTIC",
-                "semantic_confidence": round(sem_confidence, 4),
-                "semantic_intent": sem_intent,
-            }
-        }
+        # Extract the list of intents predicted by the SLM
+        slm_predicted = slm_result.get("current_intents", [])
         
-    # 2. Fallback to SLM Router
-    logger.info(f"Hybrid Router: Delegating to SLM Router (Conf: {sem_confidence:.2f} < {HYBRID_CONFIDENCE_THRESHOLD}, COMPLEX, or matched heuristic)")
-    slm_result = slm_router_node(state)
-    slm_intent = slm_result.get("current_intent", "CHAT")
+        # Deduplicate consecutive/redundant intents while preserving order (e.g. ["ORDER", "ORDER"] -> ["ORDER"])
+        current_intents = list(dict.fromkeys(slm_predicted))
+        decided_by = "SLM"
+        logger.info(f"[Hybrid Router] Resolved by SLM. Intents: {current_intents}")
+
+    latency = time.time() - start_time
+    
+    # Save routing metadata for performance evaluation
+    routing_meta = {
+        "decided_by": decided_by,
+        "semantic_confidence": sem_conf,
+        "semantic_intent": sem_intent if sem_intent else "NONE",
+        "slm_intents": slm_predicted,
+        "latency_seconds": latency
+    }
     
     return {
-        "current_intent": slm_intent,
-        "routing_meta": {
-            "decided_by": "SLM",
-            "semantic_confidence": round(sem_confidence, 4),
-            "semantic_intent": sem_intent,
-            "slm_intent": slm_intent,
-        }
+        "current_intents": current_intents,
+        "routing_meta": routing_meta
     }

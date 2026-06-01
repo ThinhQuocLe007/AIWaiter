@@ -1,4 +1,4 @@
-from ai_waiter_core.tools.search.hybrid_retriever import RetrieverManager
+from ai_waiter_core.agent.tools.search.hybrid_retriever import RetrieverManager
 from ai_waiter_core.config import settings
 
 def test_retriever():

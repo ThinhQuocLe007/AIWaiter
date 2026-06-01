@@ -2,10 +2,12 @@ from typing import List
 from langchain_core.tools import tool
 from ai_waiter_core.schemas.order import OrderItem
 from ai_waiter_core.agent.tools.ordering.order_db import OrderDB
-from ai_waiter_core.utils import trace_latency
+from ai_waiter_core.utils import MenuManager, trace_latency
 
-# Initialize the DB Manager
+
+# Initialize the DB Manager and Menu Manager
 db_manager = OrderDB()
+menu_manager = MenuManager()
 
 @tool
 @trace_latency("Order Confirmation Tool", run_type="tool")
@@ -18,9 +20,19 @@ def confirm_order(table_id: str, items: List[OrderItem]) -> str:
     items: The final list of items in the customer's cart.
     """
     try:
+        # Calculate total price of all items using the MenuManager
+        total_price = 0.0
+        for item in items:
+            price = menu_manager.get_price(item.name)
+            if price:
+                total_price += price * item.quantity
+                
         # LangChain natively parses the items into Pydantic models.
-        # We simply convert them back to dicts for the database.
-        cart_data = {"items": [item.model_dump() for item in items]}
+        # We convert them back to dicts and include the total_price for the database.
+        cart_data = {
+            "items": [item.model_dump() for item in items],
+            "total_price": total_price
+        }
             
         order_id = db_manager.add_order(table_id, cart_data)
         

@@ -5,9 +5,8 @@ from typing import List, Tuple
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 
-
 from ai_waiter_core.utils import logger
-from .embedding import get_embedding_model
+from .embeddings import get_embedding_model
 from .base import SearchIndex
 
 class VectorStore(SearchIndex):
@@ -62,5 +61,3 @@ class VectorStore(SearchIndex):
         except Exception as e:
             logger.error(f'[ERROR] Searching vector store: {e}')
             return []
-    
-    

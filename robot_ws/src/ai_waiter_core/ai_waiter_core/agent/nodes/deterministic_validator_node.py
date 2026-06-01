@@ -1,5 +1,6 @@
 import difflib
 from typing import Dict, Any
+from langchain_core.messages import ToolMessage
 from ai_waiter_core.agent.state import AgentState
 from ai_waiter_core.schemas.menu_registry import MENU_NAMES
 
@@ -40,6 +41,10 @@ def deterministic_validator_node(state: AgentState) -> Dict[str, Any]:
                         errors.append(f"Item '{name}' not found. Did you mean '{suggestions[0]}'? You MUST use exact spelling.")
                     else:
                         errors.append(f"Item name '{name}' does not exist on the menu. Ask the customer to clarify.")
+                
+                # If this item passes all menu checks, set is_valid = True in the tool arguments in-place
+                if quantity > 0 and name in MENU_NAMES:
+                    item["is_valid"] = True
                         
         # 3. State Guardrail for Order Confirmation
         elif tool_name == "confirm_order":
@@ -55,9 +60,24 @@ def deterministic_validator_node(state: AgentState) -> Dict[str, Any]:
     # 5. Process Validation Result
     if errors:
         error_feedback = "[Deterministic Validator Error]:\n" + "\n".join([f"- {err}" for err in errors])
+        
+        # Build ToolMessage for each tool call that failed
+        tool_messages = []
+        for tool_call in last_message.tool_calls:
+            tool_call_id = tool_call.get("id") or "dummy_id"
+            tool_name = tool_call.get("name")
+            tool_messages.append(
+                ToolMessage(
+                    content=error_feedback,
+                    name=tool_name,
+                    tool_call_id=tool_call_id
+                )
+            )
+            
         return {
             "is_valid": False,
             "feedback": error_feedback,
+            "messages": tool_messages,
             "loop_count": state.get("loop_count", 0) + 1
         }
         

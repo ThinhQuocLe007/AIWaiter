@@ -12,7 +12,9 @@ class AgentState(TypedDict):
     # Use to load context 
     table_id: str
     
-    current_intent: Optional[Literal["ORDER", "MENU", "PAYMENT", "CHAT", "COMPLEX"]] # Need to consider 
+    # Intent to work with 
+    current_intents: List[Literal["ORDER", "SEARCH", "PAYMENT", "CHAT"]]
+
     
     active_cart: Optional[Cart]
     order_stage: OrderStage

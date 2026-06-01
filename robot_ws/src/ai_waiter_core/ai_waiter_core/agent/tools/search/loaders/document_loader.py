@@ -5,7 +5,6 @@ from ai_waiter_core.config import settings
 from ai_waiter_core.utils import logger
 
 
-
 class DocumentLoader: 
     def __init__(self): 
         self.parsers = {
@@ -16,9 +15,7 @@ class DocumentLoader:
             "customer_info.json": self._parse_customer_json,
         }
 
-
     def load(self, file_path): 
-
         # Select the parser based on the filename
         filename = os.path.basename(file_path)
         parser = self.parsers.get(filename)
@@ -33,24 +30,26 @@ class DocumentLoader:
         except Exception as e:
             logger.error(f"Error parsing {file_path}: {e}")
             return [] # return None if error 
-        
-        
 
     def _parse_menu_json(self, file_path): 
         """
         Parse the menu JSON file and return a list of Document objects.
-
-        Args:
-            file_path (str): The path to the menu JSON file.
-
-        Returns:
-            List[Document]: A list of Document objects.
         """
         with open(file_path, 'r', encoding='utf-8') as f: 
             data = json.load(f)
 
         docs = []
         for item in data: 
+            # Parse price string into clean numerical float
+            raw_price = item.get("price", "0")
+            price_val = 0.0
+            if isinstance(raw_price, (int, float)):
+                price_val = float(raw_price)
+            elif isinstance(raw_price, str):
+                cleaned_price = "".join([c for c in raw_price if c.isdigit()])
+                if cleaned_price:
+                    price_val = float(cleaned_price)
+
             # Create a metadata dictionary
             metadata = {
                 "source": "menu.json",
@@ -60,6 +59,7 @@ class DocumentLoader:
                 "tags": item.get("tags"),
                 "diet_type": item.get("diet_type"),
                 "category": item.get("category"),
+                "price": price_val,
             }
 
             # Create page_content 
@@ -74,7 +74,6 @@ class DocumentLoader:
             Tags: {item.get('tags')}
             """
 
-            # Create a Document object 
             docs.append(
                 Document(
                     page_content=page_content,
@@ -87,17 +86,6 @@ class DocumentLoader:
     def _parse_info_text(self, file_path): 
         """
         Parse the restaurant info text file and return a list of Document objects.
-        The data format should like: 
-        ## Title
-        Content
-        ## Title
-        Content
-        
-        Args:
-            file_path (str): The path to the restaurant info text file.
-
-        Returns:
-            List[Document]: A list of Document objects.
         """
         with open(file_path, 'r', encoding='utf-8') as f: 
             content = f.read()
@@ -124,7 +112,6 @@ class DocumentLoader:
                 "title": title,
             }
 
-            # Create a Document object
             documents.append(
                 Document(
                     page_content=content,
@@ -137,12 +124,6 @@ class DocumentLoader:
     def _default_text_loader(self, file_path):
         """
         Load a text file and return a list of Document objects.
-        
-        Args:
-            file_path (str): The path to the text file.
-
-        Returns:
-            List[Document]: A list of Document objects.
         """
         with open(file_path, 'r', encoding='utf-8') as f: 
             content = f.read()
@@ -159,7 +140,6 @@ class DocumentLoader:
                 "source": os.path.basename(file_path),
             }
 
-            # Create a Document object
             docs.append(
                 Document(
                     page_content=line,
@@ -206,6 +186,3 @@ class DocumentLoader:
                 metadata={"source": "customer_info.json", "type": "customer", "name": name}
             ))
         return docs
-
-
-    

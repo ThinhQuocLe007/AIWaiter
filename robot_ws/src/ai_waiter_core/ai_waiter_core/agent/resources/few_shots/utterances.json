@@ -46,7 +46,7 @@
     "Ừ ok chốt vậy đi không thay đổi gì nữa",
     "Gọi 1 Cơm Chiên Trái Thơm mang về"
   ],
-  "MENU": [
+  "SEARCH": [
     "Có món chay không?",
     "Phở bò giá bao nhiêu?",
     "Cho tôi xem thực đơn",
@@ -80,7 +80,10 @@
     "Gợi ý cho mình một bữa tối đầy đủ",
     "Món này có dùng được cho người ăn kiêng không?",
     "Có món nào lạ miệng không bạn?",
-    "Món đặc sản ở đây là gì?"
+    "Món đặc sản ở đây là gì?",
+    "Nhà vệ sinh ở đâu vậy?",
+    "Quán mình mở cửa đến mấy giờ?",
+    "Có wifi không bạn?"
   ],
   "PAYMENT": [
     "Tính tiền giùm",
@@ -119,27 +122,8 @@
     "Hi",
     "Quán đang phục vụ không bạn?",
     "Bạn là robot hay người thật?",
-    "Nhà vệ sinh ở đâu vậy?",
     "Bàn mình chờ hơi lâu rồi nhé",
-    "Quán mình mở cửa đến mấy giờ?",
-    "Có wifi không bạn?",
     "Chào buổi tối",
     "Quán đông khách quá nhỉ"
-  ],
-  "COMPLEX": [
-    "Cho tôi 1 phở bò và thanh toán luôn",
-    "Vừa gọi món vừa muốn xem menu",
-    "Hủy phở rồi gọi cơm thay",
-    "Ăn xong phở thì cho tôi xem menu tráng miệng",
-    "Gọi món này nhưng bỏ hành giúp tôi",
-    "Tính tiền phở rồi cho tôi gọi thêm cafe",
-    "Xem menu xong rồi đặt 2 cơm gà",
-    "Hỏi giá món này rồi đặt luôn 3 suất",
-    "Món này có cay không? Nếu không thì cho mình đặt 1 phần",
-    "Cho xem bill rồi gọi thêm 1 ly nước cam",
-    "Hủy món sườn rồi tư vấn món khác cho mình",
-    "Ăn tại chỗ 1 phở và mua mang về 2 bún chả",
-    "Tính tiền bàn 5 rồi đặt thêm món này mang về nhé",
-    "Món này giá bao nhiêu? Đắt quá thì thôi lấy món kia"
   ]
 }

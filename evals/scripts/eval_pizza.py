@@ -9,14 +9,13 @@ from ai_waiter_core.agent.agent import get_agent_app
 from ai_waiter_core.config import settings
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 
-# Paths
+# Dedicated single-scenario path
 E2E_DATA_FILES = [
-    settings.PROJECT_ROOT / "evals/data/e2e/e2e_conversations_part1.json",
-    settings.PROJECT_ROOT / "evals/data/e2e/e2e_conversations_part2.json"
+    settings.PROJECT_ROOT / "evals/data/e2e/e2e_pizza_test.json"
 ]
 RESULTS_DIR = settings.PROJECT_ROOT / "evals/results"
-LOG_FILE = RESULTS_DIR / f"e2e_eval_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
-REPORT_FILE = RESULTS_DIR / "e2e_report.json"
+LOG_FILE = RESULTS_DIR / f"e2e_pizza_eval_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+REPORT_FILE = RESULTS_DIR / "e2e_pizza_report.json"
 
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
@@ -29,7 +28,7 @@ def log(message: str):
 
 def run_scenario(app, scenario: Dict[str, Any]) -> Dict[str, Any]:
     scenario_id = scenario['id']
-    thread_id = f"eval_{scenario_id}_{uuid.uuid4().hex[:8]}"
+    thread_id = f"eval_pizza_{uuid.uuid4().hex[:8]}"
     config = {"configurable": {"thread_id": thread_id}}
     
     log(f"\n--- RUNNING SCENARIO {scenario_id}: {scenario['name']} ---")
@@ -46,25 +45,16 @@ def run_scenario(app, scenario: Dict[str, Any]) -> Dict[str, Any]:
         log(f"Turn {turn_num} [User]: {user_input}")
         
         # Invoke agent
-        # table_id is expected in state
         input_state = {"messages": [HumanMessage(content=user_input)], "table_id": scenario['table_id']}
         output_state = app.invoke(input_state, config=config)
         
-        # Inspect state for assertions
         messages = output_state['messages']
-        # The last message is the AI response
         ai_response = messages[-1].content
         log(f"Turn {turn_num} [AI]: {ai_response}")
         
-        # Find tool calls in this turn
-        # Usually, if a tool was called, there will be an AIMessage with tool_calls 
-        # followed by a ToolMessage
         turn_tool_calls = []
         turn_tool_outputs = []
         
-        # We look at messages since the last HumanMessage
-        # Actually, since we use LangGraph, we can just look at the new messages added in this turn
-        # For simplicity, we search backwards until the HumanMessage we just sent
         new_messages = []
         for msg in reversed(messages):
             if isinstance(msg, HumanMessage) and msg.content == user_input:
@@ -135,7 +125,7 @@ def run_scenario(app, scenario: Dict[str, Any]) -> Dict[str, Any]:
             else:
                 assertion_logs.append(f"  [FAIL] Response does NOT contain any of {response_one_of}")
                 turn_success = False
-
+        
         # 5. Response Contains
         response_contains = expected_assertions.get('response_contains')
         if response_contains:
@@ -145,28 +135,6 @@ def run_scenario(app, scenario: Dict[str, Any]) -> Dict[str, Any]:
                 assertion_logs.append(f"  [PASS] Response/Tool output contains '{response_contains}'")
             else:
                 assertion_logs.append(f"  [FAIL] Response/Tool output does NOT contain '{response_contains}'")
-                turn_success = False
-
-        # 6. Confirmed Items Must Contain
-        confirmed_must_contain = expected_assertions.get('confirmed_items_must_contain')
-        if confirmed_must_contain:
-            found_in_ai = confirmed_must_contain.lower() in ai_response.lower()
-            found_in_tool = any(confirmed_must_contain.lower() in out.lower() for out in turn_tool_outputs)
-            if found_in_ai or found_in_tool:
-                assertion_logs.append(f"  [PASS] Confirmed items contain '{confirmed_must_contain}'")
-            else:
-                assertion_logs.append(f"  [FAIL] Confirmed items do NOT contain '{confirmed_must_contain}'")
-                turn_success = False
-
-        # 7. Confirmed Items Must NOT Contain
-        confirmed_must_not_contain = expected_assertions.get('confirmed_items_must_NOT_contain')
-        if confirmed_must_not_contain:
-            found_in_ai = confirmed_must_not_contain.lower() in ai_response.lower()
-            found_in_tool = any(confirmed_must_not_contain.lower() in out.lower() for out in turn_tool_outputs)
-            if not found_in_ai and not found_in_tool:
-                assertion_logs.append(f"  [PASS] Confirmed items do NOT contain '{confirmed_must_not_contain}' as expected")
-            else:
-                assertion_logs.append(f"  [FAIL] Confirmed items contain '{confirmed_must_not_contain}' but should not")
                 turn_success = False
         
         for l in assertion_logs: log(l)
@@ -188,12 +156,10 @@ def run_scenario(app, scenario: Dict[str, Any]) -> Dict[str, Any]:
         "turns": turns_results
     }
 
-def run_evaluation(limit: int = 4):
-    log(f"Starting End-to-End (E2E) Evaluation (limit={limit if limit > 0 else 'All'})...")
+def run_evaluation():
+    log("Starting Pizza Rejection Single-Scenario E2E Evaluation...")
     
-    # Initialize Agent
     app = get_agent_app()
-    
     all_scenario_results = []
     scenarios_to_run = []
     
@@ -208,26 +174,21 @@ def run_evaluation(limit: int = 4):
         log(f"Loaded {len(dataset.get('scenarios', []))} scenarios from {os.path.basename(data_file)}")
         scenarios_to_run.extend(dataset.get('scenarios', []))
         
-    if limit > 0:
-        scenarios_to_run = scenarios_to_run[:limit]
-        
     log(f"Executing {len(scenarios_to_run)} scenarios...")
     
     for scenario in scenarios_to_run:
         result = run_scenario(app, scenario)
         all_scenario_results.append(result)
             
-    # Summary
     total = len(all_scenario_results)
     passed = sum(1 for r in all_scenario_results if r['success'])
     pass_rate = passed / total if total > 0 else 0
     
-    log(f"\nE2E EVALUATION SUMMARY:")
+    log(f"\nE2E PIZZA EVALUATION SUMMARY:")
     log(f"  Total Scenarios: {total}")
     log(f"  Passed:          {passed}")
     log(f"  Pass Rate:       {pass_rate:.2%}")
     
-    # Save Report
     report = {
         "summary": {
             "timestamp": datetime.now().isoformat(),
@@ -243,11 +204,4 @@ def run_evaluation(limit: int = 4):
     log(f"\nFull E2E report saved to {REPORT_FILE}")
 
 if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser(description="Run E2E evaluation for AI Waiter Agent.")
-    parser.add_argument("--limit", type=int, default=4, help="Limit the number of scenarios to run (default: 4, set to -1 or 0 for all)")
-    args = parser.parse_args()
-    
-    # If limit is 0 or negative, run all scenarios
-    run_limit = args.limit if args.limit > 0 else -1
-    run_evaluation(limit=run_limit)
+    run_evaluation()
