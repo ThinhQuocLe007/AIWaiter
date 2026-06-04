@@ -74,7 +74,7 @@ make frontend       # start the dev server at http://localhost:5173
 - Installs nvm (Node Version Manager) if not present
 - Installs Node.js v22 via nvm (pinned in `.nvmrc`)
 - Installs uv (Python package manager) if not present
-- Runs `npm ci` in `frontends/customer_ui` (exact versions from `package-lock.json`)
+- Runs `npm ci` in `src/frontends/customer_ui` (exact versions from `package-lock.json`)
 - Creates `.env` from `.env.example`
 - Skips the backend step gracefully until a `backend/` folder exists
 
@@ -87,7 +87,7 @@ If the toolchain is already installed, skip the setup script:
 
 ```bash
 git clone <repo-url>
-cd AI_Waiter/frontends/customer_ui
+cd AI_Waiter/src/frontends/customer_ui
 npm ci              # install exact versions from package-lock.json
 npm run dev         # opens at http://localhost:5173
 ```
@@ -112,8 +112,8 @@ make clean       # Remove node_modules / .venv
 
 ### Environment variables
 
-`frontends/customer_ui` uses a `.env` file (never committed). On first setup it
-is created from `frontends/customer_ui/.env.example`. Edit the values to match
+`src/frontends/customer_ui` uses a `.env` file (never committed). On first setup it
+is created from `src/frontends/customer_ui/.env.example`. Edit the values to match
 your local backend / rosbridge endpoints.
 
 > Note: the root `.env.template` (HF token, model config) is separate and used by
@@ -122,7 +122,7 @@ your local backend / rosbridge endpoints.
 ### Files to commit
 
 Commit: `.nvmrc`, `.gitignore`, `setup.sh`, `Makefile`, `README.md`, the whole
-`frontends/customer_ui/` source tree (including `package.json` +
+`src/frontends/customer_ui/` source tree (including `package.json` +
 `package-lock.json` and `.env.example`).
 
 Never commit: any `.env`, `node_modules/`, `dist/`.

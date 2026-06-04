@@ -54,8 +54,8 @@ else
 fi
 
 # Step 4: Setup frontend dependencies (customer_ui touchscreen app)
-echo -e "${YELLOW}[4/5] Setting up frontend (frontends/customer_ui)...${NC}"
-FRONTEND_DIR="frontends/customer_ui"
+echo -e "${YELLOW}[4/5] Setting up frontend (src/frontends/customer_ui)...${NC}"
+FRONTEND_DIR="src/frontends/customer_ui"
 if [ -d "$FRONTEND_DIR" ] && [ -f "$FRONTEND_DIR/package.json" ]; then
     cd "$FRONTEND_DIR"
     if [ -f "package-lock.json" ]; then
@@ -105,7 +105,7 @@ echo "  1. Reload your shell or run:"
 echo "     source ~/.bashrc"
 echo ""
 echo "  2. Start the frontend dev server:"
-echo "     cd frontends/customer_ui && npm run dev"
+echo "     cd src/frontends/customer_ui && npm run dev"
 echo ""
 echo "  3. Start the backend dev server (once a backend exists):"
 echo "     cd backend && uv run uvicorn main:app --reload"

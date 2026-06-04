@@ -30,19 +30,19 @@ const MOCK_TURNS: MockTurn[] = [
     speech: 'Mình muốn ăn gì đó cay cay, nóng hổi cho 2 người.',
     response:
       'Vậy bạn thử Lẩu Thái Tomyum Hải Sản nhé! Nước lẩu chua cay chuẩn vị Thái, kèm hải sản tươi, rất hợp cho 2-3 người.',
-    recommendedId: 'lau-thai-tomyum-hai-san',
+    recommendedId: '1',
   },
   {
     speech: 'Cho mình một món chay thanh đạm, tốt cho sức khỏe.',
     response:
       'Mình gợi ý Lẩu Nấm Chay Thanh Dưỡng - nước dùng ngọt thanh từ rau củ và nấm, bổ dưỡng mà vẫn nhẹ bụng nha.',
-    recommendedId: 'lau-nam-chay',
+    recommendedId: '3',
   },
   {
     speech: 'Trời nóng quá, mình muốn uống gì đó mát mát.',
     response:
       'Trà Đào Cam Sả là lựa chọn tuyệt vời! Chua ngọt thanh mát, thơm lừng sả và cam, giải nhiệt cực đã.',
-    recommendedId: 'tra-dao-cam-sa',
+    recommendedId: '24',
   },
 ]
 

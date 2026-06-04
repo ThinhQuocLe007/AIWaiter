@@ -35,7 +35,7 @@ import { formatPrice } from '@/utils/format'
 
 const router = useRouter()
 const cart = useCartStore()
-const countdown = ref(5)
+const countdown = ref(3)
 
 // Snapshot the order totals before the cart is cleared on redirect.
 const itemCount = ref(cart.totalQuantity)
