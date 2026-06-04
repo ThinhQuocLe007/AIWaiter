@@ -120,7 +120,11 @@ def main():
         else:
             slm_count += 1
 
-        is_correct = (predicted == expected)
+        # ORDER_CONFIRM is acceptable for ORDER (both route to order_worker)
+        if predicted == ["ORDER_CONFIRM"] and expected == ["ORDER"]:
+            is_correct = True
+        else:
+            is_correct = (predicted == expected)
         if is_correct:
             correct_count += 1
             logging.info(f"  [SUCCESS] {predicted} | by={decided_by} | sem_conf={sem_conf:.4f} | sem_intent={sem_intent} | {latency:.2f}s")

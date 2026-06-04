@@ -10,11 +10,7 @@ class BaseFusion(ABC):
              vector_results: List[Tuple[Document, float]], 
              k: int, 
              **kwargs) -> List[SearchResult]:
-        """
-        Base method to combine results from multiple search engines.
-        """
         pass
 
     def _format_results(self, final_results: list, k: int) -> List[SearchResult]:
-        """ Helper to sort and slice the final list. """
         return sorted(final_results, key=lambda x: x.score, reverse=True)[:k]

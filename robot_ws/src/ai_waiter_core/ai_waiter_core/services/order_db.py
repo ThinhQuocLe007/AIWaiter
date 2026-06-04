@@ -12,12 +12,10 @@ class OrderDB:
         self.init_db()
     
     def init_db(self):
-        """Wipe and recreate the table with the new schema"""
+        """Create the orders table if it doesn't exist. Does NOT drop existing data."""
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
-            # Drop the old table to ensure clean start
-            cursor.execute('DROP TABLE IF EXISTS orders')
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS orders (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,7 +28,7 @@ class OrderDB:
             ''')
             conn.commit()
             conn.close()
-            logger.info("Order Database initialized with new schema (including special_requests).")
+            logger.info("Order Database initialized.")
         except Exception as e:
             logger.error(f"Failed to initialize Order DB: {e}")
             raise

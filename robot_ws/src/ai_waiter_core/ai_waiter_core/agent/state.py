@@ -13,7 +13,7 @@ class AgentState(TypedDict):
     table_id: str
     
     # Intent to work with 
-    current_intents: List[Literal["ORDER", "SEARCH", "PAYMENT", "CHAT"]]
+    current_intents: List[Literal["ORDER", "ORDER_CONFIRM", "SEARCH", "PAYMENT", "CHAT"]]
 
     
     active_cart: Optional[Cart]

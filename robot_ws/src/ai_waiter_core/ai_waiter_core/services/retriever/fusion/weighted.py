@@ -1,17 +1,13 @@
 from typing import List, Tuple
 from langchain_core.documents import Document
 from ai_waiter_core.schemas.search import SearchResult
-from ..utils.normalization import (
+from ai_waiter_core.services.retriever.normalization import (
     calculate_hybrid_score,
     normalize_bm25_batch
 )
-from .base import BaseFusion
+from ai_waiter_core.services.retriever.fusion.base import BaseFusion
 
 class WeightedFusion(BaseFusion):
-    """
-    Classic weighted fusion using Sigmoid normalization.
-    More complex/unstable but good for fine-tuning weights.
-    """
     def fuse(self, 
              bm25_results: List[Tuple[Document, float]], 
              vector_results: List[Tuple[Document, float]], 
@@ -22,7 +18,6 @@ class WeightedFusion(BaseFusion):
         vector_weight = kwargs.get("vector_weight", 0.4)
         threshold = kwargs.get("threshold", 0.3)
 
-        # 1. Map documents by content hash
         lookup = {}
 
         for doc, score in bm25_results:
@@ -36,17 +31,14 @@ class WeightedFusion(BaseFusion):
             else:
                 lookup[doc_id] = {"doc": doc, "bm25": 0.0, "vector": score}
 
-        # 2. Batch Normalize BM25 scores
         raw_bm25_scores = [v["bm25"] for v in lookup.values() if v["bm25"] > 0]
         norm_bm25_scores = normalize_bm25_batch(raw_bm25_scores)
         
-        # Create map for normalized lookups
         norm_map = {
             raw: norm 
             for raw, norm in zip(raw_bm25_scores, norm_bm25_scores)
         }
 
-        # 3. Final Fusion and Filtering
         final_list = []
         for entry in lookup.values():
             doc = entry["doc"]

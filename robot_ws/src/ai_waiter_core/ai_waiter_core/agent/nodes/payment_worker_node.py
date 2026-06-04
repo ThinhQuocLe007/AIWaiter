@@ -6,7 +6,7 @@ from ai_waiter_core.agent.state import AgentState
 from ai_waiter_core.config import settings
 from ai_waiter_core.utils import trace_latency
 from ai_waiter_core.utils.prompt_utils import build_system_prompt, build_dynamic_suffix
-from ai_waiter_core.agent.tools import request_payment
+from ..tools import request_payment
 
 logger = logging.getLogger(__name__)
 

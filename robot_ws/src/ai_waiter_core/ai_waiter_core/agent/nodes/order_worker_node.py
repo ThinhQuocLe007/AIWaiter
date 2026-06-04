@@ -9,9 +9,7 @@ from ai_waiter_core.config import settings
 from ai_waiter_core.utils import trace_latency, MENU_NAMES
 from ai_waiter_core.utils.prompt_utils import build_system_prompt, build_dynamic_suffix
 
-# Import the native ordering tools
-from ai_waiter_core.agent.tools.ordering.sync_cart import sync_cart
-from ai_waiter_core.agent.tools.ordering.confirmation import confirm_order
+from ..tools import sync_cart, confirm_order
 
 logger = logging.getLogger(__name__)
 

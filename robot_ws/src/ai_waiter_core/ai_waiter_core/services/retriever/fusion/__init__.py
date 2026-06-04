@@ -1,11 +1,8 @@
-from .rrf import RRFFusion
-from .weighted import WeightedFusion
-from .base import BaseFusion
+from ai_waiter_core.services.retriever.fusion.rrf import RRFFusion
+from ai_waiter_core.services.retriever.fusion.weighted import WeightedFusion
+from ai_waiter_core.services.retriever.fusion.base import BaseFusion
 
 def get_fusion_strategy(mode: str) -> BaseFusion:
-    """
-    Factory to return the selected search fusion strategy.
-    """
     strategies = {
         "rrf": RRFFusion(),
         "weighted": WeightedFusion()

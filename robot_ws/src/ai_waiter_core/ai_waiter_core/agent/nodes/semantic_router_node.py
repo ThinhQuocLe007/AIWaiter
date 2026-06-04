@@ -5,66 +5,122 @@ from typing import Dict, Any
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
+from langchain_core.messages import HumanMessage
 from ai_waiter_core.agent.state import AgentState
 from ai_waiter_core.config import settings
 from ai_waiter_core.utils import log_struct, trace_latency
 
 UTTERANCES_PATH = settings.resources_dir / "few_shots" / "utterances.json"
+CENTROIDS_PATH = settings.resources_dir / "centroids" / "centroids.npz"
+
+# Softmax + Gap routing defaults (calibrated via scripts/calibrate_temperature.py)
+SOFTMAX_TEMPERATURE = 0.20
+PROB_THRESHOLD = 0.30
+GAP_THRESHOLD = 0.20
+
+
+def softmax_routing(
+    all_similarities: Dict[str, float],
+    T: float = SOFTMAX_TEMPERATURE,
+    prob_threshold: float = PROB_THRESHOLD,
+    gap_threshold: float = GAP_THRESHOLD,
+) -> Dict[str, Any]:
+    """
+    Convert cosine similarities to a softmax probability distribution,
+    then gate on top probability P1 and gap (P1 - P2).
+
+    Returns:
+        {"intent": resolved_intent or None, "confidence": P1, "all_similarities": {...}}
+    """
+    scores = np.array(list(all_similarities.values()))
+    labels = list(all_similarities.keys())
+
+    exp_scores = np.exp(scores / T)
+    probs = exp_scores / exp_scores.sum()
+
+    sorted_indices = np.argsort(probs)[::-1]
+    P1, P2 = float(probs[sorted_indices[0]]), float(probs[sorted_indices[1]])
+    best_label = labels[sorted_indices[0]]
+    gap = P1 - P2
+
+    if P1 >= prob_threshold and gap >= gap_threshold:
+        return {
+            "intent": best_label,
+            "confidence": P1,
+            "all_similarities": all_similarities,
+        }
+
+    return {
+        "intent": None,
+        "confidence": P1,
+        "all_similarities": all_similarities,
+    }
+
 
 class SemanticRouterNode:
-    def __init__(self, utterances_path: str = None, model_name: str = "BAAI/bge-m3", threshold: float = 0.75):
+    def __init__(self, model_name: str = "AITeamVN/Vietnamese_Embedding"):
         self.model = SentenceTransformer(model_name, device=settings.DEVICE)
-        self.threshold = threshold
-        
-        path = utterances_path or UTTERANCES_PATH
-        with open(path, "r", encoding="utf-8") as f:
-            self.routes = json.load(f)
-        
-        self.route_embeddings = {}
-        self._encode_all_routes()
+        self.route_centroids: dict[str, np.ndarray] = {}
+        self._load_centroids()
 
-    def _encode_all_routes(self):
-        log_struct("Encoding semantic router utterances", route_count=len(self.routes))
-        for route_name, utterances in self.routes.items():
-            self.route_embeddings[route_name] = self.model.encode(utterances)
+    def _load_centroids(self):
+        if CENTROIDS_PATH.exists():
+            log_struct("Loading pre-computed centroids from disk", path=str(CENTROIDS_PATH))
+            data = np.load(str(CENTROIDS_PATH))
+            self.route_centroids = {k: data[k] for k in data.files}
+        else:
+            log_struct("Centroids not found, falling back to utterance encoding",
+                       path=str(CENTROIDS_PATH))
+            path = UTTERANCES_PATH
+            with open(path, "r", encoding="utf-8") as f:
+                routes = json.load(f)
+            log_struct("Encoding semantic router utterances", route_count=len(routes))
+            for route_name, utterances in routes.items():
+                embeddings = self.model.encode(utterances)
+                self.route_centroids[route_name] = np.mean(embeddings, axis=0)
 
     def route(self, query: str) -> Dict[str, Any]:
-        query_vec = self.model.encode([query])
+        query_vec = self.model.encode([query])[0]
+        similarities: dict[str, float] = {}
         best_route = None
         max_sim = -1.0
-        
-        for route_name, embeddings in self.route_embeddings.items():
-            similarities = cosine_similarity(query_vec, embeddings)[0]
-            current_max = np.max(similarities)
-            if current_max > max_sim:
-                max_sim = current_max
+
+        for route_name, centroid in self.route_centroids.items():
+            sim = float(cosine_similarity([query_vec], [centroid])[0][0])
+            similarities[route_name] = sim
+            if sim > max_sim:
+                max_sim = sim
                 best_route = route_name
-        
+
         return {
-            "intent": best_route if max_sim >= self.threshold else None,
-            "confidence": float(max_sim),
-            "raw_intent": best_route
+            "intent": best_route,
+            "confidence": max_sim,
+            "raw_intent": best_route,
+            "all_similarities": similarities,
         }
+
 
 # Pre-instantiate the router class once globally to prevent reloading models on every query
 _router_instance = None
 
+
 @trace_latency("Semantic Router Node", run_type="chain")
 def semantic_router_node(state: AgentState) -> Dict[str, Any]:
     """
-    LangGraph node that performs legacy vector-based intent classification.
+    LangGraph node that performs centroid-based vector intent classification
+    with softmax + gap gating for confident fast-track decisions.
     """
     global _router_instance
     if _router_instance is None:
         _router_instance = SemanticRouterNode()
-        
-    from langchain_core.messages import HumanMessage
+    # Use the lastest message for route
     last_user_message = next(
-        (m.content for m in reversed(state["messages"]) if isinstance(m, HumanMessage)), 
+        (m.content for m in reversed(state["messages"]) if isinstance(m, HumanMessage)),
         ""
     )
-    
+
     routing_result = _router_instance.route(last_user_message)
+    softmax_result = softmax_routing(routing_result["all_similarities"])
     return {
-        "metadata": routing_result
+        "metadata": softmax_result
     }

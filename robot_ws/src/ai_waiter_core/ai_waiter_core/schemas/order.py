@@ -20,3 +20,16 @@ class OrderItem(BaseModel):
 class Cart(BaseModel):
     items: List[OrderItem] = []
     total_price: float = 0.0
+
+
+class SyncCartResponse(BaseModel):
+    status: Literal["success", "error"]
+    items: List[OrderItem]
+    total_price: float
+    message: str
+
+
+class ConfirmOrderResponse(BaseModel):
+    status: Literal["success", "error"]
+    order_id: Optional[int] = None
+    message: str

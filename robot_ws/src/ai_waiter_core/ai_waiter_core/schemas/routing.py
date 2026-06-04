@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import List, Literal
 
-IntentType = Literal["ORDER", "SEARCH", "PAYMENT", "CHAT"]
+IntentType = Literal["ORDER", "ORDER_CONFIRM", "SEARCH", "PAYMENT", "CHAT"]
 
 class IntentPrediction(BaseModel):
     """The result of the SLM multi-intent routing."""

@@ -16,7 +16,6 @@ class DocumentLoader:
         }
 
     def load(self, file_path): 
-        # Select the parser based on the filename
         filename = os.path.basename(file_path)
         parser = self.parsers.get(filename)
 
@@ -24,23 +23,18 @@ class DocumentLoader:
             logger.warning(f"No parser found for {filename}, using default loader")
             return self._default_text_loader(file_path)
 
-        # Call the parser
         try:
             return parser(file_path)
         except Exception as e:
             logger.error(f"Error parsing {file_path}: {e}")
-            return [] # return None if error 
+            return []
 
     def _parse_menu_json(self, file_path): 
-        """
-        Parse the menu JSON file and return a list of Document objects.
-        """
         with open(file_path, 'r', encoding='utf-8') as f: 
             data = json.load(f)
 
         docs = []
         for item in data: 
-            # Parse price string into clean numerical float
             raw_price = item.get("price", "0")
             price_val = 0.0
             if isinstance(raw_price, (int, float)):
@@ -50,7 +44,6 @@ class DocumentLoader:
                 if cleaned_price:
                     price_val = float(cleaned_price)
 
-            # Create a metadata dictionary
             metadata = {
                 "source": "menu.json",
                 "type": "menu",
@@ -62,7 +55,6 @@ class DocumentLoader:
                 "price": price_val,
             }
 
-            # Create page_content 
             page_content = f"""
             Tên món: {item.get('name')}
             Mô tả: {item.get('description')}
@@ -84,20 +76,15 @@ class DocumentLoader:
         return docs
 
     def _parse_info_text(self, file_path): 
-        """
-        Parse the restaurant info text file and return a list of Document objects.
-        """
         with open(file_path, 'r', encoding='utf-8') as f: 
             content = f.read()
 
-        # Split content by ## section
         sections = content.split('##')
         documents = [] 
         for section in sections: 
             if not section.strip(): 
                 continue
 
-            # Split section into title and content
             parts = section.split('\n', 1)
             if len(parts) < 2: 
                 continue
@@ -105,7 +92,6 @@ class DocumentLoader:
             title = parts[0].strip()
             content = parts[1].strip()
 
-            # Create metadata
             metadata = {
                 "source": "restaurant_info.txt",
                 "type": "info",
@@ -122,20 +108,15 @@ class DocumentLoader:
         return documents
 
     def _default_text_loader(self, file_path):
-        """
-        Load a text file and return a list of Document objects.
-        """
         with open(file_path, 'r', encoding='utf-8') as f: 
             content = f.read()
 
-        # Split content by lines
         lines = content.split('\n')
         docs = [] 
         for line in lines: 
             if not line.strip(): 
                 continue
 
-            # Create metadata
             metadata = {
                 "source": os.path.basename(file_path),
             }

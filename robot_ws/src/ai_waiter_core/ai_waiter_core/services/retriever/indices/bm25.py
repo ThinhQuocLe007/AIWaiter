@@ -8,7 +8,7 @@ from rank_bm25 import BM25Okapi
 import underthesea
 
 from ai_waiter_core.utils import logger
-from .base import SearchIndex
+from ai_waiter_core.services.retriever.indices.base import SearchIndex
 
 class BM25Index(SearchIndex):
     def __init__(self, db_path: str):
@@ -18,18 +18,10 @@ class BM25Index(SearchIndex):
         self.tokenized_docs = []
     
     def build(self, documents: List[Document]) -> bool:
-        """
-        Build BM25 index from documents
-        Args:
-            documents (List[Document]): List of documents to build index from
-        Returns:
-            bool: True if index was built successfully, False otherwise
-        """
         try:
             self.documents = documents
             self.tokenized_docs = []
             for doc in documents:
-                # Compile name, taste_profile, and tags for dense context search
                 components = []
                 if doc.metadata.get("name"): components.append(str(doc.metadata.get("name")))
                 if doc.metadata.get("title"): components.append(str(doc.metadata.get("title")))
@@ -51,9 +43,6 @@ class BM25Index(SearchIndex):
             return False
     
     def load(self) -> bool:
-        """
-        Load BM25 index from disk
-        """
         try:
             with open(self.db_path, 'rb') as f:
                 data = pickle.load(f)
@@ -67,9 +56,6 @@ class BM25Index(SearchIndex):
             return False  
     
     def explain(self, query: str):
-        """
-        Explain BM25 score calculation for a query
-        """
         print(f"--- BM25 EXPLAIN: '{query}' ---")
         if not self.bm25:
             print("Error: Index not built or loaded.")
@@ -85,7 +71,7 @@ class BM25Index(SearchIndex):
         
         doc_scores.sort(key=lambda x: x[2], reverse=True)
         
-        for idx, doc, total_score in doc_scores[:3]:  # Show top 3
+        for idx, doc, total_score in doc_scores[:3]:
             if total_score == 0:
                 continue
             
@@ -110,34 +96,21 @@ class BM25Index(SearchIndex):
         print("-" * 30 + "\n")
 
     def search(self, query: str, k: int = 4) -> List[Tuple[Document, float]]:
-        """
-        Search BM25 index for query
-        Args:
-            query (str): Query string
-            k (int): Number of results to return
-        Returns:
-            List[Tuple[Document, float]]: List of documents and their scores
-        """
         try:
             tokenized_query = underthesea.word_tokenize(query.lower(), format="text").split()
             scores = self.bm25.get_scores(tokenized_query)
 
-            # Get top-k
             doc_scores = []
             for idx, score in enumerate(scores):
                 doc_scores.append((self.documents[idx], float(score)))
             doc_scores.sort(key=lambda x: x[1], reverse=True)
 
-            # Return 
             return doc_scores[:k]
         except Exception as e:
             logger.error(f'[ERROR] Searching BM25 index: {e}')
             return []
 
     def save(self) -> bool:
-        """
-        Save BM25 index to disk
-        """
         try:
             os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
             data = {
