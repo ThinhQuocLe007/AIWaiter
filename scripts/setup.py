@@ -18,8 +18,8 @@ from pathlib import Path
 
 import ai_waiter_core  # noqa: ensure path is set before other imports
 from ai_waiter_core.config import settings
-from ai_waiter_core.services.order_db import OrderDB
-from ai_waiter_core.services.retriever.hybrid_retriever import RetrieverManager
+from ai_waiter_core.services.restaurant_db import RestaurantDB
+from ai_waiter_core.services.retriever.builder import IndexBuilder
 from scripts.build_centroids import main as build_centroids_main
 
 
@@ -76,9 +76,9 @@ def create_directories():
         print(f"  ✓ {rel_path}/")
 
 
-def init_order_db():
-    db = OrderDB()
-    print(f"  ✓ Orders DB at {db.db_path}")
+def init_restaurant_db():
+    db = RestaurantDB()
+    print(f"  ✓ Restaurant DB at {db.db_path}")
 
 
 def init_checkpoints_db():
@@ -90,12 +90,12 @@ def init_checkpoints_db():
 
 
 def build_search_indexes(force: bool):
-    retriever = RetrieverManager()
-    if not force and retriever.load_database():
+    builder = IndexBuilder()
+    if not force and builder.load_database():
         print("  ✓ Search indexes already exist (use --force to rebuild)")
         return
     assets_dir = str(PROJECT_ROOT / "assets" / "data")
-    success = retriever.build_database([assets_dir])
+    success = builder.build([assets_dir])
     if success:
         print("  ✓ FAISS index + BM25 index built")
     else:
@@ -133,8 +133,8 @@ def main():
     create_directories()
     print()
 
-    print("3. Initializing Order DB...")
-    init_order_db()
+    print("3. Initializing Restaurant DB...")
+    init_restaurant_db()
     print()
 
     print("4. Initializing Checkpoints DB...")

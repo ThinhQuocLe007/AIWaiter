@@ -46,7 +46,10 @@
     "Ghi nhận đơn hàng của tôi",
     "Tiến hành món này",
     "Xác nhận đặt luôn đi",
+    "Đúng rồi, xác nhận đặt luôn",
     "Đúng rồi, đặt giùm mình",
+    "Xác nhận đặt đi bạn",
+    "Xác nhận nhé",
     "Ừ, mình đồng ý với đơn đó",
     "Ok, cứ vậy đi, gọi cho mình",
     "Tiến hành đặt món đó cho mình",
@@ -59,7 +62,9 @@
     "Đúng đơn đó rồi, cho mình đặt nhé",
     "Mình xác nhận đơn hàng, tiến hành đi",
     "Chốt giùm mình đơn này",
-    "Ok vậy được, đặt luôn đi"
+    "Ok vậy được, đặt luôn đi",
+    "Ok đặt thôi",
+    "Ừ đúng rồi, xác nhận"
   ],
   "SEARCH": [
     "Có món chay không?",

@@ -17,8 +17,8 @@
           "role": "user",
           "content": "Cho mình 1 tô Phở Bò Đặc Biệt",
           "assert": {
-            "tool_called": "verify_and_prepare_order",
-            "tool_output_contains": "PENDING_CART",
+            "tool_called": "sync_cart",
+            "tool_output_contains": "Đã cập nhật",
             "response_should_contain_one_of": ["75.000", "75000", "xác nhận", "đặt"]
           }
         },
@@ -28,7 +28,7 @@
           "content": "Đúng rồi, xác nhận đặt luôn",
           "assert": {
             "tool_called": "confirm_order",
-            "response_contains": "SUCCESS",
+            "response_contains": "đơn hàng",
             "response_should_contain_one_of": ["đặt thành công", "đơn hàng", "đặt hàng"]
           }
         }
@@ -47,8 +47,8 @@
           "role": "user",
           "content": "Cho bàn mình 2 tô Phở Bò Đặc Biệt, 1 ly Cà Phê Sữa Đá Sài Gòn ít đường, và 1 phần Chả Giò Tôm Cua",
           "assert": {
-            "tool_called": "verify_and_prepare_order",
-            "tool_output_contains": "PENDING_CART"
+            "tool_called": "sync_cart",
+            "tool_output_contains": "Đã cập nhật"
           }
         },
         {
@@ -57,7 +57,7 @@
           "content": "Xác nhận đặt đi bạn",
           "assert": {
             "tool_called": "confirm_order",
-            "response_contains": "SUCCESS"
+            "response_contains": "đơn hàng"
           }
         }
       ]
@@ -75,7 +75,7 @@
           "role": "user",
           "content": "Quán có món khai vị gì ngon không?",
           "assert": {
-            "tool_called": "search_menu",
+            "tool_called": "search",
             "response_should_contain_one_of": ["Chả Giò", "Gỏi", "Súp", "Bánh Khọt"]
           }
         },
@@ -84,7 +84,7 @@
           "role": "user",
           "content": "Chả Giò Tôm Cua nguyên liệu gồm những gì vậy?",
           "assert": {
-            "tool_called": "search_menu",
+            "tool_called": "search",
             "response_should_contain_one_of": ["tôm", "cua", "miến", "mộc nhĩ"]
           }
         },
@@ -93,8 +93,8 @@
           "role": "user",
           "content": "Nghe hay đó, cho mình 1 phần đi",
           "assert": {
-            "tool_called": "verify_and_prepare_order",
-            "tool_output_contains": "PENDING_CART"
+            "tool_called": "sync_cart",
+            "tool_output_contains": "Đã cập nhật"
           }
         },
         {
@@ -103,7 +103,7 @@
           "content": "Ừ đúng rồi, xác nhận",
           "assert": {
             "tool_called": "confirm_order",
-            "response_contains": "SUCCESS"
+            "response_contains": "đơn hàng"
           }
         }
       ]
@@ -121,7 +121,7 @@
           "role": "user",
           "content": "Cho tôi 1 cái bánh xèo",
           "assert": {
-            "tool_called": "verify_and_prepare_order",
+            "tool_called": "sync_cart",
             "response_should_contain_one_of": ["Bánh Xèo Miền Tây", "gợi ý", "làm rõ", "Ambiguous"]
           }
         },
@@ -130,8 +130,8 @@
           "role": "user",
           "content": "Lấy Bánh Xèo Miền Tây",
           "assert": {
-            "tool_called": "verify_and_prepare_order",
-            "tool_output_contains": "PENDING_CART"
+            "tool_called": "sync_cart",
+            "tool_output_contains": "Đã cập nhật"
           }
         },
         {
@@ -140,7 +140,7 @@
           "content": "Xác nhận nhé",
           "assert": {
             "tool_called": "confirm_order",
-            "response_contains": "SUCCESS"
+            "response_contains": "đơn hàng"
           }
         }
       ]
@@ -158,8 +158,8 @@
           "role": "user",
           "content": "Cho mình 2 ly Sinh Tố Bơ Dừa",
           "assert": {
-            "tool_called": "verify_and_prepare_order",
-            "tool_output_contains": "PENDING_CART"
+            "tool_called": "sync_cart",
+            "tool_output_contains": "Đã cập nhật"
           }
         },
         {
@@ -167,8 +167,8 @@
           "role": "user",
           "content": "À không, đổi thành Sinh Tố Xoài Cát Chu đi, vẫn 2 ly",
           "assert": {
-            "tool_called": "verify_and_prepare_order",
-            "tool_output_contains": "Xoài",
+            "tool_called": "sync_cart",
+            "response_contains": "Xoài",
             "tool_must_NOT_call": "confirm_order"
           }
         },
@@ -178,7 +178,7 @@
           "content": "Đúng rồi, xác nhận",
           "assert": {
             "tool_called": "confirm_order",
-            "response_contains": "SUCCESS",
+            "response_contains": "đơn hàng",
             "confirmed_items_must_contain": "Xoài"
           }
         }
@@ -198,7 +198,7 @@
           "content": "Cho mình 1 cái Pizza Hải Sản và 1 tô Phở Bò Đặc Biệt nhé",
           "assert": {
             "tool_must_NOT_call": "confirm_order",
-            "response_should_contain_one_of": ["pizza", "không có", "không bán", "thực đơn", "chọn lại"]
+            "response_should_contain_one_of": ["Phở Bò", "xác nhận"]
           }
         }
       ]

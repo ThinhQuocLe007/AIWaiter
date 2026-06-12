@@ -8,9 +8,8 @@ from rank_bm25 import BM25Okapi
 import underthesea
 
 from ai_waiter_core.utils import logger
-from ai_waiter_core.services.retriever.indices.base import SearchIndex
 
-class BM25Index(SearchIndex):
+class BM25Index:
     def __init__(self, db_path: str):
         self.db_path = db_path
         self.bm25 = None

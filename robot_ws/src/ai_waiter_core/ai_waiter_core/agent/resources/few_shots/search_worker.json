@@ -66,5 +66,95 @@
         "id": "call_rewrite_4"
       }
     ]
+  },
+  {
+    "role": "user",
+    "content": "Món nào dưới 50k vậy em?"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "search",
+        "args": {
+          "query": "món",
+          "max_price": 50000
+        },
+        "id": "call_filter_1"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "Có món chay nào không?"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "search",
+        "args": {
+          "query": "món chay",
+          "diet_type": "chay"
+        },
+        "id": "call_filter_2"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "Đồ uống có những gì?"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "search",
+        "args": {
+          "query": "đồ uống",
+          "category": "đồ uống"
+        },
+        "id": "call_filter_3"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "Phở Bò bao nhiêu tiền?"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "search",
+        "args": {
+          "query": "Phở Bò"
+        },
+        "id": "call_filter_4"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "Món chay dưới 100k có món gì?"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "search",
+        "args": {
+          "query": "món chay",
+          "diet_type": "chay",
+          "max_price": 100000
+        },
+        "id": "call_filter_5"
+      }
+    ]
   }
 ]

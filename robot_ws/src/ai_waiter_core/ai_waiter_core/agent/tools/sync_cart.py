@@ -5,7 +5,7 @@ from ai_waiter_core.utils import MenuManager, trace_latency
 
 menu_manager = MenuManager()
 
-@tool
+@tool(response_format="content_and_artifact")
 @trace_latency("Sync Cart Tool", run_type="tool")
 def sync_cart(items: List[OrderItem]) -> SyncCartResponse:
     """
@@ -18,9 +18,10 @@ def sync_cart(items: List[OrderItem]) -> SyncCartResponse:
         if price:
             total_price += price * item.quantity
 
-    return SyncCartResponse(
+    result = SyncCartResponse(
         status="success",
         items=items,
         total_price=total_price,
         message=f"Đã cập nhật {len(items)} món, tạm tính {total_price:,}₫."
     )
+    return (result.message, result)

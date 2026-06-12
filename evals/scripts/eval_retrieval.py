@@ -1,9 +1,16 @@
 import json
 import os
+import sys
 import time
 from datetime import datetime
+from pathlib import Path
 from typing import List, Dict, Any
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+AI_WAITER_CORE_PATH = PROJECT_ROOT / "robot_ws" / "src" / "ai_waiter_core"
+sys.path.insert(0, str(AI_WAITER_CORE_PATH))
+
+from ai_waiter_core.services.retriever.builder import IndexBuilder
 from ai_waiter_core.services.retriever.hybrid_retriever import RetrieverManager
 from ai_waiter_core.config import settings
 
@@ -66,11 +73,15 @@ def run_evaluation():
     log(f"Total test cases: {len(dataset['cases'])}")
     
     # Initialize Retriever
-    retriever = RetrieverManager()
-    if not retriever.load_database():
+    builder = IndexBuilder()
+    if not builder.load_database():
         log("Error: Could not load database. Rebuilding...")
         data_path = settings.PROJECT_ROOT / "assets" / "data"
-        retriever.build_database([str(data_path)])
+        builder.build([str(data_path)])
+    retriever = RetrieverManager(
+        vector_engine=builder.vector_engine,
+        bm25_engine=builder.bm25_engine
+    )
     
     overall_results = []
     start_time = time.time()
@@ -82,7 +93,7 @@ def run_evaluation():
         
         # We test both RRF and Weighted
         for mode in ["rrf", "weighted"]:
-            results = retriever.hybrid_search(query, k=3, mode=mode)
+            results = retriever.search(query, k=3, mode=mode)
             metrics = calculate_metrics(results, case['expected_relevant'])
             
             log(f"  [{mode.upper()}] Metrics: Precision={metrics['precision']:.2f}, Recall={metrics['recall']:.2f}, MRR={metrics['mrr']:.2f}")

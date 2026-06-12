@@ -6,9 +6,8 @@ from langchain_core.documents import Document
 
 from ai_waiter_core.utils import logger
 from ai_waiter_core.services.retriever.indices.embeddings import get_embedding_model
-from ai_waiter_core.services.retriever.indices.base import SearchIndex
 
-class VectorStore(SearchIndex):
+class VectorStore:
     def __init__(self, db_path: str):
         self.db_path = db_path
         self.vector_db = None

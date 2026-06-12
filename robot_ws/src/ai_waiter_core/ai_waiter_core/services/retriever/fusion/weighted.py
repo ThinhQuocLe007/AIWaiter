@@ -1,13 +1,26 @@
+import math
 from typing import List, Tuple
 from langchain_core.documents import Document
 from ai_waiter_core.schemas.search import SearchResult
-from ai_waiter_core.services.retriever.normalization import (
-    calculate_hybrid_score,
-    normalize_bm25_batch
-)
-from ai_waiter_core.services.retriever.fusion.base import BaseFusion
 
-class WeightedFusion(BaseFusion):
+def sigmoid_normalize(score: float, mean: float = 0.0, scale: float = 1.0) -> float:
+    exponent = max(min(-scale * (score - mean), 500), -500)
+    return 1.0 / (1.0 + math.exp(exponent))
+
+def normalize_vector_score(distance: float) -> float:
+    return 1.0 / (1.0 + distance)
+
+def normalize_bm25_batch(scores: List[float]) -> List[float]:
+    if not scores:
+        return []
+    mean = sum(scores) / len(scores)
+    return [sigmoid_normalize(s, mean) for s in scores]
+
+def calculate_hybrid_score(bm25_score: float, vector_score: float,
+                           bm25_weight: float = 0.6, vector_weight: float = 0.4) -> float:
+    return (sigmoid_normalize(bm25_score) * bm25_weight) + (vector_score * vector_weight)
+
+class WeightedFusion:
     def fuse(self, 
              bm25_results: List[Tuple[Document, float]], 
              vector_results: List[Tuple[Document, float]], 
@@ -65,3 +78,6 @@ class WeightedFusion(BaseFusion):
                 ))
 
         return self._format_results(final_list, k)
+
+    def _format_results(self, results: list, k: int) -> List[SearchResult]:
+        return sorted(results, key=lambda x: x.score, reverse=True)[:k]

@@ -31,16 +31,16 @@ def deterministic_validator_node(state: AgentState) -> Dict[str, Any]:
                 
                 # Check 2a: Quantity Check
                 if quantity <= 0:
-                    errors.append(f"Quantity must be greater than 0 for item '{name}'. Got: {quantity}.")
+                    errors.append(f"Số lượng món '{name}' phải lớn hơn 0. Hiện tại: {quantity}.")
                 
                 # Check 2b: Strict Menu Name Validation (Fuzzy Match)
                 if name not in MENU_NAMES:
                     suggestions = difflib.get_close_matches(name, MENU_NAMES, n=2, cutoff=0.7)
                     if suggestions:
                         # Auto-correct hint
-                        errors.append(f"Item '{name}' not found. Did you mean '{suggestions[0]}'? You MUST use exact spelling.")
+                        errors.append(f"Món '{name}' không có trong thực đơn. Ý bạn là '{suggestions[0]}'? Vui lòng dùng đúng tên món.")
                     else:
-                        errors.append(f"Item name '{name}' does not exist on the menu. Ask the customer to clarify.")
+                        errors.append(f"Món '{name}' không tồn tại trong thực đơn. Hãy hỏi khách chọn món khác.")
                 
                 # If this item passes all menu checks, set is_valid = True in the tool arguments in-place
                 if quantity > 0 and name in MENU_NAMES:
@@ -49,19 +49,19 @@ def deterministic_validator_node(state: AgentState) -> Dict[str, Any]:
         # 3. State Guardrail for Order Confirmation
         elif tool_name == "confirm_order":
             if state.get("order_stage") != "AWAITING_CONFIRMATION":
-                errors.append("You CANNOT confirm the order yet! You must first summarize the cart and explicitly ask the user for confirmation.")
+                errors.append("Chưa thể xác nhận đơn hàng! Bạn phải gọi sync_cart trước và hỏi khách xác nhận.")
                 
         # 4. Validate Payment Tool Arguments
         elif tool_name == "request_payment":
             table_id = args.get("table_id")
             if not table_id:
-                errors.append("Payment request missing required 'table_id' argument.")
+                errors.append("Thiếu tham số 'table_id' cho yêu cầu thanh toán.")
                 
     # 5. Process Validation Result
     if errors:
-        error_feedback = "[Deterministic Validator Error]:\n" + "\n".join([f"- {err}" for err in errors])
-        
-        # Build ToolMessage for each tool call that failed
+        loop_count = state.get("loop_count", 0) + 1
+        error_feedback = "[Lỗi Xác Thực]:\n" + "\n".join([f"- {err}" for err in errors])
+
         tool_messages = []
         for tool_call in last_message.tool_calls:
             tool_call_id = tool_call.get("id") or "dummy_id"
@@ -73,12 +73,20 @@ def deterministic_validator_node(state: AgentState) -> Dict[str, Any]:
                     tool_call_id=tool_call_id
                 )
             )
-            
+
+        if loop_count >= 3:
+            return {
+                "is_valid": False,
+                "feedback": "Quá nhiều lần thử không hợp lệ. Hãy xin lỗi khách và đề nghị họ nói lại yêu cầu.",
+                "messages": tool_messages,
+                "loop_count": loop_count,
+            }
+
         return {
             "is_valid": False,
             "feedback": error_feedback,
             "messages": tool_messages,
-            "loop_count": state.get("loop_count", 0) + 1
+            "loop_count": loop_count,
         }
         
     # Passes all deterministic checks, allow Tool execution

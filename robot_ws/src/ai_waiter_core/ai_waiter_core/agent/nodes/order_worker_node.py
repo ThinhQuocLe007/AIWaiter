@@ -7,7 +7,7 @@ from langchain_core.messages import AIMessage
 from ai_waiter_core.agent.state import AgentState
 from ai_waiter_core.config import settings
 from ai_waiter_core.utils import trace_latency, MENU_NAMES
-from ai_waiter_core.utils.prompt_utils import build_system_prompt, build_dynamic_suffix
+from ai_waiter_core.utils.prompt_utils import build_system_prompt, build_few_shot_examples, build_dynamic_suffix
 
 from ..tools import sync_cart, confirm_order
 
@@ -65,7 +65,7 @@ def _build_dynamic_context_block(state: AgentState, order_stage: str) -> str:
             "",
             "### SYSTEM FEEDBACK (MANDATORY FIX):",
             state["feedback"],
-            "Politely apologize and clarify with the user."
+            "Fix the tool call arguments and retry immediately."
         ])
         
     if state.get("active_cart"):
@@ -91,15 +91,17 @@ def order_worker_node(state: AgentState) -> Dict[str, Any]:
     context_block = _build_dynamic_context_block(state, order_stage)
     
     # 1. Compile KV-Cache optimized static prompt elements
-    static_system_message = build_system_prompt("order_worker_agent.md", ["hospitality.md"])
-    
+    static_system_message = build_system_prompt("order_worker_agent.md")
+    static_few_shot_messages = build_few_shot_examples("order_worker.json")
+
     # 2. Compile dynamic suffix elements (table metadata, active cart, and validation errors)
     dynamic_suffix_message = build_dynamic_suffix(table_id=table_id, dynamic_context=context_block)
-    
+
     # 3. Assemble complete message array preserving prefix caching
     input_messages = (
-        [static_system_message] 
-        + [dynamic_suffix_message] 
+        [static_system_message]
+        + static_few_shot_messages
+        + [dynamic_suffix_message]
         + state["messages"]
     )
     

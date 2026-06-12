@@ -1,106 +1,79 @@
-# Refactor: Folder Structure — `schemas/` & `tools/`
+# Payment — Table-based Payment Tools
 
-## ✅ Completed (Router Enhancement — Softmax + Gap)
-- [x] All previous router tasks — see old tasks.md for history
+## Goal: Tools resolve everything from `table_id` — no `session_id` needed in tool args
 
-## 🎯 Goal
+```
+Customer says "Tính tiền" (table T1)
+  → payment_worker runs, injects table context
+  → LLM calls request_payment(table_id="T1")
+  → tool resolves active session + calculates total internally
+  → returns QR + amount + message
+  → schedule_mock_verify → auto-complete after 5s
+```
 
-Restructure `schemas/` and `tools/` following the **Schema → Service → Tool** three-layer architecture. Replace string-based tool returns with typed Pydantic response models.
+## Schemas
 
----
+### `schemas/payment.py` (modify)
 
-## 📋 Phase 1: Schemas — Add Response Models
+- [x] `PaymentRequest(BaseModel)`: `table_id: str` (no `session_id`, no `amount`)
+- [x] `PaymentResponse(BaseModel)`: `status`, `table_id`, `session_id`, `qr_url`, `amount`, `message`
+- [x] `VerifyPaymentResponse(BaseModel)`: `status`, `table_id`, `message`
 
-### `schemas/payment.py` — New file
-- [x] Create `schemas/payment.py` with `PaymentResponse(status, qr_url, amount, message)`
+### `schemas/order.py` (revert)
 
-### `schemas/order.py` — Add response models
-- [x] Add `SyncCartResponse(status, items, total_price, message)`
-- [x] Add `ConfirmOrderResponse(status, order_id, message)`
+- [x] Remove `session_id` from `ConfirmOrderResponse` (not needed, LLM doesn't need it)
 
-### `schemas/search.py` — Add `SearchInput` + response model
-- [x] Move `SearchMenuInput` from `tools/search/search.py` → `schemas/search.py` (rename to `SearchInput`)
-- [x] Add `SearchResponse(status, results, message)`
+### `schemas/__init__.py`
 
-### `schemas/__init__.py` — Update exports
-- [x] Add all new response models to `__init__.py`
+- [x] Update exports
 
----
+## State & Graph (revert)
 
-## 📋 Phase 2: Services — Extract Implementation Helpers
+### `agent/state.py`
 
-### Create `services/` folder
-- [x] Move `tools/ordering/order_db.py` → `services/order_db.py`
-- [x] Move `tools/payment/payment_mgr.py` → `services/payment_mgr.py`
+- [x] Remove `session_id` field (unnecessary)
 
-### Create `services/retriever/` folder (move from `tools/search/`)
-- [x] Move `tools/search/hybrid_retriever.py` → `services/retriever/hybrid_retriever.py`
-- [x] Move `tools/search/indices/` → `services/retriever/indices/`
-- [x] Move `tools/search/fusion/` → `services/retriever/fusion/`
-- [x] Move `tools/search/loaders/` → `services/retriever/loaders/`
-- [x] Move `tools/search/utils/normalization.py` → `services/retriever/normalization.py`
-- [x] Inline `tools/search/utils/rrf.py` into `services/retriever/fusion/rrf.py`
-- [x] Update all relative imports in moved files to absolute imports
+### `agent/graph.py`
 
----
+- [x] Remove `session_id` capture from `state_updater_node` (was never added)
+- [x] Fix `_route_after_validator` for payment worker
 
-## 📋 Phase 3: Tools — Flat Structure + Typed Returns
+## Tools
 
-### Create flat `tools/` files
-- [x] Create `tools/sync_cart.py` — refactor to return `SyncCartResponse`
-- [x] Create `tools/confirm_order.py` — refactor to return `ConfirmOrderResponse`
-- [x] Create `tools/search_tool.py` — refactor to return `SearchResponse`
-- [x] Create `tools/request_payment.py` — refactor to return `PaymentResponse`
+### `agent/tools/request_payment.py`
 
-### Update `tools/__init__.py`
-- [x] Update imports to flat file names
+- [x] `@tool(args_schema=PaymentRequest)` with `table_id: str`
+- [x] Resolve active session: `db.get_active_session(table_id)`
+- [x] Calculate total: `db.get_orders_by_session(session_id)` → sum prices
+- [x] Generate QR + schedule mock verify
+- [x] Return `PaymentResponse` with `table_id`, `session_id`, `qr_url`, `amount`
 
-### Delete old tool sub-folders
-- [x] Delete `tools/ordering/` (after confirming all references moved)
-- [x] Delete `tools/payment/` (after confirming all references moved)
-- [x] Delete `tools/search/` (after confirming all references moved)
+### `agent/tools/verify_payment.py`
 
----
+- [x] `@tool` with `table_id: str`
+- [x] Resolve active session → get payment → check/update status
+- [x] Return `VerifyPaymentResponse` with `table_id`
 
-## 📋 Phase 4: Graph & Nodes — Update Imports + Logic
+### `agent/nodes/deterministic_validator_node.py`
 
-### `graph.py`
-- [x] Update `state_updater_node`: replace string parsing with `isinstance` checks on typed models
-- [x] Update imports to use typed response models from schemas
-- [x] Replace priority-based routing with sequential (first intent) routing
-- [x] Add multi-intent loop: `_route_after_updater` pops processed intent, routes to next worker if more remain
-- [x] Deduplicate `route_after_search` / `route_after_payment` → single `_route_if_tool_call`
+- [x] Revert to `table_id` check (from `session_id`)
 
-### Worker nodes
-- [x] `order_worker_node.py` — update imports (`..tools.sync_cart`, `..tools.confirm_order`)
-- [x] `search_worker_node.py` — update imports (`..tools.search`)
-- [x] `payment_worker_node.py` — update imports (`..tools.request_payment`)
+### `agent/tools/confirm_order.py`
 
----
+- [x] Remove `session_id` from return (not needed by LLM)
 
-## 📋 Phase 5: Database & Setup Script
+## Payment Worker Node
 
-### Fix `OrderDB`
-- [x] Remove `DROP TABLE IF EXISTS` — data persists across restarts
-- [x] Use `CREATE TABLE IF NOT EXISTS` only
+### System prompt — `payment_worker_agent.md`
 
-### Create `scripts/setup.py`
-- [x] Create directories (`storage/db/`, `storage/vector/`, etc.)
-- [x] Init Order DB (no destructive drops)
-- [x] Init Checkpoints DB
-- [x] Build FAISS + BM25 indexes from `assets/data/`
-- [x] Build centroids from `utterances.json`
-- [x] Verify all required assets exist
-- [x] `--force` flag to rebuild existing indexes
-- [x] `--skip-centroids` flag
+- [x] Update tool descriptions to use `table_id` instead of `session_id`
 
----
+### Node — `payment_worker_node.py`
 
-## 📋 Phase 6: Tests & Verification
+- [x] Simplify context: just pass `table_id` (no session_id lookup needed)
+- [x] Keep `request_payment` + `verify_payment` bound
 
-- [x] Update `tests/test_modular_retriever.py` — fix import path
-- [x] Update `evals/scripts/eval_retrieval.py` — fix import path
-- [ ] Run: `pytest robot_ws/tests/ -v`
-- [ ] Run: `python evals/scripts/eval_router.py`
-- [ ] Run: `python evals/scripts/eval_retrieval.py`
-- [ ] Verify E2E: `python -m pytest test/test_order_workflow.py -v`
+## Verify
+
+- [ ] Run existing tests
+- [ ] Manual: `request_payment(table_id="T1")` → resolves session, QR, auto-verify

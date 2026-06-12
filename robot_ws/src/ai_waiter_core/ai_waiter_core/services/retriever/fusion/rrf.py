@@ -2,7 +2,6 @@ from typing import List, Tuple
 from langchain_core.documents import Document
 from ai_waiter_core.schemas.search import SearchResult
 from ai_waiter_core.utils import logger
-from ai_waiter_core.services.retriever.fusion.base import BaseFusion
 
 
 def compute_reciprocal_rank(rank: int, k: int = 60) -> float:
@@ -10,7 +9,7 @@ def compute_reciprocal_rank(rank: int, k: int = 60) -> float:
     return 1.0 / (k + rank)
 
 
-class RRFFusion(BaseFusion):
+class RRFFusion:
     def fuse(self, 
              bm25_results: List[Tuple[Document, float]], 
              vector_results: List[Tuple[Document, float]], 
@@ -92,3 +91,6 @@ class RRFFusion(BaseFusion):
             ))
 
         return self._format_results(final_list, k)
+
+    def _format_results(self, results: list, k: int) -> List[SearchResult]:
+        return sorted(results, key=lambda x: x.score, reverse=True)[:k]

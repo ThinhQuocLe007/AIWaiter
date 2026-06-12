@@ -11,8 +11,8 @@ class DatabaseSettings(BaseSystemSettings):
         return self.storage_dir / "vector" / "bm25.pkl"
 
     @property
-    def ORDER_DB_PATH(self) -> Path:
-        return self.storage_dir / "db" / "orders.db"
+    def RESTAURANT_DB_PATH(self) -> Path:
+        return self.storage_dir / "db" / "restaurant.db"
         
     @property
     def CHECKPOINTS_DB_PATH(self) -> Path:

@@ -27,7 +27,7 @@ def search_worker_node(state: AgentState) -> Dict[str, Any]:
     table_id = state.get("table_id", "T1")
     
     # 1. Compile KV-Cache optimized static prompt elements
-    static_system_message = build_system_prompt("search_agent.md", ["hospitality.md", "no_service_response.md"])
+    static_system_message = build_system_prompt("search_agent.md")
     static_few_shot_messages = build_few_shot_examples("search_worker.json")
     
     # 2. Compile dynamic suffix elements (table metadata, RAG context if applicable)
