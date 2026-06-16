@@ -21,7 +21,13 @@ _llm = ChatOllama(
     model=settings.WORKER_MODEL,
     temperature=0.1,
     metadata={"ls_model_name": settings.WORKER_MODEL, "ls_provider": "ollama"}
-).bind_tools([sync_cart, confirm_order])
+).bind_tools([sync_cart, confirm_order], tool_choice="any")
+# NOTE: `tool_choice="any"` is currently ignored by ChatOllama (see its
+# bind_tools docstring: "not supported by Ollama"). The binding is kept for
+# forward-compatibility and to signal intent. If the LLM ever ignores
+# tool_choice and replies in text, the graph's defensive routing in
+# `_route_if_tool_call` (agent/graph.py) sends the message to response_node
+# so the customer still gets a verbalized reply.
 
 # ------------------------------------------------------------
 # Context Builder Helper (Dynamic Suffix Part)

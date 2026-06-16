@@ -16,7 +16,7 @@ from ai_waiter_core.agent.nodes.response_node import response_node
 
 logger = logging.getLogger(__name__)
 
-MAX_RETRY_LOOPS = 3
+MAX_RETRY_LOOPS = 3  # caps validation retries; after 3 invalid attempts, fall back to response_node
 
 INTENT_TO_WORKER = {
     "ORDER": "order_worker",
@@ -43,20 +43,40 @@ def _route_by_intent(state: AgentState) -> str:
     return _get_next_worker(state)
 
 
-def _route_if_tool_call(state: AgentState) -> Literal["tools", "end"]:
-    """Routes to tools if the last message has tool calls, otherwise ends."""
+def _route_if_tool_call(state: AgentState) -> Literal["tools", "response_node"]:
+    """
+    Routes worker output:
+        - has tool_calls -> "tools" (validator runs next)
+        - no tool_calls  -> "response_node" (verbalize whatever the worker said)
+
+    With `tool_choice="any"` in the worker LLMs the no-tool-calls branch should
+    be unreachable. Kept as defense-in-depth: if Ollama or a model ever ignores
+    the tool choice, the customer's text reply is still verbalized instead of
+    silently dropped.
+    """
     last_msg = state["messages"][-1]
     if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
         return "tools"
-    return "end"
+    logger.warning(
+        "Worker produced no tool_calls despite tool_choice='any'; "
+        "routing to response_node for verbalization."
+    )
+    return "response_node"
 
 
 def _route_after_validator(state: AgentState) -> str:
-    """Routes to tools if valid, otherwise back to the correct worker for correction."""
-    if state.get("is_valid"):
-        return "tools"
+    """
+    Routes after the deterministic validator runs.
+
+    Order matters — check circuit breaker FIRST:
+        1. loop_count >= MAX_RETRY_LOOPS -> response_node (give up, verbalize)
+        2. is_valid -> tools (execute the tool call)
+        3. otherwise -> back to the current worker for correction
+    """
     if state.get("loop_count", 0) >= MAX_RETRY_LOOPS:
         return "response_node"
+    if state.get("is_valid"):
+        return "tools"
     return _get_next_worker(state)
 
 
@@ -109,12 +129,12 @@ class AIWaiterGraph:
             },
         )
 
-        # Worker → validator (if tool call) | END (if no tool call)
+        # Worker → validator (if tool call) | response_node (if no tool call)
         for worker in TOOL_WORKERS:
             workflow.add_conditional_edges(
                 worker,
                 _route_if_tool_call,
-                {"tools": "validator", "end": END},
+                {"tools": "validator", "response_node": "response_node"},
             )
 
         # Validator → tools (valid) | worker (invalid correction) | END (circuit breaker)
