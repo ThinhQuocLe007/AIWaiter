@@ -22,6 +22,11 @@
         <span class="summary-total">{{ formatPrice(totalPrice) }}</span>
       </div>
 
+      <TouchButton variant="primary" block class="pay-btn" @click="goToPayment">
+        <i class="ti ti-qrcode" aria-hidden="true"></i>
+        Thanh toán ngay
+      </TouchButton>
+
       <p class="countdown">Tự động quay lại sau {{ countdown }}s</p>
     </div>
   </div>
@@ -32,6 +37,7 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
 import { formatPrice } from '@/utils/format'
+import TouchButton from '@/components/common/TouchButton.vue'
 
 const router = useRouter()
 const cart = useCartStore()
@@ -42,6 +48,14 @@ const itemCount = ref(cart.totalQuantity)
 const totalPrice = ref(cart.totalPrice)
 
 let interval: ReturnType<typeof setInterval> | undefined
+
+function goToPayment() {
+  const qrUrl = `https://img.vietqr.io/image/ICB-123456789-qr_only.png?amount=${totalPrice.value}&addInfo=AI_Waiter_Payment`
+  router.push({
+    name: 'payment',
+    query: { amount: String(totalPrice.value), qrUrl },
+  })
+}
 
 onMounted(() => {
   interval = setInterval(() => {
@@ -136,8 +150,13 @@ onUnmounted(() => {
   font-weight: 800;
 }
 
+.pay-btn {
+  margin-top: 0.75rem;
+  max-width: 300px;
+}
+
 .countdown {
-  margin-top: 2rem;
+  margin-top: 1rem;
   font-size: 1rem;
   color: var(--color-text-muted);
 }

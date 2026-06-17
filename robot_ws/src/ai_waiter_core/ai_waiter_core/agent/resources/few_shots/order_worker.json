@@ -1,0 +1,155 @@
+[
+  {
+    "role": "user",
+    "content": "Cho tôi 1 Phở Bò và 2 Coca"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "sync_cart",
+        "args": {
+          "items": [
+            {"name": "Phở Bò", "quantity": 1, "special_requests": null},
+            {"name": "Coca", "quantity": 2, "special_requests": null}
+          ]
+        },
+        "id": "call_sync_1"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "Đổi Phở Bò thành 3 tô nhé, bỏ Coca"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "sync_cart",
+        "args": {
+          "items": [
+            {"name": "Phở Bò", "quantity": 3, "special_requests": null}
+          ]
+        },
+        "id": "call_sync_2"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "Đúng rồi, xác nhận đặt hàng cho tôi"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "confirm_order",
+        "args": {
+          "table_id": "T1",
+          "items": [
+            {"name": "Phở Bò", "quantity": 3, "special_requests": null}
+          ]
+        },
+        "id": "call_confirm_1"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "Cho anh 2 ly Trà Đá và 1 Bánh Mì"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "sync_cart",
+        "args": {
+          "items": [
+            {"name": "Trà Đá", "quantity": 2, "special_requests": null},
+            {"name": "Bánh Mì", "quantity": 1, "special_requests": null}
+          ]
+        },
+        "id": "call_sync_3"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "Bỏ Bánh Mì đi"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "sync_cart",
+        "args": {
+          "items": [
+            {"name": "Trà Đá", "quantity": 2, "special_requests": null}
+          ]
+        },
+        "id": "call_sync_4"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "Đổi Trà Đá thành Coca giúp em"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "sync_cart",
+        "args": {
+          "items": [
+            {"name": "Coca", "quantity": 2, "special_requests": null}
+          ]
+        },
+        "id": "call_sync_5"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "Tăng Coca lên 3 ly"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "sync_cart",
+        "args": {
+          "items": [
+            {"name": "Coca", "quantity": 3, "special_requests": null}
+          ]
+        },
+        "id": "call_sync_6"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "Thôi không đặt nữa, hủy đơn đi"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "sync_cart",
+        "args": {
+          "items": []
+        },
+        "id": "call_sync_7"
+      }
+    ]
+  }
+]

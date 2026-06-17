@@ -1,0 +1,87 @@
+[
+  {
+    "role": "user",
+    "content": "Tính tiền đi em"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "request_payment",
+        "args": {
+          "table_id": "T1"
+        },
+        "id": "call_pay_1"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "Cho anh xin hóa đơn"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "request_payment",
+        "args": {
+          "table_id": "T1"
+        },
+        "id": "call_pay_2"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "Đã chuyển khoản rồi nhé"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "verify_payment",
+        "args": {
+          "table_id": "T1"
+        },
+        "id": "call_pay_3"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "Tổng cộng bao nhiêu tiền vậy?"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "request_payment",
+        "args": {
+          "table_id": "T1"
+        },
+        "id": "call_pay_4"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "Cho thanh toán bằng MoMo nhé"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "request_payment",
+        "args": {
+          "table_id": "T1"
+        },
+        "id": "call_pay_5"
+      }
+    ]
+  }
+]
