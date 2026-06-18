@@ -1,13 +1,14 @@
 {
   "dataset": "e2e_conversations",
-  "version": "1.0",
-  "description": "Kịch bản hội thoại nhiều lượt (8-10 turns) với AI Waiter bằng tiếng Việt. Mỗi turn có assert kiểm tra tool được gọi và nội dung phản hồi.",
+  "version": "3.0",
+  "part": 1,
+  "description": "E2E ngắn, happy-path qua toàn graph (router → worker → tools → response) cho menu quán ốc/hải sản 'Ốc Quậy'. Tên món khớp menu.json. Tool: sync_cart, confirm_order, search, request_payment, verify_payment.",
   "total_scenarios": 6,
   "scenarios": [
     {
       "id": "E2E-001",
       "name": "happy_path_single_item",
-      "description": "Khách gọi 1 món rõ ràng, xác nhận, hoàn tất. Kiểm tra luồng verify → confirm cơ bản.",
+      "description": "Khách gọi 1 món rõ ràng, xác nhận, hoàn tất. Kiểm tra luồng sync_cart → confirm_order cơ bản.",
       "table_id": "T_eval_1",
       "difficulty": "easy",
       "expected_outcome": "order_placed",
@@ -15,11 +16,11 @@
         {
           "turn": 1,
           "role": "user",
-          "content": "Cho mình 1 tô Phở Bò Đặc Biệt",
+          "content": "Cho mình 2 phần Ốc Hương xốt trứng muối",
           "assert": {
             "tool_called": "sync_cart",
             "tool_output_contains": "Đã cập nhật",
-            "response_should_contain_one_of": ["75.000", "75000", "xác nhận", "đặt"]
+            "response_should_contain_one_of": ["Ốc Hương", "tạm tính", "xác nhận", "đặt"]
           }
         },
         {
@@ -29,15 +30,15 @@
           "assert": {
             "tool_called": "confirm_order",
             "response_contains": "đơn hàng",
-            "response_should_contain_one_of": ["đặt thành công", "đơn hàng", "đặt hàng"]
+            "confirmed_items_must_contain": "Ốc Hương"
           }
         }
       ]
     },
     {
       "id": "E2E-002",
-      "name": "happy_path_multiple_items_with_special_request",
-      "description": "Khách gọi nhiều món kèm ghi chú đặc biệt, xác nhận, hoàn tất. Kiểm tra special_requests được giữ nguyên.",
+      "name": "multi_item_order",
+      "description": "Khách gọi nhiều món trong một câu, xác nhận. Kiểm tra sync_cart gom đúng nhiều món.",
       "table_id": "T_eval_2",
       "difficulty": "easy",
       "expected_outcome": "order_placed",
@@ -45,27 +46,29 @@
         {
           "turn": 1,
           "role": "user",
-          "content": "Cho bàn mình 2 tô Phở Bò Đặc Biệt, 1 ly Cà Phê Sữa Đá Sài Gòn ít đường, và 1 phần Chả Giò Tôm Cua",
+          "content": "Cho 6 con Hàu Nướng và 3 chai Bia Tiger Bạc nha",
           "assert": {
             "tool_called": "sync_cart",
-            "tool_output_contains": "Đã cập nhật"
+            "tool_output_contains": "Đã cập nhật",
+            "response_should_contain_one_of": ["Hàu Nướng", "Bia", "tạm tính", "xác nhận"]
           }
         },
         {
           "turn": 2,
           "role": "user",
-          "content": "Xác nhận đặt đi bạn",
+          "content": "Ok chốt đơn đi em",
           "assert": {
             "tool_called": "confirm_order",
-            "response_contains": "đơn hàng"
+            "response_contains": "đơn hàng",
+            "confirmed_items_must_contain": "Hàu"
           }
         }
       ]
     },
     {
       "id": "E2E-003",
-      "name": "menu_inquiry_then_order_then_confirm",
-      "description": "Khách hỏi thực đơn, rồi mới gọi món và xác nhận. Kiểm tra router chuyển đổi MENU → ORDER trong cùng session.",
+      "name": "search_then_order",
+      "description": "Khách hỏi về món trước (search), rồi mới gọi. Kiểm tra chuyển từ search_worker sang order_worker.",
       "table_id": "T_eval_3",
       "difficulty": "medium",
       "expected_outcome": "order_placed",
@@ -73,90 +76,113 @@
         {
           "turn": 1,
           "role": "user",
-          "content": "Quán có món khai vị gì ngon không?",
+          "content": "Lẩu Thái ở quán cay không em?",
           "assert": {
             "tool_called": "search",
-            "response_should_contain_one_of": ["Chả Giò", "Gỏi", "Súp", "Bánh Khọt"]
+            "tool_must_NOT_call": "confirm_order",
+            "response_should_contain_one_of": ["cay", "Lẩu Thái", "chua"]
           }
         },
         {
           "turn": 2,
           "role": "user",
-          "content": "Chả Giò Tôm Cua nguyên liệu gồm những gì vậy?",
+          "content": "Vậy cho mình 1 phần Lẩu Thái",
           "assert": {
-            "tool_called": "search",
-            "response_should_contain_one_of": ["tôm", "cua", "miến", "mộc nhĩ"]
+            "tool_called": "sync_cart",
+            "tool_output_contains": "Đã cập nhật",
+            "response_should_contain_one_of": ["Lẩu Thái", "tạm tính", "xác nhận"]
           }
         },
         {
           "turn": 3,
           "role": "user",
-          "content": "Nghe hay đó, cho mình 1 phần đi",
-          "assert": {
-            "tool_called": "sync_cart",
-            "tool_output_contains": "Đã cập nhật"
-          }
-        },
-        {
-          "turn": 4,
-          "role": "user",
-          "content": "Ừ đúng rồi, xác nhận",
+          "content": "Ừ đặt nha",
           "assert": {
             "tool_called": "confirm_order",
-            "response_contains": "đơn hàng"
+            "confirmed_items_must_contain": "Lẩu Thái"
           }
         }
       ]
     },
     {
       "id": "E2E-004",
-      "name": "ambiguous_item_clarify_then_confirm",
-      "description": "Khách gọi tên không đầy đủ, agent gợi ý, khách làm rõ, rồi xác nhận. Kiểm tra fuzzy fallback.",
+      "name": "order_then_request_payment",
+      "description": "Gọi món, xác nhận, rồi yêu cầu tính tiền. Kiểm tra payment_worker gọi request_payment.",
       "table_id": "T_eval_4",
       "difficulty": "medium",
-      "expected_outcome": "order_placed",
+      "expected_outcome": "payment_requested",
       "turns": [
         {
           "turn": 1,
           "role": "user",
-          "content": "Cho tôi 1 cái bánh xèo",
-          "assert": {
-            "tool_called": "sync_cart",
-            "response_should_contain_one_of": ["Bánh Xèo Miền Tây", "gợi ý", "làm rõ", "Ambiguous"]
-          }
-        },
-        {
-          "turn": 2,
-          "role": "user",
-          "content": "Lấy Bánh Xèo Miền Tây",
+          "content": "Cho mình 1 tô Cháo Hàu",
           "assert": {
             "tool_called": "sync_cart",
             "tool_output_contains": "Đã cập nhật"
           }
         },
         {
-          "turn": 3,
+          "turn": 2,
           "role": "user",
-          "content": "Xác nhận nhé",
+          "content": "Xác nhận đặt luôn",
           "assert": {
             "tool_called": "confirm_order",
-            "response_contains": "đơn hàng"
+            "confirmed_items_must_contain": "Cháo Hàu"
+          }
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "content": "Cho mình tính tiền nha",
+          "assert": {
+            "tool_called": "request_payment",
+            "response_should_contain_one_of": ["QR", "Tổng tiền", "thanh toán"]
           }
         }
       ]
     },
     {
       "id": "E2E-005",
-      "name": "order_change_before_confirm",
-      "description": "Khách gọi món, thay đổi ý trước khi xác nhận, rồi mới confirm đơn mới. Kiểm tra agent không đặt đơn cũ.",
+      "name": "search_only_no_order",
+      "description": "Khách chỉ hỏi thông tin, không gọi món. Agent KHÔNG được tạo đơn (không gọi sync_cart/confirm_order).",
       "table_id": "T_eval_5",
       "difficulty": "medium",
-      "expected_outcome": "order_placed_with_changed_item",
+      "expected_outcome": "info_provided",
       "turns": [
         {
           "turn": 1,
           "role": "user",
-          "content": "Cho mình 2 ly Sinh Tố Bơ Dừa",
+          "content": "Quán mình có những món lẩu nào vậy?",
+          "assert": {
+            "tool_called": "search",
+            "tool_must_NOT_call": "sync_cart",
+            "response_should_contain_one_of": ["Lẩu", "lẩu"]
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Thế Ốc Hương giá bao nhiêu một phần?",
+          "assert": {
+            "tool_called": "search",
+            "tool_must_NOT_call": "confirm_order",
+            "response_should_contain_one_of": ["85", "Ốc Hương", "giá"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "E2E-006",
+      "name": "add_item_then_confirm",
+      "description": "Gọi 1 món, sau đó gọi thêm món nữa, rồi xác nhận. Đơn cuối phải gồm cả 2 món.",
+      "table_id": "T_eval_6",
+      "difficulty": "medium",
+      "expected_outcome": "order_placed",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình 2 phần Ốc Hương",
           "assert": {
             "tool_called": "sync_cart",
             "tool_output_contains": "Đã cập nhật"
@@ -165,40 +191,20 @@
         {
           "turn": 2,
           "role": "user",
-          "content": "À không, đổi thành Sinh Tố Xoài Cát Chu đi, vẫn 2 ly",
+          "content": "Thêm 1 dĩa Khoai Tây Lắc Phô Mai nữa",
           "assert": {
             "tool_called": "sync_cart",
-            "response_contains": "Xoài",
-            "tool_must_NOT_call": "confirm_order"
+            "tool_must_NOT_call": "confirm_order",
+            "response_should_contain_one_of": ["Khoai Tây", "Ốc Hương", "tạm tính"]
           }
         },
         {
           "turn": 3,
           "role": "user",
-          "content": "Đúng rồi, xác nhận",
+          "content": "Ok đặt hết luôn nha",
           "assert": {
             "tool_called": "confirm_order",
-            "response_contains": "đơn hàng",
-            "confirmed_items_must_contain": "Xoài"
-          }
-        }
-      ]
-    },
-    {
-      "id": "E2E-006",
-      "name": "non_existent_item_rejected",
-      "description": "Khách đặt món không có trong thực đơn (Pizza Hải Sản). Kiểm tra Validator phát hiện lỗi và LLM từ chối đặt, hướng dẫn chọn lại.",
-      "table_id": "T_eval_6",
-      "difficulty": "easy",
-      "expected_outcome": "order_rejected",
-      "turns": [
-        {
-          "turn": 1,
-          "role": "user",
-          "content": "Cho mình 1 cái Pizza Hải Sản và 1 tô Phở Bò Đặc Biệt nhé",
-          "assert": {
-            "tool_must_NOT_call": "confirm_order",
-            "response_should_contain_one_of": ["Phở Bò", "xác nhận"]
+            "confirmed_items_must_contain": "Khoai Tây"
           }
         }
       ]

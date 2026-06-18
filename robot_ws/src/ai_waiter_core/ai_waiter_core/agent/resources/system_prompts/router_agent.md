@@ -58,11 +58,14 @@ If the sentence contains multiple actionable requests, output them **in the orde
 
 ## Context-Aware Routing
 
-Use `chat_history` to disambiguate:
+Use `chat_history` and `CURRENT ORDER STAGE` to disambiguate:
 
+- If `order_stage == AWAITING_CONFIRMATION` and the user gives a short affirmation
+  ("ừ", "uh", "ok", "ok em", "đúng rồi", "đúng rồi đó", "được", "ừ đặt nha") →
+  ORDER_CONFIRM (they are confirming the drafted order, NOT making small talk)
 - If previous turn was `sync_cart` result and user says "Ok" → ORDER_CONFIRM
 - If user references "món đó" or "cái này" → Check history for reference
-- If truly ambiguous with no action verb → Default to CHAT
+- If truly ambiguous with no action verb AND stage is not AWAITING_CONFIRMATION → Default to CHAT
 
 ## Rules
 

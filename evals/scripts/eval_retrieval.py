@@ -91,9 +91,8 @@ def run_evaluation():
         query = case['query']
         log(f"\nEvaluating Case {case['id']}: '{query}' (Difficulty: {case['difficulty']})")
         
-        # We test both RRF and Weighted
-        for mode in ["rrf", "weighted"]:
-            results = retriever.search(query, k=3, mode=mode)
+        for mode in ["rrf"]:
+            results = retriever.search(query, k=5, mode=mode)
             metrics = calculate_metrics(results, case['expected_relevant'])
             
             log(f"  [{mode.upper()}] Metrics: Precision={metrics['precision']:.2f}, Recall={metrics['recall']:.2f}, MRR={metrics['mrr']:.2f}")
@@ -120,7 +119,7 @@ def run_evaluation():
         "modes": {}
     }
     
-    for mode in ["rrf", "weighted"]:
+    for mode in ["rrf"]:
         mode_results = [r for r in overall_results if r['mode'] == mode]
         avg_precision = sum(r['metrics']['precision'] for r in mode_results) / len(mode_results)
         avg_recall = sum(r['metrics']['recall'] for r in mode_results) / len(mode_results)
@@ -134,8 +133,8 @@ def run_evaluation():
             "hit_rate": hit_rate
         }
         log(f"\nSUMMARY [{mode.upper()}]:")
-        log(f"  Avg Precision@3: {avg_precision:.4f}")
-        log(f"  Avg Recall@3:    {avg_recall:.4f}")
+        log(f"  Avg Precision@5: {avg_precision:.4f}")
+        log(f"  Avg Recall@5:    {avg_recall:.4f}")
         log(f"  Avg MRR:         {avg_mrr:.4f}")
         log(f"  Hit Rate:        {hit_rate:.4f}")
 

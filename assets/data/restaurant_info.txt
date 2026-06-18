@@ -1,37 +1,33 @@
-# THÔNG TIN NHÀ HÀNG "BẾP VIỆT SÀI GÒN" (SAIGON VIET KITCHEN)
+# THÔNG TIN NHÀ HÀNG "ỐC QUẬY"
 
 ## 1. Giới thiệu chung
-Nhà hàng Bếp Việt Sài Gòn là điểm đến ẩm thực giao thoa giữa hương vị truyền thống và phong cách hiện đại. Chúng tôi phục vụ đa dạng từ các món ăn sáng truyền thống (Phở, Hủ tiếu) đến các bữa tiệc nướng và lẩu ấm cúng cho gia đình vào buổi tối.
-Slogan: "Hương vị nhà làm, trọn vẹn niềm vui."
+Ốc Quậy là chuỗi nhà hàng chuyên về ốc, sò và hải sản tươi sống với phong cách quán nhậu lai rai bình dân, không gian trẻ trung. Thực đơn đa dạng từ các món ốc/sò chế biến hàng chục kiểu xốt (trứng muối, cháy tỏi, bơ tỏi cay, xốt thái...), món nướng (sò điệp, hàu, tôm càng xanh, cá chim, cá tầm), món hấp sả, gỏi trộn, lẩu, mì - cháo - cơm và các món lặt vặt ăn chơi.
+Quán có mặt tại nhiều tỉnh thành: Sài Gòn (TP. Hồ Chí Minh), Bà Rịa, Bảo Lộc, Đà Lạt, Phan Thiết và Long An.
 
-## 2. Địa chỉ và Liên hệ
-- **Địa chỉ:** Số 86, Đường Nguyễn Trãi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh.
-- **Hotline đặt bàn:** 0909 888 999.
-- **Email:** lienhe@bepvietsaigon.vn
-- **Website:** www.bepvietsaigon.vn
-- **Facebook/Instagram:** @bepvietsaigon
+## 2. Hotline & Liên hệ
+- **Hotline:** 0968 955 331
+- (Email / Website / mạng xã hội: cần cập nhật nếu có)
 
-## 3. Thời gian hoạt động (Giờ mở cửa)
-Nhà hàng mở cửa tất cả các ngày trong tuần (kể cả Lễ, Tết):
-- **Buổi sáng (Điểm tâm):** 06:00 - 10:00 (Phục vụ Phở, Hủ tiếu, Cà phê).
-- **Buổi trưa (Cơm văn phòng & Món lai rai):** 11:00 - 14:00.
-- **Buổi tối (Lẩu & Nướng):** 17:00 - 22:30.
-- **Lưu ý:** Nhà hàng ngưng nhận món mới (Last Order) lúc 22:00.
+## 3. Hệ thống chi nhánh
+**Tại Phan Thiết:**
+- **CN1 - Ốc Quậy View Biển:** 57 Nguyễn Khuyến, P. Phú Thuỷ, TP. Phan Thiết.
+- **CN2 - Ốc Quậy Trung Tâm:** 144-146 Trương Hán Siêu, P. Phú Thuỷ, TP. Phan Thiết.
+- **CN3 - Ốc Quậy Chợ Lớn:** 9-11 Trưng Nhị, P. Đức Nghĩa, TP. Phan Thiết.
+- **CN4 - Ốc Quậy Mũi Né:** 74 Huỳnh Thúc Kháng, Mũi Né, TP. Phan Thiết (kế bên Mango Beach).
 
-## 4. Tiện ích & Dịch vụ (Amenities)
-- **Wifi:**
-  - Tên mạng (SSID): BepViet_Guest
-  - Mật khẩu: ngonmiengnhe (viết liền, không dấu)
-- **Gửi xe:**
-  - Xe máy: Miễn phí, hầm giữ xe của nhà hàng.
-  - Xe hơi: Có bãi đậu xe trước cửa (có tính phí của trật tự đô thị) hoặc gửi tại Vincom Center cách đó 100m.
-- **Thanh toán:** Chấp nhận Tiền mặt, Chuyển khoản (QR Code), Thẻ Visa/Master/JCB, Momo, Apple Pay.
-- **Hóa đơn đỏ (VAT):** Có xuất hóa đơn điện tử cho hóa đơn trên 200.000 VNĐ. Khách hàng vui lòng cung cấp thông tin xuất hóa đơn tại quầy thu ngân.
+**Các tỉnh thành khác:**
+- 108 Nguyễn Thị Định, P. Phước Nguyên, TP. Bà Rịa, BRVT.
+- 208 Huỳnh Thúc Kháng, P.2, TP. Bảo Lộc, Lâm Đồng.
+- 60 Thông Thiên Học, TP. Đà Lạt, Lâm Đồng.
+- 02 Trần Trọng Kim, Vinhomes Central Park, P.22, Q. Bình Thạnh, TP. Hồ Chí Minh.
+- 199 Đường D3, P. Phước Long B, TP. Thủ Đức, TP. Hồ Chí Minh.
+- 58 Chính, Liên Khu Vực, TP. Tân An, Long An.
 
-## 5. Chính sách Nhà hàng
-- **Đặt bàn:** Khuyến khích đặt bàn trước vào cuối tuần hoặc đi nhóm đông trên 6 người. Giữ bàn tối đa 15 phút so với giờ hẹn.
-- **Mang đồ ăn ngoài:** Nhà hàng tính phí phục vụ (charge fee) 100.000 VNĐ/món nếu khách mang thức ăn từ bên ngoài vào.
-- **Rượu bia:** Phí khui rượu (corkage fee) là 200.000 VNĐ/chai đối với rượu mạnh/vang mang từ ngoài vào.
-- **Hút thuốc:** Tuyệt đối không hút thuốc trong phòng lạnh. Có khu vực hút thuốc riêng tại ban công lầu 2.
-- **Trẻ em:** Có sẵn ghế ăn dặm cho em bé (Baby chair).
+## 4. Thời gian hoạt động (Giờ mở cửa)
+- [CẦN CẬP NHẬT] Giờ mở cửa chưa có trên hình ảnh menu. Vui lòng bổ sung khung giờ phục vụ thực tế (ví dụ: 15:00 - 23:00 hàng ngày).
 
+## 5. Tiện ích & Dịch vụ (Amenities)
+- [CẦN CẬP NHẬT] Thông tin Wifi, gửi xe, hình thức thanh toán (tiền mặt / chuyển khoản QR / thẻ / ví điện tử) chưa có trên hình ảnh menu. Vui lòng bổ sung.
+
+## 6. Chính sách Nhà hàng
+- [CẦN CẬP NHẬT] Chính sách đặt bàn, phí mang đồ ăn ngoài, phí khui rượu, khu vực hút thuốc, ghế em bé... chưa có trên hình ảnh menu. Vui lòng bổ sung nếu cần.

@@ -21,10 +21,16 @@ class AgentState(TypedDict):
     
     search_context: Optional[List[SearchResult]]
     
-    # Determistic Validator state 
+    # Determistic Validator state
     is_valid: bool           # Python validator flag
     feedback: Optional[str]  # Actionable error message
     loop_count: int          # Circuit breaker limit
+
+    # Items the customer requested that are NOT on the menu. Captured by the
+    # validator (after stripping them from the cart) so the response node can
+    # explicitly tell the customer instead of silently dropping/substituting.
+    # Each entry: {"name": <as requested>, "suggestion": <closest menu name or None>}
+    unavailable_items: Optional[List[Dict[str, Any]]]
     
     # Router metadata for debugging/evaluation
     routing_meta: Optional[Dict[str, Any]]

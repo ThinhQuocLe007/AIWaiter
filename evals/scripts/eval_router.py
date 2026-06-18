@@ -89,7 +89,7 @@ def main():
             "table_id": "T1",
             "loop_count": 0,
             "is_valid": True,
-            "order_stage": "IDLE"
+            "order_stage": case.get("order_stage", "IDLE")
         }
 
         logging.info(f"Evaluating Case {case_id}: '{case['input']}'")

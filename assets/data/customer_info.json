@@ -1,42 +1,42 @@
 [
   {
     "customer_id": "V001",
-    "name": "Anh Thinh",
+    "name": "Anh Thịnh",
     "tier": "VIP Gold",
-    "preferences": "Thích ăn cay, đặc biệt là các món lẩu Thái. Không ăn được đậu phộng (dị ứng). Luôn gọi Cà phê sữa đá ít đường.",
-    "last_visit": "12/04/2026",
-    "favourite_dish": "Lẩu Thái Tomyum Hải Sản"
+    "preferences": "Thích ăn cay, đặc biệt là các món xốt thái siêu cay và lẩu thái. Không ăn được đậu phộng (dị ứng) nên lưu ý các món gỏi trộn. Hay gọi bia Tiger bạc.",
+    "last_visit": "12/06/2026",
+    "favourite_dish": "Lẩu Thái"
   },
   {
     "customer_id": "V002",
     "name": "Chị Lan",
     "tier": "Silver",
-    "preferences": "Thích các món thanh đạm, ít dầu mỡ. Ưu tiên các món thanh lọc cơ thể như Nước ép dưa hấu. Thích ngồi bàn gần cửa sổ.",
-    "last_visit": "10/04/2026",
-    "favourite_dish": "Phở Gà Ta Tràng An"
+    "preferences": "Thích các món hấp thanh đạm, ít dầu mỡ như ốc hấp sả. Ưu tiên đồ uống mát như trà tắc, trà ổi. Thích ngồi bàn gần cửa sổ.",
+    "last_visit": "10/06/2026",
+    "favourite_dish": "Nghêu"
   },
   {
     "customer_id": "V003",
     "name": "Bác Hùng",
     "tier": "Regular",
-    "preferences": "Khách quen ăn sáng. Thích Phở Bò nhưng dặn ít bánh, nhiều hành trần. Luôn mang theo báo giấy để đọc.",
-    "last_visit": "15/04/2026",
-    "favourite_dish": "Phở Bò Đặc Biệt"
+    "preferences": "Khách quen đi nhậu lai rai buổi tối. Thích các món khô và ốc cháy tỏi, hay gọi bia Sài Gòn. Dặn ốc làm đậm vị.",
+    "last_visit": "15/06/2026",
+    "favourite_dish": "Ốc Hương"
   },
   {
     "customer_id": "V004",
     "name": "Em Vy",
     "tier": "Gold",
-    "preferences": "Yêu thích các món tráng miệng và đồ uống hot trend như Trà Sen Vàng Kem Cheese. Thích chụp ảnh đồ ăn đẹp (instaworthy).",
-    "last_visit": "14/04/2026",
-    "favourite_dish": "Trà Sen Vàng (Kem Cheese)"
+    "preferences": "Yêu thích các món nướng phô mai 'bắt trend' và thích chụp ảnh đồ ăn đẹp (instaworthy). Hay gọi món sò điệp, hàu nướng phô mai.",
+    "last_visit": "14/06/2026",
+    "favourite_dish": "Sò Điệp"
   },
   {
     "customer_id": "V005",
     "name": "Gia đình chị Mai",
     "tier": "VIP Platinum",
-    "preferences": "Thường đi nhóm 4-6 người vào cuối tuần. Các con thích Cơm Chiên Trái Thơm and Cánh gà chiên nước mắm. Cần 2 ghế trẻ em (baby chair).",
-    "last_visit": "08/04/2026",
-    "favourite_dish": "Combo Gia Đình Sum Vầy"
+    "preferences": "Thường đi nhóm 4-6 người vào cuối tuần. Các con thích cơm chiên hải sản và tôm chiên xù. Hay gọi tôm càng xanh nướng phô mai cho cả bàn. Cần 2 ghế trẻ em (baby chair).",
+    "last_visit": "08/06/2026",
+    "favourite_dish": "Tôm Càng Xanh"
   }
 ]

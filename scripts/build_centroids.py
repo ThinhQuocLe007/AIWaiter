@@ -63,7 +63,7 @@ def build_centroids(
     print("\nDone.")
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         description="Build centroid .npz from utterances.json for the semantic router"
     )
@@ -84,7 +84,7 @@ def main() -> None:
         default=DEFAULT_MODEL,
         help="SentenceTransformer model name (default: AITeamVN/Vietnamese_Embedding)",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if not args.utterances.exists():
         print(f"ERROR: utterances.json not found at {args.utterances}", file=sys.stderr)

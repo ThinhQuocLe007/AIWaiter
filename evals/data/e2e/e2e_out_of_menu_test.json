@@ -1,24 +1,82 @@
 {
-  "dataset": "pizza_e2e_test",
-  "version": "1.0",
-  "description": "Test case for out-of-menu item (Pizza Hải Sản) rejection validation.",
-  "total_scenarios": 1,
+  "dataset": "out_of_menu_e2e_test",
+  "version": "3.0",
+  "description": "Test từ chối món ngoài thực đơn cho menu quán ốc/hải sản 'Ốc Quậy'. Phủ nhiều biến thể: 1 món sai + 1 đúng, 1 món sai + nhiều món đúng, toàn bộ món sai, và biến thể gần giống tên thật (test nhánh suggestions của validator). Kiểm tra Validator phát hiện món không tồn tại và LLM từ chối đặt món sai, không gọi confirm_order, hướng dẫn khách chọn lại.",
+  "total_scenarios": 4,
   "scenarios": [
     {
-      "id": "PIZZA-001",
+      "id": "OOM-001",
       "name": "non_existent_item_rejected",
-      "description": "Khách đặt món không có trong thực đơn (Pizza Hải Sản). Kiểm tra Validator phát hiện lỗi và LLM từ chối đặt, hướng dẫn chọn lại.",
-      "table_id": "T_pizza_test",
+      "description": "Khách đặt 1 món không có (Trà Sữa Trân Châu) kèm 1 món có thật (Ốc Hương). Validator phát hiện món không tồn tại, LLM thêm món đúng nhưng từ chối món sai, không gọi confirm_order.",
+      "table_id": "T_oom_001",
       "difficulty": "easy",
       "expected_outcome": "order_rejected",
       "turns": [
         {
           "turn": 1,
           "role": "user",
-          "content": "Cho mình 1 cái Pizza Hải Sản và 1 tô Phở Bò Đặc Biệt nhé",
+          "content": "Cho mình 1 ly Trà Sữa Trân Châu và 1 phần Ốc Hương nhé",
           "assert": {
             "tool_must_NOT_call": "confirm_order",
-            "response_should_contain_one_of": ["pizza", "không có", "không bán", "thực đơn", "chọn lại", "chưa có"]
+            "response_should_contain_one_of": ["trà sữa", "không có", "không bán", "thực đơn", "chọn lại", "chưa có"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "OOM-002",
+      "name": "one_invalid_many_valid",
+      "description": "Khách đặt nhiều món: 2 món có thật (Ốc Hương, Lẩu Thái) và 1 món không có (Cà Phê Sữa Đá). Kiểm tra LLM thêm các món đúng vào giỏ (gọi sync_cart) nhưng nêu rõ món không có và KHÔNG chốt đơn.",
+      "table_id": "T_oom_002",
+      "difficulty": "medium",
+      "expected_outcome": "partial_order_invalid_rejected",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình 2 phần Ốc Hương, 1 lẩu Thái và 1 ly Cà Phê Sữa Đá nha",
+          "assert": {
+            "tool_called": "verify_and_prepare_order",
+            "tool_must_NOT_call": "confirm_order",
+            "response_should_contain_one_of": ["cà phê", "không có", "không bán", "thực đơn", "chưa có"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "OOM-003",
+      "name": "all_items_invalid",
+      "description": "Khách đặt toàn bộ món không có trong thực đơn (Sushi Cá Hồi, Pizza Hải Sản). Validator từ chối tất cả, LLM không thêm món nào và không gọi confirm_order, giải thích quán không phục vụ các món này.",
+      "table_id": "T_oom_003",
+      "difficulty": "medium",
+      "expected_outcome": "order_rejected",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình 1 phần Sushi Cá Hồi và 1 cái Pizza Hải Sản nhé em",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "response_should_contain_one_of": ["sushi", "pizza", "không có", "không bán", "không phục vụ", "thực đơn", "chưa có"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "OOM-004",
+      "name": "near_match_variant_rejected",
+      "description": "Khách gọi món gần giống tên thật nhưng không tồn tại: 'Bia Corona' (menu chỉ có Sài Gòn, 333, Tiger, Heineken) và 'Lẩu Hải Sản' (chỉ có Lẩu Thái, Lẩu Cá Tầm Măng Chua, Lẩu Khổ Qua). Test nhánh suggestions của validator — LLM nên báo không có và gợi ý món tương tự, không chốt đơn.",
+      "table_id": "T_oom_004",
+      "difficulty": "hard",
+      "expected_outcome": "order_rejected_with_suggestion",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình 1 chai Bia Corona với 1 nồi Lẩu Hải Sản nhé",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "response_should_contain_one_of": ["không có", "không bán", "không phục vụ", "thực đơn", "chưa có", "gợi ý", "thử"]
           }
         }
       ]

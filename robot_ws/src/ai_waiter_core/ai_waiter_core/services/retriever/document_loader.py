@@ -135,7 +135,7 @@ class DocumentLoader:
         docs = []
         for item in data:
             name = item.get("dish_name")
-            content = f"Món bán chạy: {name}\nSố lượng bán: {item.get('sold_count')}\nGiai đoạn: {item.get('period')}\nLý do yêu thích: {item.get('reason')}"
+            content = f"Món bán chạy: {name}\nLý do yêu thích: {item.get('reason')}"
             docs.append(Document(
                 page_content=content,
                 metadata={"source": "best_seller.json", "type": "best_seller", "name": name}

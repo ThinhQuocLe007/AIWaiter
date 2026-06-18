@@ -36,6 +36,22 @@ def _build_response_context(state: AgentState) -> str:
         cart_lines.append(f"  Tổng tạm tính: {active_cart.total_price:,}₫")
         blocks.append(f"Giỏ hàng hiện tại (active_cart):\n" + "\n".join(cart_lines))
 
+    unavailable = state.get("unavailable_items")
+    if unavailable:
+        lines = []
+        for u in unavailable:
+            name = u.get("name")
+            sugg = u.get("suggestion")
+            if sugg:
+                lines.append(f"  - {name} (KHÔNG có trong thực đơn — món gần giống: {sugg})")
+            else:
+                lines.append(f"  - {name} (KHÔNG có trong thực đơn)")
+        blocks.append(
+            "Món khách vừa yêu cầu nhưng KHÔNG có trong thực đơn — em PHẢI báo rõ cho "
+            "khách những món này, tuyệt đối không bỏ qua và không tự thay bằng món khác:\n"
+            + "\n".join(lines)
+        )
+
     search_context = state.get("search_context")
     if search_context:
         blocks.append("Kết quả tìm kiếm (search_context):")
@@ -68,8 +84,9 @@ def response_node(state: AgentState) -> Dict[str, Any]:
 
     try:
         response = _response_llm.invoke(input_messages)
-        return {"messages": [response], "feedback": None}
+        # Clear unavailable_items once surfaced so it doesn't leak into the next turn.
+        return {"messages": [response], "feedback": None, "unavailable_items": None}
     except Exception as e:
         logger.error(f"Response generation failed: {e}")
         fallback = "Xin lỗi, em xử lý thông tin bị lỗi. Anh/chị có thể nhắc lại được không ạ?"
-        return {"messages": [AIMessage(content=fallback)], "feedback": None}
+        return {"messages": [AIMessage(content=fallback)], "feedback": None, "unavailable_items": None}

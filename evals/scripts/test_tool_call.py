@@ -14,7 +14,7 @@ from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 
 agent = AIWaiterGraph()
 
-query = "Cho mình 1 tô Phở Bò Đặc Biệt"
+query = "Cho mình 2 phần Ốc Hương xốt trứng muối"
 table_id = "T_test"
 
 print(f"\n[USER]: {query}")

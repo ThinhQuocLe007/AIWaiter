@@ -1,629 +1,352 @@
 {
   "dataset": "router_eval",
-  "version": "2.0",
-  "description": "Đánh giá độ chính xác của Hybrid Router trên 5 nhãn: ORDER, MENU, PAYMENT, CHAT, COMPLEX. 80 câu tiếng Việt, tăng cường độ khó với các trường hợp mơ hồ, viết tắt, teencode, ngữ cảnh ngầm, và nhiều câu COMPLEX hơn.",
-  "routes": [
-    "ORDER",
-    "SEARCH",
-    "PAYMENT",
-    "CHAT",
-    "COMPLEX"
-  ],
-  "total_cases": 80,
+  "version": "3.0",
+  "description": "Đánh giá độ chính xác của Hybrid Router (Semantic + SLM) trên menu quán ốc/hải sản 'Ốc Quậy'. 5 nhãn hợp lệ: ORDER, ORDER_CONFIRM, SEARCH, PAYMENT, CHAT (khớp router_agent.md + utterances.json). Bao gồm câu chuẩn, viết tắt/teencode, ngữ cảnh ngầm, và câu đa intent (expected_route là list, so khớp theo thứ tự). Lưu ý chấm điểm: ORDER_CONFIRM đơn lẻ được tính tương đương ORDER.",
+  "total_cases": 45,
   "cases_per_route": {
-    "ORDER": 18,
-    "MENU": 18,
-    "PAYMENT": 14,
-    "CHAT": 15,
-    "COMPLEX": 15
+    "ORDER": 10,
+    "ORDER_CONFIRM": 6,
+    "SEARCH": 10,
+    "PAYMENT": 8,
+    "CHAT": 5,
+    "MULTI": 6
   },
   "cases": [
     {
       "id": "RT-001",
-      "input": "Cho tôi 2 bát Phở Bò Đặc Biệt",
+      "input": "Cho tôi 2 phần Ốc Hương xốt trứng muối",
       "expected_route": "ORDER",
       "difficulty": "easy",
-      "note": "Câu gọi món chuẩn với số lượng và tên đầy đủ"
+      "note": "Gọi món chuẩn có số lượng và tên đầy đủ"
     },
     {
       "id": "RT-002",
-      "input": "Gọi 1 Bánh Xèo Miền Tây và 2 ly Trà Đào Cam Sả",
+      "input": "Lấy 1 Lẩu Thái với 3 chai bia Tiger",
       "expected_route": "ORDER",
       "difficulty": "easy",
-      "note": "Gọi nhiều món cùng lúc"
+      "note": "Gọi nhiều món trong một câu, vẫn là một intent ORDER"
     },
     {
       "id": "RT-003",
-      "input": "Mình muốn đặt 1 phần Sườn Non Nướng Mật Ong",
+      "input": "Mình muốn gọi thêm 5 con Hàu Nướng",
       "expected_route": "ORDER",
       "difficulty": "easy",
-      "note": "Dùng từ 'đặt' thay vì 'gọi'"
+      "note": "Dùng 'gọi thêm' + đơn vị 'con'"
     },
     {
       "id": "RT-004",
-      "input": "Xác nhận đặt luôn đi",
+      "input": "Cho 2 dĩa Khoai Tây Lắc Phô Mai nha",
       "expected_route": "ORDER",
-      "difficulty": "medium",
-      "note": "Xác nhận đơn hàng sau khi đã được tóm tắt, không có tên món"
+      "difficulty": "easy",
+      "note": "Gọi món vặt"
     },
     {
       "id": "RT-005",
-      "input": "Đúng rồi, đặt đi",
+      "input": "ad cho mình 1 tô cháo hàu vs 2 lon coca",
       "expected_route": "ORDER",
       "difficulty": "medium",
-      "note": "Câu xác nhận rất ngắn, mơ hồ nếu tách khỏi ngữ cảnh"
+      "note": "Teencode 'ad', 'vs' (và), viết thường"
     },
     {
       "id": "RT-006",
-      "input": "Ừ, mình đồng ý với đơn đó",
+      "input": "thêm dĩa ốc bulot nữa đi",
       "expected_route": "ORDER",
-      "difficulty": "hard",
-      "note": "Xác nhận ngầm hiểu, không có từ khóa rõ ràng"
+      "difficulty": "medium",
+      "note": "Thêm món, không nêu số lượng rõ"
     },
     {
       "id": "RT-007",
-      "input": "Lấy cho mình 3 ly Sinh Tố Bơ Dừa nhé, ghi chú ít đá",
+      "input": "bỏ món mực chiên xù ra khỏi đơn giúp mình",
       "expected_route": "ORDER",
-      "difficulty": "easy",
-      "note": "Gọi món có kèm ghi chú đặc biệt"
+      "difficulty": "medium",
+      "note": "Huỷ/sửa món vẫn thuộc ORDER"
     },
     {
       "id": "RT-008",
-      "input": "Cho mình thêm 1 phần Chả Giò Tôm Cua nữa",
+      "input": "đổi 2 bia Sài Gòn thành 2 bia 333",
       "expected_route": "ORDER",
-      "difficulty": "easy",
-      "note": "Thêm món vào đơn hiện tại"
+      "difficulty": "medium",
+      "note": "Sửa đơn (thay món)"
     },
     {
       "id": "RT-009",
-      "input": "Tiến hành đặt món đó cho mình",
+      "input": "cho t 3 phần sò huyết hấp sả",
       "expected_route": "ORDER",
       "difficulty": "medium",
-      "note": "Câu xác nhận dạng hành động"
+      "note": "Teencode 't' (tôi)"
     },
     {
       "id": "RT-010",
-      "input": "Ok, cứ vậy đi, gọi cho mình",
+      "input": "1 lẩu cá tầm măng chua nhe bạn",
       "expected_route": "ORDER",
-      "difficulty": "hard",
-      "note": "Rất ngắn, cần ngữ cảnh để hiểu, nhưng ngữ nghĩa vẫn là xác nhận gọi món"
+      "difficulty": "easy",
+      "note": "Gọi món viết tắt số lượng đứng đầu"
     },
     {
       "id": "RT-011",
-      "input": "Bỏ Mực Nướng Sa Tế ra khỏi đơn giùm",
-      "expected_route": "ORDER",
-      "difficulty": "medium",
-      "note": "Hủy/bỏ món cũng thuộc ORDER (modify order)"
+      "input": "Đúng rồi, xác nhận đặt luôn",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "easy",
+      "note": "Xác nhận đơn đã tóm tắt"
     },
     {
       "id": "RT-012",
-      "input": "Đổi Phở Bò thành Phở Gà Ta Tràng An giùm mình",
-      "expected_route": "ORDER",
-      "difficulty": "medium",
-      "note": "Sửa đơn hàng hiện tại, vẫn là ORDER"
+      "input": "Ok chốt đơn đi em",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "easy",
+      "note": "Chốt đơn"
     },
     {
       "id": "RT-013",
-      "input": "cho 1 Bò Lúc Lắc ko hành",
-      "expected_route": "ORDER",
-      "difficulty": "hard",
-      "note": "Viết tắt teencode 'ko' = 'không', ghi chú bỏ hành"
+      "input": "Ừ đặt nha",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "medium",
+      "note": "Xác nhận ngắn gọn",
+      "order_stage": "AWAITING_CONFIRMATION"
     },
     {
       "id": "RT-014",
-      "input": "lấy 2 cơm tấm vs 1 bò kho bánh mì nha",
-      "expected_route": "ORDER",
-      "difficulty": "hard",
-      "note": "Teencode 'vs' = 'với', viết thường hoàn toàn, không dấu"
+      "input": "chuẩn rồi, lên đơn giúp anh",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "medium",
+      "note": "Xác nhận bằng cách diễn đạt khác"
     },
     {
       "id": "RT-015",
-      "input": "gọi thêm đi, lấy thêm 1 Nấm Mối Nướng Giấy Bạc cho bàn mình",
-      "expected_route": "ORDER",
-      "difficulty": "easy",
-      "note": "Gọi thêm món chay vào đơn"
+      "input": "Uh đúng rồi đó",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "hard",
+      "note": "Mơ hồ, cần ngữ cảnh đơn trước đó",
+      "order_stage": "AWAITING_CONFIRMATION"
     },
     {
       "id": "RT-016",
-      "input": "Ê, lấy cho anh 1 Súp Cua Tóc Tiên với 2 Nem Nướng Nha Trang",
-      "expected_route": "ORDER",
-      "difficulty": "easy",
-      "note": "Ngôn ngữ casual miền Nam"
+      "input": "ok em",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "hard",
+      "note": "Rất ngắn, dễ nhầm CHAT nếu không có ngữ cảnh",
+      "order_stage": "AWAITING_CONFIRMATION"
     },
     {
       "id": "RT-017",
-      "input": "Cho bàn 7 gọi thêm 1 Lẩu Thái Tomyum Hải Sản",
-      "expected_route": "ORDER",
+      "input": "Ốc Hương giá bao nhiêu vậy?",
+      "expected_route": "SEARCH",
       "difficulty": "easy",
-      "note": "Gọi món kèm số bàn"
+      "note": "Hỏi giá"
     },
     {
       "id": "RT-018",
-      "input": "Ừ ok chốt vậy đi, không thay đổi gì nữa",
-      "expected_route": "ORDER",
-      "difficulty": "hard",
-      "note": "Xác nhận ngầm, rất mơ hồ, ngắn gọn, không nhắc tên món"
+      "input": "Quán mình có món chay không?",
+      "expected_route": "SEARCH",
+      "difficulty": "easy",
+      "note": "Hỏi về menu/diet"
     },
     {
       "id": "RT-019",
-      "input": "Phở Bò Đặc Biệt giá bao nhiêu vậy?",
+      "input": "Lẩu Thái cay không em?",
       "expected_route": "SEARCH",
       "difficulty": "easy",
-      "note": "Hỏi giá một món cụ thể"
+      "note": "Hỏi tính chất món"
     },
     {
       "id": "RT-020",
-      "input": "Quán có món chay không?",
+      "input": "Hàu nướng có những kiểu chế biến nào?",
       "expected_route": "SEARCH",
-      "difficulty": "easy",
-      "note": "Hỏi danh sách món theo loại"
+      "difficulty": "medium",
+      "note": "Hỏi biến thể món"
     },
     {
       "id": "RT-021",
-      "input": "Cho tôi xem thực đơn đồ uống",
+      "input": "có món gì hợp cho nhóm 4 người nhậu không",
       "expected_route": "SEARCH",
-      "difficulty": "easy",
-      "note": "Xem thực đơn theo danh mục"
+      "difficulty": "medium",
+      "note": "Hỏi gợi ý món theo nhu cầu"
     },
     {
       "id": "RT-022",
-      "input": "Món nào đang là best seller nhất quán?",
+      "input": "quán mở cửa tới mấy giờ vậy",
       "expected_route": "SEARCH",
       "difficulty": "medium",
-      "note": "Hỏi gợi ý, không hỏi giá cụ thể"
+      "note": "Hỏi thông tin nhà hàng → SEARCH"
     },
     {
       "id": "RT-023",
-      "input": "Bạch tuộc trong Lẩu Thái được chế biến như thế nào?",
+      "input": "món nào bán chạy nhất ở đây",
       "expected_route": "SEARCH",
       "difficulty": "medium",
-      "note": "Hỏi thông tin nguyên liệu/cách chế biến"
+      "note": "Hỏi best seller"
     },
     {
       "id": "RT-024",
-      "input": "Có món nào dưới 50 ngàn không?",
+      "input": "ốc bulot làm từ nguyên liệu gì thế",
       "expected_route": "SEARCH",
-      "difficulty": "easy",
-      "note": "Hỏi menu theo khoảng giá"
+      "difficulty": "medium",
+      "note": "Hỏi thành phần"
     },
     {
       "id": "RT-025",
-      "input": "Hôm nay quán có gì đặc biệt không?",
+      "input": "có ship về quận 7 ko shop",
       "expected_route": "SEARCH",
-      "difficulty": "medium",
-      "note": "Hỏi món đặc sắc/khuyến mãi ngày hôm nay"
+      "difficulty": "hard",
+      "note": "Teencode + hỏi thông tin dịch vụ → SEARCH"
     },
     {
       "id": "RT-026",
-      "input": "Món Gà Bó Xôi ăn có ngon không? Nguyên liệu gồm gì?",
+      "input": "bia heineken nhiêu 1 lon z",
       "expected_route": "SEARCH",
-      "difficulty": "easy",
-      "note": "Hỏi thông tin chi tiết về một món cụ thể"
+      "difficulty": "hard",
+      "note": "Teencode 'nhiêu', 'z', hỏi giá"
     },
     {
       "id": "RT-027",
-      "input": "Quán có phục vụ lẩu không? Cho mấy người ăn?",
-      "expected_route": "SEARCH",
-      "difficulty": "medium",
-      "note": "Hỏi thông tin món chia sẻ, kết hợp hỏi khẩu phần"
+      "input": "Tính tiền giùm anh",
+      "expected_route": "PAYMENT",
+      "difficulty": "easy",
+      "note": "Yêu cầu thanh toán chuẩn"
     },
     {
       "id": "RT-028",
-      "input": "Sinh tố xoài và sinh tố bơ loại nào ngon hơn?",
-      "expected_route": "SEARCH",
-      "difficulty": "hard",
-      "note": "So sánh hai món, cần tìm kiếm cả hai"
+      "input": "Cho xin hóa đơn",
+      "expected_route": "PAYMENT",
+      "difficulty": "easy",
+      "note": "Xin hoá đơn"
     },
     {
       "id": "RT-029",
-      "input": "Bún Bò Huế với Phở Bò Đặc Biệt cái nào nhiều thịt hơn?",
-      "expected_route": "SEARCH",
-      "difficulty": "hard",
-      "note": "So sánh hai món cụ thể về thành phần"
+      "input": "Thanh toán chuyển khoản được không?",
+      "expected_route": "PAYMENT",
+      "difficulty": "easy",
+      "note": "Hỏi phương thức thanh toán"
     },
     {
       "id": "RT-030",
-      "input": "Cà Tím Tay Cầm có phải chay thuần không? Có dùng dầu hào không?",
-      "expected_route": "SEARCH",
-      "difficulty": "hard",
-      "note": "Hỏi chi tiết chay về nguyên liệu ẩn"
+      "input": "Quẹt thẻ được hông em",
+      "expected_route": "PAYMENT",
+      "difficulty": "medium",
+      "note": "Hỏi quẹt thẻ"
     },
     {
       "id": "RT-031",
-      "input": "Cho mình hỏi Gỏi Ngó Sen Tôm Thịt có bao nhiêu calo vậy?",
-      "expected_route": "SEARCH",
-      "difficulty": "medium",
-      "note": "Hỏi thông tin dinh dưỡng"
+      "input": "ck cho mình cái qr với",
+      "expected_route": "PAYMENT",
+      "difficulty": "hard",
+      "note": "Teencode 'ck' (chuyển khoản) + xin QR"
     },
     {
       "id": "RT-032",
-      "input": "Mình dị ứng tôm, quán có món nào thay thế cho Tôm Sú Chiên Xù không?",
-      "expected_route": "SEARCH",
-      "difficulty": "hard",
-      "note": "Dị ứng + gợi ý thay thế, dễ nhầm ORDER vì nhắc tên món"
+      "input": "hết nhiêu tiền rồi em ơi",
+      "expected_route": "PAYMENT",
+      "difficulty": "medium",
+      "note": "Hỏi tổng tiền (kiểm tra bill)"
     },
     {
       "id": "RT-033",
-      "input": "Đậu Hũ Tứ Xuyên cay lắm không bạn? Mình ăn cay yếu",
-      "expected_route": "SEARCH",
-      "difficulty": "medium",
-      "note": "Hỏi mức cay trước khi quyết định đặt"
+      "input": "cho xin mã qr thanh toán",
+      "expected_route": "PAYMENT",
+      "difficulty": "easy",
+      "note": "Xin QR"
     },
     {
       "id": "RT-034",
-      "input": "Gợi ý cho bàn mình set 4 người ăn tầm 500 nghìn được không?",
-      "expected_route": "SEARCH",
+      "input": "bill đi em",
+      "expected_route": "PAYMENT",
       "difficulty": "hard",
-      "note": "Gợi ý combo theo ngân sách và số người, dễ nhầm ORDER"
+      "note": "Rất ngắn, dùng từ mượn 'bill'"
     },
     {
       "id": "RT-035",
-      "input": "Mì Quảng Tôm Thịt khác gì Hủ Tiếu Nam Vang vậy bạn?",
-      "expected_route": "SEARCH",
-      "difficulty": "medium",
-      "note": "So sánh sự khác biệt giữa hai món"
+      "input": "Xin chào shop",
+      "expected_route": "CHAT",
+      "difficulty": "easy",
+      "note": "Chào hỏi"
     },
     {
       "id": "RT-036",
-      "input": "Rau Câu Dừa Xiêm có dùng gelatin động vật không?",
-      "expected_route": "SEARCH",
-      "difficulty": "hard",
-      "note": "Hỏi nguyên liệu ẩn liên quan chế độ ăn"
+      "input": "Cảm ơn em nhiều nha",
+      "expected_route": "CHAT",
+      "difficulty": "easy",
+      "note": "Cảm ơn"
     },
     {
       "id": "RT-037",
-      "input": "Tính tiền bàn tôi đi",
-      "expected_route": "PAYMENT",
-      "difficulty": "easy",
-      "note": "Yêu cầu thanh toán trực tiếp"
+      "input": "Đồ ăn ở đây ngon quá trời",
+      "expected_route": "CHAT",
+      "difficulty": "medium",
+      "note": "Khen, không có hành động"
     },
     {
       "id": "RT-038",
-      "input": "Cho tôi xem hóa đơn",
-      "expected_route": "PAYMENT",
-      "difficulty": "easy",
-      "note": "Xem hóa đơn trước khi thanh toán"
+      "input": "ê quán đông ghê ha",
+      "expected_route": "CHAT",
+      "difficulty": "medium",
+      "note": "Tán gẫu"
     },
     {
       "id": "RT-039",
-      "input": "Tôi muốn thanh toán bằng QR code",
-      "expected_route": "PAYMENT",
-      "difficulty": "easy",
-      "note": "Thanh toán với phương thức cụ thể"
+      "input": "trời hôm nay mưa to thật",
+      "expected_route": "CHAT",
+      "difficulty": "hard",
+      "note": "Lạc đề hoàn toàn, không liên quan nhà hàng"
     },
     {
       "id": "RT-040",
-      "input": "Mình xin thanh toán nhé, bàn số 3",
-      "expected_route": "PAYMENT",
-      "difficulty": "easy",
-      "note": "Thanh toán có kèm số bàn"
+      "input": "Cho 2 Ốc Hương rồi tính tiền luôn",
+      "expected_route": [
+        "ORDER",
+        "PAYMENT"
+      ],
+      "difficulty": "hard",
+      "note": "Đa intent: gọi món rồi thanh toán, đúng thứ tự"
     },
     {
       "id": "RT-041",
-      "input": "Bao nhiêu tiền tất cả?",
-      "expected_route": "PAYMENT",
-      "difficulty": "medium",
-      "note": "Hỏi tổng tiền - có thể nhầm với hỏi giá menu"
+      "input": "Lẩu Thái cay không? Không cay thì cho mình 1 phần",
+      "expected_route": [
+        "SEARCH",
+        "ORDER"
+      ],
+      "difficulty": "hard",
+      "note": "Đa intent: hỏi trước, gọi món có điều kiện"
     },
     {
       "id": "RT-042",
-      "input": "Cho mình thanh toán, tách đôi hóa đơn giúp mình",
-      "expected_route": "PAYMENT",
+      "input": "Xác nhận đơn cũ và thêm 2 bia Tiger",
+      "expected_route": [
+        "ORDER_CONFIRM",
+        "ORDER"
+      ],
       "difficulty": "hard",
-      "note": "Thanh toán với yêu cầu tách hóa đơn"
+      "note": "Đa intent: xác nhận rồi gọi thêm"
     },
     {
       "id": "RT-043",
-      "input": "Ơi, mình xin check out",
-      "expected_route": "PAYMENT",
-      "difficulty": "medium",
-      "note": "Dùng từ 'check out' thay vì 'thanh toán'"
-    },
-    {
-      "id": "RT-044",
-      "input": "Mình ăn xong rồi, tính tiền giùm nhé",
-      "expected_route": "PAYMENT",
-      "difficulty": "easy",
-      "note": "Ngữ cảnh rõ ràng là cuối bữa ăn"
-    },
-    {
-      "id": "RT-045",
-      "input": "Quán có nhận chuyển khoản ngân hàng không?",
-      "expected_route": "PAYMENT",
-      "difficulty": "medium",
-      "note": "Hỏi phương thức thanh toán, dễ nhầm CHAT"
-    },
-    {
-      "id": "RT-046",
-      "input": "Bàn mình gọi 3 món rồi, tổng hết bao nhiêu rồi nhỉ?",
-      "expected_route": "PAYMENT",
-      "difficulty": "hard",
-      "note": "Nhắc '3 món' nhưng hỏi tổng tiền, dễ nhầm ORDER"
-    },
-    {
-      "id": "RT-047",
-      "input": "lấy bill đi bạn ơi",
-      "expected_route": "PAYMENT",
-      "difficulty": "medium",
-      "note": "Teencode, casual, viết thường"
-    },
-    {
-      "id": "RT-048",
-      "input": "Cho mình xin hóa đơn VAT được không?",
-      "expected_route": "PAYMENT",
-      "difficulty": "medium",
-      "note": "Yêu cầu hóa đơn VAT cụ thể"
-    },
-    {
-      "id": "RT-049",
-      "input": "Mình trả bằng MoMo nha",
-      "expected_route": "PAYMENT",
-      "difficulty": "easy",
-      "note": "Thanh toán bằng ví điện tử"
-    },
-    {
-      "id": "RT-050",
-      "input": "Xong bữa rồi, tính tiền cho bàn 12 giùm",
-      "expected_route": "PAYMENT",
-      "difficulty": "easy",
-      "note": "Rõ ràng muốn kết thúc bữa ăn"
-    },
-    {
-      "id": "RT-051",
-      "input": "Chào bạn, quán đang phục vụ bàn mình không?",
-      "expected_route": "CHAT",
-      "difficulty": "easy",
-      "note": "Câu chào hỏi thông thường"
-    },
-    {
-      "id": "RT-052",
-      "input": "Cảm ơn bạn nhiều nhé, món ăn rất ngon",
-      "expected_route": "CHAT",
-      "difficulty": "easy",
-      "note": "Lời cảm ơn sau khi ăn - nhắc 'món ăn' nhưng không đặt"
-    },
-    {
-      "id": "RT-053",
-      "input": "Bạn là robot hay người thật vậy?",
-      "expected_route": "CHAT",
-      "difficulty": "easy",
-      "note": "Hỏi về bản thân AI"
-    },
-    {
-      "id": "RT-054",
-      "input": "Nhà vệ sinh ở đâu vậy bạn?",
-      "expected_route": "SEARCH",
-      "difficulty": "medium",
-      "note": "Hỏi thông tin trong quán, không liên quan menu"
-    },
-    {
-      "id": "RT-055",
-      "input": "Bàn mình chờ lâu quá, món gần xong chưa?",
-      "expected_route": "CHAT",
-      "difficulty": "medium",
-      "note": "Phản ánh dịch vụ - nhắc 'món' nhưng là hỏi tiến độ"
-    },
-    {
-      "id": "RT-056",
-      "input": "Tôi thấy bàn bên cạnh gọi món hấp dẫn quá",
-      "expected_route": "CHAT",
-      "difficulty": "hard",
-      "note": "Nhắc 'gọi món' nhưng đang nói về bàn khác, không đặt"
-    },
-    {
-      "id": "RT-057",
-      "input": "Quán mình có chương trình giảm giá sinh nhật không?",
-      "expected_route": "SEARCH",
-      "difficulty": "hard",
-      "note": "Hỏi chính sách khuyến mãi - có thể nhầm với MENU"
-    },
-    {
-      "id": "RT-058",
-      "input": "Quán mở cửa đến mấy giờ vậy bạn?",
-      "expected_route": "SEARCH",
-      "difficulty": "easy",
-      "note": "Hỏi giờ mở cửa"
-    },
-    {
-      "id": "RT-059",
-      "input": "Wifi quán tên gì, pass bao nhiêu bạn ơi?",
-      "expected_route": "SEARCH",
-      "difficulty": "easy",
-      "note": "Hỏi thông tin wifi"
-    },
-    {
-      "id": "RT-060",
-      "input": "Hôm nay quán vắng quá ha, ngày thường là vậy á?",
-      "expected_route": "CHAT",
-      "difficulty": "medium",
-      "note": "Trò chuyện về mức độ đông khách"
-    },
-    {
-      "id": "RT-061",
-      "input": "Mình có thể đặt bàn trước cho tối nay không?",
-      "expected_route": "CHAT",
-      "difficulty": "hard",
-      "note": "Dùng từ 'đặt' nhưng là đặt bàn chứ không phải đặt món"
-    },
-    {
-      "id": "RT-062",
-      "input": "Bàn ngoài sân có ổ cắm sạc điện thoại không bạn?",
-      "expected_route": "SEARCH",
-      "difficulty": "medium",
-      "note": "Hỏi tiện nghi quán"
-    },
-    {
-      "id": "RT-063",
-      "input": "Mình đã đặt món rồi mà sao chưa thấy lên nhỉ?",
-      "expected_route": "CHAT",
-      "difficulty": "hard",
-      "note": "Nhắc 'đặt món' nhưng hỏi tiến độ phục vụ, rất dễ nhầm ORDER"
-    },
-    {
-      "id": "RT-064",
-      "input": "Quán có chỗ đậu xe máy không bạn?",
-      "expected_route": "SEARCH",
-      "difficulty": "easy",
-      "note": "Hỏi thông tin bãi đỗ xe"
-    },
-    {
-      "id": "RT-065",
-      "input": "Đồ ăn ở đây ngon thiệt, lần sau mình ghé lại nha",
-      "expected_route": "CHAT",
-      "difficulty": "hard",
-      "note": "Khen đồ ăn, nhắc 'đồ ăn' nhưng không hỏi menu cũng không đặt"
-    },
-    {
-      "id": "RT-066",
-      "input": "Cho tôi 1 Phở Bò và tính tiền luôn",
+      "input": "Tính tiền đi, à mà món nào đang giảm giá vậy?",
       "expected_route": [
-        "ORDER",
-        "PAYMENT"
-      ],
-      "difficulty": "hard",
-      "note": "Kết hợp ORDER + PAYMENT trong một câu"
-    },
-    {
-      "id": "RT-067",
-      "input": "Hủy Mực Nướng rồi gọi Sườn Non thay vào, và cho tôi xem menu đồ uống",
-      "expected_route": [
-        "ORDER",
+        "PAYMENT",
         "SEARCH"
       ],
       "difficulty": "hard",
-      "note": "Ba ý trong một câu: hủy + đặt lại + xem menu"
+      "note": "Đa intent: thanh toán trước rồi hỏi khuyến mãi"
     },
     {
-      "id": "RT-068",
-      "input": "Bạch Tuộc Nướng có chay không? Nếu không có thì gọi Gỏi Nấm Bào Ngư cho mình",
+      "id": "RT-044",
+      "input": "Cho mình xem qua menu rồi lấy 1 cháo hàu",
       "expected_route": [
         "SEARCH",
         "ORDER"
       ],
       "difficulty": "hard",
-      "note": "Điều kiện if-else trong một câu: MENU + conditional ORDER"
+      "note": "Đa intent: xem menu rồi gọi món"
     },
     {
-      "id": "RT-069",
-      "input": "Cho mình xem tổng hóa đơn, nếu dưới 200k thì gọi thêm Chè Khúc Bạch",
-      "expected_route": [
-        "PAYMENT",
-        "ORDER"
-      ],
-      "difficulty": "hard",
-      "note": "Kết hợp PAYMENT + conditional ORDER"
-    },
-    {
-      "id": "RT-070",
-      "input": "Phở Bò có mấy loại, và cứ gọi loại đắt nhất cho mình 2 tô",
-      "expected_route": [
-        "SEARCH",
-        "ORDER"
-      ],
-      "difficulty": "hard",
-      "note": "Kết hợp MENU + ORDER với điều kiện ngầm"
-    },
-    {
-      "id": "RT-071",
-      "input": "Gà Rang Muối Hồng Kông giá bao nhiêu? Nếu dưới 100k thì lấy 1 phần luôn",
-      "expected_route": [
-        "SEARCH",
-        "ORDER"
-      ],
-      "difficulty": "hard",
-      "note": "MENU (hỏi giá) + conditional ORDER"
-    },
-    {
-      "id": "RT-072",
-      "input": "Tính tiền bàn mình đi, rồi cho mình gọi thêm 2 ly Cà Phê Sữa Đá mang về",
-      "expected_route": [
-        "PAYMENT",
-        "ORDER"
-      ],
-      "difficulty": "hard",
-      "note": "PAYMENT + ORDER mang về"
-    },
-    {
-      "id": "RT-073",
-      "input": "Cho mình xem menu tráng miệng, rồi lấy 1 Chè Khúc Bạch và tính tiền luôn",
-      "expected_route": [
-        "SEARCH",
-        "ORDER",
-        "PAYMENT"
-      ],
-      "difficulty": "hard",
-      "note": "Ba ý: MENU + ORDER + PAYMENT"
-    },
-    {
-      "id": "RT-074",
-      "input": "Món Cá Lăng Kho Tộ có ngon không? Nếu ngon thì cho mình 1 phần, không thì tư vấn món cá khác",
-      "expected_route": [
-        "SEARCH",
-        "ORDER"
-      ],
-      "difficulty": "hard",
-      "note": "MENU + conditional ORDER + fallback MENU"
-    },
-    {
-      "id": "RT-075",
-      "input": "Hủy Canh Chua Cá Lóc, đổi sang Súp Bắp Hải Sản, rồi check bill giùm",
+      "id": "RT-045",
+      "input": "Thêm 3 hàu nướng nữa rồi chốt đơn cho anh",
       "expected_route": [
         "ORDER",
-        "PAYMENT"
+        "ORDER_CONFIRM"
       ],
       "difficulty": "hard",
-      "note": "ORDER (hủy + đổi) + PAYMENT"
-    },
-    {
-      "id": "RT-076",
-      "input": "Mình muốn gọi 2 Bò Nướng Đá Cuội, nhưng trước đó cho hỏi phần này ăn mấy người?",
-      "expected_route": [
-        "SEARCH",
-        "ORDER"
-      ],
-      "difficulty": "hard",
-      "note": "ORDER + MENU (hỏi khẩu phần) đan xen"
-    },
-    {
-      "id": "RT-077",
-      "input": "Lấy thêm 1 Miến Xào Cua và 1 Soda Chanh Muối, xong tính tiền nhé",
-      "expected_route": [
-        "ORDER",
-        "PAYMENT"
-      ],
-      "difficulty": "hard",
-      "note": "ORDER (2 món) + PAYMENT trong 1 câu"
-    },
-    {
-      "id": "RT-078",
-      "input": "Cho mình hỏi Đậu Hũ Lướt Ván là chay không? Nếu chay thì gọi 2 phần, rồi in bill",
-      "expected_route": [
-        "SEARCH",
-        "ORDER",
-        "PAYMENT"
-      ],
-      "difficulty": "hard",
-      "note": "MENU + conditional ORDER + PAYMENT, 3 ý phức tạp"
-    },
-    {
-      "id": "RT-079",
-      "input": "Mình ăn xong Phở rồi, giờ cho xem menu đồ uống rồi tính tiền luôn",
-      "expected_route": [
-        "SEARCH",
-        "PAYMENT"
-      ],
-      "difficulty": "hard",
-      "note": "CHAT (đã ăn xong) + MENU + PAYMENT"
-    },
-    {
-      "id": "RT-080",
-      "input": "Cơm Chiên Trái Thơm có tôm không? Mình dị ứng tôm nên nếu có thì cho đổi Cơm Tấm Sườn Bì Chả",
-      "expected_route": [
-        "SEARCH",
-        "ORDER"
-      ],
-      "difficulty": "hard",
-      "note": "MENU (hỏi dị ứng) + conditional ORDER (swap)"
+      "note": "Đa intent: gọi thêm rồi xác nhận"
     }
   ]
 }

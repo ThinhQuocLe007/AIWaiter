@@ -1,9 +1,18 @@
 import json
 import os
+import sys
 import time
 import uuid
 from datetime import datetime
 from typing import List, Dict, Any
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+SRC_DIR = os.path.join(PROJECT_ROOT, 'robot_ws', 'src', 'ai_waiter_core')
+if os.path.isdir(SRC_DIR):
+    sys.path.insert(0, SRC_DIR)
+
+from dotenv import load_dotenv
+load_dotenv()
 
 from ai_waiter_core.agent.agent import get_agent_app
 from ai_waiter_core.config import settings
@@ -11,11 +20,11 @@ from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 
 # Dedicated single-scenario path
 E2E_DATA_FILES = [
-    settings.PROJECT_ROOT / "evals/data/e2e/e2e_pizza_test.json"
+    settings.PROJECT_ROOT / "evals/data/e2e/e2e_out_of_menu_test.json"
 ]
 RESULTS_DIR = settings.PROJECT_ROOT / "evals/results"
-LOG_FILE = RESULTS_DIR / f"e2e_pizza_eval_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
-REPORT_FILE = RESULTS_DIR / "e2e_pizza_report.json"
+LOG_FILE = RESULTS_DIR / f"e2e_out_of_menu_eval_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+REPORT_FILE = RESULTS_DIR / "e2e_out_of_menu_report.json"
 
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
@@ -28,7 +37,7 @@ def log(message: str):
 
 def run_scenario(app, scenario: Dict[str, Any]) -> Dict[str, Any]:
     scenario_id = scenario['id']
-    thread_id = f"eval_pizza_{uuid.uuid4().hex[:8]}"
+    thread_id = f"eval_out_of_menu_{uuid.uuid4().hex[:8]}"
     config = {"configurable": {"thread_id": thread_id}}
     
     log(f"\n--- RUNNING SCENARIO {scenario_id}: {scenario['name']} ---")
@@ -157,7 +166,7 @@ def run_scenario(app, scenario: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 def run_evaluation():
-    log("Starting Pizza Rejection Single-Scenario E2E Evaluation...")
+    log("Starting Out-of-Menu Rejection Single-Scenario E2E Evaluation...")
     
     app = get_agent_app()
     all_scenario_results = []
@@ -184,7 +193,7 @@ def run_evaluation():
     passed = sum(1 for r in all_scenario_results if r['success'])
     pass_rate = passed / total if total > 0 else 0
     
-    log(f"\nE2E PIZZA EVALUATION SUMMARY:")
+    log(f"\nE2E OUT-OF-MENU EVALUATION SUMMARY:")
     log(f"  Total Scenarios: {total}")
     log(f"  Passed:          {passed}")
     log(f"  Pass Rate:       {pass_rate:.2%}")

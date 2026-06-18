@@ -2,12 +2,15 @@ import json
 import numpy as np
 from pathlib import Path
 from typing import Dict, Any
-from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
 from langchain_core.messages import HumanMessage
 from ai_waiter_core.agent.state import AgentState
 from ai_waiter_core.config import settings
+from ai_waiter_core.services.retriever.indices.embeddings import (
+    EMBEDDING_MODEL_NAME,
+    get_sentence_transformer,
+)
 from ai_waiter_core.utils import log_struct, trace_latency
 
 UTTERANCES_PATH = settings.resources_dir / "few_shots" / "utterances.json"
@@ -58,8 +61,10 @@ def softmax_routing(
 
 
 class SemanticRouterNode:
-    def __init__(self, model_name: str = "AITeamVN/Vietnamese_Embedding"):
-        self.model = SentenceTransformer(model_name, device=settings.DEVICE)
+    def __init__(self, model_name: str = EMBEDDING_MODEL_NAME):
+        # Reuse the shared SentenceTransformer singleton (same instance as the
+        # retriever) so the embedding model is held in memory only once.
+        self.model = get_sentence_transformer(model_name)
         self.route_centroids: dict[str, np.ndarray] = {}
         self._load_centroids()
 

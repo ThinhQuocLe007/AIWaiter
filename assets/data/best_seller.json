@@ -1,32 +1,42 @@
 [
   {
-    "dish_name": "Lẩu Thái Tomyum Hải Sản",
-    "sold_count": 845,
-    "period": "Tháng 03/2026",
-    "reason": "Vị chua cay đặc trưng, hải sản tươi sống và phù hợp cho nhóm bạn, gia đình. Là linh hồn của các bữa tiệc tối tại Bếp Việt."
+    "dish_name": "Tôm Càng Xanh Nướng Phô Mai",
+    "reason": "Tôm càng xanh size lớn nướng phủ phô mai béo ngậy, thịt chắc ngọt. Món signature được khách order nhiều nhất khi đi nhóm."
   },
   {
-    "dish_name": "Phở Bò Đặc Biệt",
-    "sold_count": 1250,
-    "period": "Tháng 03/2026",
-    "reason": "Món ăn sáng quốc dân với nước dùng hầm xương tinh túy. Khách hàng cực kỳ yêu thích phần nạm bò mềm và bò viên dai giòn."
+    "dish_name": "Hàu Nướng",
+    "reason": "Hàu tươi nướng phô mai, mỡ hành hoặc tiêu xanh, béo thơm. Món khai vị quốc dân, gọi theo con nên rất dễ gọi thêm."
   },
   {
-    "dish_name": "Cà Phê Sữa Đá Sài Gòn",
-    "sold_count": 2100,
-    "period": "Tháng 03/2026",
-    "reason": "Thức uống không thể thiếu mỗi sáng. Cà phê đậm vị, đúng chất Sài Gòn giúp khách hàng tỉnh táo tức thì."
+    "dish_name": "Ốc Hương",
+    "reason": "Ốc hương giòn ngọt với hơn 10 kiểu xốt (trứng muối, cháy tỏi, bơ tỏi cay...). Ngôi sao của thực đơn ốc tại Ốc Quậy."
   },
   {
-    "dish_name": "Chè Khúc Bạch Hạnh Nhân",
-    "sold_count": 620,
-    "period": "Tháng 03/2026",
-    "reason": "Món tráng miệng thanh mát nhất menu. Độ béo ngậy của khúc bạch và giòn tan của hạnh nhân tạo nên sức hút khó cưỡng."
+    "dish_name": "Cá Chim Nướng Sa Tế",
+    "reason": "Cá chim nguyên con nướng sa tế cay thơm, da giòn thịt chắc, đủ cho cả bàn cùng thưởng thức."
   },
   {
-    "dish_name": "Bò Nướng Đá Cuội",
-    "sold_count": 430,
-    "period": "Tháng 03/2026",
-    "reason": "Trải nghiệm nướng tại bàn độc đáo và phần sốt phô mai trứng muối cực kỳ 'bắt trend', là lựa chọn hàng đầu của giới trẻ."
+    "dish_name": "Sò Điệp Nướng Phô Mai",
+    "reason": "Sò điệp nướng phô mai béo ngậy, đẹp mắt và 'bắt trend', được giới trẻ cực kỳ yêu thích."
+  },
+  {
+    "dish_name": "Răng Mực Bơ Tỏi Cay",
+    "reason": "Răng mực giòn sần sật xốt bơ tỏi cay đậm đà, món nhậu lai rai cực kỳ cuốn."
+  },
+  {
+    "dish_name": "Ốc Bươu Nhồi Thịt",
+    "reason": "Ốc bươu nhồi thịt heo, sả, lá chanh hấp thơm lừng — món truyền thống đậm chất Việt được khách quen ưa chuộng."
+  },
+  {
+    "dish_name": "Ốc Len Xào Dừa",
+    "reason": "Ốc len xào nước cốt dừa béo ngậy, cay nhẹ, hút mút thơm ngon — món gây nghiện của quán."
+  },
+  {
+    "dish_name": "Sò Mai Nướng Mỡ Hành Trứng Cút",
+    "reason": "Sò mai nướng mỡ hành rắc trứng cút và đậu phộng, ngọt béo, ăn hoài không chán."
+  },
+  {
+    "dish_name": "Gỏi Bò Khoai Môn",
+    "reason": "Gỏi bò trộn khoai môn chiên giòn chua ngọt lạ miệng, món khai vị được yêu thích."
   }
 ]

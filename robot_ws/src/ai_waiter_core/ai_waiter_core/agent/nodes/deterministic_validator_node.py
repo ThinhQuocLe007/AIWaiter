@@ -1,5 +1,5 @@
 import difflib
-from typing import Dict, Any
+from typing import Dict, Any, List
 from langchain_core.messages import ToolMessage
 from ai_waiter_core.agent.state import AgentState
 from ai_waiter_core.schemas.menu_registry import MENU_NAMES
@@ -8,44 +8,61 @@ def deterministic_validator_node(state: AgentState) -> Dict[str, Any]:
     """
     Pure Python guardrail node.
     Performs fast, zero-hallucination validations on LLM tool calls (spelling, stage checks) before execution.
+
+    Out-of-menu handling: items the customer asked for that are NOT on the menu are
+    NOT treated as a blocking error (which previously made the worker silently drop
+    or substitute them). Instead they are captured into `unavailable_items`, stripped
+    from the cart so the valid items still go through, and surfaced to the response
+    node which explicitly tells the customer. Only structural problems (bad quantity,
+    missing name, wrong confirmation stage) still block and loop for correction.
     """
     last_message = state["messages"][-1]
-    
+
     # 1. No tool calls? Conversational chat is always structurally valid
     if not hasattr(last_message, "tool_calls") or not last_message.tool_calls:
         return {"is_valid": True, "feedback": None}
-        
+
     errors = []
-    
+    unavailable_items: List[Dict[str, Any]] = []
+
     for tool_call in last_message.tool_calls:
         tool_name = tool_call.get("name")
         args = tool_call.get("args", {})
-        
+
         # 2. Validate Cart Drafting (Spelling and Math)
         if tool_name == "sync_cart":
             items = args.get("items", [])
-            
+            valid_items = []
+
             for item in items:
                 name = item.get("name")
                 quantity = item.get("quantity", 1)
-                
-                # Check 2a: Quantity Check
+
+                # Check 2a: Quantity Check (structural -> blocking)
                 if quantity <= 0:
                     errors.append(f"Số lượng món '{name}' phải lớn hơn 0. Hiện tại: {quantity}.")
-                
-                # Check 2b: Strict Menu Name Validation (Fuzzy Match)
-                if name not in MENU_NAMES:
-                    suggestions = difflib.get_close_matches(name, MENU_NAMES, n=2, cutoff=0.7)
-                    if suggestions:
-                        # Auto-correct hint
-                        errors.append(f"Món '{name}' không có trong thực đơn. Ý bạn là '{suggestions[0]}'? Vui lòng dùng đúng tên món.")
-                    else:
-                        errors.append(f"Món '{name}' không tồn tại trong thực đơn. Hãy hỏi khách chọn món khác.")
-                
-                # If this item passes all menu checks, set is_valid = True in the tool arguments in-place
-                if quantity > 0 and name in MENU_NAMES:
-                    item["is_valid"] = True
-                        
+
+                # Check 2b: Missing name guard (LLM omitted/nulled the field)
+                if not name or not isinstance(name, str):
+                    errors.append("Món trong giỏ hàng thiếu tên (name). Hãy gọi lại sync_cart với tên món đúng từ thực đơn.")
+                    continue
+
+                # Check 2c: Strict Menu Name Validation
+                if name in MENU_NAMES:
+                    if quantity > 0:
+                        item["is_valid"] = True
+                        valid_items.append(item)
+                else:
+                    # Not on the menu: capture it (with the closest match as a hint),
+                    # do NOT block and do NOT let the worker substitute a different dish.
+                    matches = difflib.get_close_matches(name, MENU_NAMES, n=1, cutoff=0.7)
+                    unavailable_items.append({"name": name, "suggestion": matches[0] if matches else None})
+
+            # Strip unavailable items in-place so the tool executes with valid items only.
+            # `sync_cart` always receives the full intended cart, so keeping only the
+            # valid items leaves the existing/valid cart correct.
+            args["items"] = valid_items
+
         # 3. State Guardrail for Order Confirmation
         elif tool_name == "confirm_order":
             if state.get("order_stage") != "AWAITING_CONFIRMATION":
@@ -80,6 +97,7 @@ def deterministic_validator_node(state: AgentState) -> Dict[str, Any]:
                 "feedback": "Quá nhiều lần thử không hợp lệ. Hãy xin lỗi khách và đề nghị họ nói lại yêu cầu.",
                 "messages": tool_messages,
                 "loop_count": loop_count,
+                "unavailable_items": unavailable_items,
             }
 
         return {
@@ -87,10 +105,13 @@ def deterministic_validator_node(state: AgentState) -> Dict[str, Any]:
             "feedback": error_feedback,
             "messages": tool_messages,
             "loop_count": loop_count,
+            "unavailable_items": unavailable_items,
         }
-        
-    # Passes all deterministic checks, allow Tool execution
+
+    # Passes all structural checks: allow tool execution. Any out-of-menu items were
+    # stripped from the cart and are reported downstream via `unavailable_items`.
     return {
         "is_valid": True,
-        "feedback": None
+        "feedback": None,
+        "unavailable_items": unavailable_items,
     }

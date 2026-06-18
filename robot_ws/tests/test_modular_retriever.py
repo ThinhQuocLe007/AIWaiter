@@ -32,12 +32,6 @@ def test_retriever():
         print(f"   Tags: {res.document.metadata.get('tags', 'N/A')}")
         print(f"   Taste: {res.document.metadata.get('taste_profile', 'N/A')}")
 
-    print("\n[MODE: Weighted]")
-    results_weighted = retriever.search(query, mode="weighted", k=3, threshold=0.1)
-    for i, res in enumerate(results_weighted, 1):
-        name = res.document.metadata.get('name', 'N/A')
-        print(f"{i}. {name} (Score: {res.score:.4f})")
-
 
 if __name__ == "__main__":
     test_retriever()

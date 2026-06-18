@@ -48,6 +48,14 @@ def _build_router_prompt() -> ChatPromptTemplate:
         ("system", system_prompt),
         few_shot_prompt,
         ("system", "### RECENT CONVERSATION CONTEXT (last 5 exchanges):\n{chat_history}"),
+        (
+            "system",
+            "### CURRENT ORDER STAGE: {order_stage}\n"
+            "If stage is AWAITING_CONFIRMATION, the waiter has drafted an order and is "
+            "waiting for the customer to confirm. In that stage a short affirmation "
+            '("ừ", "uh", "ok", "ok em", "đúng rồi", "được", "ừ đặt nha") is the customer '
+            "confirming the drafted order → classify as ORDER_CONFIRM, not CHAT.",
+        ),
         ("human", "{query}"),
     ])
 
@@ -103,11 +111,13 @@ def slm_router_node(state: AgentState) -> Dict[str, Any]:
 
     query = user_message.content
     chat_history = _format_last_n_turns(state["messages"], n=5)
+    order_stage = state.get("order_stage") or "IDLE"
 
     try:
         result: IntentPrediction = _router_chain.invoke({
             "query": query,
             "chat_history": chat_history or "No previous history.",
+            "order_stage": order_stage,
         })
         intents = result.intents or ["CHAT"]
         logger.info(f"SLM Router Output: {intents} | reason: {result.reasoning}")

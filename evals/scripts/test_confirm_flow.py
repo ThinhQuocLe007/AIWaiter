@@ -16,7 +16,7 @@ agent = AIWaiterGraph()
 
 # Test multi-turn conversation
 queries = [
-    "Cho mình 1 tô Phở Bò Đặc Biệt",
+    "Cho mình 2 phần Ốc Hương xốt trứng muối",
     "Đúng rồi, xác nhận đặt luôn",
 ]
 

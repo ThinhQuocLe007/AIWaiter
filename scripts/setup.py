@@ -16,18 +16,18 @@ import os
 import sqlite3
 from pathlib import Path
 
-import ai_waiter_core  # noqa: ensure path is set before other imports
+SCRIPT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = SCRIPT_DIR.parent
+
+sys.path.insert(0, str(PROJECT_ROOT / "robot_ws/src/ai_waiter_core"))
+sys.path.insert(0, str(PROJECT_ROOT))
+os.environ["PROJECT_ROOT"] = str(PROJECT_ROOT)
+
+import ai_waiter_core  # noqa: E402 ensure path is set before other imports
 from ai_waiter_core.config import settings
 from ai_waiter_core.services.restaurant_db import RestaurantDB
 from ai_waiter_core.services.retriever.builder import IndexBuilder
 from scripts.build_centroids import main as build_centroids_main
-
-
-SCRIPT_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = SCRIPT_DIR.parent
-
-sys.path.insert(0, str(PROJECT_ROOT / "robot_ws/src"))
-os.environ["PROJECT_ROOT"] = str(PROJECT_ROOT)
 
 
 REQUIRED_FILES = [
@@ -76,13 +76,27 @@ def create_directories():
         print(f"  ✓ {rel_path}/")
 
 
-def init_restaurant_db():
+def _wipe_db(db_path: str):
+    """Remove the SQLite database file and its WAL/SHM sidecars."""
+    for suffix in ("", "-wal", "-shm"):
+        p = Path(db_path + suffix)
+        if p.exists():
+            p.unlink()
+
+
+def init_restaurant_db(force: bool = False):
+    if force:
+        _wipe_db(str(settings.RESTAURANT_DB_PATH))
+        print("  → Wiped existing Restaurant DB (--force)")
     db = RestaurantDB()
     print(f"  ✓ Restaurant DB at {db.db_path}")
 
 
-def init_checkpoints_db():
+def init_checkpoints_db(force: bool = False):
     db_path = str(settings.CHECKPOINTS_DB_PATH)
+    if force:
+        _wipe_db(db_path)
+        print("  → Wiped existing Checkpoints DB (--force)")
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
     conn = sqlite3.connect(db_path)
     conn.close()
@@ -110,7 +124,7 @@ def build_centroids(force: bool, skip: bool):
         print("  ✓ Centroids already exist (use --force to rebuild)")
         return
     try:
-        build_centroids_main()
+        build_centroids_main([])
         print("  ✓ Centroids built")
     except Exception as e:
         print(f"  ❌ Failed to build centroids: {e}")
@@ -134,11 +148,11 @@ def main():
     print()
 
     print("3. Initializing Restaurant DB...")
-    init_restaurant_db()
+    init_restaurant_db(args.force)
     print()
 
     print("4. Initializing Checkpoints DB...")
-    init_checkpoints_db()
+    init_checkpoints_db(args.force)
     print()
 
     print("5. Building search indexes (FAISS + BM25)...")

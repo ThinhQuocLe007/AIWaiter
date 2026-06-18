@@ -9,12 +9,15 @@ logger = logging.getLogger(__name__)
 
 def _handle_sync_cart_result(tool_result) -> Dict[str, Any]:
     """Handle successful sync_cart tool result."""
+    # If every requested item was out-of-menu (stripped by the validator), the cart
+    # is empty — stay IDLE instead of asking the customer to confirm an empty order.
+    has_items = bool(tool_result.items)
     return {
         "active_cart": Cart(
             items=tool_result.items,
             total_price=tool_result.total_price
         ),
-        "order_stage": "AWAITING_CONFIRMATION",
+        "order_stage": "AWAITING_CONFIRMATION" if has_items else "IDLE",
     }
 
 

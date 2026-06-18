@@ -1,242 +1,227 @@
 {
   "dataset": "retrieval_eval",
-  "version": "1.0",
-  "description": "Đánh giá chất lượng RAG (Hybrid BM25 + FAISS) của search_menu tool. Mỗi case có query, danh sách món liên quan (expected_relevant) và không liên quan (expected_irrelevant), cùng mức độ khó. Metric đánh giá: Recall@3, Precision@3, MRR.",
-  "metrics": ["Recall@3", "Precision@3", "MRR"],
-  "total_cases": 25,
-  "difficulty_distribution": {
-    "easy": 8,
-    "medium": 10,
-    "hard": 7
-  },
+  "version": "3.0",
+  "description": "Đánh giá chất lượng RAG (Hybrid BM25 + FAISS) của search tool trên menu quán ốc/hải sản 'Ốc Quậy'. Mỗi case có query, danh sách món liên quan (expected_relevant) và không liên quan (expected_irrelevant), cùng mức độ khó. Tên món khớp chính xác với assets/data/menu.json + best_seller.json. Metric đánh giá top-5: Recall@5, Precision@5, MRR.",
+  "metrics": ["Recall@5", "Precision@5", "MRR"],
+  "k": 5,
+  "total_cases": 24,
+  "difficulty_distribution": {"easy": 8, "medium": 9, "hard": 7},
   "cases": [
-
     {
       "id": "SR-001",
-      "query": "phở bò",
-      "expected_relevant": ["Phở Bò Đặc Biệt"],
-      "expected_irrelevant": ["Phở Gà Ta Tràng An", "Bún Bò Huế (Tô Đặc Biệt)"],
-      "category": "noodles",
+      "query": "phần ốc hương bao nhiêu",
+      "expected_relevant": ["Ốc Hương", "Ốc Hương Hấp Sả"],
+      "expected_irrelevant": ["Ốc Cà Na", "Lẩu Thái"],
+      "category": "shellfish",
       "difficulty": "easy",
-      "note": "Keyword trực tiếp, kết quả phải match đúng tên"
+      "note": "Keyword trực tiếp + ý hỏi giá, phải ra đúng món ốc hương"
     },
     {
       "id": "SR-002",
-      "query": "Cà Phê Sữa Đá Sài Gòn",
-      "expected_relevant": ["Cà Phê Sữa Đá Sài Gòn"],
-      "expected_irrelevant": ["Bạc Xỉu Đá", "Trà Đào Cam Sả"],
-      "category": "drinks",
+      "query": "cho xem lẩu thái",
+      "expected_relevant": ["Lẩu Thái"],
+      "expected_irrelevant": ["Lẩu Cá Tầm Măng Chua", "Cháo Hàu"],
+      "category": "hotpot",
       "difficulty": "easy",
-      "note": "Tên đầy đủ chính xác, phải match top 1"
+      "note": "Tên món đầy đủ, phải match đúng"
     },
     {
       "id": "SR-003",
-      "query": "lẩu thái",
-      "expected_relevant": ["Lẩu Thái Tomyum Hải Sản"],
-      "expected_irrelevant": ["Lẩu Nấm Chay (Thanh Dưỡng)"],
-      "category": "hotpot",
+      "query": "khoai tây lắc phô mai",
+      "expected_relevant": ["Khoai Tây Lắc Phô Mai"],
+      "expected_irrelevant": ["Bắp Xào", "Bánh Mì Bơ Tỏi"],
+      "category": "snack",
       "difficulty": "easy",
-      "note": "Keyword tên rõ ràng"
+      "note": "Tên món vặt đầy đủ"
     },
     {
       "id": "SR-004",
-      "query": "sinh tố",
-      "expected_relevant": ["Sinh Tố Bơ Dừa", "Sinh Tố Xoài Cát Chu"],
-      "expected_irrelevant": ["Trà Đào Cam Sả", "Nước Ép Dưa Hấu"],
-      "category": "drinks",
+      "query": "có bia heineken không",
+      "expected_relevant": ["Bia Heineken", "Bia Heineken Nhỏ"],
+      "expected_irrelevant": ["Bia Tiger Bạc", "Nước Ngọt"],
+      "category": "drink",
       "difficulty": "easy",
-      "note": "Keyword danh mục, phải trả về nhiều kết quả"
+      "note": "Tên thương hiệu đồ uống, cả lon thường và nhỏ đều liên quan"
     },
     {
       "id": "SR-005",
-      "query": "cơm tấm",
-      "expected_relevant": ["Cơm Tấm Sườn Bì Chả"],
-      "expected_irrelevant": ["Cơm Chiên Trái Thơm", "Mì Xào Giòn Hải Sản"],
-      "category": "rice",
+      "query": "cháo hàu",
+      "expected_relevant": ["Cháo Hàu"],
+      "expected_irrelevant": ["Cháo Hến", "Cháo Hải Sản"],
+      "category": "porridge",
       "difficulty": "easy",
-      "note": "Tên partial, phải tìm đúng"
+      "note": "Keyword ngắn, phải phân biệt với các loại cháo khác"
     },
     {
       "id": "SR-006",
-      "query": "tráng miệng",
-      "expected_relevant": ["Chè Khúc Bạch Hạnh Nhân", "Rau Câu Dừa Xiêm", "Chè Thịt Heo Quay (Huế)"],
-      "expected_irrelevant": ["Súp Cua Tóc Tiên", "Cà Phê Sữa Đá Sài Gòn"],
-      "category": "dessert",
+      "query": "tôm càng xanh nướng",
+      "expected_relevant": ["Tôm Càng Xanh"],
+      "expected_irrelevant": ["Tôm Thẻ Nướng Muối Ớt", "Tôm Chiên Xù"],
+      "category": "grilled",
       "difficulty": "easy",
-      "note": "Keyword category, cần cover nhiều items"
+      "note": "Tên món nướng cụ thể"
     },
     {
       "id": "SR-007",
-      "query": "món nướng",
-      "expected_relevant": ["Bò Nướng Đá Cuội", "Sườn Non Nướng Mật Ong", "Mực Nướng Sa Tế"],
-      "expected_irrelevant": ["Cơm Tấm Sườn Bì Chả", "Gà Rang Muối Hồng Kông"],
-      "category": "grilled",
+      "query": "gỏi hải sản",
+      "expected_relevant": ["Gỏi Hải Sản"],
+      "expected_irrelevant": ["Gỏi Xoài Bạch Tuộc", "Chả Giò Hải Sản"],
+      "category": "salad",
       "difficulty": "easy",
-      "note": "Keyword category 'nướng', nhiều kết quả cùng tag"
+      "note": "Tên món gỏi, phân biệt với các loại gỏi khác"
     },
     {
       "id": "SR-008",
-      "query": "đặc sản miền Tây",
-      "expected_relevant": ["Bánh Xèo Miền Tây", "Canh Chua Cá Lóc Miền Tây"],
-      "expected_irrelevant": ["Nem Nướng Nha Trang", "Bún Bò Huế (Tô Đặc Biệt)"],
-      "category": "specialties",
+      "query": "mực chiên xù",
+      "expected_relevant": ["Mực Chiên Xù"],
+      "expected_irrelevant": ["Tôm Chiên Xù", "Mực Hấp Sả Gừng"],
+      "category": "fried",
       "difficulty": "easy",
-      "note": "Tag-based search, không match tên nhưng match tags"
+      "note": "Tên món chiên cụ thể"
     },
-
     {
       "id": "SR-009",
-      "query": "phở gà",
-      "expected_relevant": ["Phở Gà Ta Tràng An"],
-      "expected_irrelevant": ["Phở Bò Đặc Biệt", "Gà Rang Muối Hồng Kông"],
-      "category": "noodles",
+      "query": "món chay ăn vặt giòn giòn",
+      "expected_relevant": ["Khoai Tây Lắc Phô Mai"],
+      "expected_irrelevant": ["Đậu Hũ Mắm Tôm", "Bắp Xào"],
+      "category": "veg_snack",
       "difficulty": "medium",
-      "note": "Phân biệt phở bò vs phở gà - test semantic discrimination"
+      "note": "Lọc theo diet_type=chay + tính chất giòn, ăn vặt"
     },
     {
       "id": "SR-010",
-      "query": "món ăn cho người ăn chay",
-      "expected_relevant": ["Lẩu Nấm Chay (Thanh Dưỡng)", "Gỏi Nấm Bào Ngư (Chay)", "Cà Tím Tay Cầm (Chay)", "Canh Khổ Qua Rừng (Chay)"],
-      "expected_irrelevant": ["Lẩu Thái Tomyum Hải Sản", "Bò Nướng Đá Cuội"],
-      "category": "vegetarian",
+      "query": "có món lẩu nào không",
+      "expected_relevant": ["Lẩu Thái", "Lẩu Cá Tầm Măng Chua", "Lẩu Khổ Qua Cá Thác Lác"],
+      "expected_irrelevant": ["Cháo Hải Sản", "Mì Xào Hải Sản"],
+      "category": "hotpot",
       "difficulty": "medium",
-      "note": "Query ngữ nghĩa, phải match diet_type='chay'"
+      "note": "Hỏi theo danh mục, phải ra cả 3 món lẩu"
     },
     {
       "id": "SR-011",
-      "query": "món có hải sản",
-      "expected_relevant": ["Lẩu Thái Tomyum Hải Sản", "Mì Xào Giòn Hải Sản", "Chả Giò Tôm Cua", "Tôm Sú Chiên Xù"],
-      "expected_irrelevant": ["Rau Muống Xào Tỏi", "Chè Khúc Bạch Hạnh Nhân"],
-      "category": "seafood",
+      "query": "cơm chiên có mấy loại",
+      "expected_relevant": ["Cơm Chiên Hải Sản", "Cơm Chiên Tỏi", "Cơm Chiên Dương Châu"],
+      "expected_irrelevant": ["Cháo Hàu", "Mì Xào Rau"],
+      "category": "rice",
       "difficulty": "medium",
-      "note": "Ingredient-based search, cần hiểu 'hải sản'"
+      "note": "Hỏi liệt kê biến thể cùng nhóm cơm chiên"
     },
     {
       "id": "SR-012",
-      "query": "món cay",
-      "expected_relevant": ["Lẩu Thái Tomyum Hải Sản", "Mực Nướng Sa Tế", "Đậu Hũ Tứ Xuyên (Phiên bản Việt)", "Bún Bò Huế (Tô Đặc Biệt)"],
-      "expected_irrelevant": ["Phở Bò Đặc Biệt", "Sinh Tố Bơ Dừa"],
-      "category": "spicy",
+      "query": "ốc hấp sả",
+      "expected_relevant": ["Ốc Hương Hấp Sả", "Ốc Bươu Hấp Sả", "Ốc Bulot Hấp Sả"],
+      "expected_irrelevant": ["Ốc Hương", "Mực Hấp Sả Gừng"],
+      "category": "steamed",
       "difficulty": "medium",
-      "note": "Taste profile search, match cả tags và description"
+      "note": "Kiểu chế biến hấp sả, nhiều món ốc liên quan"
     },
     {
       "id": "SR-013",
-      "query": "đồ uống không cà phê",
-      "expected_relevant": ["Trà Đào Cam Sả", "Sinh Tố Bơ Dừa", "Nước Ép Dưa Hấu", "Trà Sen Vàng (Kem Cheese)"],
-      "expected_irrelevant": ["Cà Phê Sữa Đá Sài Gòn", "Bạc Xỉu Đá"],
-      "category": "drinks",
+      "query": "món nướng sa tế cay",
+      "expected_relevant": ["Cá Chim Nướng Sa Tế", "Cá Tầm Nướng Sa Tế"],
+      "expected_irrelevant": ["Hàu Nướng", "Lẩu Thái"],
+      "category": "grilled",
       "difficulty": "medium",
-      "note": "Query phủ định - test khả năng lọc theo nghĩa ngược"
+      "note": "Khớp xốt sa tế + vị cay trong taste_profile/tags"
     },
     {
       "id": "SR-014",
-      "query": "bún có nhân hải sản",
-      "expected_relevant": ["Bún Bò Huế (Tô Đặc Biệt)"],
-      "expected_irrelevant": ["Mì Quảng Tôm Thịt", "Hủ Tiếu Nam Vang"],
-      "category": "noodles",
+      "query": "đậu hũ",
+      "expected_relevant": ["Đậu Hũ Mắm Tôm", "Đậu Hũ Mắm Hành", "Đậu Hũ Non Trứng Bắc Thảo"],
+      "expected_irrelevant": ["Trứng Cút Lộn", "Khô Bò Lá Bông"],
+      "category": "snack",
       "difficulty": "medium",
-      "note": "Kết hợp ingredient + category"
+      "note": "Keyword ngắn, ra cả 3 biến thể đậu hũ"
     },
     {
       "id": "SR-015",
-      "query": "món ăn nhẹ, khai vị",
-      "expected_relevant": ["Chả Giò Tôm Cua", "Gỏi Ngó Sen Tôm Thịt", "Súp Cua Tóc Tiên", "Súp Bắp Hải Sản"],
-      "expected_irrelevant": ["Gà Bó Xôi Chiên Giòn", "Lẩu Thái Tomyum Hải Sản"],
-      "category": "appetizer",
+      "query": "món mì xào",
+      "expected_relevant": ["Mì Xào Hải Sản", "Mì Xào Bò", "Mì Xào Sò"],
+      "expected_irrelevant": ["Cơm Chiên Tỏi", "Cháo Hến"],
+      "category": "noodles",
       "difficulty": "medium",
-      "note": "Category semantic match"
+      "note": "Nhóm mì xào, nhiều biến thể"
     },
     {
       "id": "SR-016",
-      "query": "món nhiều đạm, tốt cho sức khỏe",
-      "expected_relevant": ["Gỏi Nấm Bào Ngư (Chay)", "Nước Ép Dưa Hấu", "Nấm Mối Nướng Giấy Bạc (Chay)"],
-      "expected_irrelevant": ["Chè Khúc Bạch Hạnh Nhân", "Bạc Xỉu Đá"],
-      "category": "healthy",
+      "query": "gỏi xoài",
+      "expected_relevant": ["Gỏi Xoài Bạch Tuộc", "Gỏi Xoài Óc Giác"],
+      "expected_irrelevant": ["Gỏi Hải Sản", "Tré Trộn Thái"],
+      "category": "salad",
       "difficulty": "medium",
-      "note": "Semantic health-tag search"
+      "note": "Phân biệt 2 loại gỏi xoài với gỏi khác"
     },
     {
       "id": "SR-017",
-      "query": "món nước thanh mát",
-      "expected_relevant": ["Phở Bò Đặc Biệt", "Phở Gà Ta Tràng An", "Hủ Tiếu Nam Vang"],
-      "expected_irrelevant": ["Bò Nướng Đá Cuội", "Mực Nướng Sa Tế"],
-      "category": "noodle_soup",
+      "query": "khô mực nhậu",
+      "expected_relevant": ["Khô Mực Nướng", "Khô Mực Khoai Môn Chiên Nước Mắm"],
+      "expected_irrelevant": ["Khô Bò Lá Bông", "Bia 333"],
+      "category": "dried",
       "difficulty": "medium",
-      "note": "Taste profile match với category"
+      "note": "Khớp khô mực + ngữ cảnh nhậu (tag)"
     },
     {
       "id": "SR-018",
-      "query": "món chia sẻ cho nhóm",
-      "expected_relevant": ["Lẩu Thái Tomyum Hải Sản", "Lẩu Nấm Chay (Thanh Dưỡng)", "Gà Bó Xôi Chiên Giòn"],
-      "expected_irrelevant": ["Phở Bò Đặc Biệt", "Cà Phê Sữa Đá Sài Gòn"],
-      "category": "sharing",
-      "difficulty": "medium",
-      "note": "Tag 'chia sẻ' trong metadata"
+      "query": "đồ nhắm lai rai với bia",
+      "expected_relevant": ["Khô Mực Nướng", "Khô Bò Lá Bông"],
+      "expected_irrelevant": ["Cháo Hàu", "Cơm Chiên Tỏi"],
+      "category": "beer_snack",
+      "difficulty": "hard",
+      "note": "Ý ngầm: món khô lai rai theo tag 'nhậu', không gọi tên cụ thể"
     },
-
     {
       "id": "SR-019",
-      "query": "món chay dưới 100 nghìn, không cay",
-      "expected_relevant": ["Gỏi Nấm Bào Ngư (Chay)", "Cà Tím Tay Cầm (Chay)", "Rau Muống Xào Tỏi", "Canh Khổ Qua Rừng (Chay)"],
-      "expected_irrelevant": ["Lẩu Nấm Chay (Thanh Dưỡng)", "Đậu Hũ Tứ Xuyên (Phiên bản Việt)"],
-      "category": "vegetarian",
+      "query": "muốn ăn gì đó nóng hổi no bụng",
+      "expected_relevant": ["Cháo Hải Sản", "Cháo Hàu", "Cháo Huyết", "Cháo Hến"],
+      "expected_irrelevant": ["Bia Heineken", "Gỏi Hải Sản"],
+      "category": "filling",
       "difficulty": "hard",
-      "note": "Multi-constraint: diet_type + price + taste"
+      "note": "Persona ngầm: muốn món nóng, no bụng → nhóm cháo (tag 'no bụng')"
     },
     {
       "id": "SR-020",
-      "query": "bún hoặc phở có thịt bò",
-      "expected_relevant": ["Phở Bò Đặc Biệt", "Bún Bò Huế (Tô Đặc Biệt)"],
-      "expected_irrelevant": ["Hủ Tiếu Nam Vang", "Mì Quảng Tôm Thịt", "Phở Gà Ta Tràng An"],
-      "category": "noodles",
+      "query": "món nào bán chạy được yêu thích nhất",
+      "expected_relevant": ["Ốc Hương", "Hàu Nướng", "Tôm Càng Xanh Nướng Phô Mai", "Cá Chim Nướng Sa Tế", "Sò Điệp Nướng Phô Mai", "Răng Mực Bơ Tỏi Cay"],
+      "expected_irrelevant": ["Nước Suối", "Bắp Xào"],
+      "category": "best_seller",
       "difficulty": "hard",
-      "note": "OR condition + ingredient filter"
+      "note": "Khớp dữ liệu best_seller.json ('Món bán chạy'). Test khả năng kéo doc best-seller thay vì menu thường"
     },
     {
       "id": "SR-021",
-      "query": "tôi muốn ăn gì đó giòn giòn làm khai vị",
-      "expected_relevant": ["Chả Giò Tôm Cua", "Gỏi Nấm Bào Ngư (Chay)", "Bánh Khọt Vũng Tàu"],
-      "expected_irrelevant": ["Canh Chua Cá Lóc Miền Tây", "Lẩu Thái Tomyum Hải Sản"],
-      "category": "appetizer",
+      "query": "có gì cho nhóm đông người chia sẻ",
+      "expected_relevant": ["Lẩu Thái", "Gỏi Hải Sản", "Lẩu Cá Tầm Măng Chua"],
+      "expected_irrelevant": ["Nước Suối", "Trứng Cút Lộn"],
+      "category": "sharing",
       "difficulty": "hard",
-      "note": "Taste ('giòn') + category ('khai vị') kết hợp bằng ngôn ngữ tự nhiên"
+      "note": "Persona ngầm: nhóm đông → món chia sẻ (tag 'chia sẻ')"
     },
     {
       "id": "SR-022",
-      "query": "có gì uống ngọt mát mà không cần cà phê?",
-      "expected_relevant": ["Trà Đào Cam Sả", "Sinh Tố Xoài Cát Chu", "Nước Ép Dưa Hấu", "Sinh Tố Bơ Dừa"],
-      "expected_irrelevant": ["Cà Phê Sữa Đá Sài Gòn", "Bạc Xỉu Đá", "Soda Chanh Muối"],
-      "category": "drinks",
+      "query": "món chua cay đậm đà",
+      "expected_relevant": ["Lẩu Thái", "Lẩu Cá Tầm Măng Chua"],
+      "expected_irrelevant": ["Cháo Hàu", "Bánh Mì Bơ Tỏi"],
+      "category": "spicy_sour",
       "difficulty": "hard",
-      "note": "Taste filter ('ngọt mát') + loại trừ category"
+      "note": "Khớp taste_profile chua cay, không gọi tên món"
     },
     {
       "id": "SR-023",
-      "query": "bánh gì giòn mà ăn được với rau?",
-      "expected_relevant": ["Bánh Xèo Miền Tây", "Bánh Khọt Vũng Tàu", "Nem Nướng Nha Trang"],
-      "expected_irrelevant": ["Chè Khúc Bạch Hạnh Nhân", "Rau Câu Dừa Xiêm"],
-      "category": "specialties",
+      "query": "đồ uống không cồn cho trẻ em",
+      "expected_relevant": ["Nước Ngọt", "Trà Tắc", "Nước Suối", "Bò Húc"],
+      "expected_irrelevant": ["Bia Sài Gòn", "Bia 333"],
+      "category": "soft_drink",
       "difficulty": "hard",
-      "note": "Implicit attribute matching - ăn kèm rau"
+      "note": "Ý ngầm: loại trừ bia, chỉ đồ uống không cồn"
     },
     {
       "id": "SR-024",
-      "query": "muốn ăn cái gì đó vừa giòn vừa béo, hải sản càng tốt",
-      "expected_relevant": ["Tôm Sú Chiên Xù", "Chả Giò Tôm Cua", "Cá Diêu Hồng Chiên Xù"],
-      "expected_irrelevant": ["Rau Muống Xào Tỏi", "Súp Bắp Hải Sản"],
-      "category": "seafood",
+      "query": "hàu chế biến kiểu gì",
+      "expected_relevant": ["Hàu Nướng", "Hàu Chiên Trứng", "Hàu Sữa Hấp Sả", "Cháo Hàu"],
+      "expected_irrelevant": ["Sò Điệp", "Nghêu"],
+      "category": "oyster",
       "difficulty": "hard",
-      "note": "Multi-attribute natural language, 'càng tốt' thể hiện preference mềm"
-    },
-    {
-      "id": "SR-025",
-      "query": "gọi thứ ngon nhất cho 2 đứa trẻ",
-      "expected_relevant": ["Cánh Gà Chiên Nước Mắm", "Tôm Sú Chiên Xù", "Súp Bắp Hải Sản"],
-      "expected_irrelevant": ["Đậu Hũ Tứ Xuyên (Phiên bản Việt)", "Mực Nướng Sa Tế"],
-      "category": "child_friendly",
-      "difficulty": "hard",
-      "note": "Implicit persona matching với tag 'trẻ em thích'"
+      "note": "Một nguyên liệu (hàu) nhiều cách chế biến nằm rải nhiều danh mục"
     }
   ]
 }
