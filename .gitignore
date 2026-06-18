@@ -101,6 +101,10 @@ install/
 *.text
 !robot_ws/**/package.xml
 !robot_ws/**/setup.py
+# Re-include build/dependency manifests caught by *.txt above — MUST be committed.
+# (ament_cmake packages don't build without CMakeLists.txt.)
+!**/CMakeLists.txt
+!**/requirements.txt
 # Re-include frontend manifests — MUST be committed for reproducible installs.
 # (node_modules/ is an excluded directory so its internal .json files stay ignored.)
 !**/package.json
