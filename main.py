@@ -1,5 +1,5 @@
 def main():
-    print("Hello from ai-waiver!")
+    print("Hello from ai-waiter!")
 
 
 if __name__ == "__main__":

@@ -41,8 +41,26 @@ if [ -d "$WS_PATH/$VENV_NAME" ]; then
     echo "[2/4] venv '$VENV_NAME' activated."
 else
     echo "[!] '$VENV_NAME' not found — creating one with --system-site-packages..."
-    python3 -m venv --system-site-packages "$WS_PATH/$VENV_NAME"
-    source "$WS_PATH/$VENV_NAME/bin/activate"
+    # Prefer stdlib venv; fall back to uv if python3-venv (ensurepip) is missing.
+    if ! python3 -m venv --system-site-packages "$WS_PATH/$VENV_NAME" 2>/dev/null; then
+        echo "[!] python3 -m venv failed (python3-venv not installed?) — trying uv..."
+        rm -rf "$WS_PATH/$VENV_NAME"
+        if command -v uv >/dev/null 2>&1; then
+            uv venv --python /usr/bin/python3.10 --system-site-packages "$WS_PATH/$VENV_NAME"
+        else
+            echo "[!] Neither python3-venv nor uv is available. Install one of:"
+            echo "      sudo apt install python3.10-venv     # stdlib venv"
+            echo "      pipx install uv  (or: pip install uv) # uv"
+            return 1
+        fi
+    fi
+    if [ -f "$WS_PATH/$VENV_NAME/bin/activate" ]; then
+        source "$WS_PATH/$VENV_NAME/bin/activate"
+        echo "[2/4] venv '$VENV_NAME' created and activated."
+    else
+        echo "[!] venv creation failed — see messages above."
+        return 1
+    fi
 fi
 
 # 3) colcon build ONLY the folders for this profile

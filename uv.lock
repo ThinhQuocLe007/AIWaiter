@@ -7,7 +7,7 @@ resolution-markers = [
 ]
 
 [[package]]
-name = "ai-waiver"
+name = "ai-waiter"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
