@@ -9,7 +9,7 @@ from collections import defaultdict
 
 # Add ai_waiter_core to Python path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-AI_WAITER_CORE_PATH = PROJECT_ROOT / "robot_ws" / "src" / "ai_waiter_core"
+AI_WAITER_CORE_PATH = PROJECT_ROOT / "ai_waiter_core"
 sys.path.insert(0, str(AI_WAITER_CORE_PATH))
 
 from langchain_core.messages import HumanMessage

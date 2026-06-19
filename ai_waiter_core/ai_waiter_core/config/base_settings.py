@@ -9,7 +9,7 @@ Project root resolution
 - The `PROJECT_ROOT` env var (or `.env` entry) overrides the auto-detected
   root, useful for Docker / production deployments.
 - `PACKAGE_ROOT` always points to the inner Python package
-  (`robot_ws/src/ai_waiter_core/ai_waiter_core/`), resolved as `parents[1]`
+  (`ai_waiter_core/ai_waiter_core/`), resolved as `parents[1]`
   from this file.
 """
 from pathlib import Path

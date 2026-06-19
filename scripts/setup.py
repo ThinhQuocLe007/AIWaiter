@@ -19,7 +19,7 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
 
-sys.path.insert(0, str(PROJECT_ROOT / "robot_ws/src/ai_waiter_core"))
+sys.path.insert(0, str(PROJECT_ROOT / "ai_waiter_core"))
 sys.path.insert(0, str(PROJECT_ROOT))
 os.environ["PROJECT_ROOT"] = str(PROJECT_ROOT)
 
@@ -38,17 +38,17 @@ REQUIRED_FILES = [
     "assets/data/customer_info.json",
     "assets/data/restaurant_info.txt",
     # Few-shots
-    "robot_ws/src/ai_waiter_core/ai_waiter_core/agent/resources/few_shots/utterances.json",
-    "robot_ws/src/ai_waiter_core/ai_waiter_core/agent/resources/few_shots/router.json",
-    "robot_ws/src/ai_waiter_core/ai_waiter_core/agent/resources/few_shots/search_worker.json",
+    "ai_waiter_core/ai_waiter_core/agent/resources/few_shots/utterances.json",
+    "ai_waiter_core/ai_waiter_core/agent/resources/few_shots/router.json",
+    "ai_waiter_core/ai_waiter_core/agent/resources/few_shots/search_worker.json",
     # Prompts
-    "robot_ws/src/ai_waiter_core/ai_waiter_core/agent/resources/system_prompts/router_agent.md",
-    "robot_ws/src/ai_waiter_core/ai_waiter_core/agent/resources/system_prompts/order_worker_agent.md",
-    "robot_ws/src/ai_waiter_core/ai_waiter_core/agent/resources/system_prompts/search_agent.md",
-    "robot_ws/src/ai_waiter_core/ai_waiter_core/agent/resources/system_prompts/waiter_agent.md",
-    "robot_ws/src/ai_waiter_core/ai_waiter_core/agent/resources/skills/hospitality.md",
-    "robot_ws/src/ai_waiter_core/ai_waiter_core/agent/resources/skills/menu_grounding.md",
-    "robot_ws/src/ai_waiter_core/ai_waiter_core/agent/resources/skills/no_service_response.md",
+    "ai_waiter_core/ai_waiter_core/agent/resources/system_prompts/router_agent.md",
+    "ai_waiter_core/ai_waiter_core/agent/resources/system_prompts/order_worker_agent.md",
+    "ai_waiter_core/ai_waiter_core/agent/resources/system_prompts/search_agent.md",
+    "ai_waiter_core/ai_waiter_core/agent/resources/system_prompts/waiter_agent.md",
+    "ai_waiter_core/ai_waiter_core/agent/resources/skills/hospitality.md",
+    "ai_waiter_core/ai_waiter_core/agent/resources/skills/menu_grounding.md",
+    "ai_waiter_core/ai_waiter_core/agent/resources/skills/no_service_response.md",
     # Centroids
     "evals/data/router/router_eval.json",
     "evals/data/retrieval/retrieval_eval.json",
@@ -56,7 +56,7 @@ REQUIRED_FILES = [
 
 CENTROIDS_PATH = (
     PROJECT_ROOT
-    / "robot_ws/src/ai_waiter_core/ai_waiter_core/agent/resources/centroids/centroids.npz"
+    / "ai_waiter_core/ai_waiter_core/agent/resources/centroids/centroids.npz"
 )
 
 

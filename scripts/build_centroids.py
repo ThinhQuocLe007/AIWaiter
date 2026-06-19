@@ -12,7 +12,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
 PACKAGE_RESOURCES = (
     PROJECT_ROOT
-    / "robot_ws/src/ai_waiter_core/ai_waiter_core/agent/resources"
+    / "ai_waiter_core/ai_waiter_core/agent/resources"
 )
 
 DEFAULT_UTTERANCES = PACKAGE_RESOURCES / "few_shots" / "utterances.json"

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import List, Dict, Any
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-AI_WAITER_CORE_PATH = PROJECT_ROOT / "robot_ws" / "src" / "ai_waiter_core"
+AI_WAITER_CORE_PATH = PROJECT_ROOT / "ai_waiter_core"
 sys.path.insert(0, str(AI_WAITER_CORE_PATH))
 
 from ai_waiter_core.services.retriever.builder import IndexBuilder

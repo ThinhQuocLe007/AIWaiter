@@ -26,7 +26,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
 PACKAGE_RESOURCES = (
     PROJECT_ROOT
-    / "robot_ws/src/ai_waiter_core/ai_waiter_core/agent/resources"
+    / "ai_waiter_core/ai_waiter_core/agent/resources"
 )
 
 EVAL_PATH = PROJECT_ROOT / "evals" / "data" / "router" / "router_eval.json"
