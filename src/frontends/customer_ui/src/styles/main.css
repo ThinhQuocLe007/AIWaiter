@@ -4,6 +4,10 @@
   /* Brand colors - warm, appetizing palette */
   --color-primary: #E63946;        /* Vibrant red for CTAs */
   --color-primary-dark: #C1121F;
+
+  /* Add / quantity buttons - match the brand red used in the order panel */
+  --color-add: #E63946;
+  --color-add-dark: #C1121F;
   --color-accent: #F77F00;         /* Orange accent */
   --color-bg: #FFF8F0;             /* Warm cream background */
   --color-surface: #FFFFFF;
@@ -11,6 +15,11 @@
   --color-text-muted: #6B6B6B;
   --color-border: #E5E5E5;
   --color-success: #2A9D8F;
+
+  /* AI / voice + brand cool tone - logo & assistant UI */
+  --color-ai: #0284C7;
+  --color-ai-light: #0EA5E9;
+  --color-ai-dark: #0369A1;
 
   /* Spacing scale in rem */
   --space-1: 0.25rem;
@@ -43,7 +52,7 @@ body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  font-family: 'Poppins', -apple-system, sans-serif;
+  font-family: 'Be Vietnam Pro', -apple-system, 'Segoe UI', Roboto, sans-serif;
   background: #000; /* letterbox color around the scaled stage */
   color: var(--color-text);
   user-select: none;

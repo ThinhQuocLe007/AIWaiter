@@ -15,10 +15,14 @@
 </template>
 
 <script setup lang="ts">
-import type { Category } from '@/types'
+interface NavItem {
+  id: string
+  name: string
+  icon?: string
+}
 
 defineProps<{
-  categories: Category[]
+  categories: NavItem[]
   active: string
 }>()
 
@@ -58,6 +62,7 @@ defineEmits<{
   line-height: 1.3;
   width: 100%;
   flex: 0 0 auto;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .tab.active {

@@ -24,8 +24,8 @@ setup:
 install:
 	@echo "Installing frontend dependencies..."
 	@if [ -f "src/frontends/customer_ui/package.json" ]; then cd src/frontends/customer_ui && npm ci; else echo "src/frontends/customer_ui not scaffolded yet, skipping."; fi
-	@echo "Installing backend dependencies..."
-	@if [ -f "backend/pyproject.toml" ]; then cd backend && uv sync; else echo "backend not present yet, skipping."; fi
+	@echo "Installing backend dependencies (root uv env)..."
+	@uv sync
 	@echo "Done."
 
 update:
@@ -45,10 +45,10 @@ serve:
 	@cd src/frontends/customer_ui && npm run preview -- --host 0.0.0.0 --port 4173
 
 backend:
-	@cd backend && uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000
+	@uv run uvicorn src.backend.app.main:app --reload --host 0.0.0.0 --port 8000
 
 clean:
 	@echo "Removing node_modules and .venv directories..."
 	@rm -rf src/frontends/customer_ui/node_modules
-	@rm -rf backend/.venv
+	@rm -rf .venv
 	@echo "Done. Run 'make install' to reinstall."

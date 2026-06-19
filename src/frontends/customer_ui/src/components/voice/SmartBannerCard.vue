@@ -30,8 +30,8 @@ const voice = useVoiceStore()
   padding: 1.1rem 1.25rem;
   margin-bottom: 1rem;
   color: #fff;
-  background: linear-gradient(110deg, #e63946 0%, #f43f5e 45%, #f77f00 100%);
-  box-shadow: 0 6px 18px rgba(230, 57, 70, 0.3);
+  background: linear-gradient(110deg, var(--color-ai-dark) 0%, var(--color-ai) 45%, var(--color-ai-light) 100%);
+  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.35);
 }
 
 .smart-banner:active {
@@ -83,7 +83,7 @@ const voice = useVoiceStore()
   align-items: center;
   gap: 0.4rem;
   background: #fff;
-  color: var(--color-primary-dark);
+  color: var(--color-ai-dark);
   font-family: inherit;
   font-weight: 800;
   font-size: 0.8125rem;

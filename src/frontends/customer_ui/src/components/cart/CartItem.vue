@@ -1,6 +1,7 @@
 <template>
   <div class="cart-item">
-    <img :src="item.foodItem.image" :alt="item.foodItem.name" />
+    <img v-if="item.foodItem.image" :src="item.foodItem.image" :alt="item.foodItem.name" />
+    <div v-else class="thumb-placeholder" aria-hidden="true">🍽️</div>
     <div class="info">
       <h4 class="name">{{ item.foodItem.name }}</h4>
       <p class="unit-price">{{ formatPrice(item.foodItem.price) }} / phần</p>
@@ -41,18 +42,27 @@ const cart = useCartStore()
 .cart-item {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 0;
+  gap: 0.625rem;
+  padding: 0.5rem 0;
   border-bottom: 1px solid var(--color-border);
 }
 
-.cart-item img {
-  width: 60px;
-  height: 60px;
+.cart-item img,
+.thumb-placeholder {
+  width: 44px;
+  height: 44px;
   border-radius: var(--radius-sm);
   object-fit: cover;
   flex: 0 0 auto;
   background: #f0f0f0;
+}
+
+.thumb-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  background: linear-gradient(135deg, #ffe3e6, #ffccd2);
 }
 
 .info {
@@ -61,42 +71,45 @@ const cart = useCartStore()
 }
 
 .name {
-  font-size: 1rem;
+  font-size: 0.8125rem;
   font-weight: 700;
-  margin: 0 0 0.15rem 0;
-  white-space: nowrap;
+  margin: 0 0 0.1rem 0;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 
 .unit-price {
-  font-size: 0.8125rem;
+  font-size: 0.6875rem;
   color: var(--color-text-muted);
   margin: 0;
 }
 
 .subtotal {
-  font-size: 1rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   color: var(--color-primary);
-  margin: 0.15rem 0 0 0;
+  margin: 0.1rem 0 0 0;
 }
 
 .controls {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.375rem;
   flex: 0 0 auto;
 }
 
 .qty-btn {
-  width: 44px;
-  height: 44px;
+  width: 30px;
+  height: 30px;
   border: none;
   border-radius: var(--radius-full);
-  background: #16a34a;
+  background: var(--color-primary);
   color: #fff;
-  font-size: 1.5rem;
+  font-size: 1.0625rem;
   font-weight: 700;
   line-height: 1;
   display: flex;
@@ -105,14 +118,14 @@ const cart = useCartStore()
 }
 
 .qty-btn:active {
-  background: #15803d;
+  background: var(--color-primary-dark);
   transform: scale(0.94);
 }
 
 .qty {
-  min-width: 1.75rem;
+  min-width: 1.375rem;
   text-align: center;
-  font-size: 1.25rem;
+  font-size: 0.9375rem;
   font-weight: 700;
 }
 </style>

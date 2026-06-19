@@ -66,7 +66,7 @@ function enterMenu() {
 .logo-box {
   width: 100px;
   height: 100px;
-  background: #6c63ff;
+  background: var(--color-ai);
   border-radius: 24px;
   display: inline-flex;
   align-items: center;
@@ -74,7 +74,7 @@ function enterMenu() {
   gap: 6px;
   margin-bottom: 1.5rem;
   animation: float 3s ease-in-out infinite;
-  box-shadow: 0 12px 40px rgba(108, 99, 255, 0.35);
+  box-shadow: 0 12px 40px rgba(2, 132, 199, 0.35);
 }
 
 .logo-box i {
@@ -91,13 +91,13 @@ function enterMenu() {
 }
 
 .accent {
-  color: #6c63ff;
+  color: var(--color-ai);
 }
 
 .tagline {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #6c63ff;
+  color: var(--color-ai);
   letter-spacing: 0.25em;
   margin: 0 0 1rem 0;
 }

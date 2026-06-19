@@ -1,82 +1,144 @@
-import rawItems from '../../../../../assets/data/menu.json'
-import type { Category, FoodItem } from '@/types'
+import type { Category, DishGroup, FoodItem } from '@/types'
 
-interface RawMenuItem {
+export interface RawMenuItem {
   name: string
-  description: string
   price: string
   diet_type: string
   category: string
-  ingredients: string
   taste_profile: string
   tags: string
+  group?: string
+  image?: string
+  featured_name?: string
 }
 
 // Maps the category display name from menu.json to its frontend metadata.
+// Must stay in sync with the `category` values in assets/data/menu.json.
 const CATEGORY_META: Record<string, { id: string; icon: string; order: number }> = {
-  'Món Lẩu':          { id: 'lau',          icon: '🍲', order: 1  },
-  'Món Lẩu Chay':     { id: 'lau-chay',     icon: '🫕', order: 2  },
-  'Món Nướng':        { id: 'nuong',        icon: '🍖', order: 3  },
-  'Món Chính Mặn':    { id: 'chinh-man',    icon: '🍜', order: 4  },
-  'Món Chính Chay':   { id: 'chinh-chay',   icon: '🌿', order: 5  },
-  'Món Khai Vị':      { id: 'khai-vi',      icon: '🥗', order: 6  },
-  'Món Khai Vị Chay': { id: 'khai-vi-chay', icon: '🥦', order: 7  },
-  'Món Kho':          { id: 'kho',          icon: '🥘', order: 8  },
-  'Món Hải Sản':      { id: 'hai-san',      icon: '🦐', order: 9  },
-  'Món Nước':         { id: 'nuoc',         icon: '🍜', order: 10 },
-  'Cơm & Mì':         { id: 'com-mi',       icon: '🍚', order: 11 },
-  'Món Rau':          { id: 'rau',          icon: '🥬', order: 12 },
-  'Canh & Sup':       { id: 'canh-sup',     icon: '🍵', order: 13 },
-  'Món Canh Chay':    { id: 'canh-chay',    icon: '🥣', order: 14 },
-  'Món Đặc Sản':      { id: 'dac-san',      icon: '🌟', order: 15 },
-  'Tráng Miệng':      { id: 'trang-mieng',  icon: '🍮', order: 16 },
-  'Đồ Uống':          { id: 'do-uong',      icon: '🥤', order: 17 },
+  'Ốc & Sò':           { id: 'oc-so',        icon: '🐚', order: 1  },
+  'Ốc Hấp':            { id: 'oc-hap',       icon: '🦪', order: 2  },
+  'Món Nướng':         { id: 'nuong',        icon: '🍖', order: 3  },
+  'Tôm':               { id: 'tom',          icon: '🦐', order: 4  },
+  'Chiên & Khai Vị':   { id: 'chien-khai-vi', icon: '🍤', order: 5 },
+  'Gỏi & Trộn':        { id: 'goi-tron',     icon: '🥗', order: 6  },
+  'Lặt Vặt Ăn Chơi':  { id: 'lat-vat',      icon: '🍢', order: 7  },
+  'Khô Lai Rai':       { id: 'kho-lai-rai',  icon: '🐟', order: 8  },
+  'Món Lẩu':           { id: 'lau',          icon: '🍲', order: 9  },
+  'Món Chính':         { id: 'mon-chinh',    icon: '🍛', order: 10 },
+  'Mì - Cháo - Cơm':   { id: 'mi-chao-com',  icon: '🍜', order: 11 },
+  'Giải Khát':         { id: 'giai-khat',    icon: '🥤', order: 12 },
 }
 
-// One representative Unsplash image per category; items share their category image.
-// TODO: add a per-item `image` field to menu.json when the backend is ready.
-const CATEGORY_IMAGE: Record<string, string> = {
-  'lau':          'https://images.unsplash.com/photo-1569562211093-4ed0d0758f12?w=400',
-  'lau-chay':     'https://images.unsplash.com/photo-1547592180-85f173990554?w=400',
-  'nuong':        'https://images.unsplash.com/photo-1544025162-d76694265947?w=400',
-  'chinh-man':    'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400',
-  'chinh-chay':   'https://images.unsplash.com/photo-1606923829579-0cb981a83e2e?w=400',
-  'khai-vi':      'https://images.unsplash.com/photo-1625938145312-c69b6cd60c1f?w=400',
-  'khai-vi-chay': 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400',
-  'kho':          'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400',
-  'hai-san':      'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=400',
-  'nuoc':         'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=400',
-  'com-mi':       'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=400',
-  'rau':          'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400',
-  'canh-sup':     'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400',
-  'canh-chay':    'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400',
-  'dac-san':      'https://images.unsplash.com/photo-1553978297-833d24758dbe?w=400',
-  'trang-mieng':  'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400',
-  'do-uong':      'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400',
+const DEFAULT_ICON = '🍽️'
+
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '') // strip combining diacritics
+    .replace(/đ/g, 'd')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
 }
 
-const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400'
+function categoryId(name: string): string {
+  return CATEGORY_META[name]?.id ?? slugify(name)
+}
+
+function isBestSeller(tags: string): boolean {
+  return tags.toLowerCase().includes('best seller')
+}
 
 function toFoodItem(raw: RawMenuItem, index: number): FoodItem {
-  const meta = CATEGORY_META[raw.category]
-  const categoryId = meta?.id ?? raw.category.toLowerCase().replace(/\s+/g, '-')
   return {
     id: String(index + 1),
     name: raw.name,
-    description: raw.description,
     price: Number(raw.price),
-    image: CATEGORY_IMAGE[categoryId] ?? FALLBACK_IMAGE,
-    categoryId,
+    image: raw.image || undefined,
+    categoryId: categoryId(raw.category),
     available: true,
-    ingredients: raw.ingredients,
     tasteProfile: raw.taste_profile,
     tags: raw.tags.split(',').map((t) => t.trim()),
     dietType: raw.diet_type,
+    group: raw.group,
+    featuredName: raw.featured_name,
   }
 }
 
-export const adaptedCategories: Category[] = Object.entries(CATEGORY_META)
-  .filter(([name]) => (rawItems as RawMenuItem[]).some((r) => r.category === name))
-  .map(([name, meta]) => ({ id: meta.id, name, icon: meta.icon, order: meta.order }))
+function priceLabel(items: FoodItem[]): string {
+  const prices = items.map((i) => i.price)
+  const min = Math.min(...prices)
+  const max = Math.max(...prices)
+  const fmt = (n: number) => new Intl.NumberFormat('vi-VN').format(n)
+  return min === max ? fmt(min) : `${fmt(min)} – ${fmt(max)}`
+}
 
-export const adaptedFoodItems: FoodItem[] = (rawItems as RawMenuItem[]).map(toFoodItem)
+// Cluster items within one category by their `group` label (falling back to the
+// item name, so ungrouped dishes become single-option groups). Preserves the
+// order in which groups first appear in the data.
+function groupItems(items: FoodItem[]): DishGroup[] {
+  const order: string[] = []
+  const buckets = new Map<string, FoodItem[]>()
+  for (const item of items) {
+    const key = item.group ?? item.name
+    if (!buckets.has(key)) {
+      buckets.set(key, [])
+      order.push(key)
+    }
+    buckets.get(key)!.push(item)
+  }
+  return order.map((key) => {
+    const groupItemsList = buckets.get(key)!
+    const first = groupItemsList[0]
+    return {
+      id: slugify(`${first.categoryId}-${key}`),
+      name: key,
+      image: groupItemsList.find((i) => i.image)?.image,
+      categoryId: first.categoryId,
+      items: groupItemsList,
+      priceLabel: priceLabel(groupItemsList),
+      isBestSeller: groupItemsList.some((i) => isBestSeller((i.tags ?? []).join(','))),
+    }
+  })
+}
+
+export interface AdaptedMenu {
+  categories: Category[]
+  foodItems: FoodItem[]
+  bestSellers: FoodItem[]
+  groupsByCategory: Record<string, DishGroup[]>
+}
+
+// Turn the raw menu.json payload (now fetched from the backend) into the display-ready
+// shapes the store/components consume. Pure: same input → same output, no side effects.
+export function adaptMenu(rawItems: RawMenuItem[]): AdaptedMenu {
+  const foodItems: FoodItem[] = rawItems.map(toFoodItem)
+
+  // Build the tab list from the categories that actually appear in the data, so any
+  // new category added to the menu shows up even before it's listed in CATEGORY_META.
+  const presentCategories = [...new Set(rawItems.map((r) => r.category))]
+  const categories: Category[] = presentCategories
+    .map((name) => ({
+      id: categoryId(name),
+      name,
+      icon: CATEGORY_META[name]?.icon ?? DEFAULT_ICON,
+      order: CATEGORY_META[name]?.order ?? 999,
+    }))
+    .sort((a, b) => a.order - b.order)
+
+  // Dishes flagged "best seller" in their tags drive the Best Seller showcase.
+  const bestSellers: FoodItem[] = foodItems.filter((item) =>
+    (item.tags ?? []).some((t) => t.toLowerCase() === 'best seller'),
+  )
+
+  // categoryId -> ordered dish groups for that category.
+  const groupsByCategory: Record<string, DishGroup[]> = categories.reduce(
+    (acc, cat) => {
+      acc[cat.id] = groupItems(foodItems.filter((i) => i.categoryId === cat.id))
+      return acc
+    },
+    {} as Record<string, DishGroup[]>,
+  )
+
+  return { categories, foodItems, bestSellers, groupsByCategory }
+}

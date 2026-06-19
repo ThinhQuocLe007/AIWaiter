@@ -36,7 +36,13 @@
         <!-- Recommended dish card (slides out under the AI bubble) -->
         <Transition name="reco">
           <div v-if="voice.recommendedItem" class="reco-card">
-            <img :src="voice.recommendedItem.image" :alt="voice.recommendedItem.name" class="reco-img" />
+            <img
+              v-if="voice.recommendedItem.image"
+              :src="voice.recommendedItem.image"
+              :alt="voice.recommendedItem.name"
+              class="reco-img"
+            />
+            <div v-else class="reco-img reco-img-placeholder" aria-hidden="true">🍽️</div>
             <div class="reco-info">
               <span class="reco-name">{{ voice.recommendedItem.name }}</span>
               <span class="reco-price">{{ formatPrice(voice.recommendedItem.price) }}</span>
@@ -312,6 +318,14 @@ watch(
   border-radius: 10px;
   object-fit: cover;
   flex: 0 0 auto;
+}
+
+.reco-img-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  background: linear-gradient(135deg, #ffe3e6, #ffccd2);
 }
 
 .reco-info {

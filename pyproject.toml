@@ -31,6 +31,8 @@ dependencies = [
     "torchvision==0.26.0 ; platform_machine == 'aarch64'",
     "torch>=2.12 ; platform_machine == 'x86_64'",
     "torchvision>=0.27 ; platform_machine == 'x86_64'",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
 ]
 
 # Jetson (aarch64) lấy torch/torchvision GPU từ index NVIDIA jetson-ai-lab (CUDA 12.6),

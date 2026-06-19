@@ -73,24 +73,24 @@ const cart = useCartStore()
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.25rem 1.5rem;
+  padding: 0.875rem 1.25rem;
   border-bottom: 1px solid var(--color-border);
 }
 
 .drawer-header h2 {
-  font-size: 1.5rem;
+  font-size: 1.1875rem;
   font-weight: 700;
   margin: 0;
 }
 
 .close-btn {
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   border: none;
   border-radius: var(--radius-full);
   background: var(--color-bg);
   color: var(--color-text);
-  font-size: 1.25rem;
+  font-size: 1.0625rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -115,16 +115,21 @@ const cart = useCartStore()
 .items {
   flex: 1;
   overflow-y: auto;
-  padding: 0 1.5rem;
+  padding: 0 1.25rem;
 }
 
 .drawer-footer {
-  padding: 1.25rem 1.5rem;
+  padding: 0.875rem 1.25rem;
   border-top: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
   background: var(--color-surface);
+}
+
+.drawer-footer :deep(.touch-button) {
+  min-height: 2.75rem;
+  font-size: 1rem;
 }
 
 .slide-enter-active,

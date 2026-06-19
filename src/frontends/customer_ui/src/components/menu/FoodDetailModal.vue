@@ -9,7 +9,8 @@
       </button>
 
       <div class="image-wrapper">
-        <img :src="item.image" :alt="item.name" />
+        <img v-if="item.image" :src="item.image" :alt="item.name" />
+        <div v-else class="image-placeholder" aria-hidden="true">{{ fallbackIcon }}</div>
       </div>
 
       <div class="body">
@@ -19,13 +20,6 @@
         </div>
 
         <span class="price">{{ formatPrice(item.price) }}</span>
-
-        <p class="description">{{ item.description }}</p>
-
-        <section v-if="item.ingredients" class="field">
-          <h3 class="label">Thành phần</h3>
-          <p class="value">{{ item.ingredients }}</p>
-        </section>
 
         <section v-if="item.tasteProfile" class="field">
           <h3 class="label">Hương vị</h3>
@@ -62,14 +56,20 @@
 import { computed } from 'vue'
 import { useCartStore } from '@/stores/cart'
 import { useUiStore } from '@/stores/ui'
+import { useMenuStore } from '@/stores/menu'
 import { formatPrice } from '@/utils/format'
 import TouchButton from '@/components/common/TouchButton.vue'
 
 const ui = useUiStore()
 const cart = useCartStore()
+const menu = useMenuStore()
 
 const item = computed(() => ui.detailItem)
 const quantity = computed(() => (item.value ? cart.quantityFor(item.value.id) : 0))
+// When a dish has no photo, fall back to its category emoji.
+const fallbackIcon = computed(
+  () => menu.categories.find((c) => c.id === item.value?.categoryId)?.icon ?? '🍽️',
+)
 const dietClass = computed(() =>
   item.value?.dietType === 'chay' ? 'diet-veg' : 'diet-meat',
 )
@@ -129,6 +129,16 @@ const dietClass = computed(() =>
   object-fit: cover;
 }
 
+.image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 4.5rem;
+  background: linear-gradient(135deg, #ffe3e6, #ffccd2);
+}
+
 .body {
   padding: 1.25rem 1.5rem;
   overflow-y: auto;
@@ -174,13 +184,6 @@ const dietClass = computed(() =>
   font-weight: 700;
   color: var(--color-primary);
   margin-top: 0.25rem;
-}
-
-.description {
-  font-size: 0.95rem;
-  line-height: 1.5;
-  color: var(--color-text);
-  margin: 0.75rem 0 0;
 }
 
 .field {
@@ -236,7 +239,7 @@ const dietClass = computed(() =>
   height: 56px;
   border: none;
   border-radius: var(--radius-full);
-  background: #16a34a;
+  background: var(--color-primary);
   color: #fff;
   font-size: 1.75rem;
   font-weight: 700;
@@ -248,7 +251,7 @@ const dietClass = computed(() =>
 
 .step-btn:active {
   transform: scale(0.94);
-  background: #15803d;
+  background: var(--color-primary-dark);
 }
 
 .qty {

@@ -42,7 +42,7 @@ withDefaults(
 }
 
 .variant-primary {
-  background: #16a34a;
+  background: var(--color-primary);
   color: #fff;
 }
 
