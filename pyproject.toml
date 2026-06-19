@@ -22,4 +22,31 @@ dependencies = [
     "sentence-transformers>=5.6.0",
     "tqdm>=4.68.3",
     "underthesea>=9.5.0",
+    # torch/torchvision phải khai báo trực tiếp thì source theo platform bên dưới mới có hiệu lực
+    # (nếu để transitive qua sentence-transformers, uv bỏ qua index Jetson).
+    # Version tách theo máy:
+    #  - Jetson (aarch64): 2.11.0 cu126 từ index jetson-ai-lab (driver CUDA 12.6).
+    #  - Dev x86 (RTX 5060 Ti / Blackwell sm_120): cần build cu13 → torch >=2.12 từ PyPI.
+    "torch==2.11.0 ; platform_machine == 'aarch64'",
+    "torchvision==0.26.0 ; platform_machine == 'aarch64'",
+    "torch>=2.12 ; platform_machine == 'x86_64'",
+    "torchvision>=0.27 ; platform_machine == 'x86_64'",
 ]
+
+# Jetson (aarch64) lấy torch/torchvision GPU từ index NVIDIA jetson-ai-lab (CUDA 12.6),
+# máy dev x86 vẫn lấy từ PyPI. Tránh việc `uv sync` đè bản GPU bằng wheel CPU/cu13 của PyPI.
+[tool.uv]
+# Ép uv resolve cho CẢ x86 lẫn aarch64 (Jetson), để source theo platform bên dưới có hiệu lực.
+environments = [
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "sys_platform == 'linux' and platform_machine == 'aarch64'",
+]
+
+[tool.uv.sources]
+torch = [{ index = "jetson-cu126", marker = "platform_machine == 'aarch64'" }]
+torchvision = [{ index = "jetson-cu126", marker = "platform_machine == 'aarch64'" }]
+
+[[tool.uv.index]]
+name = "jetson-cu126"
+url = "https://pypi.jetson-ai-lab.io/jp6/cu126/+simple/"
+explicit = true
