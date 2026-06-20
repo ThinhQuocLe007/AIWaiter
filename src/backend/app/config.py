@@ -24,10 +24,17 @@ class Settings(BaseSettings):
     # per-robot Brain DB under storage/db.
     db_path: Path = REPO_ROOT / "storage" / "db" / "orchestrator.db"
 
-    # Allowed CORS origins for the browser frontends (customer UI dev server, panel, kiosk).
+    # Allowed CORS origins for the browser frontends. Dev servers normally hit the backend
+    # through each app's same-origin Vite proxy (/api -> :8000) so CORS does not bite, but we
+    # list every dev port (customer_ui 5173 · kiosk 5174 · panel 5175) so a direct
+    # VITE_API_URL=http://127.0.0.1:8000 setup still works.
     cors_origins: list[str] = [
-        "http://localhost:5173",
+        "http://localhost:5173",  # customer_ui
         "http://127.0.0.1:5173",
+        "http://localhost:5174",  # kiosk
+        "http://127.0.0.1:5174",
+        "http://localhost:5175",  # panel
+        "http://127.0.0.1:5175",
         "http://localhost:4173",  # vite preview
         "http://127.0.0.1:4173",
     ]
