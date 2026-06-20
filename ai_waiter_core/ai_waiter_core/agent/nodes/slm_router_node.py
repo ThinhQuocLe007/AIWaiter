@@ -85,6 +85,7 @@ def _format_last_n_turns(messages: list, n: int = 5) -> str:
 _llm = ChatOllama(
     model=settings.ROUTER_MODEL,
     temperature=0.0,
+    num_ctx=settings.LLM_NUM_CTX,
     metadata={"ls_model_name": settings.ROUTER_MODEL, "ls_provider": "ollama"}
 ).with_structured_output(IntentPrediction)
 

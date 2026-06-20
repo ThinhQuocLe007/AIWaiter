@@ -254,7 +254,13 @@ class RestaurantDB:
                 cursor.execute('''
                     UPDATE payments SET status = ?, completed_at = ? WHERE session_id = ?
                 ''', (status, now, session_id))
-                self.close_session(session_id)
+                # Close the session in the SAME transaction. Calling close_session()
+                # here (a separate connection) deadlocked against this still-open write
+                # transaction, so the session silently stayed ACTIVE and future bills
+                # kept accumulating its orders.
+                cursor.execute('''
+                    UPDATE sessions SET status = 'CLOSED', ended_at = ? WHERE id = ?
+                ''', (now, session_id))
             else:
                 cursor.execute('''
                     UPDATE payments SET status = ? WHERE session_id = ?

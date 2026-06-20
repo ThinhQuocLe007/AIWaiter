@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 _llm = ChatOllama(
     model=settings.WORKER_MODEL,
     temperature=0.1,
+    num_ctx=settings.LLM_NUM_CTX,
     metadata={"ls_model_name": settings.WORKER_MODEL, "ls_provider": "ollama"}
 ).bind_tools([sync_cart, confirm_order], tool_choice="any")
 # NOTE: `tool_choice="any"` is currently ignored by ChatOllama (see its

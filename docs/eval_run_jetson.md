@@ -72,6 +72,62 @@ Rồi chạy lại bước kiểm tra ở trên.
 
 ---
 
+## 3. Tối ưu RAM cho Ollama (Jetson Orin 8GB unified)
+
+Trên Jetson Orin 8GB, GPU và CPU **dùng chung** 8GB. Nếu không tinh chỉnh, hệ thống dễ
+tràn sang swap (đo được ~+3GB). Hai phần cần làm:
+
+### 3.1. `num_ctx` đã được pin sẵn trong code
+
+Mọi lời gọi LLM dùng `settings.LLM_NUM_CTX` (mặc định **6144**) — xem `agent_config.py`.
+qwen3:4b hỗ trợ tới 262144 token; nếu để Ollama tự quyết, KV cache có thể rất lớn.
+Một giá trị `num_ctx` **đồng nhất** cho mọi node cũng tránh Ollama nạp lại model giữa các node.
+
+Chỉnh khi cần (vd muốn nhỏ hơn để tiết kiệm thêm RAM):
+
+```bash
+# trong .env
+LLM_NUM_CTX=4096
+```
+
+### 3.2. Cấu hình Ollama service (env override)
+
+```bash
+sudo systemctl edit ollama
+```
+
+Dán vào:
+
+```ini
+[Service]
+Environment="OLLAMA_NUM_PARALLEL=1"        # kiosk phục vụ tuần tự → KHÔNG nhân KV cache (nghi can chính gây tràn swap)
+Environment="OLLAMA_MAX_LOADED_MODELS=1"
+Environment="OLLAMA_FLASH_ATTENTION=1"
+Environment="OLLAMA_KV_CACHE_TYPE=q8_0"    # KV cache 8-bit → giảm ~nửa, chất lượng gần như nguyên (cần FLASH_ATTENTION=1)
+Environment="OLLAMA_KEEP_ALIVE=-1"         # giữ model thường trú, tránh reload
+```
+
+```bash
+sudo systemctl restart ollama
+```
+
+### 3.3. Kiểm chứng
+
+```bash
+# sau khi gửi 1 request cho agent:
+ollama ps        # xem CONTEXT + SIZE model đang chiếm thực tế
+tegrastats       # theo dõi RAM/SWAP realtime
+free -h
+```
+
+- Nếu `ollama ps` báo context > 6144 → việc pin `num_ctx` đang cắt thật.
+- Nếu vẫn thiếu RAM: chạy headless `sudo systemctl set-default multi-user.target` (tiết kiệm 1–2GB),
+  hoặc cân nhắc embedding nhỏ hơn (chạy lại `eval_retrieval` để cân chất lượng).
+
+> Embedding (`AITeamVN/Vietnamese_Embedding`, BGE-M3) đã được load **fp16** sẵn (~1.1GB thay vì ~2.2GB) — xem `embeddings.py`.
+
+---
+
 ## Lưu ý quan trọng
 
 - **KHÔNG** chạy `uv pip install torch ...` thủ công trên Jetson nữa — `uv sync` đã lo việc đó.

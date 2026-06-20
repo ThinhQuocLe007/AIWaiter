@@ -15,6 +15,7 @@ SKILL_PATH = settings.resources_dir / "skills" / "menu_grounding.md"
 _critic_model = ChatOllama(
     model=settings.WORKER_MODEL,
     temperature=0.1,
+    num_ctx=settings.LLM_NUM_CTX,
     metadata={"ls_model_name": settings.WORKER_MODEL, "ls_provider": "ollama"}
 ).with_structured_output(CriticVerdict)
 

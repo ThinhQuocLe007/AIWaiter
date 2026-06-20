@@ -17,7 +17,7 @@ def get_sentence_transformer(model_name: str = EMBEDDING_MODEL_NAME) -> Sentence
     semantic router, so the embedding model only occupies memory once instead
     of being loaded twice. Critical on the Jetson Orin 8GB unified-memory target.
     """
-    return SentenceTransformer(model_name, device=settings.DEVICE)
+    return SentenceTransformer(model_name, device=settings.DEVICE, model_kwargs={"torch_dtype": "float16"})
 
 
 class SharedEmbeddings(Embeddings):

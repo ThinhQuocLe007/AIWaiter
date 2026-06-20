@@ -1,20 +1,24 @@
-import difflib
+import logging
 from typing import Dict, Any, List
 from langchain_core.messages import ToolMessage
 from ai_waiter_core.agent.state import AgentState
-from ai_waiter_core.schemas.menu_registry import MENU_NAMES
+from ai_waiter_core.utils import resolve_menu_name
+
+logger = logging.getLogger(__name__)
 
 def deterministic_validator_node(state: AgentState) -> Dict[str, Any]:
     """
     Pure Python guardrail node.
     Performs fast, zero-hallucination validations on LLM tool calls (spelling, stage checks) before execution.
 
-    Out-of-menu handling: items the customer asked for that are NOT on the menu are
-    NOT treated as a blocking error (which previously made the worker silently drop
-    or substitute them). Instead they are captured into `unavailable_items`, stripped
-    from the cart so the valid items still go through, and surfaced to the response
-    node which explicitly tells the customer. Only structural problems (bad quantity,
-    missing name, wrong confirmation stage) still block and loop for correction.
+    Menu name handling (no longer exact-match-only):
+      - exact / single prefix match -> auto-resolved to the official name and kept in the cart.
+      - generic name matching SEVERAL variants ("Ốc Hương" -> 11 sauces) -> captured into
+        `ambiguous_items` (not added to cart, not blocking) so the response node asks the
+        customer which variant they want.
+      - genuinely off-menu -> captured into `unavailable_items` and surfaced to the customer.
+    Only structural problems (bad quantity, missing name, wrong confirmation stage) still
+    block and loop for correction.
     """
     last_message = state["messages"][-1]
 
@@ -24,10 +28,20 @@ def deterministic_validator_node(state: AgentState) -> Dict[str, Any]:
 
     errors = []
     unavailable_items: List[Dict[str, Any]] = []
+    ambiguous_items: List[Dict[str, Any]] = []
 
     for tool_call in last_message.tool_calls:
         tool_name = tool_call.get("name")
         args = tool_call.get("args", {})
+
+        # table_id is a SESSION parameter, not something the LLM should guess. The
+        # worker often copies the "T1" example from its prompt, which dumps every
+        # order/payment onto one shared table. Override it deterministically from the
+        # session state so orders, billing and verification always hit the right table.
+        if tool_name in ("confirm_order", "request_payment", "verify_payment"):
+            session_table_id = state.get("table_id")
+            if session_table_id:
+                args["table_id"] = session_table_id
 
         # 2. Validate Cart Drafting (Spelling and Math)
         if tool_name == "sync_cart":
@@ -47,16 +61,35 @@ def deterministic_validator_node(state: AgentState) -> Dict[str, Any]:
                     errors.append("Món trong giỏ hàng thiếu tên (name). Hãy gọi lại sync_cart với tên món đúng từ thực đơn.")
                     continue
 
-                # Check 2c: Strict Menu Name Validation
-                if name in MENU_NAMES:
+                # Check 2c: Menu Name Resolution (exact / single / ambiguous / none)
+                resolution = resolve_menu_name(name)
+                kind = resolution["kind"]
+
+                if kind in ("exact", "single"):
+                    # Resolve to the official menu name so the cart, pricing and the
+                    # downstream confirm_order all use the canonical spelling.
+                    item["name"] = resolution["resolved"]
+                    item["is_valid"] = True
                     if quantity > 0:
-                        item["is_valid"] = True
                         valid_items.append(item)
+                    if kind == "single":
+                        logger.info(
+                            "[validator] auto-resolved %r -> %r (single prefix match).",
+                            name, resolution["resolved"],
+                        )
+                elif kind == "ambiguous":
+                    # Generic name matching several variants: do NOT add to cart and do
+                    # NOT let the worker pick one silently. Surface for clarification.
+                    ambiguous_items.append({"name": name, "candidates": resolution["candidates"]})
+                    logger.warning(
+                        "[validator] ambiguous item %r matches %d menu variants -> "
+                        "asking customer to choose. candidates=%s",
+                        name, len(resolution["candidates"]), resolution["candidates"][:5],
+                    )
                 else:
-                    # Not on the menu: capture it (with the closest match as a hint),
-                    # do NOT block and do NOT let the worker substitute a different dish.
-                    matches = difflib.get_close_matches(name, MENU_NAMES, n=1, cutoff=0.7)
-                    unavailable_items.append({"name": name, "suggestion": matches[0] if matches else None})
+                    # Genuinely off-menu.
+                    unavailable_items.append({"name": name, "suggestion": None})
+                    logger.warning("[validator] dropped off-menu item %r (no match).", name)
 
             # Strip unavailable items in-place so the tool executes with valid items only.
             # `sync_cart` always receives the full intended cart, so keeping only the
@@ -98,6 +131,7 @@ def deterministic_validator_node(state: AgentState) -> Dict[str, Any]:
                 "messages": tool_messages,
                 "loop_count": loop_count,
                 "unavailable_items": unavailable_items,
+                "ambiguous_items": ambiguous_items,
             }
 
         return {
@@ -106,12 +140,15 @@ def deterministic_validator_node(state: AgentState) -> Dict[str, Any]:
             "messages": tool_messages,
             "loop_count": loop_count,
             "unavailable_items": unavailable_items,
+            "ambiguous_items": ambiguous_items,
         }
 
-    # Passes all structural checks: allow tool execution. Any out-of-menu items were
-    # stripped from the cart and are reported downstream via `unavailable_items`.
+    # Passes all structural checks: allow tool execution. Out-of-menu items were
+    # stripped and are reported via `unavailable_items`; generic names matching
+    # several variants are reported via `ambiguous_items` for clarification.
     return {
         "is_valid": True,
         "feedback": None,
         "unavailable_items": unavailable_items,
+        "ambiguous_items": ambiguous_items,
     }

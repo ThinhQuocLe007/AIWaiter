@@ -1,6 +1,25 @@
 [
   {
     "role": "user",
+    "content": "Cho mình 2 phần Ốc Hương"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "sync_cart",
+        "args": {
+          "items": [
+            {"name": "Ốc Hương", "quantity": 2, "special_requests": null}
+          ]
+        },
+        "id": "call_sync_generic"
+      }
+    ]
+  },
+  {
+    "role": "user",
     "content": "Cho tôi 1 Phở Bò và 2 Coca"
   },
   {

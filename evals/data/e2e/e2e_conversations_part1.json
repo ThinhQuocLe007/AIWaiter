@@ -46,7 +46,7 @@
         {
           "turn": 1,
           "role": "user",
-          "content": "Cho 6 con Hàu Nướng và 3 chai Bia Tiger Bạc nha",
+          "content": "Cho 6 con Hàu Nướng Phô Mai và 3 chai Bia Tiger Bạc nha",
           "assert": {
             "tool_called": "sync_cart",
             "tool_output_contains": "Đã cập nhật",

@@ -31,6 +31,12 @@ class AgentState(TypedDict):
     # explicitly tell the customer instead of silently dropping/substituting.
     # Each entry: {"name": <as requested>, "suggestion": <closest menu name or None>}
     unavailable_items: Optional[List[Dict[str, Any]]]
-    
+
+    # Items the customer named generically that match SEVERAL menu variants
+    # (e.g. "Ốc Hương" -> 11 sauces). Captured by the validator (not added to the
+    # cart, not blocking) so the response node can ask the customer which variant.
+    # Each entry: {"name": <as requested>, "candidates": [<official menu names>]}
+    ambiguous_items: Optional[List[Dict[str, Any]]]
+
     # Router metadata for debugging/evaluation
     routing_meta: Optional[Dict[str, Any]]

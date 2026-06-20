@@ -56,7 +56,7 @@
         {
           "turn": 1,
           "role": "user",
-          "content": "Cho mình 1 phần Tôm Càng Xanh và 2 chai Bia Sài Gòn",
+          "content": "Cho mình 1 phần Tôm Càng Xanh Nướng Phô Mai và 2 chai Bia Sài Gòn",
           "assert": {
             "tool_called": "sync_cart",
             "tool_output_contains": "Đã cập nhật"
@@ -102,7 +102,7 @@
         {
           "turn": 1,
           "role": "user",
-          "content": "Cho mình 2 con Hàu Nướng",
+          "content": "Cho mình 2 con Hàu Nướng Phô Mai",
           "assert": {
             "tool_called": "sync_cart",
             "tool_output_contains": "Đã cập nhật"
@@ -178,7 +178,7 @@
         {
           "turn": 1,
           "role": "user",
-          "content": "Cho mình 2 phần Ốc Hương và 2 chai Bia Sài Gòn",
+          "content": "Cho mình 2 phần Ốc Hương Xốt Trứng Muối và 2 chai Bia Sài Gòn",
           "assert": {
             "tool_called": "sync_cart",
             "tool_output_contains": "Đã cập nhật"
