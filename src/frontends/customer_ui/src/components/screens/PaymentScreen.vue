@@ -26,10 +26,11 @@
         </div>
       </div>
 
-      <TouchButton variant="primary" block @click="done">
-        Đã thanh toán xong
+      <TouchButton variant="primary" block :disabled="paying" @click="done">
+        {{ paying ? 'Đang xác nhận…' : 'Đã thanh toán xong' }}
       </TouchButton>
 
+      <p v-if="error" class="error">{{ error }}</p>
       <p class="countdown">Tự động quay lại sau {{ countdown }}s</p>
     </div>
   </div>
@@ -39,6 +40,7 @@
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
+import { payOrder } from '@/data/api'
 import { formatPrice } from '@/utils/format'
 import TouchButton from '@/components/common/TouchButton.vue'
 
@@ -46,7 +48,10 @@ const router = useRouter()
 const route = useRoute()
 const cart = useCartStore()
 const countdown = ref(30)
+const paying = ref(false)
+const error = ref<string | null>(null)
 
+const orderId = Number(route.query.orderId) || 0
 const amount = ref(Number(route.query.amount) || 0)
 const qrUrl = ref(
   String(route.query.qrUrl || '') ||
@@ -57,17 +62,34 @@ const accountNo = ref('123456789')
 
 let interval: ReturnType<typeof setInterval> | undefined
 
-function done() {
+function goHome() {
   clearInterval(interval)
-  cart.clear()
   router.push('/')
 }
 
+// Guest confirms the (mock) payment: tell the backend so it records the payment and frees the
+// table (→ DA_THANH_TOAN; staff clears it from the panel). Only real money transfer is faked.
+async function done() {
+  if (paying.value) return
+  paying.value = true
+  error.value = null
+  try {
+    if (orderId) await payOrder(orderId)
+    cart.clear()
+    goHome()
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Xác nhận thanh toán thất bại'
+    paying.value = false
+  }
+}
+
 onMounted(() => {
+  // Idle timeout just returns to the home screen — it does NOT confirm payment (the guest may
+  // have walked away without paying), so the table stays DANG_PHUC_VU until they actually pay.
   interval = setInterval(() => {
     countdown.value--
     if (countdown.value <= 0) {
-      done()
+      goHome()
     }
   }, 1000)
 })
@@ -160,6 +182,12 @@ onUnmounted(() => {
 .countdown {
   font-size: 0.875rem;
   color: var(--color-text-muted);
+  margin: 0;
+}
+
+.error {
+  font-size: 0.875rem;
+  color: var(--color-danger, #9b3a35);
   margin: 0;
 }
 </style>

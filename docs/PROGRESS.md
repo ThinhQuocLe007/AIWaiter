@@ -162,7 +162,7 @@ Mở rộng Panel từ "chỉ KDS bếp" thành bảng giám sát cả quán (1 
 ### 3.2 Mốc C — Dispatcher + nút bàn + thanh toán
 - [ ] **Dispatcher**: hàng đợi `tasks`, chọn robot idle/gần/đủ pin; máy trạng thái bàn (mục 6).
 - [ ] **`POST /tables/{id}/call`** + luồng `call` (robot tới hỏi: đặt thêm / thanh toán).
-- [ ] **Thanh toán** (đúng tên nhánh `feat/payment-tool`): `GET /orders/{id}/bill`, `POST /payments/{order_id}/qr`, `POST /webhooks/payment`; nối `PaymentScreen` (bill thật + QR + chờ webhook). Dùng **sandbox VietQR/MoMo/ZaloPay** cho demo.
+- [x] **Thanh toán (mock)** — *chỉ giả lập **khâu chuyển tiền thật**; backend vẫn cập nhật trạng thái thật.* Luồng: `ServiceChoiceScreen` (nút **Thanh toán** → lấy tổng đơn hiện tại) → `PaymentScreen` hiện **ảnh QR VietQR** (`img.vietqr.io`, mock số tiền + STK) + nút **"Đã thanh toán xong"** → gọi **`POST /payments/{order_id}`** ([payments.py](../src/backend/app/routers/payments.py)): ghi 1 dòng `payments` `PAID` (tính `amount` server-side từ `orders.total`, idempotent nếu bấm 2 lần) + đẩy bàn sang **`DA_THANH_TOAN`** + **broadcast `table.updated`** → panel hiện bàn "đã thanh toán" với nút **"Kết thúc bàn"** (`PATCH /tables/{id}` `→ TRONG`, đã có) để **trống lại** cho khách kế. Tablet clear giỏ & về màn chính (timeout idle 30s chỉ về màn chính, **không** tính là đã trả). **Không** dùng webhook/sandbox PSP — để dành nếu sau cần đối soát thật (thêm `/qr` + `/webhooks/payment`). *Đã test (TestClient): seat→order→pay `201` (bàn `DANG_PHUC_VU`→`DA_THANH_TOAN`), double-tap tái dùng payment id, `Kết thúc bàn`→`TRONG`, pay order lạ `404`.*
 - [ ] **Nút bàn phần cứng** (ESP32/WiFi → gọi `/tables/{id}/call`); demo tạm bằng `curl`.
 
 ### 3.3 Mốc A & D — robot

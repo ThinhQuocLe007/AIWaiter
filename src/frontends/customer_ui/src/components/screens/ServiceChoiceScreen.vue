@@ -66,7 +66,10 @@ async function goToPayment() {
       amount = (await fetchOrder(currentOrderId.value)).total
     }
     const qrUrl = `https://img.vietqr.io/image/ICB-123456789-qr_only.png?amount=${amount}&addInfo=AI_Waiter_Payment`
-    router.push({ name: 'payment', query: { amount: String(amount), qrUrl } })
+    router.push({
+      name: 'payment',
+      query: { amount: String(amount), qrUrl, orderId: String(currentOrderId.value ?? '') },
+    })
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Không lấy được hoá đơn'
   } finally {

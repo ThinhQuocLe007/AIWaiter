@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .db import init_db
 from .menu import seed_dishes, seed_robots, seed_tables
-from .routers import admin, menu, orders, robots, tables
+from .routers import admin, menu, orders, payments, robots, tables
 from .ws import router as ws_router
 
 
@@ -41,6 +41,7 @@ app.add_middleware(
 app.include_router(menu.router)
 app.include_router(tables.router)
 app.include_router(orders.router)
+app.include_router(payments.router)
 app.include_router(robots.router)
 app.include_router(admin.router)
 app.include_router(ws_router)

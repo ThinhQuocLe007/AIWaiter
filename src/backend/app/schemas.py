@@ -65,6 +65,24 @@ class TableStatusUpdate(BaseModel):
     status: str
 
 
+# --- Payments (mock) ----------------------------------------------------------------------
+class PaymentCreate(BaseModel):
+    """Confirm a (mock) payment for an order. No real money moves — the tablet just shows a
+    VietQR image and the guest taps "I've paid"."""
+
+    method: str = "VIETQR"
+
+
+class PaymentOut(BaseModel):
+    id: int
+    order_id: int
+    method: str | None = None
+    amount: float
+    status: str
+    txn_ref: str | None = None
+    paid_at: str | None = None
+
+
 # --- Robots -------------------------------------------------------------------------------
 class RobotOut(BaseModel):
     id: str

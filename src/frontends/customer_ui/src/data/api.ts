@@ -73,3 +73,21 @@ export function createOrder(
 export function fetchOrder(orderId: number): Promise<CreatedOrder> {
   return getJson<CreatedOrder>(`/orders/${orderId}`)
 }
+
+// --- Payments (mock) --------------------------------------------------------
+// Mirror of backend PaymentOut (src/backend/app/schemas.py).
+export interface Payment {
+  id: number
+  order_id: number
+  method?: string | null
+  amount: number
+  status: string
+  txn_ref?: string | null
+  paid_at?: string | null
+}
+
+// POST /payments/{orderId} → confirm a mock payment: records it PAID and flips the table to
+// DA_THANH_TOAN so the panel can clear it. (No real transfer — the QR is a visual mock.)
+export function payOrder(orderId: number, method = 'VIETQR'): Promise<Payment> {
+  return postJson<Payment>(`/payments/${orderId}`, { method })
+}
