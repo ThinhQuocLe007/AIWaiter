@@ -155,11 +155,11 @@ watch(
   display: flex;
   flex-direction: column;
   max-height: 460px;
-  background: #0f172a;
-  border-top: 1px solid #1e293b;
-  border-radius: 24px 24px 0 0;
-  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.5);
-  color: #e2e8f0;
+  background: #1F1B16;
+  border-top: 1px solid var(--color-accent-dark);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -16px 48px rgba(0, 0, 0, 0.45);
+  color: #E8E2D6;
   overflow: hidden;
 }
 
@@ -169,7 +169,7 @@ watch(
   align-items: center;
   justify-content: space-between;
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid #1e293b;
+  border-bottom: 1px solid #34302A;
 }
 
 .vp-status {
@@ -182,20 +182,21 @@ watch(
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #10b981;
-  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6);
+  background: var(--color-accent);
+  box-shadow: 0 0 0 0 rgba(168, 133, 62, 0.6);
   animation: pulse-dot 1.6s infinite;
 }
 
 .vp-title {
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: #f8fafc;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #F5F1E8;
 }
 
 .vp-state {
   font-size: 0.6875rem;
-  color: #94a3b8;
+  color: #A89F90;
 }
 
 .vp-actions {
@@ -213,13 +214,13 @@ watch(
   min-height: 0;
   border: none;
   border-radius: var(--radius-full);
-  background: #1e293b;
-  color: #cbd5e1;
+  background: #34302A;
+  color: #C9C0B0;
   font-size: 1.05rem;
 }
 
 .vp-icon-btn:active {
-  background: #334155;
+  background: #443F37;
 }
 
 /* Chat */
@@ -242,8 +243,8 @@ watch(
 
 .bubble-user {
   align-self: flex-end;
-  background: #1e293b;
-  color: #e2e8f0;
+  background: #34302A;
+  color: #E8E2D6;
   border-top-right-radius: 4px;
 }
 
@@ -263,15 +264,15 @@ watch(
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #e63946, #f77f00);
-  color: #fff;
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-dark));
+  color: #1F1B16;
   font-size: 0.95rem;
 }
 
 .bubble-ai {
-  background: linear-gradient(180deg, #1e293b, #172033);
-  border: 1px solid #283548;
-  color: #e2e8f0;
+  background: #2A2620;
+  border: 1px solid #3A352D;
+  color: #E8E2D6;
   border-bottom-left-radius: 4px;
 }
 
@@ -286,7 +287,7 @@ watch(
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #94a3b8;
+  background: #A89F90;
   animation: blink 1.2s infinite ease-in-out;
 }
 
@@ -305,9 +306,9 @@ watch(
   display: flex;
   align-items: center;
   gap: 0.65rem;
-  background: #111c30;
-  border: 1px solid #283548;
-  border-radius: 14px;
+  background: #2A2620;
+  border: 1px solid #3A352D;
+  border-radius: var(--radius-md);
   padding: 0.55rem;
   max-width: 88%;
 }
@@ -325,7 +326,8 @@ watch(
   align-items: center;
   justify-content: center;
   font-size: 1.5rem;
-  background: linear-gradient(135deg, #ffe3e6, #ffccd2);
+  color: var(--color-accent);
+  background: #34302A;
 }
 
 .reco-info {
@@ -336,8 +338,8 @@ watch(
 
 .reco-name {
   font-size: 0.8125rem;
-  font-weight: 700;
-  color: #f1f5f9;
+  font-weight: 600;
+  color: #F5F1E8;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -345,9 +347,10 @@ watch(
 }
 
 .reco-price {
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: #fb923c;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #F5F1E8;
 }
 
 .reco-add {
@@ -355,28 +358,28 @@ watch(
   align-items: center;
   gap: 0.25rem;
   margin-left: auto;
-  background: #10b981;
-  color: #fff;
+  background: var(--color-accent);
+  color: #1F1B16;
   border: none;
   font-family: inherit;
-  font-weight: 700;
+  font-weight: 600;
   font-size: 0.75rem;
   min-height: 0;
   min-width: 0;
-  padding: 0.45rem 0.7rem;
-  border-radius: var(--radius-full);
+  padding: 0.45rem 0.8rem;
+  border-radius: var(--radius-sm);
   white-space: nowrap;
 }
 
 .reco-add:active {
-  background: #059669;
+  background: var(--color-accent-dark);
   transform: scale(0.95);
 }
 
 /* Footer */
 .vp-footer {
   padding: 0.75rem 1rem 1rem;
-  border-top: 1px solid #1e293b;
+  border-top: 1px solid #34302A;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -401,7 +404,7 @@ watch(
   width: 6px;
   height: 28px;
   border-radius: var(--radius-full);
-  background: var(--color-primary);
+  background: var(--color-accent);
   transform: scaleY(0.4);
 }
 
@@ -412,11 +415,11 @@ watch(
   animation: wave 0.9s infinite ease-in-out;
 }
 .bar-3 {
-  background: #f87171;
+  background: var(--color-ai-light);
   animation: wave 1.4s infinite ease-in-out;
 }
 .bar-4 {
-  background: #f43f5e;
+  background: var(--color-accent-dark);
   animation: wave 0.7s infinite ease-in-out;
 }
 .bar-5 {
@@ -425,9 +428,9 @@ watch(
 
 .listening-label {
   font-size: 0.625rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  color: #f87171;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: var(--color-accent);
   animation: blink 1.4s infinite;
 }
 
@@ -435,15 +438,16 @@ watch(
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  background: linear-gradient(110deg, #e63946, #f77f00);
-  color: #fff;
+  background: linear-gradient(110deg, var(--color-accent), var(--color-accent-dark));
+  color: #1F1B16;
   border: none;
   font-family: inherit;
-  font-weight: 800;
+  font-weight: 600;
   font-size: 0.8125rem;
+  letter-spacing: 0.03em;
   padding: 0.6rem 1.4rem;
-  border-radius: var(--radius-full);
-  box-shadow: 0 4px 14px rgba(230, 57, 70, 0.4);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 14px rgba(31, 27, 22, 0.35);
 }
 
 .mic-btn:disabled {
@@ -459,32 +463,33 @@ watch(
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  background: #ef4444;
+  background: var(--color-danger);
   color: #fff;
   border: none;
   font-family: inherit;
-  font-weight: 800;
+  font-weight: 600;
   font-size: 0.8125rem;
+  letter-spacing: 0.03em;
   padding: 0.55rem 1.3rem;
-  border-radius: var(--radius-full);
-  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 14px rgba(155, 58, 53, 0.3);
 }
 
 .stop-btn:active {
   transform: scale(0.96);
-  background: #dc2626;
+  background: #7E2E2A;
 }
 
 /* Ghost variant used next to "Nói tiếp" while the AI is speaking */
 .stop-btn-ghost {
   background: transparent;
-  color: #f87171;
-  border: 1px solid #7f1d1d;
+  color: #C97A74;
+  border: 1px solid #5E2A27;
   box-shadow: none;
 }
 
 .stop-btn-ghost:active {
-  background: rgba(239, 68, 68, 0.12);
+  background: rgba(155, 58, 53, 0.14);
 }
 
 /* Animations */
@@ -510,13 +515,13 @@ watch(
 
 @keyframes pulse-dot {
   0% {
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6);
+    box-shadow: 0 0 0 0 rgba(168, 133, 62, 0.6);
   }
   70% {
-    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+    box-shadow: 0 0 0 6px rgba(168, 133, 62, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    box-shadow: 0 0 0 0 rgba(168, 133, 62, 0);
   }
 }
 

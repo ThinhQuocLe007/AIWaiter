@@ -62,7 +62,7 @@ const cart = useCartStore()
   align-items: center;
   justify-content: center;
   font-size: 1.25rem;
-  background: linear-gradient(135deg, #ffe3e6, #ffccd2);
+  background: var(--color-accent-soft);
 }
 
 .info {
@@ -91,7 +91,8 @@ const cart = useCartStore()
 .subtotal {
   font-size: 0.8125rem;
   font-weight: 700;
-  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
   margin: 0.1rem 0 0 0;
 }
 

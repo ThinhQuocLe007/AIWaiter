@@ -14,6 +14,7 @@
       </div>
 
       <h1 class="title">ROBO<span class="accent">DISH</span></h1>
+      <div class="rule" aria-hidden="true"></div>
       <p class="tagline">SMART DINING</p>
       <p class="subtitle">Chạm vào màn hình để bắt đầu</p>
 
@@ -42,7 +43,7 @@ function enterMenu() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f5f4ff 0%, #ede9ff 100%);
+  background: var(--color-bg);
   position: relative;
   overflow: hidden;
 }
@@ -51,11 +52,11 @@ function enterMenu() {
   position: absolute;
   inset: 0;
   background-image: radial-gradient(
-      circle at 20% 30%,
-      rgba(108, 99, 255, 0.12) 0%,
-      transparent 50%
+      circle at 20% 25%,
+      rgba(168, 133, 62, 0.08) 0%,
+      transparent 55%
     ),
-    radial-gradient(circle at 80% 70%, rgba(108, 99, 255, 0.08) 0%, transparent 50%);
+    radial-gradient(circle at 82% 78%, rgba(168, 133, 62, 0.06) 0%, transparent 55%);
 }
 
 .content {
@@ -64,47 +65,58 @@ function enterMenu() {
 }
 
 .logo-box {
-  width: 100px;
-  height: 100px;
-  background: var(--color-ai);
-  border-radius: 24px;
+  width: 92px;
+  height: 92px;
+  background: var(--color-primary);
+  border: 1px solid var(--color-accent);
+  border-radius: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  margin-bottom: 1.5rem;
-  animation: float 3s ease-in-out infinite;
-  box-shadow: 0 12px 40px rgba(2, 132, 199, 0.35);
+  margin-bottom: 1.75rem;
+  animation: float 4s ease-in-out infinite;
+  box-shadow: 0 16px 40px rgba(31, 27, 22, 0.18);
 }
 
 .logo-box i {
-  font-size: 36px;
-  color: #fff;
+  font-size: 34px;
+  color: var(--color-accent);
 }
 
 .title {
-  font-size: 3.5rem;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 3.75rem;
+  font-weight: 700;
   color: var(--color-text);
-  margin: 0 0 0.25rem 0;
-  letter-spacing: 0.08em;
+  margin: 0;
+  letter-spacing: 0.06em;
 }
 
 .accent {
-  color: var(--color-ai);
+  color: var(--color-accent);
+  font-style: italic;
+}
+
+.rule {
+  width: 64px;
+  height: 1px;
+  margin: 1rem auto;
+  background: var(--color-accent);
 }
 
 .tagline {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--color-ai);
-  letter-spacing: 0.25em;
-  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--color-accent-dark);
+  letter-spacing: 0.4em;
+  margin: 0 0 1.25rem 0;
 }
 
 .subtitle {
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   color: var(--color-text-muted);
+  letter-spacing: 0.02em;
   margin: 0 0 3rem 0;
 }
 
@@ -121,7 +133,7 @@ function enterMenu() {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: rgba(108, 99, 255, 0.25);
+  background: rgba(168, 133, 62, 0.22);
   animation: pulse 2s ease-in-out infinite;
 }
 

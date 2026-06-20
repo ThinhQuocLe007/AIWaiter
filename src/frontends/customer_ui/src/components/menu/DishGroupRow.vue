@@ -103,7 +103,7 @@ function optionLabel(item: FoodItem): string {
 
 .name {
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 600;
   margin: 0;
   color: var(--color-text);
   flex: 1;
@@ -116,8 +116,9 @@ function optionLabel(item: FoodItem): string {
 
 .price {
   font-size: 1rem;
-  font-weight: 700;
-  color: var(--color-text-muted);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
   white-space: nowrap;
   flex: 0 0 auto;
 }

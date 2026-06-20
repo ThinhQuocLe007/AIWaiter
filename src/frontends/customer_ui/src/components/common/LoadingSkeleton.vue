@@ -17,12 +17,13 @@
 <style scoped>
 .skeleton-card {
   background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   overflow: hidden;
   height: 280px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-sm);
 }
 
 .skeleton-image {
@@ -59,9 +60,9 @@
 .shimmer {
   background: linear-gradient(
     90deg,
-    #ececec 25%,
-    #f5f5f5 50%,
-    #ececec 75%
+    #ECE6DA 25%,
+    #F5F0E6 50%,
+    #ECE6DA 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.4s ease-in-out infinite;

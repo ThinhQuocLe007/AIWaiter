@@ -1,25 +1,35 @@
 @import "tailwindcss";
 
 :root {
-  /* Brand colors - warm, appetizing palette */
-  --color-primary: #E63946;        /* Vibrant red for CTAs */
-  --color-primary-dark: #C1121F;
+  /* Classic, minimal luxury palette — charcoal + ivory + gold */
+  --color-primary: #1C1A17;        /* Charcoal — primary actions */
+  --color-primary-dark: #000000;
 
-  /* Add / quantity buttons - match the brand red used in the order panel */
-  --color-add: #E63946;
-  --color-add-dark: #C1121F;
-  --color-accent: #F77F00;         /* Orange accent */
-  --color-bg: #FFF8F0;             /* Warm cream background */
+  /* Gold accent — the single luxury highlight (brand, prices, active state) */
+  --color-accent: #A8853E;
+  --color-accent-dark: #856427;
+  --color-accent-soft: #F0E9DA;    /* pale champagne wash for fills */
+
+  /* Add / quantity controls share the charcoal action tone */
+  --color-add: #1C1A17;
+  --color-add-dark: #000000;
+
+  --color-bg: #F6F2EA;             /* Warm ivory background */
   --color-surface: #FFFFFF;
-  --color-text: #1D1D1D;
-  --color-text-muted: #6B6B6B;
-  --color-border: #E5E5E5;
-  --color-success: #2A9D8F;
+  --color-text: #1F1B16;           /* Near-black, warm */
+  --color-text-muted: #8C8478;     /* Muted taupe */
+  --color-border: #E7E0D3;         /* Hairline warm border */
+  --color-success: #5C7A63;        /* Muted sage */
+  --color-danger: #9B3A35;         /* Muted wine */
 
-  /* AI / voice + brand cool tone - logo & assistant UI */
-  --color-ai: #0284C7;
-  --color-ai-light: #0EA5E9;
-  --color-ai-dark: #0369A1;
+  /* AI / voice — dark espresso surface with gold accent */
+  --color-ai: #A8853E;
+  --color-ai-light: #C2A05A;
+  --color-ai-dark: #856427;
+
+  /* Display serif for brand & headings */
+  --font-display: 'Playfair Display', 'Be Vietnam Pro', Georgia, serif;
+  --font-body: 'Be Vietnam Pro', -apple-system, 'Segoe UI', Roboto, sans-serif;
 
   /* Spacing scale in rem */
   --space-1: 0.25rem;
@@ -30,11 +40,16 @@
   --space-8: 2rem;
   --space-12: 3rem;
 
-  /* Border radius */
-  --radius-sm: 0.5rem;
-  --radius-md: 1rem;
-  --radius-lg: 1.5rem;
+  /* Border radius — refined, restrained corners */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
   --radius-full: 9999px;
+  --radius: 0.5rem;
+
+  /* Soft, low-contrast shadows for an understated feel */
+  --shadow-sm: 0 1px 2px rgba(31, 27, 22, 0.05);
+  --shadow-md: 0 6px 20px rgba(31, 27, 22, 0.08);
 
   /* Viewport scale, updated by useViewportScale (defaults to 1 on the kiosk) */
   --app-scale: 1;
@@ -52,7 +67,7 @@ body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  font-family: 'Be Vietnam Pro', -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-body);
   background: #000; /* letterbox color around the scaled stage */
   color: var(--color-text);
   user-select: none;
@@ -94,6 +109,6 @@ button:active,
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
+  background: #D8CFBE;
   border-radius: 3px;
 }

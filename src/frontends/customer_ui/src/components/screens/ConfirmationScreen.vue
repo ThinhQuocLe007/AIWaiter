@@ -14,7 +14,7 @@
       </div>
 
       <h1 class="title">Đặt món thành công!</h1>
-      <p class="subtitle">Robot sẽ giao món đến bàn của bạn</p>
+      <p class="subtitle">Robot sẽ giao món đến <strong>Bàn {{ ui.tableId }}</strong></p>
 
       <div v-if="itemCount > 0" class="summary">
         <span>{{ itemCount }} món</span>
@@ -36,11 +36,13 @@
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
+import { useUiStore } from '@/stores/ui'
 import { formatPrice } from '@/utils/format'
 import TouchButton from '@/components/common/TouchButton.vue'
 
 const router = useRouter()
 const cart = useCartStore()
+const ui = useUiStore()
 const countdown = ref(3)
 
 // Snapshot the order totals before the cart is cleared on redirect.
@@ -80,7 +82,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #fff8f0 0%, #e9f7f4 100%);
+  background: var(--color-bg);
 }
 
 .content {
@@ -117,14 +119,15 @@ onUnmounted(() => {
 }
 
 .title {
+  font-family: var(--font-display);
   font-size: 2.75rem;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--color-text);
   margin: 0 0 0.5rem 0;
 }
 
 .subtitle {
-  font-size: 1.375rem;
+  font-size: 1.25rem;
   color: var(--color-text-muted);
   margin: 0 0 1.5rem 0;
 }
@@ -135,19 +138,21 @@ onUnmounted(() => {
   gap: 0.625rem;
   padding: 0.75rem 1.5rem;
   background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
   font-size: 1.25rem;
-  font-weight: 600;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  font-weight: 500;
+  box-shadow: var(--shadow-sm);
 }
 
 .summary .dot {
-  color: var(--color-border);
+  color: var(--color-accent);
 }
 
 .summary-total {
-  color: var(--color-primary);
-  font-weight: 800;
+  color: var(--color-text);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .pay-btn {

@@ -49,7 +49,8 @@ const cart = useCartStore()
 
 .total-price {
   font-size: 1.375rem;
-  font-weight: 800;
-  color: var(--color-primary);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
 }
 </style>

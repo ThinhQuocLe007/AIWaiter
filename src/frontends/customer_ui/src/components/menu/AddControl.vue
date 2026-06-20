@@ -21,13 +21,14 @@ const quantity = computed(() => cart.quantityFor(props.item.id))
 .add-btn {
   background: transparent;
   color: var(--color-add);
-  border: 1.5px solid var(--color-add);
-  padding: 0 0.75rem;
+  border: 1px solid var(--color-add);
+  padding: 0 0.85rem;
   height: 30px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   font-family: inherit;
-  font-weight: 700;
+  font-weight: 600;
   font-size: 0.8125rem;
+  letter-spacing: 0.02em;
   white-space: nowrap;
   flex: 0 0 auto;
 }

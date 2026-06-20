@@ -98,20 +98,20 @@ watch(() => props.items.length, () => nextTick(updateArrows))
   gap: 0.5rem;
   padding: 0.5rem 0;
   margin-bottom: 0.5rem;
-  border-bottom: 2px solid var(--color-primary);
+  border-bottom: 1px solid var(--color-text);
 }
 
 .section-icon {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
 }
 
 .section-title {
-  font-size: 1.125rem;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 600;
   margin: 0;
   color: var(--color-text);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
 }
 
 .strip-wrap {
@@ -134,13 +134,13 @@ watch(() => props.items.length, () => nextTick(updateArrows))
   z-index: 5;
   width: 40px;
   height: 40px;
-  border: none;
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
   background: var(--color-surface);
-  color: var(--color-primary);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  color: var(--color-text);
+  box-shadow: var(--shadow-md);
   font-size: 1.75rem;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1;
   display: flex;
   align-items: center;
@@ -164,8 +164,9 @@ watch(() => props.items.length, () => nextTick(updateArrows))
   flex: 0 0 168px;
   width: 168px;
   background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -179,7 +180,7 @@ watch(() => props.items.length, () => nextTick(updateArrows))
 .bs-image {
   width: 100%;
   height: 96px;
-  background: #f0f0f0;
+  background: var(--color-accent-soft);
 }
 
 .bs-image img {
@@ -195,7 +196,8 @@ watch(() => props.items.length, () => nextTick(updateArrows))
   align-items: center;
   justify-content: center;
   font-size: 2.5rem;
-  background: linear-gradient(135deg, #ffe3e6, #ffccd2);
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
 }
 
 .bs-body {
@@ -235,8 +237,9 @@ watch(() => props.items.length, () => nextTick(updateArrows))
 
 .bs-price {
   font-size: 1rem;
-  font-weight: 700;
-  color: var(--color-text-muted);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
   white-space: nowrap;
   text-align: center;
 }

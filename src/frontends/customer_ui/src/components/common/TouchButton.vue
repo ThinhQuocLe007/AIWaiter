@@ -30,10 +30,11 @@ withDefaults(
   min-height: 3.5rem; /* 56px - primary action target */
   padding: 0 1.5rem;
   border: none;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   font-family: inherit;
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   line-height: 1;
 }
 
@@ -49,7 +50,7 @@ withDefaults(
 .variant-secondary {
   background: var(--color-surface);
   color: var(--color-primary);
-  border: 2px solid var(--color-primary);
+  border: 1px solid var(--color-primary);
 }
 
 .variant-ghost {

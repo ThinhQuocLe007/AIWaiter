@@ -84,7 +84,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #fff8f0 0%, #e9f7f4 100%);
+  background: var(--color-bg);
 }
 
 .content {
@@ -96,8 +96,9 @@ onUnmounted(() => {
 }
 
 .title {
-  font-size: 2.75rem;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 600;
   color: var(--color-text);
   margin: 0;
 }
@@ -110,9 +111,10 @@ onUnmounted(() => {
 
 .qr-card {
   background: #fff;
-  border-radius: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   padding: 1rem;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
   display: inline-block;
 }
 
@@ -124,8 +126,9 @@ onUnmounted(() => {
 
 .amount-row {
   font-size: 2rem;
-  font-weight: 800;
-  color: var(--color-primary);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
 }
 
 .info-box {
@@ -134,6 +137,7 @@ onUnmounted(() => {
   gap: 0.4rem;
   padding: 0.75rem 1.5rem;
   background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius);
   min-width: 280px;
 }

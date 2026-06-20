@@ -33,20 +33,20 @@ defineProps<{ section: MenuSectionData }>()
   padding: 0.5rem 0;
   margin-bottom: 0.25rem;
   background: var(--color-bg);
-  border-bottom: 2px solid var(--color-primary);
+  border-bottom: 1px solid var(--color-text);
 }
 
 .section-icon {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
 }
 
 .section-title {
-  font-size: 1.125rem;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 600;
   margin: 0;
   color: var(--color-text);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
 }
 
 .groups {

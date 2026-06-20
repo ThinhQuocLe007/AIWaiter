@@ -32,6 +32,11 @@
         </button>
       </div>
 
+      <div class="table-badge" aria-label="Số bàn">
+        <i class="ti ti-armchair" aria-hidden="true"></i>
+        <span>Bàn {{ ui.tableId }}</span>
+      </div>
+
       <CartButton @click="ui.openCart()" />
     </header>
 
@@ -83,7 +88,13 @@
     </main>
 
     <!-- Cart drawer -->
-    <CartDrawer :open="ui.cartOpen" @close="ui.closeCart()" @confirm="confirmOrder" />
+    <CartDrawer
+      :open="ui.cartOpen"
+      :submitting="submitting"
+      :error="orderError"
+      @close="ui.closeCart()"
+      @confirm="confirmOrder"
+    />
 
     <!-- Food detail modal -->
     <FoodDetailModal />
@@ -98,6 +109,8 @@ import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { BEST_SELLER_ID, useMenuStore } from '@/stores/menu'
 import { useUiStore } from '@/stores/ui'
+import { useCartStore } from '@/stores/cart'
+import { createOrder } from '@/data/api'
 import CategoryTabs from '@/components/menu/CategoryTabs.vue'
 import CartButton from '@/components/menu/CartButton.vue'
 import BestSellerSection from '@/components/menu/BestSellerSection.vue'
@@ -111,6 +124,10 @@ import VoicePanel from '@/components/voice/VoicePanel.vue'
 const router = useRouter()
 const menu = useMenuStore()
 const ui = useUiStore()
+const cart = useCartStore()
+
+const submitting = ref(false)
+const orderError = ref<string | null>(null)
 
 const scrollEl = ref<HTMLElement>()
 let observer: IntersectionObserver | null = null
@@ -160,10 +177,30 @@ watch(
 
 onUnmounted(() => observer?.disconnect())
 
-function confirmOrder() {
-  // TODO: Phase 2 - POST the order to the FastAPI backend and publish to ROS2.
-  ui.closeCart()
-  router.push('/confirmation')
+// POST the cart to the Orchestrator, then move to the confirmation screen. The cart is left
+// intact so ConfirmationScreen can snapshot its totals; it clears itself on the redirect home.
+async function confirmOrder() {
+  if (submitting.value || cart.isEmpty) return
+  submitting.value = true
+  orderError.value = null
+  try {
+    await createOrder(
+      ui.tableId,
+      cart.items.map((i) => ({
+        name: i.foodItem.name,
+        qty: i.quantity,
+        price: i.foodItem.price,
+        dish_id: Number(i.foodItem.id) || undefined,
+      })),
+    )
+    ui.closeCart()
+    router.push('/confirmation')
+  } catch (err) {
+    orderError.value = err instanceof Error ? err.message : 'Gửi đơn thất bại, thử lại.'
+    console.error('[order] confirmOrder failed:', err)
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
 
@@ -188,7 +225,7 @@ function confirmOrder() {
   padding: 0 1.25rem;
   height: 56px;
   background: var(--color-surface);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid var(--color-border);
   z-index: 10;
 }
 
@@ -207,7 +244,7 @@ function confirmOrder() {
 }
 
 .search-box:focus-within {
-  border-color: var(--color-primary);
+  border-color: var(--color-accent);
 }
 
 .search-box i {
@@ -239,7 +276,7 @@ function confirmOrder() {
   margin: 0;
   border: none;
   border-radius: 50%;
-  background: #6B6B6B;
+  background: var(--color-text-muted);
   color: #fff;
   font-size: 0.8rem;
   display: grid;
@@ -292,17 +329,38 @@ function confirmOrder() {
   margin-top: 0.5rem;
   padding: 0.5rem 1.5rem;
   border: none;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   background: var(--color-primary);
   color: #fff;
   font-family: inherit;
   font-size: 0.9375rem;
   font-weight: 600;
+  letter-spacing: 0.02em;
   cursor: pointer;
 }
 
 .retry-btn:active {
   transform: scale(0.96);
+}
+
+.table-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  padding: 0.35rem 0.85rem;
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.table-badge i {
+  font-size: 1.05rem;
+  color: var(--color-accent);
 }
 
 .brand {
@@ -314,8 +372,9 @@ function confirmOrder() {
 .logo-box {
   width: 36px;
   height: 36px;
-  background: var(--color-ai);
-  border-radius: 10px;
+  background: var(--color-primary);
+  border: 1px solid var(--color-accent);
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -323,8 +382,8 @@ function confirmOrder() {
 }
 
 .logo-box i {
-  font-size: 16px;
-  color: #fff;
+  font-size: 15px;
+  color: var(--color-accent);
 }
 
 .brand-text {
@@ -334,21 +393,23 @@ function confirmOrder() {
 }
 
 .brand-name {
-  font-size: 20px;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 700;
   color: var(--color-text);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
 }
 
 .accent {
-  color: var(--color-ai);
+  color: var(--color-accent);
+  font-style: italic;
 }
 
 .tagline {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 500;
   color: var(--color-text-muted);
-  letter-spacing: 0.15em;
+  letter-spacing: 0.22em;
 }
 
 .menu-scroll {

@@ -50,25 +50,31 @@ defineEmits<{
   gap: 0.5rem;
   min-height: 2.75rem;
   padding: 0.375rem 0.625rem;
-  border: 2px solid transparent;
-  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   background: var(--color-surface);
-  color: var(--color-text);
+  color: var(--color-text-muted);
   font-family: inherit;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 500;
   white-space: normal;
   text-align: left;
   line-height: 1.3;
   width: 100%;
   flex: 0 0 auto;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .tab.active {
   background: var(--color-primary);
+  border-color: var(--color-primary);
   color: #fff;
-  box-shadow: 0 2px 8px rgba(230, 57, 70, 0.3);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+.tab.active .tab-icon {
+  filter: saturate(0.85);
 }
 
 .tab-icon {

@@ -20,10 +20,10 @@ const count = computed(() => cart.totalQuantity)
   position: relative;
   width: 3.5rem;
   height: 3.5rem;
-  border: none;
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
   background: var(--color-surface);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -46,10 +46,11 @@ const count = computed(() => cart.totalQuantity)
   color: #fff;
   font-size: 0.875rem;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 6px rgba(31, 27, 22, 0.2);
 }
 
 .badge-pop-enter-active {

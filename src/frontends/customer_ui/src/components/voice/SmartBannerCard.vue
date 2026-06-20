@@ -29,9 +29,10 @@ const voice = useVoiceStore()
   border-radius: var(--radius-md);
   padding: 1.1rem 1.25rem;
   margin-bottom: 1rem;
-  color: #fff;
-  background: linear-gradient(110deg, var(--color-ai-dark) 0%, var(--color-ai) 45%, var(--color-ai-light) 100%);
-  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.35);
+  color: #F5F1E8;
+  background: linear-gradient(120deg, #1F1B16 0%, #2A2620 100%);
+  border: 1px solid var(--color-accent-dark);
+  box-shadow: var(--shadow-md);
 }
 
 .smart-banner:active {
@@ -43,7 +44,8 @@ const voice = useVoiceStore()
   right: -8px;
   bottom: -16px;
   font-size: 8rem;
-  opacity: 0.15;
+  opacity: 0.12;
+  color: var(--color-accent);
   pointer-events: none;
 }
 
@@ -55,44 +57,48 @@ const voice = useVoiceStore()
 
 .banner-tag {
   display: inline-block;
-  background: rgba(255, 255, 255, 0.2);
+  color: var(--color-accent);
+  background: rgba(168, 133, 62, 0.16);
+  border: 1px solid rgba(168, 133, 62, 0.4);
   font-size: 0.625rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-weight: 600;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   padding: 0.15rem 0.6rem;
   border-radius: var(--radius-full);
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.5rem;
 }
 
 .banner-title {
-  font-size: 1.15rem;
-  font-weight: 800;
-  margin: 0 0 0.25rem 0;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin: 0 0 0.3rem 0;
 }
 
 .banner-subtitle {
   font-size: 0.75rem;
-  line-height: 1.4;
-  color: rgba(255, 255, 255, 0.88);
-  margin: 0 0 0.75rem 0;
+  line-height: 1.5;
+  color: rgba(245, 241, 232, 0.78);
+  margin: 0 0 0.85rem 0;
 }
 
 .banner-cta {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  background: #fff;
-  color: var(--color-ai-dark);
+  background: var(--color-accent);
+  color: #1F1B16;
   font-family: inherit;
-  font-weight: 800;
+  font-weight: 600;
   font-size: 0.8125rem;
+  letter-spacing: 0.03em;
   min-height: 0;
   min-width: 0;
-  padding: 0.55rem 1rem;
+  padding: 0.55rem 1.1rem;
   border: none;
   border-radius: var(--radius-sm);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 6px rgba(31, 27, 22, 0.25);
 }
 
 .banner-cta:active {

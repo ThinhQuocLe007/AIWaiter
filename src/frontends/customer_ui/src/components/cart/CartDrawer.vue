@@ -24,8 +24,14 @@
 
       <footer v-if="!cart.isEmpty" class="drawer-footer">
         <CartSummary />
-        <TouchButton variant="primary" block @click="$emit('confirm')">
-          Xác Nhận Đặt Món
+        <p v-if="error" class="order-error">{{ error }}</p>
+        <TouchButton
+          variant="primary"
+          block
+          :disabled="submitting"
+          @click="$emit('confirm')"
+        >
+          {{ submitting ? 'Đang gửi đơn…' : 'Xác Nhận Đặt Món' }}
         </TouchButton>
       </footer>
     </aside>
@@ -38,7 +44,7 @@ import CartItem from './CartItem.vue'
 import CartSummary from './CartSummary.vue'
 import TouchButton from '@/components/common/TouchButton.vue'
 
-defineProps<{ open: boolean }>()
+defineProps<{ open: boolean; submitting?: boolean; error?: string | null }>()
 
 defineEmits<{
   (e: 'close'): void
@@ -65,7 +71,7 @@ const cart = useCartStore()
   background: var(--color-surface);
   display: flex;
   flex-direction: column;
-  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.15);
+  box-shadow: -12px 0 40px rgba(31, 27, 22, 0.16);
   z-index: 100;
 }
 
@@ -78,8 +84,9 @@ const cart = useCartStore()
 }
 
 .drawer-header h2 {
-  font-size: 1.1875rem;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 600;
   margin: 0;
 }
 
@@ -130,6 +137,13 @@ const cart = useCartStore()
 .drawer-footer :deep(.touch-button) {
   min-height: 2.75rem;
   font-size: 1rem;
+}
+
+.order-error {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-danger, #d9534f);
+  text-align: center;
 }
 
 .slide-enter-active,

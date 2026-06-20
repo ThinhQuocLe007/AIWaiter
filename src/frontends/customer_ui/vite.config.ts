@@ -18,6 +18,10 @@ export default defineConfig({
     },
   },
   server: {
+    // host: true → bind 0.0.0.0 (IPv4). Mặc định Vite chỉ bind 'localhost', mà máy
+    // resolve localhost→::1 (IPv6) nên browser gọi 127.0.0.1 (IPv4) bị
+    // ERR_CONNECTION_REFUSED. Bind IPv4 vừa fix lỗi vừa cho test qua LAN.
+    host: true,
     // Cố định port 5173. strictPort: true để Vite báo lỗi ngay nếu 5173 đang bận,
     // thay vì âm thầm nhảy sang 5174/5175.
     port: 5173,

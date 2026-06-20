@@ -91,8 +91,9 @@ const dietClass = computed(() =>
   width: 520px;
   max-height: 560px;
   background: var(--color-surface);
-  border-radius: var(--radius-md);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 64px rgba(31, 27, 22, 0.28);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -107,7 +108,7 @@ const dietClass = computed(() =>
   height: 40px;
   border: none;
   border-radius: var(--radius-full);
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(31, 27, 22, 0.55);
   color: #fff;
   font-size: 1.125rem;
   display: flex;
@@ -120,7 +121,7 @@ const dietClass = computed(() =>
   width: 100%;
   height: 200px;
   flex-shrink: 0;
-  background: #f0f0f0;
+  background: var(--color-accent-soft);
 }
 
 .image-wrapper img {
@@ -136,7 +137,8 @@ const dietClass = computed(() =>
   align-items: center;
   justify-content: center;
   font-size: 4.5rem;
-  background: linear-gradient(135deg, #ffe3e6, #ffccd2);
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
 }
 
 .body {
@@ -153,8 +155,9 @@ const dietClass = computed(() =>
 }
 
 .name {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 1.65rem;
+  font-weight: 600;
   margin: 0;
   color: var(--color-text);
 }
@@ -169,21 +172,22 @@ const dietClass = computed(() =>
 }
 
 .diet-meat {
-  background: #fdecea;
-  color: #c0392b;
+  background: #F3E7E5;
+  color: var(--color-danger);
 }
 
 .diet-veg {
-  background: #e8f5e9;
-  color: #2e7d32;
+  background: #E6EDE6;
+  color: var(--color-success);
 }
 
 .price {
   display: block;
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--color-primary);
-  margin-top: 0.25rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  margin-top: 0.35rem;
 }
 
 .field {
