@@ -14,13 +14,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .db import init_db
-from .menu import seed_dishes
-from .routers import menu
+from .menu import seed_dishes, seed_tables
+from .routers import menu, orders, tables
+from .ws import router as ws_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    seed_tables()
     seed_dishes()
     yield
 
@@ -36,6 +38,9 @@ app.add_middleware(
 )
 
 app.include_router(menu.router)
+app.include_router(tables.router)
+app.include_router(orders.router)
+app.include_router(ws_router)
 
 
 @app.get("/health")

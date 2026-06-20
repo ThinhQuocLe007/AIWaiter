@@ -24,6 +24,24 @@ def load_menu() -> list[dict]:
     return data
 
 
+# The dining room has 6 physical tables (matches robot_ws/docs/restaurant_positions.md,
+# ArUco markers q1..q6). Seeded once so orders/seatings can FK to a real table row.
+SEED_TABLE_COUNT = 6
+
+
+def seed_tables() -> int:
+    """Populate the tables row 1..6 if empty. Returns the table count."""
+    with get_conn() as conn:
+        (count,) = conn.execute('SELECT COUNT(*) FROM "tables"').fetchone()
+        if count == 0:
+            conn.executemany(
+                'INSERT INTO "tables" (id, name, capacity, status) VALUES (?, ?, 4, ?)',
+                [(i, f"Bàn {i}", "TRONG") for i in range(1, SEED_TABLE_COUNT + 1)],
+            )
+        (total,) = conn.execute('SELECT COUNT(*) FROM "tables"').fetchone()
+    return total
+
+
 def seed_dishes() -> int:
     """Populate the dishes table from menu.json if it is empty. Returns row count."""
     items = load_menu()
