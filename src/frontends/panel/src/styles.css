@@ -1,0 +1,245 @@
+:root {
+  /* Classic, minimal luxury palette — matches customer_ui (ivory + charcoal + gold) */
+  --bg: #F6F2EA;
+  --surface: #FFFFFF;
+  --surface-2: #F0EADE;
+  --border: #E7E0D3;
+  --text: #1F1B16;
+  --muted: #8C8478;
+  --accent: #A8853E;        /* gold — qty highlight, totals */
+  --accent-dark: #856427;
+  --primary: #1C1A17;       /* charcoal — primary action */
+
+  /* Status tones — muted, distinguishable, classic */
+  --wait: #C2972F;          /* amber gold */
+  --cooking: #B06A4F;       /* terracotta */
+  --done: #5C7A63;          /* sage */
+  --danger: #9B3A35;        /* muted wine */
+
+  --font-display: 'Playfair Display', 'Be Vietnam Pro', Georgia, serif;
+  --font-body: 'Be Vietnam Pro', -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --shadow-sm: 0 1px 2px rgba(31, 27, 22, 0.05);
+  --shadow-md: 0 6px 20px rgba(31, 27, 22, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.panel {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.5rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.bar h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--danger);
+  transition: background 0.3s;
+}
+
+.dot.on {
+  background: var(--done);
+  box-shadow: 0 0 8px rgba(92, 122, 99, 0.6);
+}
+
+.load-error {
+  margin: 0;
+  padding: 0.6rem 1.5rem;
+  background: #F3E7E5;
+  color: var(--danger);
+  font-size: 0.9rem;
+}
+
+.board {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  overflow: hidden;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.col-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 0.75rem;
+  padding: 0.5rem 0.75rem;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 600;
+  border-radius: 0.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border);
+}
+
+.col-head.CHO_BEP {
+  border-left-color: var(--wait);
+}
+.col-head.DANG_LAM {
+  border-left-color: var(--cooking);
+}
+.col-head.XONG {
+  border-left-color: var(--done);
+}
+
+.count {
+  min-width: 1.6rem;
+  text-align: center;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.cards {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-right: 0.25rem;
+}
+
+.empty {
+  color: var(--muted);
+  text-align: center;
+  padding: 1.5rem 0;
+  font-size: 0.9rem;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.85rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+}
+
+.table {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.time {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.items {
+  list-style: none;
+  margin: 0 0 0.7rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.items li {
+  font-size: 0.95rem;
+}
+
+.qty {
+  display: inline-block;
+  min-width: 1.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.6rem;
+}
+
+.total {
+  font-size: 1.05rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.advance {
+  border: none;
+  border-radius: 0.25rem;
+  padding: 0.5rem 0.95rem;
+  background: var(--primary);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.advance:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+.advance:active {
+  transform: scale(0.96);
+}
