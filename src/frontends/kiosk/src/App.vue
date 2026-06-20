@@ -1,31 +1,54 @@
 <template>
   <div class="kiosk">
-    <header class="bar">
-      <h1>🍽️ Mời Quý Khách Chọn Bàn</h1>
-      <div class="status">
-        <span class="dot" :class="{ on: !loadError }"></span>
-        {{ loadError ? 'Mất kết nối — đang thử lại…' : `${freeCount} bàn trống` }}
+    <div class="clock-badge">{{ clock }}</div>
+
+    <!-- Welcome hero — same ROBODISH identity as the ordering UI's WelcomeScreen. -->
+    <header class="hero">
+      <div class="hero-inner">
+        <div class="logo-box">
+          <i class="ti ti-tools-kitchen-2" aria-hidden="true"></i>
+          <i class="ti ti-robot" aria-hidden="true"></i>
+        </div>
+        <p class="eyebrow">Chào mừng Quý khách đến với</p>
+        <h1 class="brand">ROBO<span class="accent">DISH</span></h1>
+        <div class="rule" aria-hidden="true"></div>
+        <p class="tagline">SMART DINING</p>
+        <p class="subtitle">
+          Mời Quý khách chọn một bàn để bắt đầu — đội ngũ của chúng tôi luôn sẵn sàng phục vụ.
+        </p>
+        <div class="status">
+          <span class="dot" :class="{ on: !loadError }"></span>
+          {{ loadError ? 'Mất kết nối — đang thử lại…' : `${freeCount} bàn đang trống` }}
+        </div>
       </div>
     </header>
 
     <p v-if="loadError" class="load-error">{{ loadError }}</p>
     <p v-if="notice" class="notice">{{ notice }}</p>
 
-    <main class="grid">
-      <p v-if="!tables.length && !loadError" class="empty">Đang tải danh sách bàn…</p>
+    <main class="content">
+      <div class="section-head">
+        <h2>Mời Quý khách chọn bàn</h2>
+        <span v-if="tables.length" class="free-pill">{{ freeCount }} / {{ tables.length }} bàn trống</span>
+      </div>
 
-      <button
-        v-for="t in tables"
-        :key="t.id"
-        class="table-card"
-        :class="{ free: isFree(t), busy: !isFree(t) }"
-        :disabled="!isFree(t)"
-        @click="pick(t)"
-      >
-        <span class="t-name">{{ t.name }}</span>
-        <span class="t-cap">{{ t.capacity }} chỗ</span>
-        <span class="t-state">{{ isFree(t) ? 'Trống' : statusLabel(t.status) }}</span>
-      </button>
+      <div class="grid">
+        <p v-if="!tables.length && !loadError" class="empty">Đang tải danh sách bàn…</p>
+
+        <button
+          v-for="t in tables"
+          :key="t.id"
+          class="table-card"
+          :class="{ free: isFree(t), busy: !isFree(t) }"
+          :disabled="!isFree(t)"
+          @click="pick(t)"
+        >
+          <span class="t-icon">🍽️</span>
+          <span class="t-name">{{ t.name }}</span>
+          <span class="t-cap">{{ t.capacity }} chỗ ngồi</span>
+          <span class="t-state">{{ isFree(t) ? 'Còn trống' : statusLabel(t.status) }}</span>
+        </button>
+      </div>
     </main>
 
     <!-- Party-size step: choose how many guests, then seat. -->
@@ -78,8 +101,18 @@ const party = ref(2)
 const seating = ref(false)
 const seatErr = ref<string | null>(null)
 const done = ref<Table | null>(null) // success overlay
+const clock = ref(formatClock()) // live wall-clock HH:MM:SS
+
+function formatClock(): string {
+  return new Date().toLocaleTimeString('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+}
 
 let pollTimer: ReturnType<typeof setInterval> | undefined
+let clockTimer: ReturnType<typeof setInterval> | undefined
 let noticeTimer: ReturnType<typeof setTimeout> | undefined
 let doneTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -164,10 +197,12 @@ onMounted(() => {
   load()
   // No WS event for table status, so poll to reflect tables freeing up / filling.
   pollTimer = setInterval(load, 8000)
+  clockTimer = setInterval(() => (clock.value = formatClock()), 1000)
 })
 
 onUnmounted(() => {
   if (pollTimer) clearInterval(pollTimer)
+  if (clockTimer) clearInterval(clockTimer)
   clearTimeout(noticeTimer)
   clearTimeout(doneTimer)
 })

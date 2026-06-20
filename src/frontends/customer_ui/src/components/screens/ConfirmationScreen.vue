@@ -43,7 +43,7 @@ import TouchButton from '@/components/common/TouchButton.vue'
 const router = useRouter()
 const cart = useCartStore()
 const ui = useUiStore()
-const countdown = ref(3)
+const countdown = ref(10)
 
 // Snapshot the order totals before the cart is cleared on redirect.
 const itemCount = ref(cart.totalQuantity)

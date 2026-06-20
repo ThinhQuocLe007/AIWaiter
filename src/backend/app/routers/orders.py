@@ -8,7 +8,7 @@ total), mark the table as waiting-for-kitchen, and return the saved order.
 from fastapi import APIRouter, HTTPException
 
 from ..db import get_conn
-from ..schemas import OrderCreate, OrderOut, OrderStatusUpdate
+from ..schemas import OrderCreate, OrderOut, OrderStatusUpdate, TableOut
 from ..ws import manager
 
 router = APIRouter(tags=["orders"])
@@ -48,15 +48,22 @@ async def create_order(payload: OrderCreate) -> OrderOut:
                 for it in payload.items
             ],
         )
-        # Table now waits for the kitchen and points at its active order.
+        # The table stays DANG_PHUC_VU (dining); we just point it at its active order. Kitchen
+        # progress lives on orders.status (CHO_BEP→DANG_LAM→XONG), not on the table.
         conn.execute(
-            'UPDATE "tables" SET status = ?, current_order_id = ? WHERE id = ?',
-            ("CHO_BEP", order_id, payload.table_id),
+            'UPDATE "tables" SET current_order_id = ? WHERE id = ?',
+            (order_id, payload.table_id),
         )
         order = _fetch_order(conn, order_id)
+        table_row = conn.execute(
+            'SELECT * FROM "tables" WHERE id = ?', (payload.table_id,)
+        ).fetchone()
     assert order is not None
-    # Push the new order to the kitchen panel in realtime.
+    # Push the new order to the kitchen panel, and the table change to the overview.
     await manager.broadcast("panel", {"type": "order.created", "order": order.model_dump()})
+    await manager.broadcast(
+        "panel", {"type": "table.updated", "table": TableOut(**dict(table_row)).model_dump()}
+    )
     return order
 
 

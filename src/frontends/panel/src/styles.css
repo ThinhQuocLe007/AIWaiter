@@ -47,28 +47,112 @@ body {
 }
 
 .bar {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.85rem 1.5rem;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  padding: 0.7rem 1.5rem;
+  color: #F6F2EA;
+  background: linear-gradient(160deg, #26221C 0%, #1C1A17 60%, #14120F 100%);
+  border-bottom: 3px solid var(--accent);
+}
+
+.brand-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.logo-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  font-size: 18px;
+  background: var(--primary);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+}
+
+.brand {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #F6F2EA;
+}
+
+.brand .accent {
+  color: var(--accent);
+  font-style: italic;
+}
+
+.bar-divider {
+  width: 1px;
+  height: 26px;
+  background: rgba(168, 133, 62, 0.45);
 }
 
 .bar h1 {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   font-weight: 600;
   letter-spacing: 0.01em;
+  color: rgba(246, 242, 234, 0.9);
+}
+
+.bar-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.clock {
+  font-variant-numeric: tabular-nums;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--accent);
 }
 
 .status {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  color: var(--muted);
+  gap: 0.55rem;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.85rem;
+  color: rgba(246, 242, 234, 0.85);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(168, 133, 62, 0.4);
+  border-radius: 999px;
+}
+
+.reset-btn {
+  padding: 0.25rem 0.6rem;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgba(246, 242, 234, 0.6);
+  background: transparent;
+  border: 1px solid rgba(246, 242, 234, 0.18);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.reset-btn:hover {
+  color: #f6f2ea;
+  border-color: rgba(155, 58, 53, 0.7);
+}
+
+.reset-btn:disabled {
+  opacity: 0.45;
+  cursor: progress;
+}
+
+.reset-btn:active {
+  transform: scale(0.96);
 }
 
 .dot {
@@ -92,12 +176,243 @@ body {
   font-size: 0.9rem;
 }
 
+/* Dashboard: vertical stack of zones (tables overview, robots, kitchen). */
+.dash {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.zone {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.zone.grow {
+  flex: 1;
+}
+
+.zone-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin: 0 0 0.85rem;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.4rem;
+}
+
+.zone-sub {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* --- Tables overview --- */
+/* Always one row of 6 equal columns (the dining room has 6 tables). */
+.tables-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.75rem;
+}
+
+.t-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--muted);
+  border-radius: 0.5rem;
+  padding: 0.85rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.t-card.DANG_PHUC_VU {
+  border-left-color: var(--wait);
+}
+.t-card.DA_THANH_TOAN {
+  border-left-color: var(--done);
+}
+
+.t-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.t-name {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.t-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+.t-badge.DANG_PHUC_VU {
+  background: rgba(194, 151, 47, 0.16);
+  color: var(--accent-dark);
+}
+.t-badge.DA_THANH_TOAN {
+  background: rgba(92, 122, 99, 0.18);
+  color: var(--done);
+}
+
+.t-empty {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.t-meta {
+  display: flex;
+  gap: 0.85rem;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.t-order {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.5rem;
+}
+.t-order.muted {
+  color: var(--muted);
+}
+
+.t-kitchen {
+  font-weight: 600;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+.t-kitchen.CHO_BEP {
+  color: var(--wait);
+}
+.t-kitchen.DANG_LAM {
+  color: var(--cooking);
+}
+.t-kitchen.XONG {
+  color: var(--done);
+}
+
+.t-total {
+  margin-left: auto;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.t-end {
+  border: none;
+  border-radius: 0.25rem;
+  padding: 0.45rem 0.85rem;
+  background: var(--primary);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.t-end:active {
+  transform: scale(0.96);
+}
+
+/* --- Robot board --- */
+.robots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.85rem;
+}
+
+.r-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--muted);
+  border-radius: 0.5rem;
+  padding: 0.85rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.r-card.idle {
+  border-left-color: var(--done);
+}
+.r-card.busy {
+  border-left-color: var(--cooking);
+}
+.r-card.offline {
+  border-left-color: var(--danger);
+  opacity: 0.7;
+}
+
+.r-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.r-name {
+  font-weight: 700;
+}
+
+.r-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+.r-badge.idle {
+  background: rgba(92, 122, 99, 0.18);
+  color: var(--done);
+}
+.r-badge.busy {
+  background: rgba(176, 106, 79, 0.18);
+  color: var(--cooking);
+}
+
+.r-activity {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.r-meta {
+  display: flex;
+  gap: 0.85rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.r-battery.low {
+  color: var(--danger);
+  font-weight: 600;
+}
+
 .board {
   flex: 1;
+  min-height: 360px;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-  padding: 1rem 1.5rem;
+  gap: 1.25rem;
   overflow: hidden;
 }
 
@@ -163,9 +478,20 @@ body {
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
+  border-left: 3px solid var(--border);
   border-radius: 0.5rem;
   padding: 0.85rem;
   box-shadow: var(--shadow-sm);
+}
+
+.col.CHO_BEP .card {
+  border-left-color: var(--wait);
+}
+.col.DANG_LAM .card {
+  border-left-color: var(--cooking);
+}
+.col.XONG .card {
+  border-left-color: var(--done);
 }
 
 .card-top {
@@ -176,7 +502,7 @@ body {
 }
 
 .table {
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   font-weight: 700;
 }
 
@@ -195,12 +521,12 @@ body {
 }
 
 .items li {
-  font-size: 0.95rem;
+  font-size: 0.85rem;
 }
 
 .qty {
   display: inline-block;
-  min-width: 1.8rem;
+  min-width: 1.6rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--text);
@@ -216,7 +542,7 @@ body {
 }
 
 .total {
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--text);

@@ -27,9 +27,23 @@ export interface Table {
   capacity: number
   status: string
   current_order_id?: number | null
+  party_size?: number | null
+  seated_at?: string | null
+}
+
+export interface Robot {
+  id: string
+  name?: string | null
+  status: string
+  battery?: number | null
+  activity?: string | null
+  current_task_id?: number | null
 }
 
 // WebSocket events pushed from the backend hub (src/backend/app/ws.py).
 export type WsEvent =
   | { type: 'order.created'; order: Order }
   | { type: 'order.updated'; order: Order }
+  | { type: 'table.updated'; table: Table }
+  | { type: 'robot.updated'; robot: Robot }
+  | { type: 'reset' }

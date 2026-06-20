@@ -32,9 +32,33 @@
         </button>
       </div>
 
-      <div class="table-badge" aria-label="Số bàn">
-        <i class="ti ti-armchair" aria-hidden="true"></i>
-        <span>Bàn {{ ui.tableId }}</span>
+      <span class="menu-clock">{{ clock }}</span>
+
+      <div class="table-switcher">
+        <button
+          class="table-badge"
+          type="button"
+          aria-label="Đổi bàn"
+          @click="tablePickerOpen = !tablePickerOpen"
+        >
+          <i class="ti ti-armchair" aria-hidden="true"></i>
+          <span>Bàn {{ ui.tableId }}</span>
+          <i class="ti ti-chevron-down chev" aria-hidden="true"></i>
+        </button>
+        <div v-if="tablePickerOpen" class="table-overlay" @click="tablePickerOpen = false"></div>
+        <div v-if="tablePickerOpen" class="table-menu" role="listbox">
+          <button
+            v-for="t in ui.availableTables"
+            :key="t"
+            class="table-opt"
+            :class="{ active: t === ui.tableId }"
+            type="button"
+            @click="selectTable(t)"
+          >
+            <i class="ti ti-armchair" aria-hidden="true"></i> Bàn {{ t }}
+            <i v-if="t === ui.tableId" class="ti ti-check tick" aria-hidden="true"></i>
+          </button>
+        </div>
       </div>
 
       <CartButton @click="ui.openCart()" />
@@ -128,6 +152,24 @@ const cart = useCartStore()
 
 const submitting = ref(false)
 const orderError = ref<string | null>(null)
+const tablePickerOpen = ref(false)
+const clock = ref(formatClock()) // live wall-clock HH:MM:SS
+let clockTimer: ReturnType<typeof setInterval> | undefined
+
+function formatClock(): string {
+  return new Date().toLocaleTimeString('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+}
+
+// Demo helper: one tablet stands in for many tables, so let the operator switch which table this
+// session orders for. Persisted via the ui store (and read back by the router guard).
+function selectTable(id: number) {
+  ui.setTableId(id)
+  tablePickerOpen.value = false
+}
 
 const scrollEl = ref<HTMLElement>()
 let observer: IntersectionObserver | null = null
@@ -166,6 +208,7 @@ onMounted(() => {
   if (menu.foodItems.length === 0) {
     menu.loadMenu()
   }
+  clockTimer = setInterval(() => (clock.value = formatClock()), 1000)
 })
 
 // The rendered section list changes on load and on every search; (re)wire the observer.
@@ -175,7 +218,10 @@ watch(
   { immediate: true },
 )
 
-onUnmounted(() => observer?.disconnect())
+onUnmounted(() => {
+  observer?.disconnect()
+  if (clockTimer) clearInterval(clockTimer)
+})
 
 // POST the cart to the Orchestrator, then move to the confirmation screen. The cart is left
 // intact so ConfirmationScreen can snapshot its totals; it clears itself on the redirect home.
@@ -343,24 +389,104 @@ async function confirmOrder() {
   transform: scale(0.96);
 }
 
+.menu-clock {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-accent);
+}
+
+.table-switcher {
+  position: relative;
+  flex-shrink: 0;
+}
+
 .table-badge {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  flex-shrink: 0;
   padding: 0.35rem 0.85rem;
   background: transparent;
   color: var(--color-text);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
+  font-family: inherit;
   font-size: 0.9375rem;
   font-weight: 600;
   letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.table-badge:active {
+  transform: scale(0.97);
 }
 
 .table-badge i {
   font-size: 1.05rem;
   color: var(--color-accent);
+}
+
+.table-badge .chev {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.table-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+}
+
+.table-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 21;
+  min-width: 150px;
+  padding: 0.35rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.table-opt {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.65rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.table-opt i {
+  font-size: 1rem;
+  color: var(--color-accent);
+}
+
+.table-opt:hover {
+  background: var(--color-bg);
+}
+
+.table-opt.active {
+  background: var(--color-bg);
+}
+
+.table-opt .tick {
+  margin-left: auto;
+  color: var(--color-success, var(--color-accent));
 }
 
 .brand {

@@ -42,6 +42,38 @@ def seed_tables() -> int:
     return total
 
 
+# Mock fleet so the panel's robot board is demoable before Mốc A/D wires up real robots.
+# `activity` is a human-readable "what is it doing" (the dispatcher will set this for real
+# robots later). Replace with live heartbeats from the robot Brain (same `robots` table).
+SEED_ROBOTS = [
+    # id, name, status, battery, activity
+    ("robo-1", "Robot 1", "idle", 92.0, "Đang ở dock"),
+    ("robo-2", "Robot 2", "busy", 64.0, "Đang giao món · Bàn 4"),
+]
+
+
+def seed_robots() -> int:
+    """Populate the robots table with a small mock fleet if empty. Returns row count."""
+    with get_conn() as conn:
+        (count,) = conn.execute("SELECT COUNT(*) FROM robots").fetchone()
+        if count == 0:
+            conn.executemany(
+                "INSERT INTO robots (id, name, status, battery, activity) "
+                "VALUES (?, ?, ?, ?, ?)",
+                SEED_ROBOTS,
+            )
+        else:
+            # Backfill activity on fleets seeded before the column existed (don't clobber
+            # live status/battery — only fill when missing).
+            for rid, _name, _status, _batt, activity in SEED_ROBOTS:
+                conn.execute(
+                    "UPDATE robots SET activity = ? WHERE id = ? AND activity IS NULL",
+                    (activity, rid),
+                )
+        (total,) = conn.execute("SELECT COUNT(*) FROM robots").fetchone()
+    return total
+
+
 def seed_dishes() -> int:
     """Populate the dishes table from menu.json if it is empty. Returns row count."""
     items = load_menu()

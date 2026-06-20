@@ -92,19 +92,19 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  gap: 0.6rem;
 }
 
 .title {
   font-family: var(--font-display);
-  font-size: 2.5rem;
+  font-size: 1.9rem;
   font-weight: 600;
   color: var(--color-text);
   margin: 0;
 }
 
 .subtitle {
-  font-size: 1.125rem;
+  font-size: 1rem;
   color: var(--color-text-muted);
   margin: 0;
 }
@@ -113,19 +113,19 @@ onUnmounted(() => {
   background: #fff;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: 1rem;
+  padding: 0.75rem;
   box-shadow: var(--shadow-md);
   display: inline-block;
 }
 
 .qr-image {
-  width: 220px;
-  height: 220px;
+  width: 176px;
+  height: 176px;
   display: block;
 }
 
 .amount-row {
-  font-size: 2rem;
+  font-size: 1.6rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--color-text);
@@ -134,8 +134,8 @@ onUnmounted(() => {
 .info-box {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  padding: 0.75rem 1.5rem;
+  gap: 0.35rem;
+  padding: 0.6rem 1.25rem;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);

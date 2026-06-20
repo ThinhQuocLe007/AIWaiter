@@ -48,6 +48,8 @@ class TableOut(BaseModel):
     capacity: int
     status: str
     current_order_id: int | None = None
+    party_size: int | None = None
+    seated_at: str | None = None
 
 
 class SeatingCreate(BaseModel):
@@ -55,3 +57,21 @@ class SeatingCreate(BaseModel):
 
     table_id: int
     party_size: int = Field(gt=0)
+
+
+class TableStatusUpdate(BaseModel):
+    """Change a table's serving-lifecycle status (panel: mark paid / end table)."""
+
+    status: str
+
+
+# --- Robots -------------------------------------------------------------------------------
+class RobotOut(BaseModel):
+    id: str
+    name: str | None = None
+    status: str
+    battery: float | None = None
+    # Human-readable "what it's doing" (e.g. "Đang giao món · Bàn 4", "Đang ở dock") — the panel
+    # shows this instead of raw x/y coordinates. Set by the dispatcher for real robots later.
+    activity: str | None = None
+    current_task_id: int | None = None

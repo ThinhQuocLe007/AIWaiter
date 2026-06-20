@@ -28,6 +28,21 @@ export function fetchMenu(): Promise<RawMenuItem[]> {
   return getJson<RawMenuItem[]>('/menu')
 }
 
+// --- Tables -----------------------------------------------------------------
+// Minimal view of a table row (mirror of backend TableOut) — enough for this
+// tablet to decide which screen to show on load.
+export interface TableInfo {
+  id: number
+  name: string
+  status: string
+  current_order_id?: number | null
+}
+
+// GET /tables/{id} → this table's current serving state.
+export function fetchTable(tableId: number): Promise<TableInfo> {
+  return getJson<TableInfo>(`/tables/${tableId}`)
+}
+
 // --- Orders -----------------------------------------------------------------
 export interface OrderItemPayload {
   name: string
@@ -52,4 +67,9 @@ export function createOrder(
   items: OrderItemPayload[],
 ): Promise<CreatedOrder> {
   return postJson<CreatedOrder>('/orders', { table_id: tableId, items })
+}
+
+// GET /orders/{id} → the table's active order (used to bill the right total at payment).
+export function fetchOrder(orderId: number): Promise<CreatedOrder> {
+  return getJson<CreatedOrder>(`/orders/${orderId}`)
 }

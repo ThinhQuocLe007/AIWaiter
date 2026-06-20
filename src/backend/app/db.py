@@ -18,7 +18,9 @@ CREATE TABLE IF NOT EXISTS "tables" (
     name             TEXT NOT NULL,
     capacity         INTEGER NOT NULL DEFAULT 4,
     status           TEXT NOT NULL DEFAULT 'TRONG',
-    current_order_id INTEGER
+    current_order_id INTEGER,
+    party_size       INTEGER,
+    seated_at        TEXT
 );
 
 CREATE TABLE IF NOT EXISTS dishes (
@@ -105,8 +107,25 @@ def get_conn():
         conn.close()
 
 
+# Columns added after the first release. `CREATE TABLE IF NOT EXISTS` never alters an existing
+# table, so we ADD COLUMN them on startup for DBs seeded before these existed (idempotent).
+_MIGRATIONS: dict[str, list[tuple[str, str]]] = {
+    "tables": [("party_size", "INTEGER"), ("seated_at", "TEXT")],
+    "robots": [("activity", "TEXT")],
+}
+
+
+def _apply_migrations(conn: sqlite3.Connection) -> None:
+    for table, cols in _MIGRATIONS.items():
+        existing = {r["name"] for r in conn.execute(f'PRAGMA table_info("{table}")')}
+        for name, decl in cols:
+            if name not in existing:
+                conn.execute(f'ALTER TABLE "{table}" ADD COLUMN {name} {decl}')
+
+
 def init_db() -> None:
     """Create the schema (idempotent). Called once on startup."""
     settings.db_path.parent.mkdir(parents=True, exist_ok=True)
     with get_conn() as conn:
         conn.executescript(SCHEMA)
+        _apply_migrations(conn)

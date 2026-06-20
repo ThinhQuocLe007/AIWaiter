@@ -106,6 +106,45 @@ Cụ thể trong Mốc B: **đã xong "Bước 0 → 4"** = dựng khung server,
 
 **Chạy:** `make kiosk` → Vite 5174. Đã test: `vite build` pass (13 modules, gồm `@shared`); API E2E qua backend: `POST /seatings` bàn trống → `201` (`TRONG`→`DANG_PHUC_VU`); seat lại / seat bàn đang phục vụ → `409` (khớp nhánh xử lý lỗi trong UI).
 
+### 2.8 Bảng điều khiển *toàn quán* + máy trạng thái bàn + robot mock
+Mở rộng Panel từ "chỉ KDS bếp" thành bảng giám sát cả quán (1 trang nhiều khu) cho quản lý.
+
+**Máy trạng thái bàn (tách khỏi trạng thái bếp):**
+- `tables.status`: `TRONG` → `DANG_PHUC_VU` (seating, kèm `seated_at`+`party_size`) → `DA_THANH_TOAN` → `TRONG`.
+- **Đổi hành vi:** [orders.py](../src/backend/app/routers/orders.py) **không còn** ép bàn sang `CHO_BEP` khi đặt món — bàn giữ `DANG_PHUC_VU`, chỉ set `current_order_id`. Trạng thái bếp sống ở `orders.status` (`CHO_BEP→DANG_LAM→XONG`), không nhét lên bàn nữa.
+
+**Backend:**
+- [db.py](../src/backend/app/db.py): bảng `tables` += `party_size`, `seated_at`; thêm migration nhẹ trong `init_db()` (`PRAGMA table_info` + `ALTER TABLE ADD COLUMN`) để DB seed cũ tự lên cột mới (idempotent).
+- [menu.py](../src/backend/app/menu.py): `seed_robots()` nạp **2 robot mock** (`robo-1` idle 92%, `robo-2` busy 64%) — dữ liệu thật tới ở Mốc A/D, cùng bảng `robots`.
+- [schemas.py](../src/backend/app/schemas.py): `TableOut` += `party_size`/`seated_at`; thêm `RobotOut`, `TableStatusUpdate`.
+- [tables.py](../src/backend/app/routers/tables.py): `POST /seatings` lưu `party_size`+`seated_at` & broadcast `table.updated`; **`GET /tables/{id}`** (cho tablet); **`PATCH /tables/{id}`** (đổi trạng thái; về `TRONG` thì clear order/khách/giờ ngồi) — đều broadcast `table.updated`.
+- [robots.py](../src/backend/app/routers/robots.py) (mới): `GET /robots`.
+- **WS** (role `panel`) thêm event `table.updated` (và `robot.updated` để dành) — `app/ws.py` không đổi, chỉ thêm chỗ gọi broadcast.
+
+**Frontend dùng chung** ([shared/](../src/frontends/shared/)): `types.ts` += `party_size`/`seated_at` cho `Table`, thêm `Robot`, thêm biến thể `WsEvent` `table.updated`/`robot.updated`; `rest.ts` += `fetchTable`, `updateTableStatus`, `fetchRobots`.
+
+**Panel** ([src/frontends/panel/](../src/frontends/panel/)): tách App.vue thành 3 component + 1 trang cuộn dọc:
+- `components/TablesOverview.vue` — lưới **1 hàng 6 cột**, thẻ bàn: badge Trống/Đang ăn/Đã xong, số khách, **đồng hồ "đã ngồi"** (tick mỗi giây), số món + trạng thái bếp + tổng tiền của đơn hiện tại (cross-ref `tables`×`orders` qua `current_order_id`), nút **"Kết thúc bàn"** khi `DA_THANH_TOAN`.
+- `components/RobotBoard.vue` — thẻ robot: bận/rảnh + pin (đỏ khi <25%) + **hoạt động** dạng chữ (`robots.activity`, vd "Đang ở dock", "Đang giao món · Bàn 4") thay cho toạ độ x/y. `seed_robots()` backfill `activity` cho fleet seed cũ; dispatcher sẽ set thật ở Mốc A/D.
+- `components/KitchenBoard.vue` — KDS 3 cột (bê nguyên từ App.vue cũ).
+- `format.ts` — `formatPrice`/`timeAgo`/`durationLabel` dùng chung. App.vue mở rộng WS xử lý `table.updated`/`robot.updated`, fetch thêm `robots`, ticker `now`.
+
+**Customer UI** ([customer_ui](../src/frontends/customer_ui/)): màn đầu **theo trạng thái bàn** (sửa "menu web đang sai"):
+- `components/screens/ServiceChoiceScreen.vue` (mới) — 2 nút: **Gọi món thêm** → `/menu`; **Thanh toán** → `/payment` (fetch tổng đơn hiện tại để dựng QR đúng số tiền).
+- [router/index.ts](../src/frontends/customer_ui/src/router/index.ts): route `/service` + guard `beforeEach`: vào `'/'` → `GET /tables/{VITE_TABLE_ID}`; nếu bàn `DANG_PHUC_VU` **và có** `current_order_id` (đang ăn) → chuyển `/service`, ngược lại giữ **Chào mừng**. Guard chạy mọi lần về `'/'` nên sau khi đặt thêm cũng tự về đúng màn.
+- [data/api.ts](../src/frontends/customer_ui/src/data/api.ts): += `fetchTable`, `fetchOrder`.
+- **Đổi bàn ngay trên menu** (demo nhiều bàn bằng 1 tablet): badge "Bàn N" ở top-bar thành dropdown chọn Bàn 1…6 → `ui.setTableId`. Lưu `localStorage` (`tableSession.ts`, dùng chung với router guard) nên giữ qua reload. Đơn `POST /orders` đi theo bàn đang chọn.
+
+**Đã test:** `vite build` panel (21 modules) + customer_ui (259 modules, esbuild) pass. Backend E2E (curl): migration cột mới OK trên DB seed cũ; `GET /robots` (2 robot); `POST /seatings` lưu `party_size`+`seated_at`; `POST /orders` giữ bàn `DANG_PHUC_VU`+`current_order_id` (không nhảy `CHO_BEP`); `PATCH /tables/{id}` `DA_THANH_TOAN`→`TRONG` clear sạch khách/giờ/đơn.
+
+**Reset dữ liệu demo** (chạy lại từ đầu không cần restart/xoá file): `POST /admin/reset` ([admin.py](../src/backend/app/routers/admin.py)) xoá orders/seatings/payments/tasks, reset id AUTOINCREMENT, trả mọi bàn về `TRONG`, khôi phục robot mock; broadcast `{"type":"reset"}` → panel tự `load()` lại tức thì (kiosk phản ánh ở lần poll bàn kế). Gọi được bằng 3 cách: **nút "↺ Reset hệ thống"** ở header panel (có xác nhận; `resetSystem()` trong `@shared/rest`), **`make reset`** (curl tới backend đang chạy), hoặc offline `rm storage/db/orchestrator.db` → seed lại lúc khởi động.
+
+**Đồng hồ digital** (giờ:phút, giờ thực máy, 24h, `tabular-nums`): thêm vào header cả 3 UI — panel (cạnh đèn kết nối/nút reset, gộp vào ticker 1s sẵn có), kiosk (pill ghim góc trên-phải), customer_ui (top-bar MenuScreen). Timer dọn khi unmount.
+
+**Logo kiosk:** đồng bộ với menu — kiosk nạp `@tabler/icons-webfont` (như customer_ui) và dùng icon `ti-tools-kitchen-2`+`ti-robot` thay cho emoji `🍽️🤖` trong [kiosk/App.vue](../src/frontends/kiosk/src/App.vue).
+
+> *Lưu ý:* `customer_ui` chưa có `tsconfig.json` nên `npm run build` (chạy `vue-tsc`) lỗi `TS5083` — **lỗi sẵn có, không do thay đổi này**; `vite build` (esbuild) vẫn build sạch. Type-check là việc dọn dẹp riêng.
+
 ---
 
 ## 3. Còn lại — việc tiếp theo (theo thứ tự ưu tiên)
