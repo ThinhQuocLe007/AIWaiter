@@ -16,8 +16,15 @@ def get_sentence_transformer(model_name: str = EMBEDDING_MODEL_NAME) -> Sentence
     Loaded once and reused by both the retriever (vector index) and the
     semantic router, so the embedding model only occupies memory once instead
     of being loaded twice. Critical on the Jetson Orin 8GB unified-memory target.
+
+    Runs on settings.EMBEDDING_DEVICE (falls back to the global DEVICE when unset)
+    rather than always on DEVICE: keeping the embedding model off the iGPU frees
+    unified RAM for the Ollama LLM. float16 is only used on CUDA — on CPU PyTorch
+    lacks fast/complete half-precision kernels, so float32 is both faster and safer.
     """
-    return SentenceTransformer(model_name, device=settings.DEVICE, model_kwargs={"torch_dtype": "float16"})
+    device = settings.EMBEDDING_DEVICE or settings.DEVICE
+    torch_dtype = "float16" if device == "cuda" else "float32"
+    return SentenceTransformer(model_name, device=device, model_kwargs={"torch_dtype": torch_dtype})
 
 
 class SharedEmbeddings(Embeddings):
