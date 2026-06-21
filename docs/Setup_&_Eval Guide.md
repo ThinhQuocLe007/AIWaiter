@@ -212,11 +212,26 @@ Environment="OLLAMA_NUM_PARALLEL=1"        # kiosk tuần tự → KHÔNG nhân 
 Environment="OLLAMA_MAX_LOADED_MODELS=1"
 Environment="OLLAMA_FLASH_ATTENTION=1"
 Environment="OLLAMA_KV_CACHE_TYPE=q8_0"    # KV cache 8-bit → giảm ~nửa (cần FLASH_ATTENTION=1)
-Environment="OLLAMA_KEEP_ALIVE=-1"         # giữ model thường trú, tránh reload
+Environment="OLLAMA_KEEP_ALIVE=1m"         # idle 1 phút thì UNLOAD → trả RAM cho navigation/audio
 ```
 ```bash
 sudo systemctl restart ollama
 ```
+
+> ⚠️ **`OLLAMA_KEEP_ALIVE` — chọn theo logic chia RAM, đừng để mặc định.** Trên kiosk này LLM **dùng
+> chung 8GB unified** với robot navigation + xử lý âm thanh, nên muốn LLM **nhả RAM khi không chạy**:
+>
+> | Giá trị | Hành vi | Khi nào dùng |
+> |---|---|---|
+> | `1m` *(khuyên dùng)* | giữ model trong một lượt khách (burst vài câu), idle 1 phút thì unload | kiosk: vào–gọi món–rời đi |
+> | `0` | unload **ngay** sau mỗi request | RAM cực căng, ưu tiên tối đa cho nav/audio; chịu cold-start mỗi lần gọi |
+> | `-1` | thường trú **vĩnh viễn**, không bao giờ nhả | chỉ khi LLM là tiến trình chính, **không** share RAM |
+>
+> `-1` (giữ thường trú) **mâu thuẫn** với mục tiêu trên — nó ăn RAM liên tục kể cả lúc idle và thường là
+> thủ phạm tràn swap thật sự (chứ không chỉ `NUM_PARALLEL`). Env var chỉ là *default*; có thể override
+> từng lời gọi bằng tham số `keep_alive` trong payload `/api/generate` · `/api/chat` (vd `"keep_alive": 0`).
+> Đổi lại: unload xong thì lần gọi kế tiếp phải **nạp lại model** (cold-start vài giây) — cân nhắc giữa độ
+> trễ và RAM rảnh.
 
 ### 6.4. Ollama có **thật sự** chạy GPU không? (quan trọng)
 ```bash
