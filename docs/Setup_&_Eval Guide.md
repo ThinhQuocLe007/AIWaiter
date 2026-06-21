@@ -100,16 +100,44 @@ uv run python scripts/setup.py              # ← dựng storage/: DB + FAISS + 
 
 ### 2.2. Khi nào cần build lại
 
-| Thay đổi gì | Cần dựng lại | Lệnh |
-|---|---|---|
-| Clone mới / mất `storage/` | DB + FAISS + BM25 | `uv run python scripts/setup.py` |
-| **Menu data** (`assets/data/menu.json`, `best_seller`, `discounts`…) | restaurant DB + FAISS + BM25 | `uv run python scripts/setup.py --force` |
-| **Embedding model** (`EMBEDDING_MODEL`) | FAISS + centroids (DB giữ nguyên) | `uv run python scripts/setup.py --embeddings-only` → xem **6.6** |
+**3 lệnh, khác nhau ở chỗ build lại cái gì** (✓ = build lại / dựng, – = giữ nguyên, *skip nếu có* = chỉ build khi file chưa tồn tại):
 
-> `centroids.npz` đi theo git nhưng **gắn với embedding model lúc build**. Nếu máy mới dùng embedding
-> **khác** với lúc commit → centroids không khớp, phải `--embeddings-only` (hoặc `--force`). Nếu dùng
-> **đúng** model như lúc commit thì centroids trong git xài lại được — nhưng FAISS/DB vẫn phải dựng vì
-> không nằm trong git (tức vẫn chạy `scripts/setup.py` ít nhất 1 lần).
+| Lệnh | Restaurant DB | Checkpoints DB | FAISS + BM25 | Centroids |
+|---|---|---|---|---|
+| `setup.py` | tạo nếu chưa có | tạo nếu chưa có | *skip nếu có* | *skip nếu có* |
+| `setup.py --embeddings-only` | – | – | ✓ luôn | ✓ luôn |
+| `setup.py --force` | ✓ xoá + dựng lại | ✓ xoá + dựng lại | ✓ luôn | ✓ luôn |
+
+**Dùng lệnh nào theo việc bạn vừa làm:**
+
+| Thay đổi gì | Lệnh nên dùng |
+|---|---|
+| Clone mới / mất `storage/` | `uv run python scripts/setup.py` |
+| Đổi **embedding model** (`EMBEDDING_MODEL`) | `uv run python scripts/setup.py --embeddings-only` → xem **6.6** |
+| Đổi **menu data** (`menu.json`, `best_seller`, `discounts`…) | `uv run python scripts/setup.py --force` |
+| Không chắc / muốn reset sạch | `uv run python scripts/setup.py --force` |
+
+> #### ⚠️ Cái bẫy hay gặp nhất: centroids không khớp model
+> `centroids.npz` **nằm trong git** (không thuộc `storage/`) nên **luôn đi theo repo** — máy mới clone về
+> là đã có sẵn. Nhưng nó **gắn cứng với embedding model lúc build** (số chiều vector: BGE-M3 = 1024,
+> PhoBERT/bkai = 768, e5-small = 384…).
+>
+> Hệ quả: nếu `.env` của bạn dùng model **khác** với model lúc file được commit, mà bạn chỉ chạy
+> `setup.py` thường → nó thấy `centroids.npz` đã tồn tại nên **skip**, giữ nguyên centroids cũ sai chiều.
+> Lúc chạy router sẽ lỗi `Incompatible dimension ... X.shape[1] == 768 while Y.shape[1] == 1024`,
+> **mọi case rớt về SLM, accuracy 0%**. (FAISS thì an toàn hơn vì nằm trong `storage/` bị git-ignore,
+> clone mới luôn build lại đúng model.)
+>
+> **Cách tránh:** mỗi khi đụng tới `EMBEDDING_MODEL`, **luôn** chạy `--embeddings-only` (hoặc `--force`),
+> **đừng** chạy `setup.py` trơn. Chỉ khi máy mới dùng *đúng* model như lúc commit thì centroids trong git
+> mới xài lại được.
+
+> #### "Cứ `--force` cho dễ" có được không?
+> **Được, và không bao giờ sai về chức năng** — `--force` là superset, luôn dựng lại FAISS + centroids
+> đúng theo model hiện tại. Đổi lại 2 cái giá: (1) nó **xoá luôn `restaurant.db` + `checkpoints.db`** →
+> mất order/session/hội thoại test (với máy dev/eval thường chẳng sao, nhiều khi còn muốn reset);
+> (2) **chậm hơn** vì re-embed lại toàn bộ docs + utterances mỗi lần (trên CPU Jetson tốn vài phút).
+> Nếu **chỉ đổi model** thì `--embeddings-only` nhanh hơn và giữ nguyên DB. Lười nhớ thì `--force` luôn cũng ổn.
 
 ---
 
