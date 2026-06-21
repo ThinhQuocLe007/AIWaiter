@@ -134,7 +134,25 @@ def main():
     parser = argparse.ArgumentParser(description="Initialize the AI Waiter project.")
     parser.add_argument("--force", action="store_true", help="Rebuild everything even if exists")
     parser.add_argument("--skip-centroids", action="store_true", help="Skip centroid building")
+    parser.add_argument(
+        "--embeddings-only",
+        action="store_true",
+        help="Rebuild only the embedding-dependent artifacts (FAISS index + centroids), "
+             "leaving the SQLite DBs untouched. Use after switching EMBEDDING_MODEL.",
+    )
     args = parser.parse_args()
+
+    if args.embeddings_only:
+        print("\n🔧 AI Waiter — Rebuild embeddings (FAISS + centroids)\n")
+        if not verify_assets():
+            sys.exit(1)
+        create_directories()
+        print("\nBuilding search indexes (FAISS + BM25)...")
+        build_search_indexes(force=True)
+        print("\nBuilding centroid embeddings...")
+        build_centroids(force=True, skip=args.skip_centroids)
+        print("\n✅ Embeddings rebuilt.")
+        return
 
     print("\n🔧 AI Waiter — Setup\n")
 

@@ -11,6 +11,12 @@ class HardwareSettings(BaseSettings):
     # GPU instead of spilling layers to CPU. Easy CPU/GPU toggle for benchmarking.
     EMBEDDING_DEVICE: str = Field(default="", env="EMBEDDING_DEVICE")
 
+    # Embedding model to use. Empty -> the default in embeddings.EMBEDDING_MODEL_NAME.
+    # Flip this to A/B different Vietnamese-capable models (see EMBEDDING_PROFILES in
+    # embeddings.py for the supported set). Switching requires rebuilding the FAISS
+    # index + centroids: `python scripts/setup.py --embeddings-only`.
+    EMBEDDING_MODEL: str = Field(default="", env="EMBEDDING_MODEL")
+
     model_config = SettingsConfigDict(
         env_file=".env", 
         env_file_encoding='utf-8',

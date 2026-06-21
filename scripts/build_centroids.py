@@ -1,10 +1,17 @@
 #!/usr/bin/env python3
+"""Build centroid .npz from utterances.json for the semantic router.
+
+Encodes utterances with the ACTIVE embedding model (settings.EMBEDDING_MODEL /
+.env) using the exact same query-side preprocessing as the router (via
+encode_queries), so the centroids stay consistent with query-time vectors.
+Pass --model to override the active model for a single run.
+"""
 import json
 import argparse
+import os
 import sys
 import numpy as np
 from pathlib import Path
-from sentence_transformers import SentenceTransformer
 
 
 # ---- Paths (relative to this script's location) ----
@@ -17,12 +24,12 @@ PACKAGE_RESOURCES = (
 
 DEFAULT_UTTERANCES = PACKAGE_RESOURCES / "few_shots" / "utterances.json"
 DEFAULT_CENTROIDS_DIR = PACKAGE_RESOURCES / "centroids"
-DEFAULT_MODEL = "AITeamVN/Vietnamese_Embedding"
 
 
 def build_centroids(
     utterances_path: Path,
     output_dir: Path,
+    encode_queries,
     model_name: str,
 ) -> None:
     print(f"Loading utterances from: {utterances_path}")
@@ -34,13 +41,12 @@ def build_centroids(
     for intent, utts in routes.items():
         print(f"  {intent:8s}: {len(utts):3d} utterances")
 
-    print(f"\nLoading embedding model: {model_name} ...")
-    model = SentenceTransformer(model_name)
+    print(f"\nEmbedding model (active): {model_name}")
 
     centroids: dict[str, np.ndarray] = {}
     print("\nComputing centroids (np.mean per class):")
     for intent, utterances in routes.items():
-        embeddings = model.encode(utterances, show_progress_bar=False)
+        embeddings = encode_queries(utterances)
         centroid = np.mean(embeddings, axis=0)
         centroids[intent] = centroid
         print(f"  {intent:8s}: {len(utterances):3d} utterances → centroid shape {centroid.shape}")
@@ -81,8 +87,9 @@ def main(argv: list[str] | None = None) -> None:
     )
     parser.add_argument(
         "--model",
-        default=DEFAULT_MODEL,
-        help="SentenceTransformer model name (default: AITeamVN/Vietnamese_Embedding)",
+        default=None,
+        help="Override the active embedding model for this run "
+             "(default: settings.EMBEDDING_MODEL / .env)",
     )
     args = parser.parse_args(argv)
 
@@ -90,10 +97,26 @@ def main(argv: list[str] | None = None) -> None:
         print(f"ERROR: utterances.json not found at {args.utterances}", file=sys.stderr)
         sys.exit(1)
 
+    # Make ai_waiter_core importable and load .env (mirrors the eval scripts).
+    # --model is applied to the environment BEFORE settings is first imported so it
+    # overrides .env. (When invoked from setup.py settings is already loaded, so that
+    # path uses setup's EMBEDDING_MODEL rather than --model.)
+    sys.path.insert(0, str(PROJECT_ROOT / "ai_waiter_core"))
+    sys.path.insert(0, str(PROJECT_ROOT))
+    if args.model:
+        os.environ["EMBEDDING_MODEL"] = args.model
+    from dotenv import load_dotenv
+    load_dotenv()  # does not override already-set env vars
+    from ai_waiter_core.services.retriever.indices.embeddings import (
+        encode_queries,
+        active_model_name,
+    )
+
     build_centroids(
         utterances_path=args.utterances,
         output_dir=args.output_dir,
-        model_name=args.model,
+        encode_queries=encode_queries,
+        model_name=active_model_name(),
     )
 
 

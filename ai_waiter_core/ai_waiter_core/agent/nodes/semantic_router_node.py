@@ -7,10 +7,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from langchain_core.messages import HumanMessage
 from ai_waiter_core.agent.state import AgentState
 from ai_waiter_core.config import settings
-from ai_waiter_core.services.retriever.indices.embeddings import (
-    EMBEDDING_MODEL_NAME,
-    get_sentence_transformer,
-)
+from ai_waiter_core.services.retriever.indices.embeddings import encode_queries
 from ai_waiter_core.utils import log_struct, trace_latency
 
 UTTERANCES_PATH = settings.resources_dir / "few_shots" / "utterances.json"
@@ -61,10 +58,10 @@ def softmax_routing(
 
 
 class SemanticRouterNode:
-    def __init__(self, model_name: str = EMBEDDING_MODEL_NAME):
-        # Reuse the shared SentenceTransformer singleton (same instance as the
-        # retriever) so the embedding model is held in memory only once.
-        self.model = get_sentence_transformer(model_name)
+    def __init__(self):
+        # Encoding goes through the shared encode_queries() helper, which reuses
+        # the single SentenceTransformer singleton (same instance as the retriever)
+        # and applies the active model's query-side preprocessing.
         self.route_centroids: dict[str, np.ndarray] = {}
         self._load_centroids()
 
@@ -81,11 +78,11 @@ class SemanticRouterNode:
                 routes = json.load(f)
             log_struct("Encoding semantic router utterances", route_count=len(routes))
             for route_name, utterances in routes.items():
-                embeddings = self.model.encode(utterances)
+                embeddings = encode_queries(utterances)
                 self.route_centroids[route_name] = np.mean(embeddings, axis=0)
 
     def route(self, query: str) -> Dict[str, Any]:
-        query_vec = self.model.encode([query])[0]
+        query_vec = encode_queries([query])[0]
         similarities: dict[str, float] = {}
         best_route = None
         max_sim = -1.0
