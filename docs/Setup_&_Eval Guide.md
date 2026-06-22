@@ -54,7 +54,7 @@ sudo apt-get install -y libcudss0-cuda-12
 1. **Ollama** đang chạy + đã pull model:
    ```bash
    ollama serve                                   # nếu chưa chạy như service
-   ollama pull qwen3:4b-instruct-2507-q4_K_M
+   ollama pull gemma4:e2b-it-qat
    ollama list
    ```
    Cả router/worker/response dùng **một model duy nhất** (`config/agent_config.py`), override qua `.env`.
@@ -91,7 +91,7 @@ Vì vậy **mỗi lần clone mới phải dựng lại `storage/` một lần**
 git clone <repo> && cd AI_Waiver
 uv sync                                     # mục 1 (torch theo kiến trúc)
 cp .env.template .env                       # chỉnh DEVICE/EMBEDDING_DEVICE... (Jetson: xem 6.1)
-ollama pull qwen3:4b-instruct-2507-q4_K_M   # mục 2
+ollama pull gemma4:e2b-it-qat   # mục 2
 uv run python scripts/setup.py              # ← dựng storage/: DB + FAISS + BM25 (+ centroids nếu thiếu)
 ```
 
@@ -216,17 +216,17 @@ nếu không tinh chỉnh dễ tràn swap.
 DEVICE=cuda             # STT/VAD chạy GPU
 EMBEDDING_DEVICE=cpu    # ĐẨY embedding khỏi iGPU → trả ~1.2GB RAM unified cho LLM (xem 6.4)
 EMBEDDING_MODEL=        # trống = AITeamVN/Vietnamese_Embedding (2.2GB). Đổi model nhẹ hơn: xem 6.6
-ROUTER_MODEL=qwen3:4b-instruct-2507-q4_K_M
-WORKER_MODEL=qwen3:4b-instruct-2507-q4_K_M
-RESPONSE_MODEL=qwen3:4b-instruct-2507-q4_K_M
+ROUTER_MODEL=gemma4:e2b-it-qat
+WORKER_MODEL=gemma4:e2b-it-qat
+RESPONSE_MODEL=gemma4:e2b-it-qat
 LLM_NUM_CTX=6144        # context pin cho mọi lời gọi Ollama (hạ xuống 4096 nếu cần tiết kiệm thêm)
 ```
-Ngân sách ước tính: LLM qwen3:4b q4 ~2.5GB (weights) + KV cache (theo `num_ctx`) + embedding ~1.2GB
+Ngân sách ước tính: LLM gemma4 e2b q4 ~2.5GB (weights) + KV cache (theo `num_ctx`) + embedding ~1.2GB
 + torch/CUDA runtime + OS ≈ **sát 8GB** → cần các bước dưới. Vì là **unified memory**, embedding nằm
 trên iGPU sẽ ăn vào đúng phần RAM mà Ollama cần để nạp LLM lên GPU → đặt `EMBEDDING_DEVICE=cpu`.
 
 ### 6.2. `num_ctx` đã pin sẵn trong code
-Mọi ChatOllama dùng `settings.LLM_NUM_CTX` (mặc định **6144**). qwen3:4b hỗ trợ tới 262144 token; để
+Mọi ChatOllama dùng `settings.LLM_NUM_CTX` (mặc định **8192**). gemma4 hỗ trợ context lớn; để
 Ollama tự quyết thì KV cache có thể rất lớn. Một giá trị **đồng nhất** cũng tránh Ollama nạp lại model
 giữa các node.
 

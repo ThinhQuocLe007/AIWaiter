@@ -65,7 +65,7 @@
 ┌───┴──────────────────────────────────────────┐
 │ JETSON (trên mỗi robot)                       │
 │  ┌─ BRAIN (env uv, Python 3.10)               │
-│  │   LLM qwen3:4b · RAG menu · STT/TTS         │
+│  │   LLM gemma4 · RAG menu · STT/TTS           │
 │  │   + UI khách (Vue) chạy trên màn hình robot │
 │  │   ws_client → server  +  ws_server → Body   │
 │  └─ BODY  (ROS 2 Humble + Nav2)                │
@@ -391,7 +391,7 @@ Cả 3 laptop nối **cùng 1 WiFi/LAN**; Server có IP cố định, ví dụ `
   Nav2 goal → robot chạy trong Gazebo → báo `arrived`/`task_done`.
 - **`customer_ui` (Vue)** mở full-screen ở đây = màn hình robot; theo lệnh sẽ chuyển `/menu`, `/payment`.
 - **2 chế độ:** *mock-brain* (bỏ LLM/mic, bridge tự dịch task→goal — đủ demo luồng + di chuyển) hoặc
-  *full-brain* (LLM qwen3:4b + STT/TTS để demo cả đặt món bằng giọng nói).
+  *full-brain* (LLM gemma4 + STT/TTS để demo cả đặt món bằng giọng nói).
 - **Multi-robot:** mở 2 instance, đổi `robot_id`/namespace (`r1`, `r2`) → bảng điều khiển hiện 2 robot,
   Dispatcher tự chia task.
 
@@ -443,7 +443,7 @@ là **thêm logic để agent phát lệnh hành động** + map lệnh → task
 - **Voice mock → thật:** `stores/voice.ts` mới là timer giả; nối STT/LLM/TTS thật còn nhiều việc.
 
 **Cần chốt trước khi code:**
-1. **LLM chạy đâu?** Local Jetson (đang chọn, qwen3:4b) hay server ngoài? — *Khuyến nghị: local để robot
+1. **LLM chạy đâu?** Local Jetson (đang chọn, gemma4) hay server ngoài? — *Khuyến nghị: local để robot
    nói với khách không phụ thuộc mạng.*
 2. **Frontend server:** tự build (React/Vue) hay tool sẵn dashboard (PocketBase)? — *Khuyến nghị: FastAPI
    + SQLite cho đồng bộ Python; tái dùng component của `customer_ui` cho Kiosk.*

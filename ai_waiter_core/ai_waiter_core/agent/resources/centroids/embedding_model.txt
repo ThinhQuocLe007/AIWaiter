@@ -1,0 +1,1 @@
+bkai-foundation-models/vietnamese-bi-encoder

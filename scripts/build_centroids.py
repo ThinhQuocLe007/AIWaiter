@@ -58,6 +58,11 @@ def build_centroids(
     size_kb = npz_path.stat().st_size / 1024
     print(f"\nCentroids saved to: {npz_path} ({size_kb:.1f} KB)")
 
+    # Stamp the model name so the router can detect a stale/mismatched centroid set.
+    from ai_waiter_core.services.retriever.indices.fingerprint import write_fingerprint
+    write_fingerprint(output_dir)
+    print(f"Stamped embedding model fingerprint: {model_name}")
+
     # Quick verification: load back and check
     print("\nVerifying — loading centroids.npz back ...")
     data = np.load(str(npz_path))

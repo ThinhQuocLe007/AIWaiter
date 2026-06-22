@@ -8,6 +8,7 @@ from langchain_core.messages import HumanMessage
 from ai_waiter_core.agent.state import AgentState
 from ai_waiter_core.config import settings
 from ai_waiter_core.services.retriever.indices.embeddings import encode_queries
+from ai_waiter_core.services.retriever.indices.fingerprint import verify_fingerprint
 from ai_waiter_core.utils import log_struct, trace_latency
 
 UTTERANCES_PATH = settings.resources_dir / "few_shots" / "utterances.json"
@@ -67,6 +68,10 @@ class SemanticRouterNode:
 
     def _load_centroids(self):
         if CENTROIDS_PATH.exists():
+            # Fail loudly if the centroids were built with a different embedding
+            # model than the one now active (the router would otherwise compare
+            # query vectors against mismatched centroids and route incorrectly).
+            verify_fingerprint(CENTROIDS_PATH.parent)
             log_struct("Loading pre-computed centroids from disk", path=str(CENTROIDS_PATH))
             data = np.load(str(CENTROIDS_PATH))
             self.route_centroids = {k: data[k] for k in data.files}

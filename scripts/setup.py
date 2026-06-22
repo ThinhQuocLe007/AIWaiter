@@ -103,31 +103,34 @@ def init_checkpoints_db(force: bool = False):
     print(f"  ✓ Checkpoints DB at {db_path}")
 
 
-def build_search_indexes(force: bool):
+def build_search_indexes(force: bool) -> bool:
     builder = IndexBuilder()
     if not force and builder.load_database():
         print("  ✓ Search indexes already exist (use --force to rebuild)")
-        return
+        return True
     assets_dir = str(PROJECT_ROOT / "assets" / "data")
     success = builder.build([assets_dir])
     if success:
         print("  ✓ FAISS index + BM25 index built")
     else:
         print("  ❌ Failed to build search indexes")
+    return success
 
 
-def build_centroids(force: bool, skip: bool):
+def build_centroids(force: bool, skip: bool) -> bool:
     if skip:
         print("  → Skipped centroids (--skip-centroids)")
-        return
+        return True
     if not force and CENTROIDS_PATH.exists():
         print("  ✓ Centroids already exist (use --force to rebuild)")
-        return
+        return True
     try:
         build_centroids_main([])
         print("  ✓ Centroids built")
+        return True
     except Exception as e:
         print(f"  ❌ Failed to build centroids: {e}")
+        return False
 
 
 def main():
@@ -148,9 +151,13 @@ def main():
             sys.exit(1)
         create_directories()
         print("\nBuilding search indexes (FAISS + BM25)...")
-        build_search_indexes(force=True)
+        ok_index = build_search_indexes(force=True)
         print("\nBuilding centroid embeddings...")
-        build_centroids(force=True, skip=args.skip_centroids)
+        ok_centroids = build_centroids(force=True, skip=args.skip_centroids)
+        if not (ok_index and ok_centroids):
+            print("\n❌ Embedding rebuild FAILED — artifacts left in a stale/partial "
+                  "state. Fix the error above and re-run.")
+            sys.exit(1)
         print("\n✅ Embeddings rebuilt.")
         return
 
@@ -174,12 +181,16 @@ def main():
     print()
 
     print("5. Building search indexes (FAISS + BM25)...")
-    build_search_indexes(args.force)
+    ok_index = build_search_indexes(args.force)
     print()
 
     print("6. Building centroid embeddings...")
-    build_centroids(args.force, args.skip_centroids)
+    ok_centroids = build_centroids(args.force, args.skip_centroids)
     print()
+
+    if not (ok_index and ok_centroids):
+        print("❌ Setup FAILED — see the errors above.")
+        sys.exit(1)
 
     print("✅ Setup complete.")
 

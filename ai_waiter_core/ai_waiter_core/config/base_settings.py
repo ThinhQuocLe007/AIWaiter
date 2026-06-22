@@ -73,8 +73,10 @@ class BaseSystemSettings(BaseSettings):
             return ROOT
         return v
 
+    # Absolute path anchored at the project root so .env loads regardless of CWD
+    # (a relative ".env" is resolved against the current working directory).
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=str(ROOT / ".env"),
         env_file_encoding='utf-8',
         extra="ignore",
         env_ignore_empty=True,

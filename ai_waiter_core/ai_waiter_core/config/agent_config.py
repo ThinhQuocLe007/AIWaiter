@@ -1,6 +1,8 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 
+from .base_settings import ROOT
+
 class AgentSettings(BaseSettings):
     ROUTER_MODEL: str = Field(default="gemma4:e2b-it-qat", env="ROUTER_MODEL")
     WORKER_MODEL: str = Field(default="gemma4:e2b-it-qat", env="WORKER_MODEL")
@@ -15,8 +17,12 @@ class AgentSettings(BaseSettings):
 
     HF_TOKEN: str = Field(default="", env="HF_TOKEN")
     
+    # Absolute path anchored at the project root so .env loads regardless of the
+    # current working directory (e.g. when an eval script runs from a subdir).
+    # A relative ".env" is resolved against CWD and silently misses the repo .env,
+    # making every model fall back to its hardcoded default.
     model_config = SettingsConfigDict(
-        env_file=".env", 
+        env_file=str(ROOT / ".env"),
         env_file_encoding='utf-8',
-        extra="ignore" 
+        extra="ignore"
     )
