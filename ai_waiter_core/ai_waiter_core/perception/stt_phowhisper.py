@@ -10,6 +10,11 @@ from ai_waiter_core.perception.queues import speech_queue, put_transcript, Trans
 
 logger = logging.getLogger(__name__)
 
+# Single source of truth for the faster-whisper model size.
+# Change this to switch models (e.g. "small", "medium", "large-v3", "large-v3-turbo").
+# probe_stt.py reads this so its download progress bar always matches the real model.
+MODEL_SIZE = "small"
+
 
 class PhoWhisperSTT(threading.Thread):
     def __init__(self):
@@ -20,8 +25,8 @@ class PhoWhisperSTT(threading.Thread):
     def _load_model(self):
         device = settings.DEVICE
         compute = "float16" if device == "cuda" else "int8"
-        self._model = WhisperModel("small", device=device, compute_type=compute)
-        logger.info(f"PhoWhisper loaded: small, device={device}, compute={compute}")
+        self._model = WhisperModel(MODEL_SIZE, device=device, compute_type=compute)
+        logger.info(f"PhoWhisper loaded: {MODEL_SIZE}, device={device}, compute={compute}")
 
     def _transcribe(self, audio_bytes: bytes) -> str:
         samples = np.frombuffer(audio_bytes, dtype=np.int16).astype(np.float32) / 32768.0

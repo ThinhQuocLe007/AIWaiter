@@ -72,7 +72,7 @@ def load_audio_bytes(path: str | None, seconds: float) -> bytes:
     return noise.tobytes()
 
 
-def prefetch_model(model_size: str = "small"):
+def prefetch_model(model_size: str):
     """Download the faster-whisper repo *with a visible progress bar* before loading.
 
     WhisperModel(...) downloads silently on first run, so on a slow link (e.g. Jetson)
@@ -100,11 +100,14 @@ def main():
     base = rss_mb()
     report("startup", base)
 
-    from ai_waiter_core.perception.stt_phowhisper import PhoWhisperSTT
+    from ai_waiter_core.perception.stt_phowhisper import PhoWhisperSTT, MODEL_SIZE
     from ai_waiter_core.config import settings
     print(f"[cfg] DEVICE={settings.DEVICE}  -> compute={'float16' if settings.DEVICE=='cuda' else 'int8'}")
 
-    prefetch_model("small")
+    # Prefetch the exact model PhoWhisperSTT will load (MODEL_SIZE in stt_phowhisper.py),
+    # so the progress bar always matches the real model — change it in one place only.
+    print(f"[cfg] MODEL_SIZE={MODEL_SIZE}")
+    prefetch_model(MODEL_SIZE)
 
     stt = PhoWhisperSTT()
     t0 = time.time()
