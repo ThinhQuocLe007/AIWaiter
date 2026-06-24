@@ -1,5 +1,9 @@
 # AI Waiter - Capstone Project
 
+> 📦 **Cài đặt:** xem **[docs/INSTALL.md](docs/INSTALL.md)** (hướng dẫn cài theo từng máy: Jetson · Server · Laptop).
+> 🏗️ **Kiến trúc:** xem **[docs/SYSTEM_ARCHITECTURE.md](docs/SYSTEM_ARCHITECTURE.md)**.
+> (Phần *System Architecture* + *Setup* bên dưới mô tả pipeline **bản cũ (all-in-one)** — đã được pivot 2026-06 thay thế.)
+
 ## Introduction
 This project is an AI-powered waiter designed to take restaurant orders in Vietnamese. It allows customers to order food and ask menu questions using natural voice commands.
 
