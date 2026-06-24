@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+"""
+probe_stt_live.py — real-time microphone -> VAD -> STT, prints Vietnamese text live.
+
+Unlike probe_stt.py (which transcribes a single wav file), this opens the
+microphone and runs the REAL perception threads — SileroVAD + PhoWhisperSTT, the
+same ones used by the production pipeline in ai_waiter_core/main.py — but WITHOUT
+the agent / LLM / TTS. Use it to validate "speak -> see text" end to end.
+
+Speak into the mic; each finished utterance prints as:
+
+    [HEARD @ 12.3s | 1.8s audio]: cho tôi một ly cà phê sữa
+
+Flow: VAD opens the mic, detects where each utterance starts/stops, hands the
+audio to STT via speech_queue; STT transcribes and puts text on text_queue, which
+this loop drains and prints.
+
+IMPORTANT: run on a NATIVE machine with a working local mic — NOT over SSH (SSH
+does not forward mic audio; you would capture the remote machine's empty jack).
+For the Jetson (SSH-only), record locally and use probe_stt.py --audio instead.
+
+Run:
+    uv run python scripts/probe_stt_live.py     # Ctrl-C to stop
+
+Tuning knobs (same as the VAD probe), e.g.:
+    VAD_THRESHOLD=0.4 MIC_DEVICE_INDEX=4 uv run python scripts/probe_stt_live.py
+"""
+import os
+import sys
+import signal
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+SRC_DIR = os.path.join(PROJECT_ROOT, "ai_waiter_core")
+if os.path.isdir(SRC_DIR):
+    sys.path.insert(0, SRC_DIR)
+
+from dotenv import load_dotenv
+load_dotenv()
+
+from ai_waiter_core.perception import SileroVAD, PhoWhisperSTT
+from ai_waiter_core.perception.queues import get_transcript, shutdown_all
+from ai_waiter_core.config import settings
+
+
+def main():
+    print(f"[cfg] DEVICE={settings.DEVICE}  (STT compute: "
+          f"{'float16' if settings.DEVICE == 'cuda' else 'int8'})")
+
+    vad = SileroVAD()
+    stt = PhoWhisperSTT()
+
+    def shutdown(sig, frame):
+        print("\nStopping...")
+        shutdown_all()
+        vad.stop()
+        stt.stop()
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, shutdown)
+    signal.signal(signal.SIGTERM, shutdown)
+
+    # Each thread loads its own model on start: VAD opens the mic + segments
+    # speech; STT consumes utterances and emits transcripts.
+    vad.start()
+    stt.start()
+
+    print("=" * 56)
+    print(" Live STT ready — speak Vietnamese into the mic")
+    print(" (first run is slower: models load on the first words)")
+    print(" Ctrl-C to stop")
+    print("=" * 56)
+
+    while True:
+        t = get_transcript(timeout=0.5)
+        if t is None or not t.text.strip():
+            continue
+        dur = f" | {t.audio_duration_s:.1f}s audio" if t.audio_duration_s else ""
+        print(f"[HEARD @ {t.timestamp:.1f}s{dur}]: {t.text}")
+
+
+if __name__ == "__main__":
+    main()

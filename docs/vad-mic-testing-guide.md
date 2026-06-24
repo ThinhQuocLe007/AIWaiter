@@ -1,12 +1,22 @@
-# VAD Microphone Testing Guide
+# Voice Perception Testing Guide (VAD + STT)
 
-How to run and understand the Silero VAD (Voice Activity Detection) stage of the
-voice perception pipeline. Written for testing on a **native Linux laptop**
-(e.g. Ubuntu) with a working built-in microphone.
+How to run and understand the first two stages of the voice perception pipeline
+on a **native Linux laptop** (e.g. Ubuntu) with a working built-in microphone:
+
+```
+Mic → VAD (Silero, segments speech) → STT (Whisper, speech → text) → Brain
+        §1–§6                          §8 (this guide)
+```
+
+- **VAD** = *Voice Activity Detection*: finds where an utterance starts and stops,
+  then hands the audio to STT. It does **not** transcribe. (§1–§6)
+- **STT** = *Speech-To-Text*: turns that audio into Vietnamese text. (§8)
 
 Relevant code:
 - `ai_waiter_core/ai_waiter_core/perception/vad_silero.py` — the VAD thread.
-- `scripts/probe_vad.py` — standalone probe (RAM + live mic) used here.
+- `ai_waiter_core/ai_waiter_core/perception/stt_phowhisper.py` — the STT thread.
+- `scripts/probe_vad.py` — standalone VAD probe (RAM + live mic).
+- `scripts/probe_stt.py` — standalone STT probe (RAM + wav file → text).
 
 ---
 
@@ -36,7 +46,7 @@ Quick check that a capture device exists and is not silent:
 
 ```bash
 arecord -l                              # should list a capture card
-arecord -d 3 -f S16_LE -r 16000 test.wav   # speak for 3s
+arecord -d 20 -f S16_LE -r 16000 test.wav  # speak for 20s
 aplay test.wav                          # play it back — you should hear yourself
 ```
 
@@ -192,3 +202,192 @@ On the Jetson the microphone (typically USB) is wired directly to the device, so
 it is local to the process — the SSH limitation above does not apply. If that
 mic supports 16 kHz mono, `_open_mic()` opens it directly and the resampling path
 never runs. `scipy` is only imported/used when a non-16 kHz rate is selected.
+
+---
+
+## 8. Testing the STT (speech-to-text) stage
+
+VAD only **segments** audio. The next stage, **STT**, turns each utterance into
+Vietnamese text. Test it with `scripts/probe_stt.py`, which reuses the real
+`PhoWhisperSTT._load_model()` + `_transcribe()` so the measured RAM and output
+match the runtime exactly.
+
+### 8.1 What model actually runs (read this first)
+
+Despite the file/class name `stt_phowhisper.py` / `PhoWhisperSTT`, the code
+currently loads **OpenAI Whisper `small`** via `faster-whisper`, **not** an actual
+PhoWhisper model:
+
+```python
+self._model = WhisperModel("small", device=device, compute_type=compute)
+```
+
+| Aspect | Value |
+|---|---|
+| Engine | `faster-whisper` (runs on ctranslate2) |
+| Model | Whisper **`small`** (~460 MB, multilingual) |
+| Language | forced `language="vi"` |
+| Device | `settings.DEVICE` (from `.env`: `DEVICE=cuda`) |
+| Compute type | `cuda` → `float16`; `cpu` → `int8` |
+
+So if Vietnamese transcription quality is mediocre (esp. dish names / jargon),
+that is expected for vanilla Whisper `small` — it is not a mic or file problem.
+Swapping in a real PhoWhisper model is a separate change.
+
+### 8.2 Prerequisites
+
+Same env as VAD (`uv sync`). STT downloads the Whisper `small` weights from
+Hugging Face on first run and caches them (`~/.cache/huggingface`), so the **first
+run needs internet** and is slower; later runs are offline.
+
+Confirm which device it will use:
+
+```bash
+# Should print: CUDA available: True  (if you have an NVIDIA GPU + matching torch)
+uv run python -c "import torch; print('CUDA available:', torch.cuda.is_available())"
+```
+
+`DEVICE=cuda` in `.env` + CUDA available → STT runs on the **GPU (float16)**.
+Set `DEVICE=cpu` in `.env` to force CPU (`int8`) — slower but no GPU needed.
+
+### 8.3 Synthetic run (no mic) — sanity check + RAM
+
+```bash
+uv run python scripts/probe_stt.py
+```
+
+Feeds 5 s of random noise through the real model. Expected: it **loads the model**
+and prints timing + RAM, with an **empty** transcript (noise has no speech):
+
+```
+[cfg] DEVICE=cuda  -> compute=float16
+[time] load model: 4.2s
+[after model load ] RSS  ~900 MB | GPU alloc ... MB
+[time] transcribe: 0.6s
+[stt out] ''            <- empty is CORRECT here: pure noise, nothing to transcribe
+```
+
+Use this only to confirm the model loads and to read its memory footprint. To
+actually see text, you need real speech (§8.4).
+
+### 8.4 Real speech run — record a wav, get text
+
+```bash
+# 1. Record 20 seconds of Vietnamese speech, 16 kHz mono (the format STT expects)
+arecord -d 20 -f S16_LE -r 16000 test.wav
+
+# 2. (optional) play it back to confirm the mic captured you, not silence
+aplay test.wav
+
+# 3. Transcribe it
+uv run python scripts/probe_stt.py --audio test.wav
+```
+
+The last line is the model's transcript:
+
+```
+[stt out] 'cho tôi một ly cà phê sữa và một phần cơm gà'
+```
+
+That string is what STT heard from your voice. Compare it to what you said to
+judge the model's accuracy.
+
+### 8.5 Notes & gotchas
+
+| Point | Detail |
+|---|---|
+| **File must be 16 kHz** | `arecord -r 16000` already does this. If you record elsewhere at 44.1/48 kHz, the probe prints `[warn] ... result may be wrong` and the text will be garbled. Re-record at 16 kHz. |
+| **Mono** | `-f S16_LE` mono is expected; if the wav is stereo the probe takes the first channel automatically. |
+| **First run is slow** | Downloads Whisper `small` weights once, then caches. Time it on the *second* run for the real load speed. |
+| **Empty output on real speech** | Usually the wav is actually silent (wrong input / muted / SSH'd into the wrong machine) — verify with `aplay` in step 2. STT also runs its own internal VAD filter, so very quiet audio yields `''`. |
+| **GPU memory** | On the dev laptop the GPU has room. On the **Jetson Orin 8 GB unified memory**, STT shares GPU RAM with the Ollama LLM + embedding model — watch the `GPU alloc` line and `tegrastats`/`jtop` to confirm it fits the budget. |
+
+### 8.6 Note for Jetson
+
+`faster-whisper` uses ctranslate2, which manages CUDA memory **outside** torch, so
+`torch.cuda.memory_allocated()` (the `GPU alloc` line) may read near 0 even on CUDA.
+On the Jetson, trust **`tegrastats`** / **`jtop`** (unified RAM) for the real
+figure, not the probe's GPU number. Run one of those in a second terminal while
+the probe transcribes.
+
+---
+
+## 9. Real-time mic → text (Ubuntu laptop)
+
+`probe_stt.py` (§8) only does **file → text**. To test the live experience —
+**speak and watch text appear** — use `scripts/probe_stt_live.py`. It runs the
+real `SileroVAD` + `PhoWhisperSTT` threads together (the same wiring as
+`ai_waiter_core/main.py`) but **without** the agent / LLM / TTS, so it isolates
+just the *mic → VAD → STT* path. No Ollama needed.
+
+```bash
+# NATIVE machine with a working local mic — NOT over SSH (see §1).
+uv run python scripts/probe_stt_live.py
+```
+
+Speak Vietnamese; each finished utterance prints as:
+
+```
+[cfg] DEVICE=cuda  (STT compute: float16)
+====================================================
+ Live STT ready — speak Vietnamese into the mic
+ Ctrl-C to stop
+====================================================
+[HEARD @  3.4s | 1.6s audio]: cho tôi một ly cà phê sữa
+[HEARD @  9.1s | 2.0s audio]: thêm một phần cơm gà nữa
+```
+
+How it flows: **VAD opens the mic and detects where each sentence starts/stops**
+→ hands the audio to **STT** → STT transcribes → the line prints. There is a short
+pause (`SILENCE_TIMEOUT = 1.5s`, see §5) after you stop talking before the text
+appears — that is the VAD deciding the utterance ended, not a hang.
+
+Same tuning knobs as the VAD probe (§4):
+
+```bash
+VAD_THRESHOLD=0.4 MIC_DEVICE_INDEX=4 uv run python scripts/probe_stt_live.py
+```
+
+If nothing ever prints: first confirm the mic with the VAD probe
+(`uv run python scripts/probe_vad.py --mic` — does it show `speech=True` when you
+talk?). If VAD sees speech but no text appears, the problem is STT, not the mic.
+
+---
+
+## 10. Jetson voice testing (SSH workflow: record → scp → transcribe)
+
+The Jetson is reached over SSH, and **SSH does not forward microphone audio**
+(§1). So the live mic flow (§9) cannot be driven from your laptop into the Jetson.
+Instead, **record on the laptop, copy the file over, transcribe on the Jetson** —
+this still validates the Jetson's STT model + memory footprint on the real target.
+
+```bash
+# 1. ON THE LAPTOP — record 20s of Vietnamese, 16 kHz mono
+arecord -d 20 -f S16_LE -r 16000 test.wav
+aplay test.wav                          # confirm it captured you, not silence
+
+# 2. COPY to the Jetson (adjust user@host and path)
+scp test.wav jetson@<jetson-ip>:~/AI_Waiver/
+
+# 3. ON THE JETSON (over SSH) — transcribe + measure RAM
+ssh jetson@<jetson-ip>
+cd ~/AI_Waiver
+uv run python scripts/probe_stt.py --audio test.wav
+```
+
+Read the `[stt out]` line for accuracy, and watch unified RAM on the Jetson with
+`tegrastats` (or `jtop`) in a second SSH session while step 3 runs.
+
+### What this covers vs. what it does NOT
+
+| Validated by this flow | NOT validated (needs a mic wired to the Jetson) |
+|---|---|
+| STT model loads on the Jetson (arch/driver/CUDA OK) | Live mic capture on the Jetson itself |
+| Transcription accuracy on real Vietnamese audio | VAD segmentation timing from a live stream |
+| **Unified-memory footprint** on the 8 GB target | End-to-end latency *speak → text* on device |
+
+To close those gaps later: plug a **USB mic directly into the Jetson** (then it is
+local to the process — the SSH limitation no longer applies, §7) and run
+`scripts/probe_stt_live.py` (§9) **in the SSH shell**. The audio is captured by
+the Jetson's own USB mic, not forwarded over SSH, so it works. That is the only
+way to measure true on-device *speak → text* latency before wiring TTS + agent.

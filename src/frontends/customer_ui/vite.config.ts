@@ -42,4 +42,25 @@ export default defineConfig({
       },
     },
   },
+  // `vite preview` (lệnh `make serve`, phục vụ bản build production trong dist/)
+  // KHÔNG dùng `server.proxy` ở trên — đó chỉ áp cho dev server. Thiếu khối này
+  // thì bản production gọi /api, /ws sẽ 404 (không tới được FastAPI:8000). Mirror
+  // y hệt proxy dev để test production cục bộ vẫn cùng origin, không dính CORS.
+  // (Deploy thật: cho FastAPI serve thẳng dist/ cùng origin thì khỏi cần proxy.)
+  preview: {
+    host: true,
+    port: 4173,
+    strictPort: true,
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+      '/ws': {
+        target: 'ws://127.0.0.1:8000',
+        ws: true,
+      },
+    },
+  },
 })
