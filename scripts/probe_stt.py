@@ -72,6 +72,25 @@ def load_audio_bytes(path: str | None, seconds: float) -> bytes:
     return noise.tobytes()
 
 
+def prefetch_model(model_size: str = "small"):
+    """Download the faster-whisper repo *with a visible progress bar* before loading.
+
+    WhisperModel(...) downloads silently on first run, so on a slow link (e.g. Jetson)
+    you can't tell whether it's stuck or how far along it is. snapshot_download shows a
+    per-file tqdm bar; once cached this returns instantly and the bars don't reappear.
+    """
+    from faster_whisper.utils import _MODELS
+    from huggingface_hub import snapshot_download
+    from huggingface_hub.utils import enable_progress_bars
+
+    enable_progress_bars()  # in case HF_HUB_DISABLE_PROGRESS_BARS is set somewhere
+    repo_id = _MODELS.get(model_size, model_size)
+    print(f"[download] fetching {repo_id} (shows progress; cached after first run)…", flush=True)
+    t0 = time.time()
+    path = snapshot_download(repo_id)
+    print(f"[download] ready in {time.time()-t0:.1f}s -> {path}", flush=True)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--audio", help="16kHz mono wav file (default: synthetic audio)")
@@ -84,6 +103,8 @@ def main():
     from ai_waiter_core.perception.stt_phowhisper import PhoWhisperSTT
     from ai_waiter_core.config import settings
     print(f"[cfg] DEVICE={settings.DEVICE}  -> compute={'float16' if settings.DEVICE=='cuda' else 'int8'}")
+
+    prefetch_model("small")
 
     stt = PhoWhisperSTT()
     t0 = time.time()
