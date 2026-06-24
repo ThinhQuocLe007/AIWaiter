@@ -22,21 +22,40 @@ dependencies = [
     "sentence-transformers>=5.6.0",
     "tqdm>=4.68.3",
     "underthesea>=9.5.0",
-    # torch/torchvision phải khai báo trực tiếp thì source theo platform bên dưới mới có hiệu lực
-    # (nếu để transitive qua sentence-transformers, uv bỏ qua index Jetson).
-    # Version tách theo máy:
-    #  - Jetson (aarch64): 2.11.0 cu126 từ index jetson-ai-lab (driver CUDA 12.6).
-    #  - Dev x86 (RTX 5060 Ti / Blackwell sm_120): cần build cu13 → torch >=2.12 từ PyPI.
+    # torch/torchvision/torchaudio phải khai báo trực tiếp thì source theo platform bên dưới
+    # mới có hiệu lực (nếu để transitive qua sentence-transformers, uv bỏ qua index riêng).
+    #
+    # Một fleet gồm 3 lớp máy, KHÔNG dùng chung một version torch được vì:
+    #  - Jetson (aarch64): 2.11.0 cu126 từ index jetson-ai-lab (JetPack 6.2).  -> nằm ở base, auto theo marker.
+    #  - x86 Blackwell (sm_120), driver >=580: bắt buộc CUDA 13 -> torch >=2.12 (PyPI).  -> extra "cu13".
+    #  - x86 GPU đời cũ + driver CUDA 12 (vd RTX 3050 + driver 535): torch cu121.        -> extra "cu12".
+    #
+    # Cả hai máy x86 đều là (x86_64, linux) nên marker không tách được -> tách bằng extra
+    # tường minh: máy x86 PHẢI chạy `uv sync --extra cu12` hoặc `--extra cu13`.
     "torch==2.11.0 ; platform_machine == 'aarch64'",
     "torchvision==0.26.0 ; platform_machine == 'aarch64'",
-    "torch>=2.12 ; platform_machine == 'x86_64'",
-    "torchvision>=0.27 ; platform_machine == 'x86_64'",
+    # torchaudio không có trên index Jetson (max 2.10.0) -> lấy từ PyPI như trước.
+    "torchaudio>=2.11.0 ; platform_machine == 'aarch64'",
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
     "faster-whisper>=1.2.1",
-    "torchaudio>=2.11.0",
     "pyaudio>=0.2.14",
     "scipy>=1.15",  # polyphase mic resampling (native rate -> 16k) in vad_silero
+]
+
+[project.optional-dependencies]
+# x86 Blackwell (CUDA 13, driver >=580). Lấy từ PyPI (default index).
+cu13 = [
+    "torch>=2.12 ; platform_machine == 'x86_64'",
+    "torchvision>=0.27 ; platform_machine == 'x86_64'",
+    "torchaudio>=2.11 ; platform_machine == 'x86_64'",
+]
+# x86 GPU đời cũ / driver CUDA 12 (vd RTX 3050 + driver 535). Wheel cu121 chạy được trên
+# driver >=525 nhờ CUDA 12 minor-version forward-compat; kèm sẵn cublas/cudnn cu12 cho ctranslate2.
+cu12 = [
+    "torch==2.5.1 ; platform_machine == 'x86_64'",
+    "torchvision==0.20.1 ; platform_machine == 'x86_64'",
+    "torchaudio==2.5.1 ; platform_machine == 'x86_64'",
 ]
 
 # Jetson (aarch64) lấy torch/torchvision GPU từ index NVIDIA jetson-ai-lab (CUDA 12.6),
@@ -47,12 +66,29 @@ environments = [
     "sys_platform == 'linux' and platform_machine == 'x86_64'",
     "sys_platform == 'linux' and platform_machine == 'aarch64'",
 ]
+# cu12 và cu13 loại trừ nhau (cùng là x86) -> uv resolve thành 2 nhánh riêng.
+conflicts = [[{ extra = "cu12" }, { extra = "cu13" }]]
 
 [tool.uv.sources]
-torch = [{ index = "jetson-cu126", marker = "platform_machine == 'aarch64'" }]
-torchvision = [{ index = "jetson-cu126", marker = "platform_machine == 'aarch64'" }]
+# aarch64 -> index Jetson; extra cu12 -> index PyTorch cu121; cu13 dùng PyPI mặc định.
+torch = [
+    { index = "jetson-cu126", marker = "platform_machine == 'aarch64'" },
+    { index = "pytorch-cu121", extra = "cu12" },
+]
+torchvision = [
+    { index = "jetson-cu126", marker = "platform_machine == 'aarch64'" },
+    { index = "pytorch-cu121", extra = "cu12" },
+]
+torchaudio = [
+    { index = "pytorch-cu121", extra = "cu12" },
+]
 
 [[tool.uv.index]]
 name = "jetson-cu126"
 url = "https://pypi.jetson-ai-lab.io/jp6/cu126/+simple/"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu121"
+url = "https://download.pytorch.org/whl/cu121"
 explicit = true

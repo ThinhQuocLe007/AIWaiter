@@ -42,6 +42,14 @@ sudo apt update && sudo apt install -y portaudio19-dev
 uv sync
 ```
 
+> **x86 (laptop / desktop):** plain `uv sync` / `uv run` is **not** enough — you
+> must pick a CUDA profile, otherwise torch falls back to the CUDA 13 build and
+> the GPU/STT break. Use `--extra cu12` (older driver / CUDA 12, e.g. RTX 3050 +
+> driver 535) or `--extra cu13` (Blackwell + driver ≥580) on **every** command:
+> `uv sync --extra cu12`, then `uv run --extra cu12 python scripts/...`. See §11
+> for the full matrix and the `libcublas.so.12 is not found` fix. Jetson
+> (aarch64) needs no extra — plain `uv sync`.
+
 Quick check that a capture device exists and is not silent:
 
 ```bash
@@ -391,3 +399,109 @@ local to the process — the SSH limitation no longer applies, §7) and run
 `scripts/probe_stt_live.py` (§9) **in the SSH shell**. The audio is captured by
 the Jetson's own USB mic, not forwarded over SSH, so it works. That is the only
 way to measure true on-device *speak → text* latency before wiring TTS + agent.
+
+---
+
+## 11. GPU / torch setup per machine (CUDA 12 vs 13)
+
+### The symptom
+
+```
+STT error: Library libcublas.so.12 is not found or cannot be loaded
+```
+…and/or torch silently runs on CPU:
+```
+UserWarning: CUDA initialization: The NVIDIA driver on your system is too old
+torch 2.12.1+cu130 | built for CUDA 13.0 | cuda available: False
+```
+
+### Why it happens
+
+The fleet spans **three machine classes that cannot share one torch build**:
+
+| Machine | arch | GPU / driver | CUDA | torch build |
+|---|---|---|---|---|
+| Jetson Orin (JetPack 6.2) | aarch64 | Tegra (JetPack) | 12.6 | `2.11.0` cu126 (jetson-ai-lab index) |
+| Desktop LLM host (Blackwell sm_120) | x86_64 | driver ≥580 | **13.0** | `≥2.12` cu130 (PyPI) |
+| Laptop / older GPU (e.g. RTX 3050) | x86_64 | driver 535 → CUDA 12.2 | **12.x** | `2.5.1` cu121 |
+
+Two gotchas combine into the error:
+
+1. **`torch ≥ 2.12` has _no_ CUDA 12 build** — from 2.6 onward PyTorch ships only
+   cu124/126/128/130. So a CUDA-12 machine **cannot** use torch ≥2.12 at all.
+2. **`platform_machine` can't tell the two x86 boxes apart** — Blackwell and the
+   laptop are both `x86_64 linux`, yet need cu130 vs cu121. A marker alone can't
+   branch on the GPU/driver.
+
+So when the laptop resolved the default x86 dependency (`torch ≥2.12`), it pulled
+`torch 2.12.1+cu130`. Driver 535 (CUDA 12.2) is too old for CUDA 13 → torch
+disables the GPU, and `ctranslate2` (faster-whisper's engine, built for **CUDA
+12**) can't find `libcublas.so.12`. STT dies.
+
+> **Driver number ≠ CUDA number.** `nvidia-smi`'s "CUDA Version: 12.2" is the
+> _highest_ CUDA the **driver** supports, not what's installed in the venv. And you
+> do **not** need a specific driver version: any CUDA **12.x** torch wheel runs on
+> any driver ≥525 thanks to CUDA-12 minor-version forward-compat. Keep driver 535
+> on the laptop — only **CUDA 13** (Blackwell) needs a new driver (≥580).
+
+### The fix: explicit install profiles (uv extras)
+
+[`pyproject.toml`](../pyproject.toml) defines two conflicting extras so each x86
+machine opts into its own CUDA build; aarch64 (Jetson) stays automatic via marker:
+
+```toml
+[project.optional-dependencies]
+cu13 = [ "torch>=2.12 ; platform_machine=='x86_64'", ... ]   # Blackwell, CUDA 13 (PyPI)
+cu12 = [ "torch==2.5.1 ; platform_machine=='x86_64'", ... ]  # CUDA 12 (download.pytorch.org/whl/cu121)
+
+[tool.uv]
+conflicts = [[{ extra = "cu12" }, { extra = "cu13" }]]
+```
+
+Install per machine:
+
+```bash
+# Laptop / older GPU + CUDA 12 driver (this is the RTX 3050 + driver 535 fix):
+uv sync --extra cu12
+
+# Desktop Blackwell host:
+uv sync --extra cu13
+
+# Jetson (aarch64) — no extra needed:
+uv sync
+```
+
+### ⚠️ `uv run` re-syncs — always pass the extra on x86
+
+`uv run` auto-syncs to the project default **before** running. On x86 a bare
+`uv run python ...` will _silently reinstall the cu13 build_ and undo your
+`--extra cu12`. So pass the extra on **every** invocation:
+
+```bash
+uv run --extra cu12 python scripts/probe_stt_live.py      # laptop
+uv run --extra cu13 python scripts/probe_stt_live.py      # Blackwell
+```
+
+To stop the churn on a fixed deployment machine, sync once then disable auto-sync:
+
+```bash
+uv sync --extra cu12
+export UV_NO_SYNC=1            # add to ~/.bashrc; `uv run` now uses the cu12 env as-is
+uv run python scripts/probe_stt_live.py
+```
+
+### Verify the GPU is actually used
+
+```bash
+uv run --extra cu12 python -c "import torch; print(torch.__version__, torch.cuda.is_available(), torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'NO GPU')"
+# expect: 2.5.1+cu121 True NVIDIA GeForce RTX 3050 Ti Laptop GPU
+```
+
+On the laptop the cu12 profile also pulls `nvidia-cublas-cu12` + `nvidia-cudnn-cu12`
+(cuDNN 9), which is exactly what `ctranslate2` needs — so `libcublas.so.12` is
+resolved and STT runs on `float16` GPU.
+
+> **Note for the Blackwell (cu13) host:** `ctranslate2` 4.x is still CUDA-12 only,
+> so faster-whisper there will _also_ look for `libcublas.so.12` despite torch
+> being cu13. Either keep STT on the Jetson/edge (where the mic lives), or add
+> `nvidia-cublas-cu12 nvidia-cudnn-cu12` to that box, or run STT on CPU there.
