@@ -38,7 +38,7 @@ dependencies = [
     "torchaudio>=2.11.0 ; platform_machine == 'aarch64'",
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
-    "faster-whisper>=1.2.1",
+    "faster-whisper>=1.2.1 ; platform_machine == 'x86_64'",
     "pyaudio>=0.2.14",
     "scipy>=1.15",  # polyphase mic resampling (native rate -> 16k) in vad_silero
 ]
