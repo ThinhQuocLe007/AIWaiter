@@ -1,10 +1,10 @@
 from typing import List
 from langchain_core.tools import tool
 from ai_waiter_core.schemas.order import OrderItem, ConfirmOrderResponse
-from ai_waiter_core.services.restaurant_db import RestaurantDB
+from ai_waiter_core.services.orchestrator_client import OrchestratorClient
 from ai_waiter_core.utils import MenuManager, trace_latency
 
-db = RestaurantDB()
+client = OrchestratorClient()
 menu_manager = MenuManager()
 
 
@@ -19,47 +19,27 @@ def confirm_order(table_id: str, items: List[OrderItem]) -> ConfirmOrderResponse
     items: The final list of items in the customer's cart.
     """
     try:
-        session = db.get_active_session(table_id)
-        if not session:
-            session_id = db.create_session(table_id)
-            if not session_id:
-                result = ConfirmOrderResponse(
-                    status="error",
-                    message="Lỗi tạo phiên phục vụ."
-                )
-                return (result.message, result)
-        else:
-            session_id = session["id"]
-
-        order_id = db.create_order(session_id)
-        if not order_id:
-            result = ConfirmOrderResponse(
-                status="error",
-                message="Lỗi tạo đơn hàng."
-            )
-            return (result.message, result)
-
-        item_dicts = []
-        for item in items:
-            unit_price = menu_manager.get_price(item.name)
-            item_dicts.append({
+        # Prices come from the menu (never trust the cart), then the backend persists the order
+        # under the table's active session and recomputes the total server-side.
+        item_payloads = [
+            {
                 "name": item.name,
-                "quantity": item.quantity,
-                "unit_price": unit_price,
-                "special_requests": item.special_requests
-            })
-
-        db.add_items_to_order(order_id, item_dicts)
-
+                "qty": item.quantity,
+                "price": menu_manager.get_price(item.name),
+                "note": item.special_requests,
+            }
+            for item in items
+        ]
+        order = client.create_order(table_id, item_payloads)
         result = ConfirmOrderResponse(
             status="success",
-            order_id=order_id,
-            message=f"Đã xác nhận đơn hàng #{order_id} cho bàn {table_id}."
+            order_id=order["id"],
+            message=f"Đã xác nhận đơn hàng #{order['id']} cho bàn {table_id}.",
         )
         return (result.message, result)
     except Exception as e:
         result = ConfirmOrderResponse(
             status="error",
-            message=f"Lỗi xử lý đơn hàng: {str(e)}"
+            message=f"Lỗi xử lý đơn hàng: {str(e)}",
         )
         return (result.message, result)

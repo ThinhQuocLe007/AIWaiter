@@ -10,7 +10,8 @@ from fastapi import APIRouter, HTTPException
 
 from .. import dispatcher
 from ..db import get_conn
-from ..schemas import SeatingCreate, TableOut, TableStatusUpdate
+from ..schemas import SeatingCreate, SessionOut, TableOut, TableStatusUpdate
+from ..sessions import create_session, get_active_session, session_total
 from ..ws import manager
 
 router = APIRouter(tags=["tables"])
@@ -52,12 +53,26 @@ async def create_seating(payload: SeatingCreate) -> TableOut:
             "WHERE id = ?",
             ("DANG_PHUC_VU", payload.party_size, payload.table_id),
         )
+        # Open the serving session here — this is the start of the party's visit. Orders and the
+        # gộp payment hang off it; the agent's thread_id (Phase 4) is this session's id.
+        create_session(conn, payload.table_id, payload.party_size)
         updated = _fetch_table(conn, payload.table_id)
     assert updated is not None
     await manager.broadcast("panel", {"type": "table.updated", "table": updated.model_dump()})
     # A seated party needs a robot to come take the order → enqueue a go_to_table task.
     await dispatcher.create_task("go_to_table", table_id=payload.table_id)
     return updated
+
+
+@router.get("/tables/{table_id}/session", response_model=SessionOut)
+def get_table_session(table_id: int) -> SessionOut:
+    """The table's ACTIVE session + its gộp total. The agent reads this to learn its session_id
+    (→ LangGraph thread_id) and the panel/tablet to show the running bill. 404 if none open."""
+    with get_conn() as conn:
+        sess = get_active_session(conn, table_id)
+        if sess is None:
+            raise HTTPException(404, f"No active session for table {table_id}")
+        return SessionOut(**dict(sess), total=session_total(conn, sess["id"]))
 
 
 @router.patch("/tables/{table_id}", response_model=TableOut)

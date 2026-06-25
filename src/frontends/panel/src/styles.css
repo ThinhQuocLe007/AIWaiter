@@ -686,3 +686,125 @@ body {
 .advance:active {
   transform: scale(0.96);
 }
+
+/* ---- Minimap — FPS-style HUD, pinned to a corner (map-frame floor plan) ---- */
+.minimap {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 50;
+  width: 190px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  box-shadow: var(--shadow-md);
+  padding: 0.5rem 0.55rem 0.55rem;
+}
+
+.minimap-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.35rem;
+}
+.minimap-sub {
+  font-weight: 500;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+.minimap-empty {
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-align: center;
+  padding: 1.5rem 0;
+}
+
+/* viewBox is in image pixels (≈201×160), so sizes/strokes below are in those pixel units. */
+.minimap-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 0.4rem;
+  background: var(--surface-2);
+}
+
+.minimap-svg image {
+  image-rendering: pixelated; /* crisp occupancy-grid look, like a game map */
+}
+
+.minimap-svg text {
+  text-anchor: middle;
+  font-family: var(--font-body);
+  dominant-baseline: middle;
+}
+
+/* Dock (kitchen counter / spawn) */
+.dock rect {
+  fill: rgba(222, 210, 186, 0.9);
+  stroke: var(--accent-dark);
+  stroke-width: 0.8;
+}
+.dock-label {
+  fill: var(--accent-dark);
+  font-size: 5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* Tables — fill reflects serving state */
+.table rect {
+  stroke-width: 1;
+}
+.table.free rect {
+  fill: rgba(255, 255, 255, 0.7);
+  stroke: var(--muted);
+}
+.table.occupied rect {
+  fill: rgba(92, 122, 99, 0.6);
+  stroke: var(--done);
+}
+.table.paid rect {
+  fill: rgba(168, 133, 62, 0.6);
+  stroke: var(--accent);
+}
+.table-label {
+  fill: var(--text);
+  font-size: 7px;
+  font-weight: 700;
+}
+
+/* Robots — glide to new pose; dot colour follows status */
+.robot {
+  transition: transform 0.25s linear;
+}
+.robot-dot {
+  stroke: #fff;
+  stroke-width: 1.2;
+  fill: var(--done);
+}
+.robot-halo {
+  fill: var(--done);
+  opacity: 0.14;
+}
+.robot.busy .robot-dot {
+  fill: var(--cooking);
+}
+.robot.busy .robot-halo {
+  fill: var(--cooking);
+  animation: haloPulse 1.2s ease-in-out infinite;
+}
+.robot.offline .robot-dot {
+  fill: var(--muted);
+}
+.robot.offline .robot-halo {
+  fill: var(--muted);
+}
+@keyframes haloPulse {
+  0%, 100% { opacity: 0.12; }
+  50% { opacity: 0.32; }
+}

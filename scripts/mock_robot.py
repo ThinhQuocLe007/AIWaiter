@@ -6,7 +6,9 @@ it walks the task lifecycle (accept → drive → arrive → finish) on a timer 
 
 Run (backend must be up on :8000):
     uv run python scripts/mock_robot.py --id robo-1
-    uv run python scripts/mock_robot.py --id robo-2 --x 2.0 --y 0.5   # second robot, elsewhere
+
+The dispatcher is written to handle a fleet of N robots, but the demo seeds a single robot
+(robo-1). Pass a different --id only if you have added more robots to the seed.
 
 Kill it mid-task (Ctrl-C) to see the dispatcher requeue its task to another robot.
 """
@@ -15,12 +17,26 @@ import argparse
 import asyncio
 import contextlib
 import json
+import math
 
 import websockets
 
-HEARTBEAT_EVERY = 3.0  # seconds
-DRIVE_SECONDS = 4.0  # fake travel time to a table
+HEARTBEAT_EVERY = 3.0  # seconds, while idle
+DRIVE_SPEED = 0.7  # m/s fake travel speed (a table is ~5m away → a few seconds)
+MOVE_STEP = 0.2  # seconds between pose updates while driving → smooth dot on the panel minimap
 ACTION_SECONDS = 3.0  # fake time doing the action at the table
+
+# Approach waypoints per table and the dock — in the saved SLAM map frame, mirroring the server's
+# dispatcher (src/backend/app/dispatcher.py), which copies them from the sim's food_delivery.py.
+TABLE_POS = {
+    1: (7.99985, 1.36319),
+    2: (8.05419, 0.33537),
+    3: (7.97830, -0.64879),
+    4: (7.92656, -3.28752),
+    5: (7.98864, -4.28860),
+    6: (8.00802, -5.27848),
+}
+DOCK_POS = (0.0, 0.0)
 
 
 async def heartbeat_loop(ws, state: dict, hang_after: float | None) -> None:
@@ -43,14 +59,38 @@ async def heartbeat_loop(ws, state: dict, hang_after: float | None) -> None:
         await asyncio.sleep(HEARTBEAT_EVERY)
 
 
+async def drive_to(ws, state: dict, target: tuple[float, float]) -> bool:
+    """Glide from the current pose to `target`, streaming frequent heartbeats so the panel
+    minimap animates the dot. Returns False if the robot froze (--hang) mid-drive."""
+    sx, sy = state["x"], state["y"]
+    tx, ty = target
+    dist = math.hypot(tx - sx, ty - sy)
+    duration = max(MOVE_STEP, dist / DRIVE_SPEED)
+    steps = max(1, round(duration / MOVE_STEP))
+    for i in range(1, steps + 1):
+        if state.get("hung"):
+            return False
+        f = i / steps  # linear interpolation 0→1
+        state["x"], state["y"] = sx + (tx - sx) * f, sy + (ty - sy) * f
+        state["battery"] = max(0.0, state["battery"] - 0.2)
+        await ws.send(
+            json.dumps(
+                {"type": "heartbeat", "battery": state["battery"], "x": state["x"], "y": state["y"]}
+            )
+        )
+        await asyncio.sleep(MOVE_STEP)
+    return True
+
+
 async def run_task(ws, task: dict, state: dict) -> None:
-    """Walk one assigned task: accept → drive → arrive → act → done."""
+    """Walk one assigned task: accept → drive to table → arrive → act → done → drive back to dock."""
     task_id = task["task_id"]
-    print(f"[{state['id']}] task {task_id} ({task['kind']}, table {task['table_id']}) → accept")
+    table_id = task["table_id"]
+    target = TABLE_POS.get(table_id, DOCK_POS)
+    print(f"[{state['id']}] task {task_id} ({task['kind']}, table {table_id}) → accept")
     await ws.send(json.dumps({"type": "task_accepted", "task_id": task_id}))
 
-    await asyncio.sleep(DRIVE_SECONDS)
-    if state.get("hung"):  # froze while driving — never report arrival
+    if not await drive_to(ws, state, target):  # froze while driving — never report arrival
         print(f"[{state['id']}] task {task_id} frozen mid-drive, not reporting")
         return
     print(f"[{state['id']}] task {task_id} → arrived")
@@ -61,6 +101,9 @@ async def run_task(ws, task: dict, state: dict) -> None:
         return
     print(f"[{state['id']}] task {task_id} → done")
     await ws.send(json.dumps({"type": "task_done", "task_id": task_id}))
+
+    # Head back to the dock so the next task starts from a realistic spot (and the dot returns home).
+    await drive_to(ws, state, DOCK_POS)
 
 
 async def main(args) -> None:
@@ -104,8 +147,8 @@ if __name__ == "__main__":
     p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--port", type=int, default=8000)
     p.add_argument("--battery", type=float, default=90.0)
-    p.add_argument("--x", type=float, default=-1.95, help="start x (default: dock)")
-    p.add_argument("--y", type=float, default=-7.01, help="start y (default: dock)")
+    p.add_argument("--x", type=float, default=0.0, help="start x (default: dock)")
+    p.add_argument("--y", type=float, default=0.0, help="start y (default: dock)")
     p.add_argument(
         "--hang-after",
         type=float,

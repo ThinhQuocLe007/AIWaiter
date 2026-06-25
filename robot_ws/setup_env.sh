@@ -1,14 +1,16 @@
 #!/bin/bash
 # setup_env.sh — Source ROS2 Humble + build/source colcon by PROFILE.
 #
-#   source setup_env.sh sim    # PC demo:    common + sim   (gazebo/ignition)
-#   source setup_env.sh real   # Jetson:     common + real  (real robot, light)
+#   source setup_env.sh sim    # PC demo:    sim    (gazebo/ignition)
+#   source setup_env.sh real   # Jetson:     real   (real robot, light)
 #   source setup_env.sh        # default = sim
 #
-# Why profiles: one workspace, but we do NOT build everything.
-#   - sim/  (worlds, ignition_bringup, food_delivery) is only needed on the PC.
+# Why profiles: sim and real are DIFFERENT robots (only the logic is alike),
+# so the two trees are fully independent — there is no shared "common".
+#   - sim/  (TurtleBot4 description/msgs/nav/viz/node + worlds, ignition_bringup,
+#            food_delivery) is only needed on the PC.
 #   - real/ (ai_hw_bridge, drivers) is only needed on the Jetson Orin Nano.
-# => colcon --base-paths builds just the right folders, so the Jetson never
+# => colcon --base-paths builds just the right folder, so the Jetson never
 #    touches the heavy simulation packages.
 
 PROFILE="${1:-sim}"
@@ -16,8 +18,8 @@ WS_PATH=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 VENV_NAME=".venv"
 
 case "$PROFILE" in
-  sim)  BASE_PATHS=("$WS_PATH/src/common" "$WS_PATH/src/sim")  ;;
-  real) BASE_PATHS=("$WS_PATH/src/common" "$WS_PATH/src/real") ;;
+  sim)  BASE_PATHS=("$WS_PATH/src/sim")  ;;
+  real) BASE_PATHS=("$WS_PATH/src/real") ;;
   *) echo "[!] Invalid profile: '$PROFILE' (use: sim | real)"; return 1 ;;
 esac
 

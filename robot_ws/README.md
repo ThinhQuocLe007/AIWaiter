@@ -3,23 +3,22 @@
 Workspace `colcon` cho robot **TurtleBot 4** chạy task **giao đồ ăn (food_delivery)** trong
 nhà hàng — cả ở **mô phỏng (Ignition Gazebo)** lẫn **robot thật (Jetson)**.
 
-`src/` chia theo **nơi triển khai** (deployment target) chứ không theo loại code, để mỗi máy chỉ
-build đúng phần nó cần (Jetson không phải build đồ mô phỏng nặng):
+`sim/` và `real/` là **2 con robot KHÁC NHAU** (chỉ giống nhau về logic code), nên `src/` chia
+theo **nơi triển khai** (deployment target) và **mỗi bên hoàn toàn độc lập — không có thư mục
+`common/` dùng chung**. Mỗi máy chỉ build đúng phần nó cần (Jetson không phải build đồ mô phỏng nặng):
 
 ```
 src/
-├── common/   # build ở MỌI profile (dùng chung sim + robot thật)
-│   ├── turtlebot4_description/   # URDF + mesh robot
-│   ├── turtlebot4_msgs/          # message tùy biến
-│   ├── turtlebot4_navigation/    # SLAM / Nav2 / localization + maps + helper điều hướng
-│   ├── turtlebot4_viz/           # RViz
-│   └── turtlebot4_node/          # driver OLED/LED/nút (dùng cho robot thật)
-│
-├── sim/      # CHỈ build trên PC (mô phỏng)
+├── sim/      # CHỈ build trên PC (mô phỏng) — TurtleBot4 đầy đủ
+│   ├── turtlebot4_description/        # URDF + mesh robot
+│   ├── turtlebot4_msgs/               # message tùy biến
+│   ├── turtlebot4_navigation/         # SLAM / Nav2 / localization + maps + helper điều hướng
+│   ├── turtlebot4_viz/                # RViz
+│   ├── turtlebot4_node/               # driver OLED/LED/nút
 │   ├── turtlebot4_ignition_bringup/   # worlds, spawn robot, ROS↔IGN bridge
 │   └── turtlebot4_python_tutorials/   # node food_delivery (logic task)
 │
-└── real/     # CHỈ build trên Jetson (robot thật)
+└── real/     # CHỈ build trên Jetson (robot thật) — phần cứng riêng
 ```
 
 ---
@@ -59,7 +58,7 @@ source setup_env.sh sim
 ```
 
 Một lệnh này làm 4 việc: (1) source ROS 2 Humble → (2) tạo/active `.venv` →
-(3) `colcon build` các package `common/` + `sim/` → (4) source `install/`.
+(3) `colcon build` các package trong `sim/` → (4) source `install/`.
 **Không cần `colcon build` riêng.**
 
 > ⚠️ **Mỗi terminal mới** đều phải `source setup_env.sh sim` lại trước khi `ros2 run/launch`,
@@ -115,11 +114,11 @@ ros2 launch turtlebot4_viz view_robot.launch.py     # chỉ mở RViz xem robot
 
 | Package | Thư mục | Vai trò |
 |---|---|---|
-| `turtlebot4_description` | `common/` | URDF + mesh robot (model **standard**), `robot_state_publisher` |
-| `turtlebot4_msgs` | `common/` | Message tùy biến (vd `UserDisplay`) |
-| `turtlebot4_navigation` | `common/` | Launch **SLAM / Nav2 / localization** + config + **maps** + class `TurtleBot4Navigator` |
-| `turtlebot4_viz` | `common/` | RViz (`view_robot`) |
-| `turtlebot4_node` | `common/` | Node C++ giao diện vật lý (màn OLED / nút / LED) — **dùng cho robot thật** |
+| `turtlebot4_description` | `sim/` | URDF + mesh robot (model **standard**), `robot_state_publisher` |
+| `turtlebot4_msgs` | `sim/` | Message tùy biến (vd `UserDisplay`) |
+| `turtlebot4_navigation` | `sim/` | Launch **SLAM / Nav2 / localization** + config + **maps** + class `TurtleBot4Navigator` |
+| `turtlebot4_viz` | `sim/` | RViz (`view_robot`) |
+| `turtlebot4_node` | `sim/` | Node C++ giao diện vật lý (màn OLED / nút / LED) |
 | `turtlebot4_ignition_bringup` | `sim/` | Mô phỏng Ignition: **worlds**, spawn robot, ROS↔IGN bridge, gui config |
 | `turtlebot4_python_tutorials` | `sim/` | **Node `food_delivery`** — logic task chính |
 
@@ -178,7 +177,7 @@ Entry point khai báo ở [`src/sim/turtlebot4_python_tutorials/setup.py`](src/s
 
 ## 6. Chạy thực tế (Jetson)
 
-Trên robot thật (Jetson Orin Nano) dùng profile `real` — build `common/` + `real/`, **không**
+Trên robot thật (Jetson Orin Nano) dùng profile `real` — **chỉ** build `real/`, **không**
 build đồ mô phỏng:
 
 ```bash
@@ -186,8 +185,9 @@ cd robot_ws
 source setup_env.sh real
 ```
 
-Profile `real` build các driver phần cứng trong `src/real/` cùng các package `common/`
-(navigation, msgs, node OLED/LED…). Các marker ArUco in ra giấy và dán đúng vị trí như mục 5.
+Profile `real` build các driver phần cứng trong `src/real/`. Đây là con robot riêng (khác
+TurtleBot4 ở `sim/`), nên các package điều hướng/driver của nó nằm gọn trong `real/`. Các marker
+ArUco in ra giấy và dán đúng vị trí như mục 5.
 
 ---
 
@@ -196,10 +196,10 @@ Profile `real` build các driver phần cứng trong `src/real/` cùng các pack
 | Cần gì | Ở đâu |
 |---|---|
 | Vị trí spawn + marker | [`docs/restaurant_positions.md`](docs/restaurant_positions.md) |
-| Map đang dùng | `src/common/turtlebot4_navigation/maps/restaurant.{pgm,yaml}` |
+| Map đang dùng | `src/sim/turtlebot4_navigation/maps/restaurant.{pgm,yaml}` |
 | World sim | `src/sim/turtlebot4_ignition_bringup/worlds/restaurant.sdf` |
-| Helper điều hướng | `src/common/turtlebot4_navigation/turtlebot4_navigation/turtlebot4_navigator.py` |
-| Config Nav2 / localization / slam | `src/common/turtlebot4_navigation/config/` |
+| Helper điều hướng | `src/sim/turtlebot4_navigation/turtlebot4_navigation/turtlebot4_navigator.py` |
+| Config Nav2 / localization / slam | `src/sim/turtlebot4_navigation/config/` |
 | License vendor turtlebot4 | [`docs/TURTLEBOT4_UPSTREAM_LICENSE`](docs/TURTLEBOT4_UPSTREAM_LICENSE) |
 
 > Build artifacts (`build/`, `install/`, `log/`, `.venv/`) đã được gitignore — không commit.

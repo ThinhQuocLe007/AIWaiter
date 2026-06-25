@@ -33,11 +33,18 @@ async def reset_state() -> dict:
             "party_size = NULL, seated_at = NULL",
             ("TRONG",),
         )
+        # Drop any robot that is not part of the seeded fleet (e.g. a removed mock robot).
+        seed_ids = [rid for rid, *_ in SEED_ROBOTS]
+        placeholders = ",".join("?" for _ in seed_ids)
+        conn.execute(
+            f"DELETE FROM robots WHERE id NOT IN ({placeholders})",
+            seed_ids,
+        )
         # Restore the mock fleet to its seeded state.
         for rid, _name, status, battery, activity in SEED_ROBOTS:
             conn.execute(
                 "UPDATE robots SET status = ?, battery = ?, activity = ?, "
-                "current_task_id = NULL WHERE id = ?",
+                "x = NULL, y = NULL, current_task_id = NULL WHERE id = ?",
                 (status, battery, activity, rid),
             )
         (table_count,) = conn.execute('SELECT COUNT(*) FROM "tables"').fetchone()

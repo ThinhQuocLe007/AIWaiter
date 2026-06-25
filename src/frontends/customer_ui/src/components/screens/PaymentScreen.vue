@@ -40,7 +40,7 @@
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
-import { payOrder } from '@/data/api'
+import { verifyPayment } from '@/data/api'
 import { formatPrice } from '@/utils/format'
 import TouchButton from '@/components/common/TouchButton.vue'
 
@@ -51,7 +51,7 @@ const countdown = ref(30)
 const paying = ref(false)
 const error = ref<string | null>(null)
 
-const orderId = Number(route.query.orderId) || 0
+const paymentId = Number(route.query.paymentId) || 0
 const amount = ref(Number(route.query.amount) || 0)
 const qrUrl = ref(
   String(route.query.qrUrl || '') ||
@@ -74,7 +74,7 @@ async function done() {
   paying.value = true
   error.value = null
   try {
-    if (orderId) await payOrder(orderId)
+    if (paymentId) await verifyPayment(paymentId)
     cart.clear()
     goHome()
   } catch (err) {

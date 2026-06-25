@@ -10,6 +10,7 @@ from fastapi import APIRouter, HTTPException
 from .. import dispatcher
 from ..db import get_conn
 from ..schemas import OrderCreate, OrderOut, OrderStatusUpdate, TableOut
+from ..sessions import ensure_active_session
 from ..ws import manager
 
 router = APIRouter(tags=["orders"])
@@ -36,9 +37,13 @@ async def create_order(payload: OrderCreate) -> OrderOut:
         if table is None:
             raise HTTPException(404, f"Table {payload.table_id} not found")
 
+        # Attach the order to the table's open session (gộp bill). Opened at seating; lazily
+        # created here if missing so an order never fails for lack of a session.
+        session_id = ensure_active_session(conn, payload.table_id)
         cur = conn.execute(
-            "INSERT INTO orders (table_id, status, total) VALUES (?, 'CHO_BEP', ?)",
-            (payload.table_id, total),
+            "INSERT INTO orders (session_id, table_id, status, total) "
+            "VALUES (?, ?, 'CHO_BEP', ?)",
+            (session_id, payload.table_id, total),
         )
         order_id = cur.lastrowid
         conn.executemany(

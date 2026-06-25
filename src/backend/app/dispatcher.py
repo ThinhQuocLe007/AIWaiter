@@ -17,6 +17,7 @@ import logging
 import math
 import time
 
+from . import fleet
 from .config import settings
 from .db import get_conn
 from .schemas import RobotOut, TaskOut
@@ -31,17 +32,45 @@ MIN_BATTERY = 20.0
 # goes silent past settings.heartbeat_timeout_s is treated as hung even if its socket looks open.
 _last_seen: dict[str, float] = {}
 
-# Approach waypoints (ArUco markers q1–q6) per table, from robot_ws/docs/restaurant_positions.md.
-# Used only to score "which idle robot is nearest"; the robot navigates to these itself.
+# Last time (monotonic) we pushed a robot's live pose to the panel. Heartbeats can arrive several
+# times a second while a robot is moving; we throttle the minimap broadcast so a big fleet can't
+# flood the panel socket. Live pose/battery live in RAM (fleet.py), NOT the DB — see on_heartbeat.
+_last_pose_bcast: dict[str, float] = {}
+POSE_BCAST_EVERY = 0.2  # seconds — smooth enough for the minimap, light on the socket
+
+# Last time (monotonic) we snapshotted a robot's live pose/battery to the DB. The DB row is only a
+# cold-start fallback (panel reload before the first heartbeat), so we persist it occasionally
+# instead of on every beat — that's the whole point of keeping telemetry in RAM.
+_last_snapshot: dict[str, float] = {}
+SNAPSHOT_EVERY = 15.0  # seconds
+
+# Approach waypoints per table, in the SAVED SLAM MAP FRAME — copied verbatim from the sim's
+# food_delivery.py (DESTINATIONS), which is what the real robot's Nav2/AMCL actually navigates to.
+# The robot's heartbeat pose is published in this same map frame, so these line up with it (and
+# with restaurant.pgm). Used to score "which idle robot is nearest"; the robot navigates itself.
 TABLE_POS: dict[int, tuple[float, float]] = {
-    1: (-3.293, -0.89),
-    2: (-2.3, 0.89),
-    3: (-1.3, -0.89),
-    4: (1.3, -0.89),
-    5: (2.3, 0.89),
-    6: (3.3, -0.89),
+    1: (7.99985, 1.36319),
+    2: (8.05419, 0.33537),
+    3: (7.97830, -0.64879),
+    4: (7.92656, -3.28752),
+    5: (7.98864, -4.28860),
+    6: (8.00802, -5.27848),
 }
-DOCK_POS = (-1.95, -7.01)  # where an idle robot waits; its default position before a heartbeat
+DOCK_POS = (0.0, 0.0)  # spawn/dock in the map frame; an idle robot's default position
+
+# Approach heading per table, as a unit vector in the map frame (NORTH=+X, SOUTH=-X,
+# WEST=+Y, EAST=-Y), copied from food_delivery.py DESTINATIONS. The ArUco marker sits in
+# front of the robot (this direction) so it can read the table number; the physical table
+# is just beyond the marker, against the wall. The minimap uses this to draw the table icon
+# out at the wall edge instead of at the robot's approach waypoint.
+TABLE_HEADING: dict[int, tuple[float, float]] = {
+    1: (-1.0, 0.0),   # SOUTH
+    2: (1.0, 0.0),    # NORTH
+    3: (-1.0, 0.0),   # SOUTH
+    4: (-1.0, 0.0),   # SOUTH
+    5: (1.0, 0.0),    # NORTH
+    6: (-1.0, 0.0),   # SOUTH
+}
 
 # What a robot is doing, for the panel's robot board (human-readable, not coordinates).
 _ACTIVITY = {
@@ -74,10 +103,13 @@ async def _broadcast_task(conn, task_id: int, event: str) -> None:
 
 
 async def _broadcast_robot(conn, robot_id: str) -> None:
+    # Identity/assignment come from the DB row (read in the caller's transaction so an
+    # uncommitted status change is reflected); live pose/battery are layered from RAM.
     row = conn.execute("SELECT * FROM robots WHERE id = ?", (robot_id,)).fetchone()
     if row:
+        robot = RobotOut(**fleet.overlay(dict(row)))
         await manager.broadcast(
-            "panel", {"type": "robot.updated", "robot": _robot_out(row).model_dump()}
+            "panel", {"type": "robot.updated", "robot": robot.model_dump()}
         )
 
 
@@ -106,14 +138,18 @@ def _pick_robot(conn, table_id: int | None) -> str | None:
     Only robots with a live WS connection are eligible (a seeded-but-offline robot can't act).
     """
     online = manager.connected_robot_ids()
-    candidates = [
-        r
-        for r in conn.execute("SELECT * FROM robots WHERE status = 'idle'").fetchall()
-        if r["id"] in online and (r["battery"] is None or r["battery"] >= MIN_BATTERY)
-    ]
+    candidates = []
+    for r in conn.execute("SELECT * FROM robots WHERE status = 'idle'").fetchall():
+        if r["id"] not in online:
+            continue
+        # Live pose/battery (RAM) over the DB snapshot, so "nearest + charged enough" uses the
+        # robot's current position, not where it was last persisted.
+        m = fleet.overlay(dict(r))
+        if m["battery"] is None or m["battery"] >= MIN_BATTERY:
+            candidates.append(m)
     if not candidates:
         return None
-    best = min(candidates, key=lambda r: _distance(r, table_id))
+    best = min(candidates, key=lambda m: _distance(m, table_id))
     return best["id"]
 
 
@@ -230,15 +266,33 @@ async def on_robot_disconnect(robot_id: str) -> None:
 
 
 async def on_heartbeat(robot_id: str, msg: dict) -> None:
-    """Update battery + position from a periodic robot heartbeat, and mark it freshly alive."""
-    _last_seen[robot_id] = time.monotonic()
+    """Record battery + position from a periodic robot heartbeat, and mark it freshly alive.
+
+    The hot path is RAM-only (fleet.update) so a robot streaming pose several times a second never
+    writes the SQLite ledger. The DB gets an occasional snapshot (cold-start fallback) and the
+    panel minimap broadcast is throttled.
+    """
+    now = time.monotonic()
+    _last_seen[robot_id] = now
     battery, x, y = msg.get("battery"), msg.get("x"), msg.get("y")
-    with get_conn() as conn:
-        conn.execute(
-            "UPDATE robots SET battery = COALESCE(?, battery), x = COALESCE(?, x), "
-            "y = COALESCE(?, y) WHERE id = ?",
-            (battery, x, y, robot_id),
-        )
+    fleet.update(robot_id, battery=battery, x=x, y=y)
+
+    # Snapshot to the DB occasionally (NOT every beat) so a panel reload before the next heartbeat
+    # still has a recent-ish pose/battery.
+    if now - _last_snapshot.get(robot_id, 0.0) >= SNAPSHOT_EVERY:
+        _last_snapshot[robot_id] = now
+        with get_conn() as conn:
+            conn.execute(
+                "UPDATE robots SET battery = COALESCE(?, battery), x = COALESCE(?, x), "
+                "y = COALESCE(?, y) WHERE id = ?",
+                (battery, x, y, robot_id),
+            )
+
+    # Push the new pose to the panel minimap, throttled per robot (a read, not a write).
+    if now - _last_pose_bcast.get(robot_id, 0.0) >= POSE_BCAST_EVERY:
+        _last_pose_bcast[robot_id] = now
+        with get_conn() as conn:
+            await _broadcast_robot(conn, robot_id)
 
 
 async def on_accepted(robot_id: str, task_id: int | None) -> None:

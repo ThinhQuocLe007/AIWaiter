@@ -1,0 +1,93 @@
+"""Floor-plan layout + SLAM map API — for the panel minimap.
+
+The minimap draws the **real saved SLAM map** (restaurant.pgm) as the backdrop and overlays the
+tables and the live robot on top. Everything is in the **saved SLAM map frame**: the table
+waypoints (from dispatcher.TABLE_POS, copied from the sim's food_delivery.py) and the robot's
+heartbeat pose are all in that frame, which is exactly the frame restaurant.yaml maps to image
+pixels — so the overlay lines up with the scanned walls without any recalibration.
+
+Frame → pixel transform (the frontend does the same with the metadata from GET /layout):
+    px = (x - origin_x) / resolution
+    py = height_px - (y - origin_y) / resolution      # image y grows downward
+"""
+
+from functools import lru_cache
+from io import BytesIO
+from pathlib import Path
+
+from fastapi import APIRouter, Response
+from PIL import Image
+
+from ..dispatcher import DOCK_POS, TABLE_HEADING, TABLE_POS
+
+router = APIRouter(tags=["layout"])
+
+# robot_ws map dir, resolved relative to the repo root (this file: src/backend/app/routers/).
+_MAP_DIR = Path(__file__).resolve().parents[4] / "robot_ws/src/sim/turtlebot4_navigation/maps"
+_PGM = _MAP_DIR / "restaurant.pgm"
+_YAML = _MAP_DIR / "restaurant.yaml"
+
+TABLE_SIZE = 0.7  # metres, square footprint drawn at each table
+
+# TABLE_POS is the robot's approach waypoint. The robot faces the ArUco marker (its heading
+# direction) to read the table number, but the real table sits on the OPPOSITE side — away
+# from the marker, out at the wall edge. So for the minimap we push the drawn icon this far
+# against the table's heading.
+TABLE_EDGE_OFFSET = -0.7  # metres (negative = opposite the heading, away from the marker)
+
+
+@lru_cache
+def _map_png() -> bytes:
+    """The SLAM occupancy map (.pgm) re-encoded as PNG so a browser can render it. Cached."""
+    buf = BytesIO()
+    Image.open(_PGM).convert("L").save(buf, format="PNG")
+    return buf.getvalue()
+
+
+@lru_cache
+def _map_meta() -> dict:
+    """Map image size (from the PGM) + resolution/origin (from the YAML sidecar)."""
+    with Image.open(_PGM) as img:
+        width, height = img.size
+    resolution, origin_x, origin_y = 0.05, -1.12, -5.96  # fallbacks = restaurant.yaml defaults
+    for line in _YAML.read_text().splitlines():
+        line = line.strip()
+        if line.startswith("resolution:"):
+            resolution = float(line.split(":", 1)[1])
+        elif line.startswith("origin:"):
+            nums = line.split("[", 1)[1].split("]", 1)[0].split(",")
+            origin_x, origin_y = float(nums[0]), float(nums[1])
+    return {
+        "image_url": "/map/image.png",
+        "width": width,
+        "height": height,
+        "resolution": resolution,
+        "origin_x": origin_x,
+        "origin_y": origin_y,
+    }
+
+
+@router.get("/map/image.png")
+def map_image() -> Response:
+    """Serve the SLAM map as PNG (browsers can't render the raw .pgm)."""
+    return Response(content=_map_png(), media_type="image/png")
+
+
+@router.get("/layout")
+def get_layout() -> dict:
+    """SLAM map metadata + table/dock positions (map frame, metres) for the minimap."""
+    tables = []
+    for tid, (x, y) in sorted(TABLE_POS.items()):
+        hx, hy = TABLE_HEADING.get(tid, (0.0, 0.0))
+        tables.append({
+            "id": tid,
+            "x": x + hx * TABLE_EDGE_OFFSET,
+            "y": y + hy * TABLE_EDGE_OFFSET,
+            "w": TABLE_SIZE,
+            "h": TABLE_SIZE,
+        })
+    return {
+        "map": _map_meta(),
+        "tables": tables,
+        "dock": {"x": DOCK_POS[0], "y": DOCK_POS[1]},
+    }

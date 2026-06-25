@@ -37,7 +37,32 @@ export interface Robot {
   status: string
   battery?: number | null
   activity?: string | null
+  x?: number | null // live world-frame pose (for the minimap)
+  y?: number | null
   current_task_id?: number | null
+}
+
+// Floor-plan geometry + SLAM map metadata for the panel minimap (map frame, metres).
+// Mirrors GET /layout. Frame→pixel: px = (x-origin_x)/resolution, py = height-(y-origin_y)/resolution.
+export interface MapMeta {
+  image_url: string // PNG of the SLAM map, relative to the API base
+  width: number // image size in pixels
+  height: number
+  resolution: number // metres per pixel
+  origin_x: number // map-frame coords of the image's bottom-left corner
+  origin_y: number
+}
+export interface LayoutTable {
+  id: number
+  x: number
+  y: number
+  w: number
+  h: number
+}
+export interface Layout {
+  map: MapMeta
+  tables: LayoutTable[]
+  dock: { x: number; y: number }
 }
 
 // A dispatcher task (go_to_table / deliver / call) handed to a robot. Mirrors TaskOut.

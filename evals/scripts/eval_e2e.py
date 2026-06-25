@@ -376,14 +376,15 @@ def run_evaluation(limit: int = None, datasets: List[str] = None):
         os.remove(checkpoint_db)
         log(f"Cleared checkpoint DB: {checkpoint_db}")
 
-    # Reset transactional tables in the restaurant DB so each run starts clean.
-    # Most scenarios confirm orders but never pay, so their sessions stay open and
-    # their orders would otherwise accumulate across runs and inflate the bills.
-    restaurant_db = os.path.join(PROJECT_ROOT, "storage", "db", "restaurant.db")
-    if os.path.exists(restaurant_db):
+    # Reset transactional tables in the orchestrator DB (the single ledger) so each run starts
+    # clean. Most scenarios confirm orders but never pay, so their sessions stay open and their
+    # orders would otherwise accumulate across runs and inflate the bills. The agent reaches this
+    # DB through the backend now, so the backend must be running for the e2e flow to persist.
+    orchestrator_db = os.path.join(PROJECT_ROOT, "storage", "db", "orchestrator.db")
+    if os.path.exists(orchestrator_db):
         import sqlite3
         try:
-            conn = sqlite3.connect(restaurant_db)
+            conn = sqlite3.connect(orchestrator_db)
             cur = conn.cursor()
             existing = {r[0] for r in cur.execute("SELECT name FROM sqlite_master WHERE type='table'")}
             for table in ("payments", "order_items", "orders", "sessions"):
@@ -391,9 +392,9 @@ def run_evaluation(limit: int = None, datasets: List[str] = None):
                     cur.execute(f"DELETE FROM {table}")
             conn.commit()
             conn.close()
-            log(f"Reset restaurant DB tables: {restaurant_db}")
+            log(f"Reset orchestrator DB tables: {orchestrator_db}")
         except sqlite3.Error as e:
-            log(f"Restaurant DB reset failed (non-fatal): {e}")
+            log(f"Orchestrator DB reset failed (non-fatal): {e}")
 
     log("Warming up agent (cold start)...")
     try:

@@ -29,28 +29,16 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
-import { fetchOrder, fetchTable } from '@/data/api'
+import { createPayment } from '@/data/api'
 
 const router = useRouter()
 const ui = useUiStore()
 
-const currentOrderId = ref<number | null>(null)
 const paying = ref(false)
 const error = ref<string | null>(null)
-
-onMounted(async () => {
-  // The router guard only reaches this screen when the table has an active order, but
-  // re-read it here so "Thanh toán" can bill the correct total.
-  try {
-    const table = await fetchTable(ui.tableId)
-    currentOrderId.value = table.current_order_id ?? null
-  } catch {
-    /* non-fatal: payment falls back to a zero-amount QR */
-  }
-})
 
 function orderMore() {
   router.push('/menu')
@@ -61,14 +49,16 @@ async function goToPayment() {
   paying.value = true
   error.value = null
   try {
-    let amount = 0
-    if (currentOrderId.value) {
-      amount = (await fetchOrder(currentOrderId.value)).total
-    }
-    const qrUrl = `https://img.vietqr.io/image/ICB-123456789-qr_only.png?amount=${amount}&addInfo=AI_Waiter_Payment`
+    // Open the gộp payment for the whole session (sum of all its orders) and carry its id + QR
+    // to the payment screen, which confirms it on "Đã thanh toán".
+    const payment = await createPayment(ui.tableId)
     router.push({
       name: 'payment',
-      query: { amount: String(amount), qrUrl, orderId: String(currentOrderId.value ?? '') },
+      query: {
+        amount: String(payment.amount),
+        qrUrl: payment.qr_url ?? '',
+        paymentId: String(payment.id),
+      },
     })
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Không lấy được hoá đơn'

@@ -7,6 +7,7 @@ from ai_waiter_core.agent.state import AgentState
 from ai_waiter_core.agent.actions import build_action, emit_action
 from ai_waiter_core.agent.memory.checkpointer import get_checkpointer, create_thread_config
 from ai_waiter_core.agent.tools import search, sync_cart, confirm_order, request_payment, verify_payment
+from ai_waiter_core.services.orchestrator_client import OrchestratorClient
 from ai_waiter_core.agent.nodes.hybrid_router_node import hybrid_router_node
 from ai_waiter_core.agent.nodes.order_worker_node import order_worker_node
 from ai_waiter_core.agent.nodes.search_worker_node import search_worker_node
@@ -98,6 +99,8 @@ class AIWaiterGraph:
         self.checkpointer = get_checkpointer()
         self.workflow = self._build_workflow()
         self.app = self.workflow.compile(checkpointer=self.checkpointer)
+        # Used to resolve a table's current serving session so thread_id tracks it (see chat()).
+        self.orchestrator = OrchestratorClient()
 
     def _build_workflow(self) -> StateGraph:
         workflow = StateGraph(AgentState)
@@ -173,6 +176,16 @@ class AIWaiterGraph:
         return workflow
 
     def chat(self, query: str, table_id: str = "T1", session_id: str = None) -> Dict[str, Any]:
+        # Resolve the table's CURRENT backend session so the LangGraph thread tracks it. Callers
+        # should pass session_id=None every turn: within a visit this returns the same id (memory
+        # persists); after payment closes the session it returns None until the next seating opens
+        # a new one → a fresh thread → no context bleed between guests.
+        if session_id is None:
+            try:
+                sess = self.orchestrator.get_active_session(table_id)
+                session_id = sess["id"] if sess else None
+            except Exception:
+                session_id = None  # backend unreachable → table-scoped fallback thread
         config = create_thread_config(table_id, session_id)
         current_state = self.app.get_state(config)
         existing_stage = current_state.values.get("order_stage", "IDLE") if current_state and current_state.values else "IDLE"

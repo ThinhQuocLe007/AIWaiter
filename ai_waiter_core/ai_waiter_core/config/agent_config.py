@@ -16,7 +16,11 @@ class AgentSettings(BaseSettings):
     LLM_NUM_CTX: int = Field(default=8192, env="LLM_NUM_CTX")
 
     HF_TOKEN: str = Field(default="", env="HF_TOKEN")
-    
+
+    # Base URL of the Orchestrator backend (the single ledger). The agent's tools write through
+    # this seam (POST /orders, /payments, /payments/verify) instead of touching a DB directly.
+    ORCHESTRATOR_URL: str = Field(default="http://localhost:8000", env="ORCHESTRATOR_URL")
+
     # Absolute path anchored at the project root so .env loads regardless of the
     # current working directory (e.g. when an eval script runs from a subdir).
     # A relative ".env" is resolved against CWD and silently misses the repo .env,

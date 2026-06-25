@@ -2,7 +2,6 @@ import sqlite3
 import os
 from langgraph.checkpoint.sqlite import SqliteSaver
 from ai_waiter_core.config import settings
-from langsmith import uuid7
 
 
 def get_checkpointer():
@@ -12,13 +11,19 @@ def get_checkpointer():
     return SqliteSaver(conn)
 
 
-def create_thread_config(table_id: str, session_id: str = None):
-    if not session_id:
-        session_id = str(uuid7())
+def create_thread_config(table_id: str, session_id=None):
+    """Build the LangGraph thread config for a table's current serving session.
+
+    `thread_id = session_id` ties the conversation memory to the billable session, so payment
+    (which CLOSES the session) is the boundary: the next guest at this table resolves a NEW
+    session id → a fresh thread → no context bleed. The table-scoped fallback only applies when
+    no session is open yet (e.g. a word before kiosk seating) and is replaced once one exists.
+    """
+    thread_id = str(session_id) if session_id is not None else f"table-{table_id}-nosession"
 
     return {
         "configurable": {
-            "thread_id": session_id,
+            "thread_id": thread_id,
             "table_id": table_id
         },
         "metadata": {

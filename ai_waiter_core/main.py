@@ -20,7 +20,6 @@ STATS_LOG_INTERVAL = 30.0
 def main():
     log_struct("Starting AI Waiter Voice Pipeline")
     agent = AIWaiterGraph()
-    session_id = None
 
     vad = SileroVAD()
     stt = PhoWhisperSTT()
@@ -65,14 +64,9 @@ def main():
             if not text.strip():
                 continue
 
-            result = agent.chat(
-                query=text,
-                table_id=TABLE_ID,
-                session_id=session_id,
-            )
-
-            if session_id is None:
-                session_id = result["session_id"]
+            # No sticky session_id: the agent re-resolves the table's current backend session each
+            # turn, so the thread resets automatically after payment (see graph.chat / Phase 4).
+            result = agent.chat(query=text, table_id=TABLE_ID)
 
             stage = result.get("final_stage", "IDLE")
             response = result["response"]

@@ -48,7 +48,6 @@ def seed_tables() -> int:
 SEED_ROBOTS = [
     # id, name, status, battery, activity
     ("robo-1", "Robot 1", "idle", 92.0, "Đang ở dock"),
-    ("robo-2", "Robot 2", "busy", 64.0, "Đang giao món · Bàn 4"),
 ]
 
 

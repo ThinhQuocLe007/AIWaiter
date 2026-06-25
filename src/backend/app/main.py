@@ -17,7 +17,7 @@ from . import dispatcher
 from .config import settings
 from .db import init_db
 from .menu import seed_dishes, seed_robots, seed_tables
-from .routers import admin, menu, orders, payments, robots, tables, tasks
+from .routers import admin, layout, menu, orders, payments, robots, tables, tasks
 from .ws import router as ws_router
 
 
@@ -48,6 +48,7 @@ app.include_router(tables.router)
 app.include_router(orders.router)
 app.include_router(payments.router)
 app.include_router(robots.router)
+app.include_router(layout.router)
 app.include_router(tasks.router)
 app.include_router(admin.router)
 app.include_router(ws_router)

@@ -55,14 +55,18 @@
         <KitchenBoard :orders="orders" :tables="tables" :busy="busy" :now="now" @advance="advance" />
       </section>
     </main>
+
+    <!-- FPS-style minimap, pinned to a corner as a HUD overlay (out of the dashboard flow). -->
+    <MiniMap :layout="layout" :robots="robots" :tables="tables" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
-import type { Order, Robot, Table, Task, WsEvent } from '@shared/types'
+import type { Layout, Order, Robot, Table, Task, WsEvent } from '@shared/types'
 import {
   callRobot,
+  fetchLayout,
   fetchOrders,
   fetchRobots,
   fetchTables,
@@ -74,6 +78,7 @@ import {
 import { connectEvents, type WsHandle } from '@shared/ws'
 import TablesOverview from './components/TablesOverview.vue'
 import RobotBoard from './components/RobotBoard.vue'
+import MiniMap from './components/MiniMap.vue'
 import KitchenBoard from './components/KitchenBoard.vue'
 import TasksBoard from './components/TasksBoard.vue'
 
@@ -83,6 +88,7 @@ const nextStatus: Record<string, string> = { CHO_BEP: 'DANG_LAM', DANG_LAM: 'XON
 const orders = ref<Order[]>([])
 const tables = ref<Table[]>([])
 const robots = ref<Robot[]>([])
+const layout = ref<Layout | null>(null)
 const tasks = ref<Task[]>([])
 const connected = ref(false)
 const loadError = ref<string | null>(null)
@@ -207,6 +213,8 @@ function onEvent(e: WsEvent) {
 
 onMounted(() => {
   load()
+  // Floor plan is static — fetch it once for the minimap (ignore failure: map just stays empty).
+  fetchLayout().then((l) => (layout.value = l)).catch(() => {})
   ws = connectEvents('panel', onEvent, (ok) => (connected.value = ok))
   // Safety re-sync in case a WS event was missed (e.g. during a brief disconnect).
   pollTimer = setInterval(load, 15000)

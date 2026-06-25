@@ -25,7 +25,6 @@ os.environ["PROJECT_ROOT"] = str(PROJECT_ROOT)
 
 import ai_waiter_core  # noqa: E402 ensure path is set before other imports
 from ai_waiter_core.config import settings
-from ai_waiter_core.services.restaurant_db import RestaurantDB
 from ai_waiter_core.services.retriever.builder import IndexBuilder
 from scripts.build_centroids import main as build_centroids_main
 
@@ -82,14 +81,6 @@ def _wipe_db(db_path: str):
         p = Path(db_path + suffix)
         if p.exists():
             p.unlink()
-
-
-def init_restaurant_db(force: bool = False):
-    if force:
-        _wipe_db(str(settings.RESTAURANT_DB_PATH))
-        print("  → Wiped existing Restaurant DB (--force)")
-    db = RestaurantDB()
-    print(f"  ✓ Restaurant DB at {db.db_path}")
 
 
 def init_checkpoints_db(force: bool = False):
@@ -172,11 +163,10 @@ def main():
     create_directories()
     print()
 
-    print("3. Initializing Restaurant DB...")
-    init_restaurant_db(args.force)
-    print()
+    # The business ledger (orchestrator.db) is owned and created by the backend on startup
+    # (src/backend/app/main.py lifespan → init_db + seeds); setup.py no longer creates it.
 
-    print("4. Initializing Checkpoints DB...")
+    print("3. Initializing Checkpoints DB...")
     init_checkpoints_db(args.force)
     print()
 
