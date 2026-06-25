@@ -92,7 +92,7 @@ The C++ lib is system-wide and shared by every venv — this is correct, leave i
 
 ```bash
 cd ~/ptd_workspace/AI_Waiver
-uv sync                          # installs torch/etc; does NOT touch ctranslate2 on aarch64
+uv sync --extra voice                       # does NOT touch ctranslate2 on aarch64
 source .venv/bin/activate
 
 cd ~/CTranslate2/python
@@ -124,34 +124,6 @@ python -c "import ctranslate2; print(ctranslate2.__file__)"   # must point into 
 ```
 
 Expected: `4.6.0 1` and `OK`.
-
----
-
-## Gotchas (the ones that actually bit us)
-
-1. **`uv sync` removes the hand-built packages.** Default `uv sync` is *exact* and
-   uninstalls anything not in `uv.lock` — including ctranslate2 / faster-whisper.
-   On Jetson always use:
-
-   ```bash
-   uv sync --inexact
-   ```
-
-   If you forget and they get wiped, just rerun Step 3 + Step 4.
-
-2. **Never test `import ctranslate2` from `~/CTranslate2/python`.** That dir has a
-   `ctranslate2/` source subfolder that shadows the installed package (cwd is first
-   on `sys.path`). You get `module 'ctranslate2' has no attribute 'StorageView' /
-   'get_cuda_device_count'` even though the install is fine. Just `cd ~` first.
-
-3. **`ldconfig` is mandatory** after copying to `/usr/local`. Without it the loader
-   still won't find `libctranslate2.so.4`.
-
-4. **Limit `make -j`** on 8GB RAM. `make -j$(nproc)` (6 jobs) OOM-kills the CUDA
-   compile. Use `-j2`, add swap.
-
-5. **DNS errors** (`Name or service not known`) are network, not package, problems.
-   Fix DNS first: `echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf`.
 
 ---
 
@@ -190,14 +162,6 @@ python scripts/probe_stt.py --audio test.wav
 | `faster-whisper` + deps       | `.venv` | ✅ |
 | Source `~/CTranslate2`        | `$HOME` | ✅ |
 
-The only thing lost on reboot is the **swap file** (`swapon` is not persistent
-unless added to `/etc/fstab`). Swap is only needed while compiling the C++ lib
-(Step 1), not at runtime — so a normal reboot needs nothing. If you ever rebuild
-the C++ lib after a reboot, re-enable swap first: `sudo swapon /swapfile` (or
-recreate it as in the "Add swap" section if the file is gone).
-
-Rule of thumb: **a reboot deletes nothing; only `uv sync` (without `--inexact`)
-deletes the hand-built packages.**
 
 ---
 
@@ -224,7 +188,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 cd ~/ptd_workspace
 git clone <repo-url> AI_Waiver
 cd AI_Waiver
-uv sync
+uv sync --extra voice
 source .venv/bin/activate
 
 # reinstall the Python binding against the existing C++ lib (no C++ rebuild)

@@ -29,13 +29,22 @@
         <div v-else class="t-order muted">Chưa gọi món</div>
       </template>
 
-      <button
-        v-if="t.status === 'DA_THANH_TOAN'"
-        class="t-end"
-        @click="$emit('end-table', t.id)"
-      >
-        Kết thúc bàn
-      </button>
+      <div class="t-actions">
+        <button
+          class="t-call"
+          :disabled="callBusy?.has(t.id)"
+          @click="$emit('call', t.id)"
+        >
+          {{ callBusy?.has(t.id) ? 'Đang gọi…' : '🔔 Gọi robot' }}
+        </button>
+        <button
+          v-if="t.status === 'DA_THANH_TOAN'"
+          class="t-end"
+          @click="$emit('end-table', t.id)"
+        >
+          Kết thúc bàn
+        </button>
+      </div>
     </article>
   </div>
 </template>
@@ -45,8 +54,13 @@ import { computed } from 'vue'
 import type { Order, Table } from '@shared/types'
 import { durationLabel, formatPrice } from '../format'
 
-const props = defineProps<{ tables: Table[]; orders: Order[]; now: number }>()
-defineEmits<{ (e: 'end-table', id: number): void }>()
+const props = defineProps<{
+  tables: Table[]
+  orders: Order[]
+  now: number
+  callBusy?: Set<number>
+}>()
+defineEmits<{ (e: 'end-table', id: number): void; (e: 'call', id: number): void }>()
 
 const kitchenLabel: Record<string, string> = {
   CHO_BEP: 'Chờ bếp',

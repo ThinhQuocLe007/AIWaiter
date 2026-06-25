@@ -319,6 +319,12 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.t-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: auto;
+}
+
 .t-end {
   border: none;
   border-radius: 0.25rem;
@@ -332,6 +338,117 @@ body {
 }
 .t-end:active {
   transform: scale(0.96);
+}
+
+.t-call {
+  flex: 1;
+  border: 1px solid var(--accent);
+  border-radius: 0.25rem;
+  padding: 0.45rem 0.6rem;
+  background: rgba(168, 133, 62, 0.1);
+  color: var(--accent-dark);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.t-call:hover:not(:disabled) {
+  background: rgba(168, 133, 62, 0.2);
+}
+.t-call:active {
+  transform: scale(0.97);
+}
+.t-call:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+/* --- Tasks board (dispatcher queue) --- */
+.tasks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 0.75rem;
+}
+
+.task-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--muted);
+  border-radius: 0.5rem;
+  padding: 0.75rem 0.85rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.task-card.PENDING {
+  border-left-color: var(--wait);
+}
+.task-card.ASSIGNED {
+  border-left-color: var(--cooking);
+}
+.task-card.IN_PROGRESS {
+  border-left-color: var(--accent);
+}
+
+.task-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.task-kind {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.task-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.task-badge.PENDING {
+  background: rgba(194, 151, 47, 0.16);
+  color: var(--accent-dark);
+}
+.task-badge.ASSIGNED {
+  background: rgba(176, 106, 79, 0.18);
+  color: var(--cooking);
+}
+.task-badge.IN_PROGRESS {
+  background: rgba(168, 133, 62, 0.18);
+  color: var(--accent-dark);
+}
+
+.task-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+.task-table {
+  font-weight: 600;
+}
+.task-robot {
+  color: var(--muted);
+}
+
+.task-time {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.tasks-done-note {
+  margin: 0.75rem 0 0;
+  font-size: 0.82rem;
+  color: var(--muted);
 }
 
 /* --- Robot board --- */

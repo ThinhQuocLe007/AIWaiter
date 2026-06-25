@@ -39,5 +39,14 @@ class Settings(BaseSettings):
         "http://127.0.0.1:4173",
     ]
 
+    # Robot liveness. A robot pings a heartbeat on a fixed interval (independent of how fast it
+    # drives). If the server sees no heartbeat for `heartbeat_timeout_s`, it treats the robot as
+    # hung — even though its TCP socket may still look open — and requeues its task. Generous by
+    # default so a busy Jetson (Nav2 hogging CPU) that ships heartbeats late isn't killed early;
+    # raise via ORCH_HEARTBEAT_TIMEOUT_S=... if needed. The watchdog scans every
+    # `watchdog_interval_s`.
+    heartbeat_timeout_s: float = 30.0
+    watchdog_interval_s: float = 5.0
+
 
 settings = Settings()

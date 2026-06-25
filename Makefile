@@ -1,7 +1,7 @@
 # Makefile - Convenience commands for AI Waiter project
 # Run 'make help' to see available commands
 
-.PHONY: help setup install update frontend menu kiosk panel backend build serve kill reset clean
+.PHONY: help setup install update frontend menu kiosk panel backend mockrobot build serve kill reset clean
 
 # Default target
 help:
@@ -17,6 +17,7 @@ help:
 	@echo "  make build      - Build frontend for production (outputs dist/)"
 	@echo "  make serve      - Serve production build locally (port 4173)"
 	@echo "  make backend    - Start backend dev server (port 8000)"
+	@echo "  make mockrobot  - Start a mock robot WS client (ID=robo-1 ARGS=...) to test the dispatcher"
 	@echo "  make reset      - Wipe demo data: clear orders/seatings, free all tables (backend must be running)"
 	@echo "  make kill       - Stop all dev servers (backend 8000, frontends 5173-5175)"
 	@echo "  make clean      - Remove node_modules and .venv"
@@ -70,6 +71,12 @@ serve:
 
 backend:
 	@uv run uvicorn src.backend.app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Mock robot WS client — stands in for a real Jetson robot to test the dispatcher end-to-end.
+# Override id/position: make mockrobot ID=robo-2 ARGS="--x 2.3 --y 0.5".
+ID ?= robo-1
+mockrobot:
+	@uv run python scripts/mock_robot.py --id $(ID) $(ARGS)
 
 # Reset all live demo data (orders, seatings, tables → free, robots → seed) via the running
 # backend. Panels reload instantly (WS 'reset' event); kiosk reflects on its next table poll.

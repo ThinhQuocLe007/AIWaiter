@@ -2,6 +2,7 @@ import logging
 from typing import Dict, Any, Callable
 
 from ai_waiter_core.agent.state import AgentState
+from ai_waiter_core.agent.actions import ui_action_for_tool
 from ai_waiter_core.schemas.order import Cart
 
 logger = logging.getLogger(__name__)
@@ -63,6 +64,12 @@ def update_state_node(state: AgentState) -> Dict[str, Any]:
                     result.update(handler(tool_result))
                 else:
                     logger.debug(f"No state handler for tool: {tool_name}")
+                # A successful tool is the agent's cue to also act on the tablet (open the
+                # menu / the bill). Decided here where the tool name is known; delivered later
+                # by the bridge. Last write wins for multi-intent turns (most recent action).
+                ui_action = ui_action_for_tool(tool_name)
+                if ui_action:
+                    result["ui_action"] = ui_action
 
     intents = state.get("current_intents") or []
     if intents:

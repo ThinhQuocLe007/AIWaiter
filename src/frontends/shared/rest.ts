@@ -1,7 +1,7 @@
 // Shared REST client for the Orchestrator backend.
 // Base URL defaults to the same-origin '/api' path (proxied to FastAPI by each app's Vite
 // config), so there is no CORS and it matches production where FastAPI serves the static build.
-import type { Order, Robot, Table } from './types'
+import type { Order, Robot, Table, Task } from './types'
 
 const API_URL = import.meta.env.VITE_API_URL ?? '/api'
 
@@ -66,6 +66,16 @@ export function updateTableStatus(tableId: number, status: string): Promise<Tabl
 // --- Robots ---------------------------------------------------------------------------
 export function fetchRobots(): Promise<Robot[]> {
   return getJson<Robot[]>('/robots')
+}
+
+// --- Tasks (dispatcher queue) ---------------------------------------------------------
+export function fetchTasks(status?: string): Promise<Task[]> {
+  return getJson<Task[]>(`/tasks${status ? `?status=${encodeURIComponent(status)}` : ''}`)
+}
+
+// Guest "call a waiter" button — enqueues a `call` task so a robot drives to the table.
+export function callRobot(tableId: number): Promise<Task> {
+  return sendJson<Task>('POST', `/tables/${tableId}/call`, {})
 }
 
 // --- Admin / demo ---------------------------------------------------------------------

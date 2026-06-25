@@ -6,8 +6,13 @@
 >
 > Phiên bản: bản thiết kế (server chưa code; UI khách đã có khung). Cập nhật: 2026-06.
 > **Thay đổi lớn (2026-06):** LLM/RAG/agent **tách khỏi Jetson** → dồn lên **1 server trung tâm**.
-> Jetson trên robot chỉ còn STT/VAD/TTS + UI đặt món + ROS 2/Nav2. Hỗ trợ **server đặt từ xa** (offsite
-> để cooling) qua **Netbird** (overlay mesh VPN).
+> Jetson trên robot chỉ còn STT/VAD/TTS + ROS 2/Nav2; **UI là trình duyệt kiosk trỏ về server**
+> (`chromium --kiosk http://<SERVER_IP>:8000/`, **không Node, không build trên Jetson**). Hỗ trợ
+> **server đặt từ xa** (offsite để cooling) qua **Netbird** (overlay mesh VPN).
+>
+> **Pipeline web (chốt 2026-06):** **SERVER build & serve CẢ 3 web** (customer_ui, kiosk, panel) cùng 1
+> origin `:8000`. Mọi client (Jetson robot, kiosk tablet, panel bếp, laptop khách) **chỉ mở URL** tới
+> server — không máy nào build/serve web cục bộ. *(xem §3, §4, §10)*
 
 ---
 
@@ -17,8 +22,9 @@
   - **Não hội thoại** = LLM + RAG menu + agent (LangGraph sinh lệnh hành động) — chạy *trên server*,
     **dùng chung cho mọi robot**.
   - **Não điều phối** = Dispatcher giữ trạng thái bàn/đơn/tiền và chia việc cho robot — cùng server đó.
-- **Jetson trên robot = "thân xác"** (không suy nghĩ): STT + VAD + TTS (xử lý audio *cục bộ*), UI đặt
-  món (`customer_ui`), và ROS 2 Humble + Nav2 (di chuyển). Nghe-nói cục bộ, *suy nghĩ* gửi lên server.
+- **Jetson trên robot = "thân xác"** (không suy nghĩ): STT + VAD + TTS (xử lý audio *cục bộ*) và ROS 2
+  Humble + Nav2 (di chuyển). Màn hình đặt món (`customer_ui`) chỉ là **trình duyệt kiosk trỏ về server**
+  (server serve, Jetson **không build, không Node**). Nghe-nói cục bộ, *suy nghĩ* gửi lên server.
 - **1 server làm tất cả:** LLM + Dispatcher + **backend FastAPI duy nhất** phục vụ **cả 3 web** (UI robot,
   Kiosk cổng, Bảng điều khiển/quản lý) + **SQLite**. Chạy backend trên server = cả hệ online.
 - **Stack chốt:** `FastAPI + SQLite` (server) · `WebSocket + REST` (giao tiếp) · `ROS 2 Humble + Nav2`
@@ -79,8 +85,8 @@
 │  │   ws_client → server: gửi text STT, nhận text→TTS   │
 │  │                       + nhận lệnh navigate → Body   │
 │  │   ws_server → Body (localhost)                      │
-│  │   + customer_ui (Vue) chạy trên màn hình robot      │
-│  │     (nối thẳng server qua REST/WS, mục 3.1)         │
+│  │   + chromium --kiosk → http://<SERVER>:8000/        │
+│  │     (server serve customer_ui; Jetson KHÔNG build)  │
 │  └─ BODY  (ROS 2 Humble + Nav2)                        │
 │      ai_hw_bridge: nhận navigate → đặt Nav2 goal        │
 │      → robot di chuyển; báo arrived/pose               │
@@ -139,9 +145,9 @@ phục vụ** — không phải nhiều server, chỉ là vài "ứng dụng fro
 
 | # | Giao diện | Chạy ở đâu | Ai dùng | Làm gì | Trạng thái |
 |---|---|---|---|---|---|
-| 1 | **Kiosk cổng** | Tablet ở cổng | Khách | Xem bàn trống → chọn bàn + số người | ⬜ chưa code |
-| 2 | **Bảng điều khiển** (bếp + giám sát + **quản lý**, **gộp 1**) | Laptop quầy/bếp | Nhân viên + quản lý | Đơn mới theo bàn, tick "món xong"; vị trí robot / pin / hàng đợi task; **+ quản lý nhà hàng** (menu, bàn, doanh thu, lịch sử đơn) | ⬜ chưa code |
-| 3 | **UI màn hình robot** (`customer_ui`) | Màn hình LCD trên robot | Khách | Menu khi đặt món · bill + thanh toán · trợ lý giọng nói | 🟡 **đã có khung** |
+| 1 | **Kiosk cổng** | Trình duyệt tablet ở cổng → `…:8000/kiosk` | Khách | Xem bàn trống → chọn bàn + số người | ⬜ chưa code |
+| 2 | **Bảng điều khiển** (bếp + giám sát + **quản lý**, **gộp 1**) | Trình duyệt laptop quầy/bếp → `…:8000/panel` | Nhân viên + quản lý | Đơn mới theo bàn, tick "món xong"; vị trí robot / pin / hàng đợi task; **+ quản lý nhà hàng** (menu, bàn, doanh thu, lịch sử đơn) | ⬜ chưa code |
+| 3 | **UI màn hình robot** (`customer_ui`) | Trình duyệt kiosk màn LCD robot → `…:8000/` | Khách | Menu khi đặt món · bill + thanh toán · trợ lý giọng nói | 🟡 **đã có khung** |
 | — | **Nút bàn** | Gắn trên mỗi bàn | Khách | **Phần cứng, không phải web** — bấm 1 nút → server tạo task gọi robot | ⬜ chưa code |
 
 > **Bảng điều khiển gộp bếp + giám sát + quản lý:** 1 web duy nhất cho nhân viên/quản lý — vừa là Kitchen
@@ -149,8 +155,9 @@ phục vụ** — không phải nhiều server, chỉ là vài "ứng dụng fro
 > bàn, hàng đợi task), vừa là **panel quản lý** (sửa menu/giá, cấu hình bàn, xem doanh thu/lịch sử đơn).
 > Gộp lại cho dễ quản lý: nhân viên chỉ cần nhìn 1 màn hình. (Có thể tách tab "Quản lý" cho role admin.)
 >
-> Tất cả web là tĩnh, build cho FastAPI serve (hoặc `vite dev` khi dev). UI robot (#3) chạy full-screen
-> (kiosk mode) trên màn hình robot; có thể dùng lại component menu/giỏ hàng của `customer_ui` cho Kiosk #1.
+> Cả 3 web là tĩnh, **server build & serve cùng 1 origin `:8000`** — mọi client chỉ mở URL (`vite dev` chỉ
+> dùng khi DEV frontend). UI robot (#3) chạy full-screen (chromium `--kiosk`) trên màn LCD robot, **không
+> build cục bộ**; có thể dùng lại component menu/giỏ hàng của `customer_ui` cho Kiosk #1.
 
 ### 3.1 Hiện trạng UI robot đã code (`src/frontends/customer_ui`)
 Vue 3 + Vite + TypeScript + Pinia + Vue Router, thiết kế cố định **1024×600** (đúng LCD robot), tự
@@ -197,7 +204,7 @@ JETSON ROBOT  (mỗi robot)
 │   ├── output/        (TTS)             ← Ở LẠI JETSON (nói, cục bộ)
 │   └── ws_client.py   → server (gửi text STT, nhận text→TTS + lệnh navigate)
 │       + ws bridge → Body (localhost, contract cũ không đổi)
-├── customer_ui (Vue)                    ← chạy full-screen màn hình robot; nối THẲNG server (REST/WS)
+├── (KHÔNG có web)                       ← chromium --kiosk → http://<SERVER>:8000/ (server serve, không build)
 └── robot_ws/                            (env colcon, ROS 2 Humble — BODY)
     ├── src/sim/turtlebot4_ignition_bringup/   (Gazebo: turtlebot4_ignition.launch.py, world restaurant.sdf)
     ├── src/common/turtlebot4_navigation/      (Nav2 — điều hướng tới waypoint)
@@ -456,18 +463,19 @@ Cả 3 laptop nối **cùng 1 WiFi/LAN**; Server có IP cố định, ví dụ `
 │ Web (tab):   │ │ node bridge            │ │                    │
 │ /kiosk       │ │  (WS client → 1.10)    │ │ 1 web gộp bếp+giám: │
 │ (nút bàn giả │ │ robot-agent (STT/TTS)  │ │  - đơn mới theo bàn │
-│  lập = curl  │ │ customer_ui (Vue) =    │ │  - tick "món xong"  │
-│  /tables/3/  │ │  màn hình robot        │ │  - vị trí robot/pin │
-│  call)       │ │  → /menu, /payment     │ │  - hàng đợi task    │
+│  lập = curl  │ │ chromium --kiosk →     │ │  - tick "món xong"  │
+│  /tables/3/  │ │  http://1.10:8000/     │ │  - vị trí robot/pin │
+│  call)       │ │  (server serve UI)     │ │  - hàng đợi task    │
 └──────┬───────┘ └───────────┬─────────────┘ └─────────┬──────────┘
        │  WebSocket/REST      │ WS (task/ack + voice)    │ WebSocket
        └─────────────────────►│◄─────────────────────────┘
                        (tất cả trỏ về 192.168.1.10:8000)
 ```
 
-### Laptop 1 — Server + LLM + Kiosk (sân khấu chính)
-- Chạy FastAPI (cổng `8000`) + SQLite (`restaurant.db`) + **LLM/agent + RAG menu** + Dispatcher.
-- Mở tab **Kiosk** (`/kiosk`). **Nút bàn** chưa có phần cứng → giả lập bằng `curl -X POST
+### Laptop 1 — Server + LLM + serve cả 3 web (sân khấu chính)
+- Chạy FastAPI (cổng `8000`) + SQLite (`restaurant.db`) + **LLM/agent + RAG menu** + Dispatcher,
+  đồng thời **build & serve cả 3 web** (`make build`) — Laptop 2/3 chỉ mở URL, không build gì.
+- Mở tab **Kiosk** (`…:8000/kiosk`). **Nút bàn** chưa có phần cứng → giả lập bằng `curl -X POST
   http://192.168.1.10:8000/tables/3/call` (hoặc 1 nút bấm nhỏ trên trang dev).
 - (Demo nhẹ: nếu laptop yếu, đặt LLM ở 1 model nhỏ/endpoint riêng — vẫn là "trên server", không trên robot.)
 
@@ -477,7 +485,8 @@ Cả 3 laptop nối **cùng 1 WiFi/LAN**; Server có IP cố định, ví dụ `
 - **Node bridge** (cần viết, vd trong `ai_hw_bridge`): **WS client** tới
   `ws://192.168.1.10:8000/ws?role=robot`, nhận task/navigate → tra toạ độ bàn (`restaurant_positions.md`)
   → đặt Nav2 goal → robot chạy trong Gazebo → báo `arrived`/`task_done`.
-- **`customer_ui` (Vue)** mở full-screen ở đây = màn hình robot; theo lệnh server sẽ chuyển `/menu`, `/payment`.
+- **Màn hình robot** = `chromium --kiosk http://192.168.1.10:8000/` (server serve `customer_ui`, **Laptop 2
+  không build/Node**); theo lệnh server sẽ chuyển `/menu`, `/payment`.
 - **2 chế độ:** *mock-voice* (bỏ mic, bridge tự dịch task→goal — đủ demo luồng + di chuyển) hoặc
   *full-voice* (robot-agent STT/TTS cục bộ + **LLM ở Laptop 1** để demo đặt món bằng giọng nói).
 - **Multi-robot:** mở 2 instance, đổi `robot_id`/namespace (`r1`, `r2`) → bảng điều khiển hiện 2 robot,

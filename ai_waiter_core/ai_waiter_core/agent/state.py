@@ -40,3 +40,9 @@ class AgentState(TypedDict):
 
     # Router metadata for debugging/evaluation
     routing_meta: Optional[Dict[str, Any]]
+
+    # Action command the agent emits this turn for the table's tablet (mục 12). One of
+    # "open_menu" | "open_payment" | None. Set deterministically from the tool that ran
+    # (see agent/actions.py); the conversation reply is spoken, this drives the screen.
+    # Reset to None at the start of every turn so a command never leaks to the next.
+    ui_action: Optional[str]

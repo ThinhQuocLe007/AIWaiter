@@ -7,6 +7,7 @@ total), mark the table as waiting-for-kitchen, and return the saved order.
 
 from fastapi import APIRouter, HTTPException
 
+from .. import dispatcher
 from ..db import get_conn
 from ..schemas import OrderCreate, OrderOut, OrderStatusUpdate, TableOut
 from ..ws import manager
@@ -108,4 +109,7 @@ async def update_order_status(order_id: int, payload: OrderStatusUpdate) -> Orde
     assert order is not None
     # Keep every panel in sync when a status changes (e.g. another panel ticked "done").
     await manager.broadcast("panel", {"type": "order.updated", "order": order.model_dump()})
+    # Kitchen marked the order ready → enqueue a deliver task to carry it to the table.
+    if payload.status == "XONG":
+        await dispatcher.create_task("deliver", table_id=order.table_id, order_id=order_id)
     return order

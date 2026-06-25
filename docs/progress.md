@@ -12,7 +12,7 @@
 |---|---|---|
 | A | 1 robot, Brain↔Body localhost WS | ⬜ chưa bắt đầu |
 | **B** | **Server trung tâm (FastAPI+SQLite), nối `customer_ui` vào backend, Kiosk + Bảng ĐK cơ bản** | ✅ **xong (cốt lõi)** — backend menu+orders+tables+WS, UI robot gửi đơn thật, **Bảng ĐK realtime**, **Kiosk check-in** (chọn bàn + số người). *(Tái dùng component menu trên Kiosk để dành — xem 2.7.)* |
-| C | Dispatcher + nút bàn + thanh toán | ⬜ chưa bắt đầu |
+| **C** | **Dispatcher + nút bàn + thanh toán** | 🟦 **đang làm** — dispatcher (hàng đợi `tasks`, chọn robot gần/đủ pin, WS 2 chiều robot↔server, re-dispatch khi robot rớt) + nút bàn `/call` + thanh toán mock **đã xong & test E2E bằng mock robot**; còn robot thật (Mốc A) |
 | D | Multi-robot | ⬜ chưa bắt đầu |
 
 Cụ thể trong Mốc B: **đã xong "Bước 0 → 4"** = dựng khung server, UI robot lấy menu thật, **đặt món thật**, **Bảng điều khiển bếp realtime** (đơn mới đẩy qua WebSocket, tick trạng thái món), và **Kiosk check-in** (chọn bàn trống + số người → `POST /seatings`). Phần *tái dùng component menu* trên Kiosk để dành (sẽ nâng npm workspaces khi cần) — **không chặn**, vì khách đặt món trên tablet tại bàn (`customer_ui`).
@@ -145,6 +145,38 @@ Mở rộng Panel từ "chỉ KDS bếp" thành bảng giám sát cả quán (1 
 
 > *Lưu ý:* `customer_ui` chưa có `tsconfig.json` nên `npm run build` (chạy `vue-tsc`) lỗi `TS5083` — **lỗi sẵn có, không do thay đổi này**; `vite build` (esbuild) vẫn build sạch. Type-check là việc dọn dẹp riêng.
 
+### 2.9 Dispatcher — điều phối task cho robot (Mốc C)
+Server thành "quản lý ca": sự kiện nghiệp vụ → tạo `task` → chọn robot → đẩy qua WS → robot báo về → đổi trạng thái bàn. **2 tầng task** (mục 6 kiến trúc): task hệ thống ("phục vụ bàn 3") ở server; task vật lý (waypoint+Nav2) do robot tự dịch — server **không** đụng Nav2.
+
+**Backend:**
+- [app/dispatcher.py](../src/backend/app/dispatcher.py) (mới): `create_task(kind,table,order)` lưu `tasks` PENDING rồi `try_assign()`. **Chọn robot**: lọc `online`(có WS)+`idle`+`battery≥20`, rồi **gần bàn đích nhất** (Euclid theo `x,y` heartbeat vs waypoint `TABLE_POS` lấy từ [restaurant_positions.md](../robot_ws/docs/restaurant_positions.md) marker q1–q6). Hết robot rảnh → task nằm chờ. Callback từ robot: `on_accepted`→IN_PROGRESS, `on_arrived`→đổi trạng thái **bàn** (`go_to_table`→`DANG_GOI_MON`, `deliver`→`DANG_AN`), `on_done`→task DONE + robot idle + `try_assign()` gắp việc kế. `on_robot_disconnect`→**requeue** task đang dở (re-dispatch sang robot khác). `on_heartbeat`→cập nhật pin/vị trí.
+- [app/ws.py](../src/backend/app/ws.py) (sửa): hub thêm danh tính robot — `/ws?role=robot&robot_id=…`. Thêm sổ `_robots` (tra socket theo id) + `send_to_robot()` (gửi **đích danh 1 robot**, không broadcast). Vòng nhận tin **parse JSON & route** theo `type` (`heartbeat`/`task_accepted`/`arrived`/`task_done`) thay vì vứt; disconnect→`on_robot_disconnect`. Role `panel` giữ nguyên (một chiều). Import trễ `dispatcher` để tránh circular.
+- [app/routers/tasks.py](../src/backend/app/routers/tasks.py) (mới): `GET /tasks` (xem hàng đợi, lọc `status`), `POST /tables/{id}/call` (nút bàn → task `call`).
+- Nối sự kiện đã có: [tables.py](../src/backend/app/routers/tables.py) `POST /seatings`→`go_to_table`; [orders.py](../src/backend/app/routers/orders.py) `PATCH /orders/{id}` status=`XONG`→`deliver`. [schemas.py](../src/backend/app/schemas.py) += `TaskOut`.
+
+**WS contract:** server→robot `{"type":"task.assign","task_id","kind","table_id","order_id"}`; robot→server `task_accepted`/`arrived`/`task_done` (kèm `task_id`) + `heartbeat` (`battery,x,y`). Event mới gửi `panel`: `task.created`/`task.updated`/`robot.updated`.
+
+**Heartbeat-timeout watchdog** (phát hiện robot "treo"): bắt ca mà disconnect **không** bắt được — robot kẹt/đơ nhưng socket TCP vẫn mở (không có `WebSocketDisconnect`). `dispatcher._last_seen` ghi mốc heartbeat gần nhất; `watchdog_loop()` (chạy nền từ `lifespan`, quét mỗi `ORCH_WATCHDOG_INTERVAL_S=5s`) thấy robot im quá `ORCH_HEARTBEAT_TIMEOUT_S` (**mặc định 30s, chỉnh qua env**) → coi là treo → `on_robot_disconnect` (requeue + offline) + `manager.kick_robot` (đóng socket zombie). **Ngưỡng tính theo bội số khoảng heartbeat, KHÔNG theo tốc độ robot** (robot đi chậm vẫn đập nhịp đều); để rộng 30s phòng Jetson tải nặng ship heartbeat trễ. Idempotent: sau khi set `current_task_id=NULL`, lần disconnect thứ 2 (do kick) là no-op.
+
+**Mock robot** ([scripts/mock_robot.py](../scripts/mock_robot.py), `make mockrobot ID=robo-1`): client WS giả lập đúng contract trên (heartbeat định kỳ; nhận `task.assign` → accept→drive(4s)→arrive→act(3s)→done). Cờ test: `--hang-on-task` (nhận task rồi đóng băng, giữ socket mở — test watchdog), `--hang-after N`. Thay cho robot Jetson thật (Mốc A) — sau chỉ đổi sang `ws_client.py`, contract giữ nguyên.
+
+**Đã test E2E** (backend + 1–2 mock robot, qua curl): seat bàn 3→task `go_to_table`→robot accept/arrive(bàn `DANG_GOI_MON`)/done(robot idle); order `XONG`→`deliver`(bàn `DANG_AN`); nút `/call`→task `call`. **2 robot**: 2 task đồng thời chia theo robot gần nhất (bàn 1→robo-1, bàn 6→robo-2). **Re-dispatch (disconnect)**: kill robot giữa lúc chở task → task requeue PENDING → robot còn lại gắp & hoàn tất. **Re-dispatch (treo)**: robo-1 nhận task rồi `--hang-on-task` đóng băng → watchdog (timeout 6s khi test) đánh offline + kick → task requeue → robo-2 hoàn tất.
+
+### 2.10 Panel — view hàng đợi nhiệm vụ + nút "Gọi robot" trên mỗi bàn
+Ráp nốt UI cho dispatcher (backend đã phát event từ 2.9, chỉ thiếu màn hình) + thay thao tác `curl` gọi robot bằng nút bấm ngay trên Panel cho dễ demo.
+
+**Frontend dùng chung** ([shared/](../src/frontends/shared/)): `types.ts` += interface `Task` (mirror `TaskOut`) + 2 biến thể `WsEvent` `task.created`/`task.updated`; `rest.ts` += `fetchTasks(status?)` (`GET /tasks`) và `callRobot(tableId)` (`POST /tables/{id}/call`).
+
+**Panel** ([src/frontends/panel/](../src/frontends/panel/)):
+- `components/TasksBoard.vue` (mới) — **hàng đợi dispatcher realtime**: lưới thẻ nhiệm vụ *đang hoạt động* (lọc bỏ `DONE`, sắp **cũ nhất trước** = đúng thứ tự server phục vụ). Mỗi thẻ: icon+nhãn loại (`go_to_table`→"Đón khách", `deliver`→"Giao món", `call`→"Gọi phục vụ"), "Bàn N", robot được giao (hoặc "chờ phân robot"), badge trạng thái (`PENDING`/`ASSIGNED`/`IN_PROGRESS`), `#id` + thời gian. Cuối khối: dòng đếm "N nhiệm vụ đã hoàn tất".
+- `components/TablesOverview.vue` — thêm nút **"🔔 Gọi robot"** trên **mọi** thẻ bàn (gói trong `.t-actions` cùng nút "Kết thúc bàn"); emit `call` → App gọi `callRobot`. Có cờ `callBusy` (Set table id) → disable + đổi chữ "Đang gọi…" lúc request bay. *(Demo bấm thẳng trên Panel thay vì `curl`; nút phần cứng ESP32 để dành.)*
+- `App.vue` — state `tasks` + `callBusy`; `load()` fetch thêm `fetchTasks()`; `onEvent` xử lý `task.created`/`task.updated` (upsert); handler `callTable(id)` (optimistic upsert task trả về, WS echo idempotent). Thêm zone "Hàng đợi nhiệm vụ" (đếm active ở `zone-sub`).
+- `styles.css` += style cho `.t-call`/`.t-actions` + `.tasks-grid`/`.task-card` (viền trái theo trạng thái: `PENDING` vàng, `ASSIGNED` terracotta, `IN_PROGRESS` gold).
+
+**Đã test:** `vite build` panel pass (23 modules). **E2E** (backend :8011 + mock robot `robo-1`): `POST /tables/3/call` → task `PENDING`; robot connect → tự gắp → `IN_PROGRESS` (robot busy "Đang tới bàn 3 (gọi phục vụ)") → `DONE` → robot về `idle`/dock. `GET /tasks` phản ánh đúng từng bước.
+
+> *Còn lại của Mốc C:* nút bàn **phần cứng** thật (ESP32/WiFi → `/tables/{id}/call`) — hiện demo bằng **nút trên Panel** (đủ cho demo) hoặc `curl`.
+
 ---
 
 ## 3. Còn lại — việc tiếp theo (theo thứ tự ưu tiên)
@@ -160,15 +192,16 @@ Mở rộng Panel từ "chỉ KDS bếp" thành bảng giám sát cả quán (1 
 - [ ] *(liên quan)* Sau khi seat xong, customer_ui cần biết `table_id` **động** (hiện lấy tĩnh từ `VITE_TABLE_ID` trong [ui.ts](../src/frontends/customer_ui/src/stores/ui.ts)) — xem mục 4.
 
 ### 3.2 Mốc C — Dispatcher + nút bàn + thanh toán
-- [ ] **Dispatcher**: hàng đợi `tasks`, chọn robot idle/gần/đủ pin; máy trạng thái bàn (mục 6).
-- [ ] **`POST /tables/{id}/call`** + luồng `call` (robot tới hỏi: đặt thêm / thanh toán).
+- [x] **Dispatcher** ([app/dispatcher.py](../src/backend/app/dispatcher.py)): hàng đợi `tasks`, chọn robot idle/gần/đủ pin; đẩy task qua WS 2 chiều; máy trạng thái bàn (mục 6) — xem **2.9**.
+- [x] **`POST /tables/{id}/call`** + luồng `call` ([app/routers/tasks.py](../src/backend/app/routers/tasks.py)): bấm nút → task `call` → robot tới (demo bằng `curl`).
 - [x] **Thanh toán (mock)** — *chỉ giả lập **khâu chuyển tiền thật**; backend vẫn cập nhật trạng thái thật.* Luồng: `ServiceChoiceScreen` (nút **Thanh toán** → lấy tổng đơn hiện tại) → `PaymentScreen` hiện **ảnh QR VietQR** (`img.vietqr.io`, mock số tiền + STK) + nút **"Đã thanh toán xong"** → gọi **`POST /payments/{order_id}`** ([payments.py](../src/backend/app/routers/payments.py)): ghi 1 dòng `payments` `PAID` (tính `amount` server-side từ `orders.total`, idempotent nếu bấm 2 lần) + đẩy bàn sang **`DA_THANH_TOAN`** + **broadcast `table.updated`** → panel hiện bàn "đã thanh toán" với nút **"Kết thúc bàn"** (`PATCH /tables/{id}` `→ TRONG`, đã có) để **trống lại** cho khách kế. Tablet clear giỏ & về màn chính (timeout idle 30s chỉ về màn chính, **không** tính là đã trả). **Không** dùng webhook/sandbox PSP — để dành nếu sau cần đối soát thật (thêm `/qr` + `/webhooks/payment`). *Đã test (TestClient): seat→order→pay `201` (bàn `DANG_PHUC_VU`→`DA_THANH_TOAN`), double-tap tái dùng payment id, `Kết thúc bàn`→`TRONG`, pay order lạ `404`.*
-- [ ] **Nút bàn phần cứng** (ESP32/WiFi → gọi `/tables/{id}/call`); demo tạm bằng `curl`.
+- [x] **Panel view hàng đợi nhiệm vụ + nút "Gọi robot" mỗi bàn** — xem **2.10** (đóng nốt UI cho dispatcher; nút trên Panel thay `curl`).
+- [ ] **Nút bàn phần cứng** (ESP32/WiFi → gọi `/tables/{id}/call`); demo tạm bằng **nút trên Panel** / `curl`.
 
 ### 3.3 Mốc A & D — robot
 - [ ] **Brain↔Body WS localhost** + **node bridge** `ai_hw_bridge` (đang `COLCON_IGNORE`): nhận task → tra `restaurant_positions.md` → đặt Nav2 goal → báo `arrived`/`task_done`.
 - [ ] **`ws_client.py`** (Brain → Server) để robot thành WS client.
-- [ ] **Agent sinh lệnh hành động** (rủi ro lớn nhất, mục 12): hiện agent chỉ trả text, chưa phát lệnh điều khiển robot.
+- [~] **Agent sinh lệnh hành động** (rủi ro lớn nhất, mục 12) — **nửa "quyết định" đã xong**: agent giờ sinh **lệnh UI** (`open_menu`/`open_payment`) bên cạnh text, suy ra **xác định** từ tool vừa chạy thành công (`sync_cart`/`search`→`open_menu`, `request_payment`→`open_payment`; `confirm_order` trung tính). Code ở [agent/actions.py](../ai_waiter_core/ai_waiter_core/agent/actions.py) (logic + seam `emit_action`), set trong [update_state_node.py](../ai_waiter_core/ai_waiter_core/agent/nodes/update_state_node.py), surface qua `chat()` → `result["action"]`. Đã test ở mức node (tool→action). **Còn lại = "nửa giao": cầu nối Brain→tablet (`emit_action` chưa cắm transport)** + lệnh `navigate`/`return_dock` (cần robot). *State `ui_action` reset mỗi lượt nên không rò sang lượt sau.*
 - [ ] **Voice thật**: thay mock `stores/voice.ts` bằng STT + LLM endpoint + TTS.
 - [ ] **Multi-robot**: instance thứ 2 trong sim, lane 1 chiều, cân nhắc Open-RMF/Zenoh.
 
@@ -178,7 +211,10 @@ Mở rộng Panel từ "chỉ KDS bếp" thành bảng giám sát cả quán (1 
 - **`table_id` động cho customer_ui**: hiện tablet gán tĩnh qua `VITE_TABLE_ID` ([ui.ts](../src/frontends/customer_ui/src/stores/ui.ts) `tableId`). Khi có Kiosk seating, nên set `ui.tableId` lúc check-in (query param/route hoặc gọi API), thay vì cố định mỗi máy 1 bàn.
 - **Migrate customer_ui sang `shared/`**: customer_ui còn `data/api.ts` riêng (trùng phần order types/client với `shared/`). Thêm alias `@shared` vào [vite.config.ts](../src/frontends/customer_ui/vite.config.ts) rồi dùng chung — dọn dẹp optional.
 - **Nâng lên npm workspaces khi share component Vue**: lúc làm Kiosk cần tái dùng component menu (có deps) → chuyển `src/frontends/` thành workspace (`apps/customer_ui|kiosk|panel` + `packages/ui`). TS thuần thì `shared/` + alias là đủ (đã làm).
-- **Serve frontend tĩnh từ FastAPI** (prod): build customer_ui/Kiosk/Panel → FastAPI mount static → cùng origin, không cần Vite lúc chạy thật.
+- **Serve frontend tĩnh từ FastAPI** (prod) — **đã CHỐT làm pipeline deploy (2026-06):** SERVER build
+  customer_ui/Kiosk/Panel → FastAPI mount static cùng origin `:8000`; Jetson + laptop khác chỉ mở URL
+  (`chromium --kiosk http://<SERVER_IP>:8000/`), **không Node/không build cục bộ**. Chi tiết:
+  [setup_test_guide.md §3.Web](setup_test_guide.md) + [SYSTEM_ARCHITECTURE.md §3](SYSTEM_ARCHITECTURE.md).
 - **`menu.json` → DB**: dài hạn cho phép sửa menu qua Bảng ĐK (CRUD `dishes`) thay vì sửa file tay.
 - **WS cho customer_ui/robot**: hub `app/ws.py` đã fan-out theo `role`; mở thêm `role=robot`/`role=customer` khi cần (vd báo "đơn đã xong, robot đang giao" về tablet khách).
 - **Health/readiness cho demo 3 laptop**: trang panel hiện trạng thái kết nối robot (heartbeat) để biết robot "sống".

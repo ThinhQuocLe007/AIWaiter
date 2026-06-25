@@ -7,15 +7,17 @@ This is the single backend that serves all web clients (customer UI, kiosk, pane
 robot WS hub. Bước 0 ships the skeleton + GET /menu; orders/payments/tasks come next.
 """
 
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from . import dispatcher
 from .config import settings
 from .db import init_db
 from .menu import seed_dishes, seed_robots, seed_tables
-from .routers import admin, menu, orders, payments, robots, tables
+from .routers import admin, menu, orders, payments, robots, tables, tasks
 from .ws import router as ws_router
 
 
@@ -25,7 +27,10 @@ async def lifespan(app: FastAPI):
     seed_tables()
     seed_dishes()
     seed_robots()
+    # Background watchdog: detects robots that went silent (hung) and requeues their tasks.
+    watchdog = asyncio.create_task(dispatcher.watchdog_loop())
     yield
+    watchdog.cancel()
 
 
 app = FastAPI(title="AI Waiter Orchestrator", version="0.1.0", lifespan=lifespan)
@@ -43,6 +48,7 @@ app.include_router(tables.router)
 app.include_router(orders.router)
 app.include_router(payments.router)
 app.include_router(robots.router)
+app.include_router(tasks.router)
 app.include_router(admin.router)
 app.include_router(ws_router)
 

@@ -83,6 +83,20 @@ class PaymentOut(BaseModel):
     paid_at: str | None = None
 
 
+# --- Tasks (dispatcher) -------------------------------------------------------------------
+class TaskOut(BaseModel):
+    """A system task the dispatcher hands to a robot (go_to_table / deliver / call)."""
+
+    id: int
+    kind: str
+    table_id: int | None = None
+    order_id: int | None = None
+    robot_id: str | None = None
+    status: str
+    created_at: str
+    updated_at: str
+
+
 # --- Robots -------------------------------------------------------------------------------
 class RobotOut(BaseModel):
     id: str

@@ -27,12 +27,27 @@
           Tổng quan bàn
           <span class="zone-sub">{{ freeCount }} trống / {{ tables.length }} bàn</span>
         </h2>
-        <TablesOverview :tables="tables" :orders="orders" :now="now" @end-table="endTable" />
+        <TablesOverview
+          :tables="tables"
+          :orders="orders"
+          :now="now"
+          :call-busy="callBusy"
+          @end-table="endTable"
+          @call="callTable"
+        />
       </section>
 
       <section class="zone">
         <h2 class="zone-head">Robot</h2>
         <RobotBoard :robots="robots" />
+      </section>
+
+      <section class="zone">
+        <h2 class="zone-head">
+          Hàng đợi nhiệm vụ
+          <span class="zone-sub">{{ activeTaskCount }} đang chờ / thực hiện</span>
+        </h2>
+        <TasksBoard :tasks="tasks" :now="now" />
       </section>
 
       <section class="zone grow">
@@ -45,11 +60,13 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
-import type { Order, Robot, Table, WsEvent } from '@shared/types'
+import type { Order, Robot, Table, Task, WsEvent } from '@shared/types'
 import {
+  callRobot,
   fetchOrders,
   fetchRobots,
   fetchTables,
+  fetchTasks,
   resetSystem,
   updateOrderStatus,
   updateTableStatus,
@@ -58,6 +75,7 @@ import { connectEvents, type WsHandle } from '@shared/ws'
 import TablesOverview from './components/TablesOverview.vue'
 import RobotBoard from './components/RobotBoard.vue'
 import KitchenBoard from './components/KitchenBoard.vue'
+import TasksBoard from './components/TasksBoard.vue'
 
 // Kitchen workflow: a new order waits, then is being cooked, then done.
 const nextStatus: Record<string, string> = { CHO_BEP: 'DANG_LAM', DANG_LAM: 'XONG' }
@@ -65,9 +83,11 @@ const nextStatus: Record<string, string> = { CHO_BEP: 'DANG_LAM', DANG_LAM: 'XON
 const orders = ref<Order[]>([])
 const tables = ref<Table[]>([])
 const robots = ref<Robot[]>([])
+const tasks = ref<Task[]>([])
 const connected = ref(false)
 const loadError = ref<string | null>(null)
 const busy = reactive(new Set<number>()) // order ids with an in-flight PATCH
+const callBusy = reactive(new Set<number>()) // table ids with an in-flight call request
 const now = ref(Date.now()) // ticked so "đã ngồi" durations stay live
 const clock = ref(formatClock()) // live wall-clock HH:MM:SS
 const resetting = ref(false)
@@ -85,6 +105,7 @@ let pollTimer: ReturnType<typeof setInterval> | undefined
 let clockTimer: ReturnType<typeof setInterval> | undefined
 
 const freeCount = computed(() => tables.value.filter((t) => t.status === 'TRONG').length)
+const activeTaskCount = computed(() => tasks.value.filter((t) => t.status !== 'DONE').length)
 
 function upsertOrder(order: Order) {
   const i = orders.value.findIndex((o) => o.id === order.id)
@@ -102,6 +123,24 @@ function upsertRobot(robot: Robot) {
   const i = robots.value.findIndex((r) => r.id === robot.id)
   if (i >= 0) robots.value[i] = robot
   else robots.value.push(robot)
+}
+
+function upsertTask(task: Task) {
+  const i = tasks.value.findIndex((t) => t.id === task.id)
+  if (i >= 0) tasks.value[i] = task
+  else tasks.value.push(task)
+}
+
+async function callTable(id: number) {
+  if (callBusy.has(id)) return
+  callBusy.add(id)
+  try {
+    upsertTask(await callRobot(id)) // instant feedback; WS task.created echo is idempotent
+  } catch (err) {
+    loadError.value = err instanceof Error ? err.message : 'Không gọi được robot'
+  } finally {
+    callBusy.delete(id)
+  }
 }
 
 async function advance(order: Order) {
@@ -142,10 +181,16 @@ async function resetAll() {
 
 async function load() {
   try {
-    const [t, o, r] = await Promise.all([fetchTables(), fetchOrders(), fetchRobots()])
+    const [t, o, r, k] = await Promise.all([
+      fetchTables(),
+      fetchOrders(),
+      fetchRobots(),
+      fetchTasks(),
+    ])
     tables.value = t
     orders.value = o
     robots.value = r
+    tasks.value = k
     loadError.value = null
   } catch (err) {
     loadError.value = err instanceof Error ? err.message : 'Không tải được dữ liệu'
@@ -156,6 +201,7 @@ function onEvent(e: WsEvent) {
   if (e.type === 'order.created' || e.type === 'order.updated') upsertOrder(e.order)
   else if (e.type === 'table.updated') upsertTable(e.table)
   else if (e.type === 'robot.updated') upsertRobot(e.robot)
+  else if (e.type === 'task.created' || e.type === 'task.updated') upsertTask(e.task)
   else if (e.type === 'reset') load() // demo reset: re-pull everything (orders cleared, tables freed)
 }
 

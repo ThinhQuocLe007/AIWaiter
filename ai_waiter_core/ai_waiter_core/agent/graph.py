@@ -4,6 +4,7 @@ from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
 
 from ai_waiter_core.agent.state import AgentState
+from ai_waiter_core.agent.actions import build_action, emit_action
 from ai_waiter_core.agent.memory.checkpointer import get_checkpointer, create_thread_config
 from ai_waiter_core.agent.tools import search, sync_cart, confirm_order, request_payment, verify_payment
 from ai_waiter_core.agent.nodes.hybrid_router_node import hybrid_router_node
@@ -182,12 +183,20 @@ class AIWaiterGraph:
             "loop_count": 0,
             "is_valid": True,
             "order_stage": existing_stage,
+            "ui_action": None,  # reset each turn so a command never leaks to the next
         }
         result = self.app.invoke(inputs, config)
+
+        # The agent doesn't just talk — it also acts on the table's tablet (open menu / bill).
+        # `action` is None when nothing happened this turn. emit_action is the bridge seam.
+        action = build_action(result.get("ui_action"))
+        if action:
+            emit_action(table_id, action)
 
         return {
             "response": result["messages"][-1].content,
             "session_id": config["configurable"]["thread_id"],
             "status": "success",
             "final_stage": result["order_stage"],
+            "action": action,
         }

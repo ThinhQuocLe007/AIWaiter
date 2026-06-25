@@ -40,10 +40,24 @@ export interface Robot {
   current_task_id?: number | null
 }
 
+// A dispatcher task (go_to_table / deliver / call) handed to a robot. Mirrors TaskOut.
+export interface Task {
+  id: number
+  kind: string
+  table_id?: number | null
+  order_id?: number | null
+  robot_id?: string | null
+  status: string
+  created_at: string
+  updated_at: string
+}
+
 // WebSocket events pushed from the backend hub (src/backend/app/ws.py).
 export type WsEvent =
   | { type: 'order.created'; order: Order }
   | { type: 'order.updated'; order: Order }
   | { type: 'table.updated'; table: Table }
   | { type: 'robot.updated'; robot: Robot }
+  | { type: 'task.created'; task: Task }
+  | { type: 'task.updated'; task: Task }
   | { type: 'reset' }

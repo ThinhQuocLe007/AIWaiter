@@ -8,6 +8,7 @@ panel's "mark paid / end table" actions. Status changes broadcast to the panel f
 
 from fastapi import APIRouter, HTTPException
 
+from .. import dispatcher
 from ..db import get_conn
 from ..schemas import SeatingCreate, TableOut, TableStatusUpdate
 from ..ws import manager
@@ -54,6 +55,8 @@ async def create_seating(payload: SeatingCreate) -> TableOut:
         updated = _fetch_table(conn, payload.table_id)
     assert updated is not None
     await manager.broadcast("panel", {"type": "table.updated", "table": updated.model_dump()})
+    # A seated party needs a robot to come take the order → enqueue a go_to_table task.
+    await dispatcher.create_task("go_to_table", table_id=payload.table_id)
     return updated
 
 

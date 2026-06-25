@@ -1,6 +1,6 @@
 # AI Waiter - Capstone Project
 
-> 📦 **Cài đặt:** xem **[docs/INSTALL.md](docs/INSTALL.md)** (hướng dẫn cài theo từng máy: Jetson · Server · Laptop).
+> 📦 **Cài đặt + Test:** xem **[docs/setup_test_guide.md](docs/setup_test_guide.md)** (cài theo từng máy: Jetson · Server · Laptop, + quy trình test voice/web).
 > 🏗️ **Kiến trúc:** xem **[docs/SYSTEM_ARCHITECTURE.md](docs/SYSTEM_ARCHITECTURE.md)**.
 > (Phần *System Architecture* + *Setup* bên dưới mô tả pipeline **bản cũ (all-in-one)** — đã được pivot 2026-06 thay thế.)
 
