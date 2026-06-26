@@ -15,7 +15,7 @@ _payment_model = ChatOllama(
     model=settings.WORKER_MODEL,
     temperature=0.1,
     num_ctx=settings.LLM_NUM_CTX,
-    keep_alive=settings.LLM_KEEP_ALIVE,
+    keep_alive=settings.llm_keep_alive,
     metadata={"ls_model_name": settings.WORKER_MODEL, "ls_provider": "ollama"}
 ).bind_tools([request_payment, verify_payment])
 

@@ -15,7 +15,7 @@ _response_llm = ChatOllama(
     model=settings.RESPONSE_MODEL,
     temperature=0.1,
     num_ctx=settings.LLM_NUM_CTX,
-    keep_alive=settings.LLM_KEEP_ALIVE,
+    keep_alive=settings.llm_keep_alive,
     metadata={"ls_model_name": settings.RESPONSE_MODEL, "ls_provider": "ollama"}
 )
 

@@ -21,6 +21,17 @@ class AgentSettings(BaseSettings):
     # — and every — real turn skips the load. Set to e.g. "10m" to cap memory on a shared box.
     LLM_KEEP_ALIVE: str = Field(default="-1", env="LLM_KEEP_ALIVE")
 
+    @property
+    def llm_keep_alive(self):
+        """Ollama wants keep_alive as an int (seconds; -1 = forever) OR a duration string with a
+        unit ("10m"). A bare "-1"/"0" string is parsed as a duration and rejected ('missing unit'),
+        so coerce integer-like values to int and leave real duration strings ("10m") as-is."""
+        v = self.LLM_KEEP_ALIVE.strip()
+        try:
+            return int(v)
+        except ValueError:
+            return v
+
     HF_TOKEN: str = Field(default="", env="HF_TOKEN")
 
     # Base URL of the Orchestrator backend (the single ledger). The agent's tools write through

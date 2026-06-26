@@ -52,7 +52,7 @@ def _warmup() -> None:
             ChatOllama(
                 model=model_id,
                 num_ctx=settings.LLM_NUM_CTX,
-                keep_alive=settings.LLM_KEEP_ALIVE,
+                keep_alive=settings.llm_keep_alive,
             ).invoke("ok")
         except Exception as e:  # Ollama down / model not pulled — log and carry on.
             log.warning("LLM warmup failed for %s: %s", model_id, e)
