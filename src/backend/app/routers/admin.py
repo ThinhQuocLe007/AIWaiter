@@ -8,6 +8,7 @@ reloads immediately. Not meant for production.
 
 from fastapi import APIRouter
 
+from .. import fleet
 from ..db import get_conn
 from ..menu import SEED_ROBOTS
 from ..ws import manager
@@ -48,6 +49,9 @@ async def reset_state() -> dict:
                 (status, battery, activity, rid),
             )
         (table_count,) = conn.execute('SELECT COUNT(*) FROM "tables"').fetchone()
+    # Also drop the in-RAM live telemetry, otherwise GET /robots would keep overlaying the last
+    # heartbeat pose on top of the now-zeroed DB snapshot (robot dot stuck at its old spot).
+    fleet.clear()
     # Tell any live panel to reload its boards (orders gone, tables freed, fleet reset).
     await manager.broadcast("panel", {"type": "reset"})
     return {"status": "ok", "tables_freed": table_count}

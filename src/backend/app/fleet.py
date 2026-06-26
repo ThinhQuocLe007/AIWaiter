@@ -36,6 +36,14 @@ def get(robot_id: str) -> dict | None:
         return dict(v) if v else None
 
 
+def clear() -> None:
+    """Drop all live telemetry. Used by /admin/reset so a fresh demo starts with no stale pose
+    (the DB snapshot is zeroed there too, but this RAM overlay would otherwise keep showing the
+    last-seen pose until the next heartbeat)."""
+    with _lock:
+        _live.clear()
+
+
 def overlay(row: dict) -> dict:
     """Return a `robots` row dict with live battery/x/y layered on top when we have them.
 

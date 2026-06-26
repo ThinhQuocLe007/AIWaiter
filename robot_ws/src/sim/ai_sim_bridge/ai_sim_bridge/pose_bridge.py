@@ -44,7 +44,7 @@ class PoseBridge(Node):
         super().__init__("pose_bridge")
 
         # --- params (override with --ros-args -p name:=value) ---
-        self.declare_parameter("server_host", "127.0.0.1:8000")  # backend host:port
+        self.declare_parameter("server_host", "100.66.165.221:8000")  # backend host:port
         self.declare_parameter("robot_id", "robo-1")             # MUST match the seeded robots row
         self.declare_parameter("map_frame", "map")
         self.declare_parameter("base_frame", "base_link")
@@ -69,7 +69,8 @@ class PoseBridge(Node):
         self._ws = None
         self._ws_lock = threading.Lock()
         self._connected = threading.Event()
-        self._warned_no_tf = False
+        self._last_notf_warn = 0.0   # throttle the "no TF" warning
+        self._last_pose_log = 0.0    # throttle the "sending pose" info log
 
         threading.Thread(target=self._ws_loop, daemon=True).start()
         self.create_timer(1.0 / rate, self._on_timer)
@@ -107,26 +108,30 @@ class PoseBridge(Node):
         """Read map->base_link and push one heartbeat."""
         if not self._connected.is_set():
             return
+        now = time.monotonic()
         try:
             tf = self._tf_buffer.lookup_transform(
                 self.map_frame, self.base_frame, rclpy.time.Time()
             )
         except (LookupException, ConnectivityException, ExtrapolationException):
-            if not self._warned_no_tf:
+            # Keep reminding (throttled) so it's clear we're still waiting on localization, not
+            # hung. Disappears the moment AMCL starts publishing map->base_link.
+            if now - self._last_notf_warn >= 3.0:
+                self._last_notf_warn = now
                 self.get_logger().warn(
                     f"No TF {self.map_frame}->{self.base_frame} yet — is localization/Nav2 up "
-                    "and the initial pose set?"
+                    "and the initial pose set (RViz '2D Pose Estimate')?"
                 )
-                self._warned_no_tf = True
             return
-        self._warned_no_tf = False
 
+        x = tf.transform.translation.x
+        y = tf.transform.translation.y
         msg = json.dumps({
             "type": "heartbeat",
             "robot_id": self.robot_id,
             "battery": self.battery,
-            "x": tf.transform.translation.x,
-            "y": tf.transform.translation.y,
+            "x": x,
+            "y": y,
         })
         with self._ws_lock:
             ws = self._ws
@@ -136,6 +141,14 @@ class PoseBridge(Node):
         except Exception as e:  # noqa: BLE001
             self.get_logger().warn(f"heartbeat send failed: {e}")
             self._connected.clear()
+            return
+
+        # Positive feedback in the terminal (throttled) so it's obvious the pose is flowing.
+        if now - self._last_pose_log >= 2.0:
+            self._last_pose_log = now
+            self.get_logger().info(
+                f"sending pose  x={x:.2f}  y={y:.2f}  battery={self.battery:.0f}%"
+            )
 
 
 def main(args=None) -> None:
