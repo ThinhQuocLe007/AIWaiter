@@ -16,6 +16,8 @@ load_dotenv()
 
 TABLE_ID = "T1"
 STATS_LOG_INTERVAL = 30.0
+# TTS chưa code xong — tạm tắt để test STT + agent. Bật lại = True khi làm xong bộ TTS.
+ENABLE_TTS = False
 # The LLM runs on the server, not the Jetson: this loop only does mic→VAD→Whisper and TTS, then
 # POSTs the recognised text to the agent service (ai_waiter_core/server.py) for processing. Local
 # model latency can be a few seconds, so give the call generous headroom.
@@ -47,7 +49,8 @@ def main():
     vad.start()
     stt.start()
 
-    asyncio.run(warmup())
+    if ENABLE_TTS:
+        asyncio.run(warmup())
 
     print("=" * 50)
     print(f" AI Waiter ready — Table {TABLE_ID}")
@@ -89,8 +92,9 @@ def main():
             response = result["response"]
             print(f"[WAITER]: {response}")
 
-            asyncio.run(speak_streaming(response, stage, player))
-            player.reset()
+            if ENABLE_TTS:
+                asyncio.run(speak_streaming(response, stage, player))
+                player.reset()
 
         except KeyboardInterrupt:
             shutdown(None, None)

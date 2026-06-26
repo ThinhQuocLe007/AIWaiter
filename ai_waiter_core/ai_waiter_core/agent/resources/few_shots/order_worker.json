@@ -20,7 +20,7 @@
   },
   {
     "role": "user",
-    "content": "Cho tôi 1 Phở Bò và 2 Coca"
+    "content": "Cho tôi 1 Lẩu Thái và 2 Bia Sài Gòn"
   },
   {
     "role": "assistant",
@@ -30,8 +30,8 @@
         "name": "sync_cart",
         "args": {
           "items": [
-            {"name": "Phở Bò", "quantity": 1, "special_requests": null},
-            {"name": "Coca", "quantity": 2, "special_requests": null}
+            {"name": "Lẩu Thái", "quantity": 1, "special_requests": null},
+            {"name": "Bia Sài Gòn", "quantity": 2, "special_requests": null}
           ]
         },
         "id": "call_sync_1"
@@ -40,7 +40,7 @@
   },
   {
     "role": "user",
-    "content": "Đổi Phở Bò thành 3 tô nhé, bỏ Coca"
+    "content": "Đổi Lẩu Thái thành 3 phần nhé, bỏ Bia Sài Gòn"
   },
   {
     "role": "assistant",
@@ -50,7 +50,7 @@
         "name": "sync_cart",
         "args": {
           "items": [
-            {"name": "Phở Bò", "quantity": 3, "special_requests": null}
+            {"name": "Lẩu Thái", "quantity": 3, "special_requests": null}
           ]
         },
         "id": "call_sync_2"
@@ -70,7 +70,7 @@
         "args": {
           "table_id": "T1",
           "items": [
-            {"name": "Phở Bò", "quantity": 3, "special_requests": null}
+            {"name": "Lẩu Thái", "quantity": 3, "special_requests": null}
           ]
         },
         "id": "call_confirm_1"
@@ -79,7 +79,7 @@
   },
   {
     "role": "user",
-    "content": "Cho anh 2 ly Trà Đá và 1 Bánh Mì"
+    "content": "Cho anh 2 ly Trà Tắc và 1 Bánh Mì Bơ Tỏi"
   },
   {
     "role": "assistant",
@@ -89,8 +89,8 @@
         "name": "sync_cart",
         "args": {
           "items": [
-            {"name": "Trà Đá", "quantity": 2, "special_requests": null},
-            {"name": "Bánh Mì", "quantity": 1, "special_requests": null}
+            {"name": "Trà Tắc", "quantity": 2, "special_requests": null},
+            {"name": "Bánh Mì Bơ Tỏi", "quantity": 1, "special_requests": null}
           ]
         },
         "id": "call_sync_3"
@@ -99,7 +99,7 @@
   },
   {
     "role": "user",
-    "content": "Bỏ Bánh Mì đi"
+    "content": "Bỏ Bánh Mì Bơ Tỏi đi"
   },
   {
     "role": "assistant",
@@ -109,7 +109,7 @@
         "name": "sync_cart",
         "args": {
           "items": [
-            {"name": "Trà Đá", "quantity": 2, "special_requests": null}
+            {"name": "Trà Tắc", "quantity": 2, "special_requests": null}
           ]
         },
         "id": "call_sync_4"
@@ -118,7 +118,7 @@
   },
   {
     "role": "user",
-    "content": "Đổi Trà Đá thành Coca giúp em"
+    "content": "Đổi Trà Tắc thành Bia Sài Gòn giúp em"
   },
   {
     "role": "assistant",
@@ -128,7 +128,7 @@
         "name": "sync_cart",
         "args": {
           "items": [
-            {"name": "Coca", "quantity": 2, "special_requests": null}
+            {"name": "Bia Sài Gòn", "quantity": 2, "special_requests": null}
           ]
         },
         "id": "call_sync_5"
@@ -137,7 +137,7 @@
   },
   {
     "role": "user",
-    "content": "Tăng Coca lên 3 ly"
+    "content": "Tăng Bia Sài Gòn lên 3 chai"
   },
   {
     "role": "assistant",
@@ -147,7 +147,7 @@
         "name": "sync_cart",
         "args": {
           "items": [
-            {"name": "Coca", "quantity": 3, "special_requests": null}
+            {"name": "Bia Sài Gòn", "quantity": 3, "special_requests": null}
           ]
         },
         "id": "call_sync_6"

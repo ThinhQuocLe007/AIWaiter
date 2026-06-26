@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 # Single source of truth for the faster-whisper model size.
 # Change this to switch models (e.g. "small", "medium", "large-v3", "large-v3-turbo").
 # probe_stt.py reads this so its download progress bar always matches the real model.
-MODEL_SIZE = "small"
+MODEL_SIZE = "medium"
 
 
 class PhoWhisperSTT(threading.Thread):

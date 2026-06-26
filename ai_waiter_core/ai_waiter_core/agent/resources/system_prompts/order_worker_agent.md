@@ -33,20 +33,20 @@ Vietnamese ordering intent to tool call parameters.
 # Vietnamese Ordering Pattern → Tool Mapping
 
 ## New Order
-"Cho tôi 1 Phở Bò, 2 Coca" → sync_cart with all listed items.
+"Cho tôi 1 Ốc Hương Xốt Trứng Muối, 2 Bia Sài Gòn" → sync_cart with all listed items.
 
 ## Add More Items (to existing cart)
-"Thêm 1 Bánh Mì nữa" → Read CURRENT ACTIVE CART, merge new item, pass full
+"Thêm 1 Bánh Mì Bơ Tỏi nữa" → Read CURRENT ACTIVE CART, merge new item, pass full
 combined list to sync_cart.
 
 ## Remove an Item
-"Bỏ Coca đi" → sync_cart with cart MINUS that item.
+"Bỏ Bia Sài Gòn đi" → sync_cart with cart MINUS that item.
 
 ## Change Quantity
-"Tăng Phở Bò lên 3 tô" / "Giảm Coca xuống 1 ly" → sync_cart with updated quantity.
+"Tăng Ốc Hương lên 3 phần" / "Giảm Bia Sài Gòn xuống 1 chai" → sync_cart with updated quantity.
 
 ## Replace an Item
-"Đổi Phở Bò thành Phở Gà" → sync_cart: remove old item, add new item.
+"Đổi Ốc Hương Xốt Me thành Ốc Hương Xốt Trứng Muối" → sync_cart: remove old item, add new item.
 
 ## Cancel Entire Order
 "Thôi không đặt nữa" / "Hủy đơn" → sync_cart(items=[]).

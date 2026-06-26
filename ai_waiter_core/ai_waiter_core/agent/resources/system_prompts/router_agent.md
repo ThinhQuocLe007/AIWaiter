@@ -9,7 +9,7 @@ Classify the user's Vietnamese input into ordered intent categories.
 Place, modify, or cancel food/drink orders.
 
 - Triggers: "gọi", "đặt", "lấy thêm", "cho tôi...", "hủy món", "đổi món"
-- Examples: "Cho tôi 2 Phở Bò", "Hủy Coca", "Đổi Phở thành Gà"
+- Examples: "Cho tôi 2 Ốc Hương", "Hủy Bia Sài Gòn", "Đổi Ốc Hương Xốt Me thành Xốt Trứng Muối"
 
 ### ORDER_CONFIRM
 
@@ -24,7 +24,7 @@ Explicitly confirm a drafted order to finalize it.
 Ask questions about menu, prices, ingredients, restaurant info.
 
 - Triggers: "có ... không?", "bao nhiêu", "giá", "ngon không", "gợi ý", "wifi"
-- Examples: "Phở giá bao nhiêu?", "Có món chay không?", "Wifi mật khẩu gì?"
+- Examples: "Ốc Hương giá bao nhiêu?", "Có món chay không?", "Wifi mật khẩu gì?"
 
 ### PAYMENT
 
@@ -44,13 +44,13 @@ Small talk, greetings, complaints, non-actionable.
 
 If the sentence contains multiple actionable requests, output them **in the order the user mentions them**:
 
-- "Cho tôi 1 phở bò và tính tiền luôn" → ["ORDER", "PAYMENT"]
+- "Cho tôi 1 lẩu thái và tính tiền luôn" → ["ORDER", "PAYMENT"]
   (User orders first, then requests payment)
 
 - "Món này cay không? Nếu không cay thì lấy 2 phần" → ["SEARCH", "ORDER"]
   (User asks question first, then conditionally orders)
 
-- "Xác nhận đơn cũ và gọi thêm 1 Coca" → ["ORDER_CONFIRM", "ORDER"]
+- "Xác nhận đơn cũ và gọi thêm 1 Bia Sài Gòn" → ["ORDER_CONFIRM", "ORDER"]
   (User confirms first, then adds new item)
 
 - "Tính tiền đi, mà trước đó cho hỏi món nào đang khuyến mãi?" → ["PAYMENT", "SEARCH"]

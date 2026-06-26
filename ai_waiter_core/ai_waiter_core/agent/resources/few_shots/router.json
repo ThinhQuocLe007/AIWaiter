@@ -5,7 +5,7 @@
     "intents": ["CHAT"]
   },
   {
-    "query": "Cho tôi 2 bát Phở Bò Đặc Biệt nhé",
+    "query": "Cho tôi 2 phần Ốc Hương Xốt Trứng Muối nhé",
     "reasoning": "The user is explicitly ordering food with quantity and names. This is a direct ordering action.",
     "intents": ["ORDER"]
   },
@@ -20,18 +20,18 @@
     "intents": ["PAYMENT"]
   },
   {
-    "query": "Cho tôi 1 Phở Bò và tính tiền luôn",
-    "reasoning": "The user orders a Phở Bò (ORDER) and requests payment immediately after (PAYMENT).",
+    "query": "Cho tôi 1 Lẩu Thái và tính tiền luôn",
+    "reasoning": "The user orders a Lẩu Thái (ORDER) and requests payment immediately after (PAYMENT).",
     "intents": ["ORDER", "PAYMENT"]
   },
   {
-    "query": "Phở bò có cay không? Nếu không cay thì lấy cho 2 tô nhé",
-    "reasoning": "The user asks about the spice level of Phở bò (SEARCH) and conditionally places an order based on the response (ORDER).",
+    "query": "Lẩu Thái có cay không? Nếu không cay thì lấy cho 2 phần nhé",
+    "reasoning": "The user asks about the spice level of Lẩu Thái (SEARCH) and conditionally places an order based on the response (ORDER).",
     "intents": ["SEARCH", "ORDER"]
   },
   {
-    "query": "Mình muốn gọi 2 Bò Nướng Đá Cuội, nhưng trước đó cho hỏi phần này ăn mấy người?",
-    "reasoning": "The user indicates they want to order 2 Bò Nướng (ORDER) but first inquires about the portion size (SEARCH) to verify feasibility.",
+    "query": "Mình muốn gọi 2 Tôm Càng Xanh Nướng Phô Mai, nhưng trước đó cho hỏi phần này ăn mấy người?",
+    "reasoning": "The user indicates they want to order 2 Tôm Càng Xanh Nướng Phô Mai (ORDER) but first inquires about the portion size (SEARCH) to verify feasibility.",
     "intents": ["SEARCH", "ORDER"]
   },
   {
@@ -50,12 +50,12 @@
     "intents": ["SEARCH"]
   },
   {
-    "query": "Hủy giùm mình 1 Coca và gọi thêm 2 ly Trà Đá",
+    "query": "Hủy giùm mình 1 Bia Sài Gòn và gọi thêm 2 ly Trà Tắc",
     "reasoning": "The user is modifying their order by cancelling an item and adding other items. Both represent order adjustments, which is ORDER.",
     "intents": ["ORDER"]
   },
   {
-    "query": "Lấy thêm 1 Miến Xào Cua và 1 Soda Chanh Muối, xong tính tiền nhé",
+    "query": "Lấy thêm 1 Mì Xào Sò và 1 Trà Tắc, xong tính tiền nhé",
     "reasoning": "The user adds food/drinks to their order (ORDER) and specifies they want the bill immediately after (PAYMENT).",
     "intents": ["ORDER", "PAYMENT"]
   },

@@ -27,7 +27,7 @@
       {
         "name": "search",
         "args": {
-          "query": "nước ép, sinh tố, trà đá, thanh nhiệt"
+          "query": "trà tắc, nước ngọt, giải khát, thanh nhiệt"
         },
         "id": "call_rewrite_2"
       }
@@ -114,8 +114,8 @@
       {
         "name": "search",
         "args": {
-          "query": "đồ uống",
-          "category": "đồ uống"
+          "query": "đồ uống, giải khát",
+          "category": "Giải Khát"
         },
         "id": "call_filter_3"
       }
@@ -123,7 +123,7 @@
   },
   {
     "role": "user",
-    "content": "Phở Bò bao nhiêu tiền?"
+    "content": "Ốc Hương Xốt Trứng Muối bao nhiêu tiền?"
   },
   {
     "role": "assistant",
@@ -132,7 +132,7 @@
       {
         "name": "search",
         "args": {
-          "query": "Phở Bò"
+          "query": "Ốc Hương Xốt Trứng Muối"
         },
         "id": "call_filter_4"
       }
