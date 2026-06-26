@@ -1,7 +1,7 @@
 # Makefile - Convenience commands for AI Waiter project
 # Run 'make help' to see available commands
 
-.PHONY: help setup install update frontend menu kiosk panel backend mockrobot build serve kill reset clean
+.PHONY: help setup install update frontend menu kiosk panel backend reindex agent mockrobot build serve kill reset clean
 
 # Role-specific Python extras for the backend env (see docs/setup-deploy.md). Each machine
 # picks ONLY its role: fastapi/uvicorn live in `--extra server`, STT/TTS in `--extra voice`,
@@ -90,11 +90,24 @@ serve:
 backend:
 	@uv run uvicorn src.backend.app.main:app --reload --host 0.0.0.0 --port 8000
 
+# Clean rebuild of the embedding artifacts (FAISS + BM25 + router centroids) from scratch using the
+# current EMBEDDING_MODEL in .env. Wipes the old files first so nothing stale survives a model/dim
+# change. SQLite DBs (checkpoints/orchestrator) are left untouched. Run after switching embeddings.
+reindex:
+	@echo "Wiping old vector / BM25 / centroid artifacts..."
+	@rm -rf storage/vector \
+		ai_waiter_core/ai_waiter_core/agent/resources/centroids/centroids.npz \
+		ai_waiter_core/ai_waiter_core/agent/resources/centroids/embedding_model.txt
+	@echo "Rebuilding FAISS + BM25 + centroids with EMBEDDING_MODEL from .env..."
+	@uv run python scripts/setup.py --force
+
 # Agent (LLM) HTTP service — the brain on the SERVER. The Jetson voice loop (ai_waiter_core/main.py)
 # POSTs recognised text to POST /chat; this runs the LangGraph agent and mirrors the turn to the
-# customer tablet via the backend's /voice bridge. Run from ai_waiter_core/ so `ai_waiter_core`
-# resolves to the inner package (same launch convention as the voice loop).
-agent:
+# customer tablet via the backend's /voice bridge. Depends on `reindex` so every start rebuilds the
+# embeddings clean (you asked for a fresh index each run while testing new models). Run from
+# ai_waiter_core/ so `ai_waiter_core` resolves to the inner package (same convention as the voice loop).
+# To restart WITHOUT rebuilding, run the uvicorn line directly (see below) instead of `make agent`.
+agent: reindex
 	@cd ai_waiter_core && uv run --project .. uvicorn ai_waiter_core.server:app --host 0.0.0.0 --port 8100
 
 # Mock robot WS client — stands in for a real Jetson robot to test the dispatcher end-to-end.
