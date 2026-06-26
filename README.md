@@ -1,7 +1,7 @@
 # AI Waiter - Capstone Project
 
-> 📦 **Cài đặt + Test:** xem **[docs/setup_test_guide.md](docs/setup_test_guide.md)** (cài theo từng máy: Jetson · Server · Laptop, + quy trình test voice/web).
-> 🏗️ **Kiến trúc:** xem **[docs/SYSTEM_ARCHITECTURE.md](docs/SYSTEM_ARCHITECTURE.md)**.
+> 📦 **Cài đặt + Chạy web:** xem **[docs/run-guide-vi.md](docs/run-guide-vi.md)** (clone → `make install` → chạy 3 web + backend).
+> 🏗️ **Kiến trúc:** xem **[docs/code-architecture.md](docs/code-architecture.md)**.
 > (Phần *System Architecture* + *Setup* bên dưới mô tả pipeline **bản cũ (all-in-one)** — đã được pivot 2026-06 thay thế.)
 
 ## Introduction

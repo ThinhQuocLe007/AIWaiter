@@ -1,4 +1,22 @@
 <template>
+  <!-- Siri / Gemini-style listening orb, centered over the whole screen -->
+  <Transition name="orb">
+    <div v-if="voice.isAiOpen && voice.aiState === 'listening'" class="voice-orb-overlay">
+      <div class="orb">
+        <span class="orb-ring orb-ring-1" aria-hidden="true"></span>
+        <span class="orb-ring orb-ring-2" aria-hidden="true"></span>
+        <span class="orb-ring orb-ring-3" aria-hidden="true"></span>
+        <span class="orb-core" aria-hidden="true"></span>
+        <i class="ti ti-microphone orb-mic" aria-hidden="true"></i>
+      </div>
+      <span class="orb-label">ĐANG LẮNG NGHE...</span>
+      <button class="orb-cancel" type="button" @click="voice.stop()">
+        <i class="ti ti-x" aria-hidden="true"></i>
+        Hủy
+      </button>
+    </div>
+  </Transition>
+
   <Transition name="sheet">
     <div v-if="voice.isAiOpen" class="voice-panel">
       <!-- Header -->
@@ -63,29 +81,12 @@
         </div>
       </div>
 
-      <!-- Footer: waveform + stop while busy, mic button when ready -->
+      <!-- Footer: stop while busy, mic button when ready.
+           While listening, the centered orb overlay replaces these controls. -->
       <div class="vp-footer">
-        <!-- Listening: waveform + cancel (pressed by mistake / misspoke) -->
-        <template v-if="voice.aiState === 'listening'">
-          <div class="waveform">
-            <div class="bars">
-              <span class="bar bar-1"></span>
-              <span class="bar bar-2"></span>
-              <span class="bar bar-3"></span>
-              <span class="bar bar-4"></span>
-              <span class="bar bar-5"></span>
-            </div>
-            <span class="listening-label">ĐANG LẮNG NGHE GIỌNG NÓI CỦA BẠN...</span>
-          </div>
-          <button class="stop-btn" type="button" @click="voice.stop()">
-            <i class="ti ti-player-stop-filled" aria-hidden="true"></i>
-            Hủy
-          </button>
-        </template>
-
         <!-- Thinking: stop the processing -->
         <button
-          v-else-if="voice.aiState === 'thinking'"
+          v-if="voice.aiState === 'thinking'"
           class="stop-btn"
           type="button"
           @click="voice.stop()"
@@ -95,7 +96,7 @@
         </button>
 
         <!-- Idle / speaking: talk again, plus stop while the AI is replying -->
-        <template v-else>
+        <template v-else-if="voice.aiState !== 'listening'">
           <button class="mic-btn" type="button" @click="voice.startListening()">
             <i class="ti ti-microphone" aria-hidden="true"></i>
             Nói tiếp
@@ -386,52 +387,99 @@ watch(
   gap: 0.6rem;
 }
 
-.waveform {
+/* Centered listening orb overlay (Siri / Gemini style) */
+.voice-orb-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  gap: 1.6rem;
+  background: radial-gradient(circle at center, rgba(31, 27, 22, 0.7), rgba(20, 17, 13, 0.94));
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
 }
 
-.bars {
+.orb {
+  position: relative;
+  width: 180px;
+  height: 180px;
   display: flex;
   align-items: center;
-  gap: 4px;
-  height: 32px;
+  justify-content: center;
+  animation: orb-breathe 3s ease-in-out infinite;
 }
 
-.bar {
-  width: 6px;
-  height: 28px;
-  border-radius: var(--radius-full);
-  background: var(--color-accent);
-  transform: scaleY(0.4);
+.orb-core {
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.5), transparent 55%),
+    conic-gradient(
+      from 0deg,
+      var(--color-accent),
+      var(--color-ai-light),
+      var(--color-accent-dark),
+      var(--color-accent)
+    );
+  box-shadow:
+    0 0 50px 10px rgba(168, 133, 62, 0.55),
+    inset 0 0 28px rgba(255, 255, 255, 0.28);
+  animation: orb-spin 7s linear infinite;
 }
 
-.bar-1 {
-  animation: wave 1.2s infinite ease-in-out;
-}
-.bar-2 {
-  animation: wave 0.9s infinite ease-in-out;
-}
-.bar-3 {
-  background: var(--color-ai-light);
-  animation: wave 1.4s infinite ease-in-out;
-}
-.bar-4 {
-  background: var(--color-accent-dark);
-  animation: wave 0.7s infinite ease-in-out;
-}
-.bar-5 {
-  animation: wave 1.1s infinite ease-in-out;
+.orb-mic {
+  position: absolute;
+  font-size: 2.4rem;
+  color: #1f1b16;
+  text-shadow: 0 1px 3px rgba(255, 255, 255, 0.35);
 }
 
-.listening-label {
-  font-size: 0.625rem;
-  font-weight: 600;
-  letter-spacing: 0.16em;
+.orb-ring {
+  position: absolute;
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  border: 2px solid rgba(168, 133, 62, 0.5);
+  animation: orb-sonar 2.4s ease-out infinite;
+}
+
+.orb-ring-2 {
+  animation-delay: 0.8s;
+}
+
+.orb-ring-3 {
+  animation-delay: 1.6s;
+}
+
+.orb-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
   color: var(--color-accent);
-  animation: blink 1.4s infinite;
+  animation: blink 1.6s infinite;
+}
+
+.orb-cancel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(52, 48, 42, 0.85);
+  color: #e8e2d6;
+  border: 1px solid #4a443b;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.8rem;
+  padding: 0.5rem 1.4rem;
+  border-radius: var(--radius-full);
+}
+
+.orb-cancel:active {
+  transform: scale(0.96);
+  background: #443f37;
 }
 
 .mic-btn {
@@ -493,13 +541,30 @@ watch(
 }
 
 /* Animations */
-@keyframes wave {
+@keyframes orb-breathe {
   0%,
   100% {
-    transform: scaleY(0.4);
+    transform: scale(1);
   }
   50% {
-    transform: scaleY(1.2);
+    transform: scale(1.08);
+  }
+}
+
+@keyframes orb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes orb-sonar {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
   }
 }
 
@@ -533,6 +598,16 @@ watch(
 .sheet-enter-from,
 .sheet-leave-to {
   transform: translateY(100%);
+}
+
+/* Orb overlay fade */
+.orb-enter-active,
+.orb-leave-active {
+  transition: opacity 0.3s ease;
+}
+.orb-enter-from,
+.orb-leave-to {
+  opacity: 0;
 }
 
 .reco-enter-active {

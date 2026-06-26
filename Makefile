@@ -3,12 +3,21 @@
 
 .PHONY: help setup install update frontend menu kiosk panel backend mockrobot build serve kill reset clean
 
+# Role-specific Python extras for the backend env (see docs/setup-deploy.md). Each machine
+# picks ONLY its role: fastapi/uvicorn live in `--extra server`, STT/TTS in `--extra voice`,
+# and the torch profile in `--extra cu12`/`--extra cu13`. Override per machine, e.g.:
+#   make install UV_EXTRAS="--extra server --extra voice --extra cu12"   # laptop dev (CUDA 12)
+#   make install UV_EXTRAS="--extra server --extra cu13"                 # server (CUDA 13)
+#   make install UV_EXTRAS="--extra voice"                               # Jetson robot
+UV_EXTRAS ?=
+
 # Default target
 help:
 	@echo "AI Waiter - Available commands:"
 	@echo ""
 	@echo "  make setup      - First-time environment setup (run once)"
-	@echo "  make install    - Install/update dependencies after pulling code"
+	@echo "  make install    - Install/update deps. Backend needs UV_EXTRAS, e.g."
+	@echo "                    make install UV_EXTRAS=\"--extra server --extra voice --extra cu12\""
 	@echo "  make update     - Pull latest code and reinstall dependencies"
 	@echo "  make frontend   - Start all three UIs: menu, kiosk, panel (ports 5173-5175)"
 	@echo "  make menu       - Start menu (ordering) dev server (port 5173)"
@@ -35,7 +44,16 @@ install:
 	@echo "Installing panel dependencies..."
 	@if [ -f "src/frontends/panel/package.json" ]; then cd src/frontends/panel && npm install; else echo "src/frontends/panel not scaffolded yet, skipping."; fi
 	@echo "Installing backend dependencies (root uv env)..."
-	@uv sync
+	@# --inexact: keep role extras (server/voice/cu12/cu13) already installed instead of
+	@# pruning them. Plain `uv sync` syncs to base-only and would REMOVE uvicorn/torch/etc.
+	@# Pass UV_EXTRAS to install a role in one go, e.g. UV_EXTRAS="--extra server --extra cu12".
+	@uv sync --inexact $(UV_EXTRAS)
+	@if [ -z "$(UV_EXTRAS)" ] && [ ! -x .venv/bin/uvicorn ]; then \
+		echo ""; \
+		echo "  NOTE: backend deps (fastapi/uvicorn) are NOT installed — they live in --extra server."; \
+		echo "        Run your machine's role, e.g.:  make install UV_EXTRAS=\"--extra server --extra voice --extra cu12\""; \
+		echo "        See docs/setup-deploy.md for the right extras (CUDA 12 vs 13, server vs voice)."; \
+	fi
 	@echo "Done."
 
 update:
