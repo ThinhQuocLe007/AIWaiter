@@ -23,6 +23,12 @@ class SileroVAD(threading.Thread):
         super().__init__(daemon=True)
         self.threshold = threshold or float(os.getenv("VAD_THRESHOLD", "0.5"))
         self._stop = threading.Event()
+        # Listen gate: the mic stays open (model resident) but utterances are only captured while
+        # `_listening` is set. begin_listen() arms a SINGLE utterance; once one is flushed the gate
+        # auto-clears and `_utt_done` fires. This makes voice push-to-talk from the web button: idle
+        # until the tablet asks, capture one turn, then back to idle.
+        self._listening = threading.Event()
+        self._utt_done = threading.Event()
         self._current_utterance = []
         self._model = None
         self._stream = None
@@ -144,12 +150,21 @@ class SileroVAD(threading.Thread):
     def is_speaking(self) -> bool:
         return len(self._current_utterance) > 3
 
+    def begin_listen(self) -> None:
+        """Arm capture of a single utterance (push-to-talk). Call from the WS command handler."""
+        self._current_utterance.clear()
+        self._utt_done.clear()
+        self._listening.set()
+
+    def wait_for_utterance(self, timeout: float) -> bool:
+        """Block until the armed utterance is flushed (True) or `timeout` seconds pass (False)."""
+        return self._utt_done.wait(timeout)
+
     def run(self):
         self._load_model()
         self._open_mic()
 
-        utterance = []
-        self._current_utterance = utterance
+        utterance = self._current_utterance
         silence_frames = 0
 
         logger.info("SileroVAD started")
@@ -160,6 +175,14 @@ class SileroVAD(threading.Thread):
             except Exception as e:
                 logger.error(f"Mic read error: {e}")
                 break
+
+            # Mic stays open so the model is warm, but only capture while a turn is armed. Drop
+            # audio (and any half-built utterance) when idle so nothing leaks between turns.
+            if not self._listening.is_set():
+                if utterance:
+                    utterance.clear()
+                    silence_frames = 0
+                continue
 
             if self.is_speech(chunk):
                 utterance.append(chunk)
@@ -174,6 +197,9 @@ class SileroVAD(threading.Thread):
                     logger.info(f"Utterance flushed: {duration:.1f}s")
                     utterance.clear()
                     silence_frames = 0
+                    # Single-shot: disarm and signal the waiter that this turn is captured.
+                    self._listening.clear()
+                    self._utt_done.set()
 
         if self._stream:
             self._stream.close()

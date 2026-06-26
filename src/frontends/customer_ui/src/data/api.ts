@@ -28,6 +28,18 @@ export function fetchMenu(): Promise<RawMenuItem[]> {
   return getJson<RawMenuItem[]>('/menu')
 }
 
+// --- Voice ------------------------------------------------------------------
+// POST /voice/listen → ask this table's voice device (the Jetson/laptop mic loop) to capture one
+// utterance. The browser does NOT record audio; the mic lives on the device. status is 'no_device'
+// when no microphone is connected for this table (the panel then shows the assistant is offline).
+export interface ListenResult {
+  status: 'ok' | 'no_device'
+}
+
+export function startVoiceListen(tableId: number): Promise<ListenResult> {
+  return postJson<ListenResult>('/voice/listen', { table_id: tableId })
+}
+
 // --- Tables -----------------------------------------------------------------
 // Minimal view of a table row (mirror of backend TableOut) — enough for this
 // tablet to decide which screen to show on load.

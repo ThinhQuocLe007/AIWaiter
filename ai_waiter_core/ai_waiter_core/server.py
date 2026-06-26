@@ -14,6 +14,7 @@ Run (on the server, alongside the orchestrator backend) — from the ai_waiter_c
     cd ai_waiter_core && uv run --project .. uvicorn ai_waiter_core.server:app --host 0.0.0.0 --port 8100
 """
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -22,6 +23,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 
 from ai_waiter_core.agent.graph import AIWaiterGraph
+from ai_waiter_core.config import settings
 from ai_waiter_core.services.orchestrator_client import OrchestratorClient, _table_int
 
 load_dotenv()
@@ -32,12 +34,46 @@ _agent: AIWaiterGraph | None = None
 _orchestrator = OrchestratorClient()
 
 
+def _warmup() -> None:
+    """Pre-load every model into memory so the FIRST real turn isn't slow.
+
+    Ollama loads a model into RAM/VRAM lazily — only on the first request — and (without keep_alive)
+    evicts it after 5 idle minutes. The embedding model and faster-whisper are likewise lazy. We pin
+    keep_alive=-1 on the ChatOllama clients (see agent/nodes/*), and here fire one tiny inference
+    through each distinct LLM + the RAG retriever so everything is resident before a guest speaks.
+    Best-effort: a warmup failure (e.g. Ollama not up yet) must not stop the service from starting.
+    """
+    from langchain_ollama import ChatOllama
+
+    model_ids = {settings.ROUTER_MODEL, settings.WORKER_MODEL, settings.RESPONSE_MODEL}
+    for model_id in model_ids:
+        try:
+            log.info("Warming up LLM %s ...", model_id)
+            ChatOllama(
+                model=model_id,
+                num_ctx=settings.LLM_NUM_CTX,
+                keep_alive=settings.LLM_KEEP_ALIVE,
+            ).invoke("ok")
+        except Exception as e:  # Ollama down / model not pulled — log and carry on.
+            log.warning("LLM warmup failed for %s: %s", model_id, e)
+
+    try:
+        log.info("Warming up RAG retriever (embedding model) ...")
+        from ai_waiter_core.agent.tools.search_tool import search
+
+        search.invoke({"query": "khởi động"})
+    except Exception as e:
+        log.warning("Retriever warmup failed: %s", e)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _agent
     log.info("Loading AI Waiter agent graph...")
     _agent = AIWaiterGraph()
-    log.info("Agent ready.")
+    log.info("Agent ready. Warming up models...")
+    await asyncio.to_thread(_warmup)
+    log.info("Warmup complete — models resident.")
     yield
 
 

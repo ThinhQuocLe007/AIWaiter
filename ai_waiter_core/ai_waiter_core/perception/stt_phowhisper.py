@@ -20,13 +20,25 @@ class PhoWhisperSTT(threading.Thread):
     def __init__(self):
         super().__init__(daemon=True)
         self._stop = threading.Event()
+        self._ready = threading.Event()  # set once the model is loaded in run()
         self._model = None
 
     def _load_model(self):
         device = settings.DEVICE
         compute = "float16" if device == "cuda" else "int8"
         self._model = WhisperModel(MODEL_SIZE, device=device, compute_type=compute)
+        self._ready.set()
         logger.info(f"PhoWhisper loaded: {MODEL_SIZE}, device={device}, compute={compute}")
+
+    def warmup(self, timeout: float = 120.0) -> None:
+        """Force the first (slow) CTranslate2 inference at startup so the first real turn is fast.
+        Waits for the model to finish loading in run(), then transcribes a short silent buffer."""
+        if not self._ready.wait(timeout):
+            logger.warning("STT warmup skipped: model not ready after %.0fs", timeout)
+            return
+        silent = np.zeros(8000, dtype=np.float32)  # 0.5s @ 16kHz
+        list(self._model.transcribe(silent, language="vi", beam_size=1, vad_filter=False)[0])
+        logger.info("PhoWhisper warmup done")
 
     def _transcribe(self, audio_bytes: bytes) -> str:
         samples = np.frombuffer(audio_bytes, dtype=np.int16).astype(np.float32) / 32768.0

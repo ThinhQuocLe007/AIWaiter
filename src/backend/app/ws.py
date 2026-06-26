@@ -29,17 +29,36 @@ class ConnectionManager:
         self._by_role: dict[str, set[WebSocket]] = {}
         # Robot sockets are also indexed by id so the dispatcher can target one robot.
         self._robots: dict[str, WebSocket] = {}
+        # Voice-device sockets (the mic loop on a table's Jetson/laptop) are indexed by table id so
+        # the "start listening" command from that table's tablet reaches the right microphone.
+        self._voice_devices: dict[int, WebSocket] = {}
 
-    async def connect(self, ws: WebSocket, role: str, robot_id: str | None = None) -> None:
+    async def connect(
+        self,
+        ws: WebSocket,
+        role: str,
+        robot_id: str | None = None,
+        table_id: int | None = None,
+    ) -> None:
         await ws.accept()
         self._by_role.setdefault(role, set()).add(ws)
         if robot_id:
             self._robots[robot_id] = ws
+        if role == "voice-device" and table_id is not None:
+            self._voice_devices[table_id] = ws
 
-    def disconnect(self, ws: WebSocket, role: str, robot_id: str | None = None) -> None:
+    def disconnect(
+        self,
+        ws: WebSocket,
+        role: str,
+        robot_id: str | None = None,
+        table_id: int | None = None,
+    ) -> None:
         self._by_role.get(role, set()).discard(ws)
         if robot_id and self._robots.get(robot_id) is ws:
             del self._robots[robot_id]
+        if table_id is not None and self._voice_devices.get(table_id) is ws:
+            del self._voice_devices[table_id]
 
     async def broadcast(self, role: str, message: dict) -> None:
         """Send a JSON message to every socket of `role`; drop ones that error out."""
@@ -62,6 +81,19 @@ class ConnectionManager:
             self._robots.pop(robot_id, None)
             return False
 
+    async def send_to_voice_device(self, table_id: int, message: dict) -> bool:
+        """Tell one table's voice device to do something (e.g. start listening). Returns False if
+        no device is connected for that table."""
+        ws = self._voice_devices.get(table_id)
+        if ws is None:
+            return False
+        try:
+            await ws.send_text(json.dumps(message, default=str, ensure_ascii=False))
+            return True
+        except Exception:
+            self._voice_devices.pop(table_id, None)
+            return False
+
     def connected_robot_ids(self) -> set[str]:
         return set(self._robots)
 
@@ -80,10 +112,13 @@ manager = ConnectionManager()
 
 @router.websocket("/ws")
 async def ws_endpoint(
-    websocket: WebSocket, role: str = "panel", robot_id: str | None = None
+    websocket: WebSocket,
+    role: str = "panel",
+    robot_id: str | None = None,
+    table_id: int | None = None,
 ) -> None:
-    await manager.connect(websocket, role, robot_id)
-    log.info("ws connected role=%s robot_id=%s", role, robot_id)
+    await manager.connect(websocket, role, robot_id, table_id)
+    log.info("ws connected role=%s robot_id=%s table_id=%s", role, robot_id, table_id)
 
     # Lazy import to avoid a circular import (dispatcher imports `manager` from this module).
     from . import dispatcher
@@ -93,12 +128,13 @@ async def ws_endpoint(
     try:
         while True:
             raw = await websocket.receive_text()
-            # Viewers (panel) don't send anything we act on; robots drive the dispatcher.
+            # Viewers (panel) + voice devices don't send anything we act on here; robots drive the
+            # dispatcher. (The voice device only receives "start_listening" and POSTs to the agent.)
             if role == "robot" and robot_id:
                 await _handle_robot_message(dispatcher, robot_id, raw)
     except WebSocketDisconnect:
-        manager.disconnect(websocket, role, robot_id)
-        log.info("ws disconnected role=%s robot_id=%s", role, robot_id)
+        manager.disconnect(websocket, role, robot_id, table_id)
+        log.info("ws disconnected role=%s robot_id=%s table_id=%s", role, robot_id, table_id)
         if role == "robot" and robot_id:
             await dispatcher.on_robot_disconnect(robot_id)
 

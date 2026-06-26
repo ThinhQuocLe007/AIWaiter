@@ -15,6 +15,12 @@ class AgentSettings(BaseSettings):
     # the full menu) plus history/output headroom.
     LLM_NUM_CTX: int = Field(default=8192, env="LLM_NUM_CTX")
 
+    # How long Ollama keeps a model resident in RAM/VRAM after a request. Default Ollama behaviour
+    # is 5 minutes, so an idle table evicts the model and the next turn pays the full reload cost.
+    # "-1" pins the model for the lifetime of the service (paired with startup warmup) so the first
+    # — and every — real turn skips the load. Set to e.g. "10m" to cap memory on a shared box.
+    LLM_KEEP_ALIVE: str = Field(default="-1", env="LLM_KEEP_ALIVE")
+
     HF_TOKEN: str = Field(default="", env="HF_TOKEN")
 
     # Base URL of the Orchestrator backend (the single ledger). The agent's tools write through

@@ -86,6 +86,7 @@ _llm = ChatOllama(
     model=settings.ROUTER_MODEL,
     temperature=0.0,
     num_ctx=settings.LLM_NUM_CTX,
+    keep_alive=settings.LLM_KEEP_ALIVE,
     metadata={"ls_model_name": settings.ROUTER_MODEL, "ls_provider": "ollama"}
 ).with_structured_output(IntentPrediction)
 

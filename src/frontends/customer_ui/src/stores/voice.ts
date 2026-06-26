@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import type { FoodItem } from '@/types'
 import { useCartStore } from '@/stores/cart'
 import { getStoredTableId } from '@/data/tableSession'
+import { startVoiceListen } from '@/data/api'
 import router from '@/router'
 import { connectEvents, type WsHandle } from '@shared/ws'
 import type { UiAction, WsEvent } from '@shared/types'
@@ -118,11 +119,24 @@ export const useVoiceStore = defineStore('voice', () => {
     isSoundEnabled.value = !isSoundEnabled.value
   }
 
-  // Kept for the panel's "Nói tiếp" button. The mic is on the robot, so this tablet can't start a
-  // capture — it just clears any lingering state so the guest knows the robot is ready to listen.
-  function startListening() {
+  // The "talk to AI" / "Nói tiếp" button. The mic lives on the table's voice device (Jetson/laptop),
+  // not this tablet — so we don't record here. We tell the backend to signal that device to start
+  // listening; it then does mic → STT → agent, and the turn comes back over the voice bridge
+  // (onHeard/onReply). Light the orb optimistically; if no device is connected, settle back to idle.
+  async function startListening() {
     clearTimeout(speakingTimer)
-    aiState.value = 'idle'
+    connect()
+    aiState.value = 'listening'
+    try {
+      const res = await startVoiceListen(getStoredTableId())
+      if (res.status === 'no_device') {
+        aiState.value = 'idle'
+        pushMessage('ai', 'Trợ lý giọng nói chưa sẵn sàng ạ, anh/chị thử lại sau nhé.')
+      }
+    } catch {
+      aiState.value = 'idle'
+      pushMessage('ai', 'Không kết nối được trợ lý giọng nói ạ, anh/chị thử lại nhé.')
+    }
   }
 
   // Stop button: drop back to idle. (Interrupting the robot's TTS would need a separate signal to

@@ -18,6 +18,7 @@ _search_model = ChatOllama(
     model=settings.WORKER_MODEL,
     temperature=0.1,
     num_ctx=settings.LLM_NUM_CTX,
+    keep_alive=settings.LLM_KEEP_ALIVE,
     metadata={"ls_model_name": settings.WORKER_MODEL, "ls_provider": "ollama"}
 ).bind_tools([search], tool_choice="any")
 # NOTE: `tool_choice="any"` is currently ignored by ChatOllama (see its

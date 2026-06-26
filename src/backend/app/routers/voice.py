@@ -39,3 +39,22 @@ async def voice_event(ev: VoiceEvent) -> dict:
     """Fan a voice event out to every customer tablet; each filters by its own table_id."""
     await manager.broadcast("customer", ev.model_dump())
     return {"status": "ok"}
+
+
+class ListenRequest(BaseModel):
+    """The tablet's "talk to the AI" button: ask this table's voice device to capture one utterance.
+
+    The mic lives on the table's Jetson/laptop (a `role=voice-device` WS client), not the browser —
+    so the button doesn't record audio, it just signals the device to start listening. The device
+    then does mic → VAD → STT → POST /chat, and the agent mirrors the turn back here via /event.
+    """
+
+    table_id: int
+
+
+@router.post("/listen")
+async def voice_listen(req: ListenRequest) -> dict:
+    """Forward a "start listening" command to the table's voice device. Returns no_device (and the
+    tablet shows the assistant is offline) when no microphone is connected for that table."""
+    ok = await manager.send_to_voice_device(req.table_id, {"type": "start_listening"})
+    return {"status": "ok" if ok else "no_device"}
