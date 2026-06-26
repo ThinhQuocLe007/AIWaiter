@@ -90,6 +90,13 @@ serve:
 backend:
 	@uv run uvicorn src.backend.app.main:app --reload --host 0.0.0.0 --port 8000
 
+# Agent (LLM) HTTP service — the brain on the SERVER. The Jetson voice loop (ai_waiter_core/main.py)
+# POSTs recognised text to POST /chat; this runs the LangGraph agent and mirrors the turn to the
+# customer tablet via the backend's /voice bridge. Run from ai_waiter_core/ so `ai_waiter_core`
+# resolves to the inner package (same launch convention as the voice loop).
+agent:
+	@cd ai_waiter_core && uv run --project .. uvicorn ai_waiter_core.server:app --host 0.0.0.0 --port 8100
+
 # Mock robot WS client — stands in for a real Jetson robot to test the dispatcher end-to-end.
 # Override id/position: make mockrobot ID=robo-2 ARGS="--x 2.3 --y 0.5".
 ID ?= robo-1

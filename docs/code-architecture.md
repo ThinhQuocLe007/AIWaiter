@@ -264,6 +264,27 @@ Three Vite/Vue apps under [src/frontends/](../src/frontends/): `customer_ui` (ta
 same-origin `/api` proxy to FastAPI:8000 (no CORS); the panel also opens `/ws?role=panel` for
 realtime `order.created` / `table.updated` / `robot.updated` / `task.*` events.
 
+### Voice mirror on the tablet (`customer_ui`)
+
+The mic + STT + TTS live on the **Jetson** (USB conference mic in, Bluetooth speaker out); the
+tablet has no mic. So `customer_ui` is a **mirror**, not a voice client: it opens
+`/ws?role=customer` and renders the live conversation + follows the agent's UI actions. The flow:
+
+```
+Jetson: mic → VAD → Whisper → text ──POST /chat──► agent service (LLM, server.py)
+                                                      │  ├─ POST /voice/event {voice.heard}
+agent runs AIWaiterGraph, returns reply+action ──────┤  └─ POST /voice/event {voice.reply, action}
+Jetson speaks the reply (TTS)                         ▼
+                                       backend broadcast(role=customer) ──► customer_ui
+                                       (user/AI bubbles; open_menu→/menu, open_payment→/payment)
+```
+
+The agent never reaches the tablet directly: it POSTs to the backend bridge
+([routers/voice.py](../src/backend/app/routers/voice.py)), keeping the backend's
+"does-not-import-ai_waiter_core" boundary intact. This is the *delivery* half of the agent's
+action seam ([actions.py](../ai_waiter_core/ai_waiter_core/agent/actions.py) decides; the agent
+service delivers). Tablets filter events by their own `table_id`.
+
 ---
 
 ## 7. File map (where to look)
@@ -282,7 +303,9 @@ realtime `order.created` / `table.updated` / `robot.updated` / `task.*` events.
 | Thread = session | [ai_waiter_core/.../agent/memory/checkpointer.py](../ai_waiter_core/ai_waiter_core/agent/memory/checkpointer.py) |
 | Agent tools | [ai_waiter_core/.../agent/tools/](../ai_waiter_core/ai_waiter_core/agent/tools/) |
 | Agent → backend HTTP seam | [ai_waiter_core/.../services/orchestrator_client.py](../ai_waiter_core/ai_waiter_core/services/orchestrator_client.py) |
-| Voice loop (STT → agent → TTS) | [ai_waiter_core/main.py](../ai_waiter_core/main.py) |
+| Voice loop on Jetson (mic → VAD → Whisper → POST /chat → TTS) | [ai_waiter_core/main.py](../ai_waiter_core/main.py) |
+| Agent HTTP service (LLM on the server; POST /chat) | [ai_waiter_core/.../server.py](../ai_waiter_core/ai_waiter_core/server.py) |
+| Voice bridge → customer tablet (role=customer WS) | [src/backend/app/routers/voice.py](../src/backend/app/routers/voice.py) |
 
 ## 8. Key endpoints
 
@@ -296,4 +319,5 @@ realtime `order.created` / `table.updated` / `robot.updated` / `task.*` events.
 | POST | `/payments/verify` | Settle by table (agent): PAID + close session + free table |
 | POST | `/payments/{id}/verify` | Settle by id (tablet) |
 | GET | `/robots` | Fleet status (DB snapshot + live RAM overlay) |
-| WS | `/ws?role=panel\|robot` | Realtime events / robot link |
+| POST | `/voice/event` | Voice bridge: agent service → tablet (`voice.heard` / `voice.reply` + UI action) |
+| WS | `/ws?role=panel\|robot\|customer` | Realtime events / robot link / voice mirror to tablet |

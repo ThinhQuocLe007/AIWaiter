@@ -73,3 +73,15 @@ class OrchestratorClient:
         pay = self._post("/payments/verify", {"table_id": _table_int(table_id)})
         logger.info(f"Payment for table {table_id} verified: {pay['status']}")
         return pay
+
+    # --- Voice bridge ---------------------------------------------------------
+    def post_voice_event(self, event: dict) -> None:
+        """POST /voice/event — mirror a voice turn / UI action onto the table's tablet.
+
+        Best-effort: a tablet that isn't connected (or the bridge being down) must never break the
+        spoken turn, so delivery failures are logged and swallowed, not raised.
+        """
+        try:
+            self._post("/voice/event", event)
+        except Exception as e:  # backend unreachable / no tablet — degrade silently
+            logger.warning(f"voice event not delivered to tablet: {e}")

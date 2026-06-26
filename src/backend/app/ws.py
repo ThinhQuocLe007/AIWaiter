@@ -2,9 +2,11 @@
 
 Two kinds of clients share this hub:
 
-* **Viewers** (e.g. `role=panel`): anonymous, read-only. The server `broadcast()`s events to
-  every socket of the role; inbound messages are ignored. The kitchen panel uses this to get
-  new orders/tasks in realtime instead of polling.
+* **Viewers** (e.g. `role=panel`, `role=customer`): anonymous, read-only. The server
+  `broadcast()`s events to every socket of the role; inbound messages are ignored. The kitchen
+  panel uses this to get new orders/tasks in realtime instead of polling; the customer tablet
+  uses `role=customer` to mirror the voice conversation + follow the agent's UI actions (see
+  `routers/voice.py`).
 * **Robots** (`role=robot&robot_id=robo-1`): identified and two-way. The dispatcher must reach
   one *specific* robot (`send_to_robot`), and the robot reports back (`task_accepted`, `arrived`,
   `task_done`, `heartbeat`) which the dispatcher acts on. So robot sockets are tracked by id and

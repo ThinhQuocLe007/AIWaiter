@@ -1,0 +1,99 @@
+"""AI Waiter — agent (LLM) HTTP service.
+
+Runs on the central server: **the LLM lives here**. The Jetson does only mic → VAD → Whisper and
+TTS (see ``ai_waiter_core/main.py``); it POSTs the recognised text to ``POST /chat`` and this
+service runs the LangGraph agent, returning the spoken reply (+ stage) for the Jetson to speak.
+
+It also mirrors each turn to the table's ``customer_ui`` through the orchestrator's voice bridge
+(``POST /voice/event``) so the web UI shows the live conversation and follows the agent's UI
+actions (open the menu / the bill). The agent already *decides* those actions
+(``agent/actions.py``); this service is where the *delivery* to the tablet is wired.
+
+Run (on the server, alongside the orchestrator backend) — from the ai_waiter_core/ dir so
+``ai_waiter_core`` resolves to the inner package (same as the voice loop), or just ``make agent``:
+    cd ai_waiter_core && uv run --project .. uvicorn ai_waiter_core.server:app --host 0.0.0.0 --port 8100
+"""
+
+import logging
+from contextlib import asynccontextmanager
+
+from dotenv import load_dotenv
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+from ai_waiter_core.agent.graph import AIWaiterGraph
+from ai_waiter_core.services.orchestrator_client import OrchestratorClient, _table_int
+
+load_dotenv()
+log = logging.getLogger(__name__)
+
+# Loaded once at startup (the LLM/graph is expensive to build) and shared across requests.
+_agent: AIWaiterGraph | None = None
+_orchestrator = OrchestratorClient()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global _agent
+    log.info("Loading AI Waiter agent graph...")
+    _agent = AIWaiterGraph()
+    log.info("Agent ready.")
+    yield
+
+
+app = FastAPI(title="AI Waiter Agent", version="0.1.0", lifespan=lifespan)
+
+
+class ChatRequest(BaseModel):
+    # The agent layer speaks "T1"-style table refs (graph.chat / main.py / the LLM prompts); only
+    # the backend keys tables by INT. We keep the agent convention here and convert to the INT id
+    # at the tablet seam via _table_int — matching orchestrator_client.
+    table_id: str = "T1"
+    text: str
+
+
+class ChatResponse(BaseModel):
+    response: str
+    final_stage: str
+    action: dict | None = None
+    session_id: str | None = None
+
+
+@app.get("/health")
+def health() -> dict:
+    return {"status": "ok", "agent_loaded": _agent is not None}
+
+
+@app.post("/chat", response_model=ChatResponse)
+def chat(req: ChatRequest) -> ChatResponse:
+    """Process one recognised utterance: run the agent, mirror it to the tablet, return the reply.
+
+    Sync on purpose — ``AIWaiterGraph.chat`` is a blocking LangGraph invoke; FastAPI runs this in a
+    threadpool so concurrent tables don't block the event loop.
+    """
+    text = req.text.strip()
+    table_id = req.table_id
+    table_int = _table_int(table_id)  # backend/tablet key tables by INT
+
+    # Show the guest's words on the tablet right away (user bubble + "thinking") — before the LLM,
+    # which on a local model can take a couple of seconds.
+    _orchestrator.post_voice_event(
+        {"type": "voice.heard", "table_id": table_int, "text": text}
+    )
+
+    result = _agent.chat(query=text, table_id=table_id)
+    response = result["response"]
+    action = result.get("action")
+    stage = result.get("final_stage", "IDLE")
+
+    # Mirror the spoken reply + any UI action (open menu / bill) to the tablet.
+    _orchestrator.post_voice_event(
+        {"type": "voice.reply", "table_id": table_int, "text": response, "action": action, "stage": stage}
+    )
+
+    return ChatResponse(
+        response=response,
+        final_stage=stage,
+        action=action,
+        session_id=result.get("session_id"),
+    )

@@ -77,6 +77,12 @@ export interface Task {
   updated_at: string
 }
 
+// A UI action the agent emits for the customer tablet (src/backend/app/routers/voice.py).
+export interface UiAction {
+  type: 'ui'
+  action: 'open_menu' | 'open_payment'
+}
+
 // WebSocket events pushed from the backend hub (src/backend/app/ws.py).
 export type WsEvent =
   | { type: 'order.created'; order: Order }
@@ -86,3 +92,13 @@ export type WsEvent =
   | { type: 'task.created'; task: Task }
   | { type: 'task.updated'; task: Task }
   | { type: 'reset' }
+  // Voice mirror (role=customer): what the robot heard / replied for a given table. The tablet
+  // filters by its own table_id and shows the live conversation + follows any UI action.
+  | { type: 'voice.heard'; table_id: number; text: string }
+  | {
+      type: 'voice.reply'
+      table_id: number
+      text: string
+      action: UiAction | null
+      stage?: string
+    }
