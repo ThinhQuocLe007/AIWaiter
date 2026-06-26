@@ -1,4 +1,4 @@
-"""Action commands the agent emits alongside its spoken reply (mục 12, system-architecture.md §5).
+"""Action commands the agent emits alongside its spoken reply (mục 12, system-design.md §5).
 
 Until now the agent only produced *text* for TTS. A real waiter also *acts*: when the guest
 starts ordering it opens the menu on the table's tablet; when they ask to pay it brings up the

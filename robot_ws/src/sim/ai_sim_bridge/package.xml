@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>ai_sim_bridge</name>
+  <version>0.1.0</version>
+  <description>AI Waiter — simulation bridge: streams the sim robot's map-frame pose to the backend WS hub (role=robot heartbeats) so the panel minimap tracks it. The real-robot bridge is separate (src/real/ai_hw_bridge).</description>
+  <maintainer email="ducduy9304@gmail.com">ducduy</maintainer>
+  <license>Apache 2.0</license>
+
+  <depend>rclpy</depend>
+  <depend>tf2_ros</depend>
+  <depend>geometry_msgs</depend>
+  <!-- websocket-client (python). rosdep key python3-websocket; if unavailable, pip install websocket-client -->
+  <exec_depend>python3-websocket</exec_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

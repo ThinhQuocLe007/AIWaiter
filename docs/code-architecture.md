@@ -2,7 +2,7 @@
 
 > Reviewer's guide to **how the system is wired and how data flows**, matching the code as of
 > 2026-06-26 (after the ledger unification). For the broader product/design doc see
-> [system-architecture.md](system-architecture.md); **this file is the current, code-accurate
+> [system-design.md](system-design.md); **this file is the current, code-accurate
 > overview** of the backend + agent + data stores.
 
 ## TL;DR

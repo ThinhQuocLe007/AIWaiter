@@ -134,8 +134,9 @@ uv run python scripts/setup.py              # ← dựng storage/: DB + FAISS + 
 
 > #### "Cứ `--force` cho dễ" có được không?
 > **Được, và không bao giờ sai về chức năng** — `--force` là superset, luôn dựng lại FAISS + centroids
-> đúng theo model hiện tại. Đổi lại 2 cái giá: (1) nó **xoá luôn `restaurant.db` + `checkpoints.db`** →
-> mất order/session/hội thoại test (với máy dev/eval thường chẳng sao, nhiều khi còn muốn reset);
+> đúng theo model hiện tại. Đổi lại 2 cái giá: (1) nó **xoá `checkpoints.db`** → mất bộ nhớ hội thoại
+> test (với máy dev/eval thường chẳng sao, nhiều khi còn muốn reset; ledger `orchestrator.db` do backend
+> sở hữu nên `setup.py` **không** đụng tới);
 > (2) **chậm hơn** vì re-embed lại toàn bộ docs + utterances mỗi lần (trên CPU Jetson tốn vài phút).
 > Nếu **chỉ đổi model** thì `--embeddings-only` nhanh hơn và giữ nguyên DB. Lười nhớ thì `--force` luôn cũng ổn.
 
@@ -169,7 +170,7 @@ Kết quả ghi vào `evals/results/` (mỗi run: 1 log `*.log` theo timestamp +
 
 ### (3) `eval_e2e.py`
 - Đọc scenario trong `evals/data/e2e/`. Mỗi scenario = hội thoại nhiều lượt, mỗi lượt có khối `assert`.
-- Đầu run **xoá `storage/db/checkpoints.db`** + **reset các bảng giao dịch trong `storage/db/restaurant.db`**
+- Đầu run **xoá `storage/db/checkpoints.db`** + **reset các bảng giao dịch trong `storage/db/orchestrator.db`**
   (sessions/orders/order_items/payments) để cô lập test (tránh đơn dồn qua các run), rồi warm-up agent.
 - Mỗi lượt chạy `app.stream(...)`, trích tool calls / outputs / response / state rồi kiểm assertion:
   `tool_called`, `tool_must_NOT_call`, `tool_output_contains`, `response_contains`,

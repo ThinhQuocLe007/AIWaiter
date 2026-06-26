@@ -4,7 +4,15 @@
 > các web app, cách chúng giao tiếp, cách giao task cho hệ thống và cho robot, mô hình dữ liệu,
 > hiện trạng đã code, và **cách demo trên 3 laptop**. Dùng để cả nhóm đọc và bám theo khi triển khai.
 >
-> Phiên bản: bản thiết kế (server chưa code; UI khách đã có khung). Cập nhật: 2026-06.
+> 📄 **Hai file dễ nhầm — đọc cái nào?**
+> - **`system-design.md` (file này)** = *bản thiết kế sản phẩm/định hướng*: luồng nghiệp vụ,
+>   mô hình triển khai (3 laptop, Netbird), lý do thiết kế, lộ trình. Đọc để hiểu **vì sao** hệ làm vậy.
+> - **[`code-architecture.md`](code-architecture.md)** = *bản mô tả khớp với CODE hiện tại*:
+>   backend + agent + data store đã code (đã có sơ đồ Mermaid, bảng endpoint, file map). Đọc để biết
+>   **code đang chạy ra sao**. Khi 2 file lệch nhau, `code-architecture.md` là **nguồn đúng**.
+>
+> Phiên bản: thiết kế gốc nay đã được **cập nhật khớp code (2026-06-26, sau khi gộp ledger
+> `orchestrator.db` + bỏ `restaurant.db`)**. UI khách + Kiosk + Panel + backend FastAPI **đã code**.
 > **Thay đổi lớn (2026-06):** LLM/RAG/agent **tách khỏi Jetson** → dồn lên **1 server trung tâm**.
 > Jetson trên robot chỉ còn STT/VAD/TTS + ROS 2/Nav2; **UI là trình duyệt kiosk trỏ về server**
 > (`chromium --kiosk http://<SERVER_IP>:8000/`, **không Node, không build trên Jetson**). Hỗ trợ
@@ -145,9 +153,9 @@ phục vụ** — không phải nhiều server, chỉ là vài "ứng dụng fro
 
 | # | Giao diện | Chạy ở đâu | Ai dùng | Làm gì | Trạng thái |
 |---|---|---|---|---|---|
-| 1 | **Kiosk cổng** | Trình duyệt tablet ở cổng → `…:8000/kiosk` | Khách | Xem bàn trống → chọn bàn + số người | ⬜ chưa code |
-| 2 | **Bảng điều khiển** (bếp + giám sát + **quản lý**, **gộp 1**) | Trình duyệt laptop quầy/bếp → `…:8000/panel` | Nhân viên + quản lý | Đơn mới theo bàn, tick "món xong"; vị trí robot / pin / hàng đợi task; **+ quản lý nhà hàng** (menu, bàn, doanh thu, lịch sử đơn) | ⬜ chưa code |
-| 3 | **UI màn hình robot** (`customer_ui`) | Trình duyệt kiosk màn LCD robot → `…:8000/` | Khách | Menu khi đặt món · bill + thanh toán · trợ lý giọng nói | 🟡 **đã có khung** |
+| 1 | **Kiosk cổng** | Trình duyệt tablet ở cổng → `…:8000/kiosk` | Khách | Xem bàn trống → chọn bàn + số người | 🟢 **đã code** (`src/frontends/kiosk`) |
+| 2 | **Bảng điều khiển** (bếp + giám sát + **quản lý**, **gộp 1**) | Trình duyệt laptop quầy/bếp → `…:8000/panel` | Nhân viên + quản lý | Đơn mới theo bàn, tick "món xong"; vị trí robot / pin / hàng đợi task; **+ quản lý nhà hàng** (menu, bàn, doanh thu, lịch sử đơn) | 🟢 **đã code** (`src/frontends/panel`) |
+| 3 | **UI màn hình robot** (`customer_ui`) | Trình duyệt kiosk màn LCD robot → `…:8000/` | Khách | Menu khi đặt món · bill + thanh toán · trợ lý giọng nói | 🟢 **đã code** (`src/frontends/customer_ui`) |
 | — | **Nút bàn** | Gắn trên mỗi bàn | Khách | **Phần cứng, không phải web** — bấm 1 nút → server tạo task gọi robot | ⬜ chưa code |
 
 > **Bảng điều khiển gộp bếp + giám sát + quản lý:** 1 web duy nhất cho nhân viên/quản lý — vừa là Kitchen
@@ -327,17 +335,30 @@ Khi có task `PENDING`, chọn robot theo ưu tiên: (1) đang **idle**, (2) **g
 `x,y` heartbeat), (3) **đủ pin** (vd > 20%; thấp → về sạc). → Chọn tập trung nên **không bao giờ 2
 robot cùng chạy 1 bàn**. Hết robot rảnh thì task chờ trong hàng đợi, có robot rảnh là gắp ngay.
 
-### Máy trạng thái của BÀN (Server giữ)
+### Máy trạng thái — bàn / phiên / đơn (Server giữ; khớp code)
+
+> **Cập nhật (gộp ledger):** code **không** dùng máy trạng thái bàn 7 trạng thái như bản thiết kế cũ.
+> Thực tế tách làm **3 lớp**, mỗi lớp có vòng đời riêng (xem [`code-architecture.md`](code-architecture.md) §2–§3):
+
+**1. BÀN (`tables.status`) — chỉ 3 trạng thái:**
 ```
-TRỐNG ─(kiosk chọn)→ ĐÃ_ĐẶT ─(robot tới)→ ĐANG_GỌI_MÓN ─(đặt xong)→ CHỜ_BẾP
-   ↑                                              ▲                       │
-   │                              (bấm nút→đặt thêm)│             (bếp xong, giao)
-(nhân viên dọn, set lại)                          │                      ▼
-DỌN ←─(đã thanh toán)── ĐANG_THANH_TOÁN ←──────────┴──────────────── ĐANG_ĂN
-                          ▲   (bấm nút → robot tới → chọn "thanh toán")
-                          └── khách bấm NÚT khi ĐANG_ĂN, robot hỏi → rẽ nhánh:
-                              đặt thêm (→ CHỜ_BẾP) hoặc thanh toán (→ ĐANG_THANH_TOÁN)
+TRỐNG (TRONG) ─(kiosk POST /seatings)→ ĐANG_PHỤC_VỤ (DANG_PHUC_VU) ─(thanh toán xong)→ ĐÃ_THANH_TOÁN (DA_THANH_TOAN)
+   ▲                                                                                          │
+   └──────────────────────── (nhân viên dọn, PATCH /tables/{id} status=TRONG) ────────────────┘
 ```
+
+**2. PHIÊN (`sessions.status`) — 1 phiên = trọn 1 lượt khách (ngồi → nhiều đơn → 1 hoá đơn gộp → rời):**
+```
+(POST /seatings mở phiên) ACTIVE ──(thanh toán xác nhận)──► CLOSED
+```
+> Phiên là **đơn vị gom hoá đơn (gộp bill)** và cũng là **`thread_id` của bộ nhớ hội thoại** (xem §13).
+
+**3. ĐƠN (`orders.status`) — tiến độ bếp, gắn vào phiên, KHÔNG nằm trên bàn:**
+```
+CHỜ_BẾP (CHO_BEP) ──► ĐANG_LÀM (DANG_LAM) ──► XONG (XONG → enqueue task deliver)
+```
+Khách bấm **nút bàn** lúc đang ăn → task `call` (không đổi trạng thái bàn): robot tới hỏi *đặt thêm*
+(tạo đơn mới trong CÙNG phiên) hay *thanh toán* (mở payment cho phiên).
 
 ---
 
@@ -392,38 +413,54 @@ NÚT bàn 3          Server               Dispatcher    Robot                   
 
 ---
 
-## 8. Mô hình dữ liệu (SQLite)
+## 8. Mô hình dữ liệu (khớp code — `orchestrator.db`)
+
+> **Cập nhật quan trọng:** DB chính nay tên **`orchestrator.db`** (đã bỏ `restaurant.db`), do **backend
+> FastAPI là writer DUY NHẤT** ([src/backend/app/db.py](../src/backend/app/db.py), SQLite thuần, không ORM).
+> Thêm bảng **`sessions`**; **`payments` gắn theo `session_id`** (gộp bill mỗi lượt khách), **không còn
+> theo `order_id`**. Sơ đồ ER đầy đủ: [`code-architecture.md`](code-architecture.md) §2.
 
 ```sql
-tables(      id, name, capacity, status, current_order_id )
-dishes(      id, name, price, category, available )            -- menu, nguồn cho RAG + menu.json
-orders(      id, table_id, status, total, created_at )
-order_items( id, order_id, dish_id, qty, note, status )
-robots(      id, name, status, battery, x, y, current_task_id ) -- cập nhật từ heartbeat
-tasks(       id, kind, table_id, order_id, robot_id, status, created_at, updated_at )
-payments(    id, order_id, method, amount, status, txn_ref, paid_at )
+tables(      id, name, capacity, status, current_order_id, party_size, seated_at ) -- status: TRONG/DANG_PHUC_VU/DA_THANH_TOAN
+sessions(    id, table_id, status, started_at, ended_at )       -- 1 lượt khách; status ACTIVE/CLOSED  ← MỚI
+dishes(      id, name, price, category, available )             -- menu, nguồn cho RAG + menu.json
+orders(      id, session_id, table_id, status, total, created_at ) -- session_id = chủ sở hữu (gộp bill); status CHO_BEP/DANG_LAM/XONG
+order_items( id, order_id, dish_id, qty, note, price )
+robots(      id, name, status, battery, x, y, current_task_id ) -- battery/x/y chỉ là SNAPSHOT; live ở RAM (fleet.py)
+tasks(       id, kind, table_id, order_id, robot_id, status, created_at, updated_at ) -- kind: go_to_table/deliver/call
+payments(    id, session_id, amount, status, qr_url, paid_at )  -- 1 payment GỘP / phiên; status PENDING/PAID  ← theo session_id
 ```
 - **Vì sao SQLite:** quán nhỏ → ít ghi đồng thời; *1 file, không server DB*, backup = copy file, vẫn có
-  transaction cho thanh toán. Dùng SQLAlchemy/SQLModel → đổi sang PostgreSQL sau chỉ là đổi connection string.
+  transaction cho thanh toán. Đổi sang PostgreSQL sau chỉ là đổi connection.
+- **3 kho dữ liệu theo bản chất (quyết định thiết kế):** (1) `orchestrator.db` — ledger nghiệp vụ bền vững;
+  (2) `checkpoints.db` (LangGraph) — bộ nhớ hội thoại, key = session id (§13); (3) **RAM** (`fleet.py`) —
+  telemetry robot (pose/pin) tần suất cao & tạm thời, để ngoài DB nên heartbeat không tranh lock ghi với đơn/tiền.
 
 ---
 
 ## 9. Danh sách API & sự kiện WebSocket (bản nháp)
 
-**REST (web clients):**
+**REST (web clients) — khớp code ([src/backend/app/routers/](../src/backend/app/routers/)):**
 ```
 GET   /tables                      → danh sách bàn + trạng thái (kiosk, bảng điều khiển)
-POST  /seatings        {table_id, party_size}   → nhận bàn (kiosk)
+GET   /tables/{id}                 → 1 bàn
+POST  /seatings        {table_id, party_size}   → nhận bàn → MỞ phiên ACTIVE (kiosk)
+GET   /tables/{id}/session         → phiên ACTIVE + tổng tiền GỘP (agent resolve thread; panel hiện bill)
+PATCH /tables/{id}     {status}    → đổi trạng thái bàn (vd dọn → TRONG)
 GET   /menu                        → danh sách món (UI robot: stores/menu.ts)
-POST  /orders          {table_id, items[]}      → tạo đơn (UI robot: confirmOrder)
-PATCH /orders/{id}     {status}    → bếp tick xong (bảng điều khiển)
-GET   /orders/{id}/bill            → lấy bill (UI robot: PaymentScreen)
+POST  /orders          {table_id, items[]}      → tạo đơn DƯỚI phiên của bàn (total tính ở server)
+GET   /orders                      → danh sách đơn (bảng điều khiển)
+PATCH /orders/{id}     {status}    → bếp đổi trạng thái; XONG → enqueue task deliver
+POST  /payments        {table_id}  → mở/refresh payment GỘP của phiên (PENDING + qr_url)
+POST  /payments/verify {table_id}  → chốt theo bàn (agent): PAID + đóng phiên + bàn DA_THANH_TOAN
+POST  /payments/{id}/verify        → chốt theo id (tablet)
 POST  /tables/{id}/call            → khách bấm NÚT bàn → robot tới hỏi (đặt thêm / thanh toán)
-POST  /payments/{order_id}/qr      → tạo QR thanh toán
-POST  /webhooks/payment            → cổng TT báo đã nhận tiền
+GET   /tasks · GET /robots · GET /layout · GET /map/image.png · POST /admin/reset
 ```
 > `/tables/{id}/call` là endpoint mà **nút phần cứng** gọi (qua firmware/ESP32 hoặc cầu nối). Generic:
 > server tạo task `call`, không phân biệt trước là đặt thêm hay thanh toán — khách quyết khi robot tới.
+> *Chưa code:* webhook cổng thanh toán thật (`/webhooks/payment`) — hiện `verify` chốt thủ công/giả lập;
+> QR là VietQR dựng từ `amount` (`payments._vietqr_url`).
 
 **WebSocket (1 endpoint `/ws`, phân luồng theo `role`):**
 ```
@@ -473,7 +510,7 @@ Cả 3 laptop nối **cùng 1 WiFi/LAN**; Server có IP cố định, ví dụ `
 ```
 
 ### Laptop 1 — Server + LLM + serve cả 3 web (sân khấu chính)
-- Chạy FastAPI (cổng `8000`) + SQLite (`restaurant.db`) + **LLM/agent + RAG menu** + Dispatcher,
+- Chạy FastAPI (cổng `8000`) + SQLite (`orchestrator.db`) + **LLM/agent + RAG menu** + Dispatcher,
   đồng thời **build & serve cả 3 web** (`make build`) — Laptop 2/3 chỉ mở URL, không build gì.
 - Mở tab **Kiosk** (`…:8000/kiosk`). **Nút bàn** chưa có phần cứng → giả lập bằng `curl -X POST
   http://192.168.1.10:8000/tables/3/call` (hoặc 1 nút bấm nhỏ trên trang dev).
@@ -524,12 +561,12 @@ Khi muốn chứng minh "server không cần ở quán":
 
 - **Mốc A — 1 robot, không server:** robot-agent↔Body qua localhost WS; robot tới bàn + nhận lệnh đặt/giao
   với 1 con. Chứng minh đường ống robot-agent/Body chạy. (Giai đoạn này có thể tạm mock "não" để test đường ống.)
-- **Mốc B — dựng Server trung tâm (não + backend):** FastAPI + SQLite; **chuyển LLM + RAG + agent lên
-  server**; chuyển trạng thái bàn/đơn lên server; robot thành WS client (gửi stt_text, nhận say/ui/navigate);
-  **nối `customer_ui` vào backend** (loadMenu, confirmOrder); làm Kiosk + **Bảng điều khiển** cơ bản.
-- **Mốc C — Dispatcher + nút bàn + thanh toán:** hàng đợi task, chọn robot, hoàn thiện Bảng điều khiển
-  (giám sát realtime + quản lý), endpoint `/tables/{id}/call`, luồng `call` (đặt thêm / thanh toán QR +
-  webhook, `PaymentScreen`).
+- **Mốc B — dựng Server trung tâm (não + backend):** 🟢 **phần lớn ĐÃ XONG** — FastAPI + SQLite
+  (`orchestrator.db`), agent + tools gọi REST, bộ nhớ hội thoại theo phiên (§13); **3 web đã code**
+  (customer_ui, kiosk, panel). *Còn lại:* nối STT/TTS thật trên Jetson thay voice mock.
+- **Mốc C — Dispatcher + nút bàn + thanh toán:** 🟡 **đang chạy** — dispatcher chọn robot + watchdog,
+  endpoint `/tables/{id}/call`, `/payments` + `/payments/verify` (QR VietQR). *Còn lại:* webhook cổng
+  thanh toán thật (hiện verify thủ công/giả lập).
 - **Mốc D — multi-robot + remote:** thêm robot thứ 2 trong sim (dùng chung 1 LLM); **Netbird cho server
   offsite**; thiết kế **lane 1 chiều** giảm kẹt; cân nhắc **Open-RMF**/**Zenoh** nếu đông robot hoặc WiFi yếu.
 
@@ -568,3 +605,22 @@ là **thêm logic để agent phát lệnh hành động** + map lệnh → task
 4. **Model LLM trên server:** chọn model nào (kích thước/tốc độ) + chạy bằng gì (Ollama/vLLM/llama.cpp) +
    cấu hình máy server (GPU?). *Vì giờ không bị giới hạn 8GB Jetson → có thể dùng model lớn hơn.*
 5. **Đẩy lệnh `ui` cho customer_ui:** đi thẳng (role=robot_ui) hay qua robot-agent? *Chốt 1 đường.*
+
+---
+
+## 13. Bộ nhớ hội thoại = phiên (đã code — `thread_id = session_id`)
+
+> Phần này **không có trong bản thiết kế gốc**, bổ sung cho khớp code. Chi tiết:
+> [`code-architecture.md`](code-architecture.md) §4.
+
+Agent **không bao giờ chạm DB** — tools (`confirm_order` / `request_payment` / `verify_payment`) gọi REST
+qua [`orchestrator_client.py`](../ai_waiter_core/ai_waiter_core/services/orchestrator_client.py)
+(`ORCHESTRATOR_URL`, chuẩn hoá `"T1" → 1`). Bộ nhớ hội thoại của LangGraph nằm ở **`checkpoints.db`**,
+**key theo phiên** ([checkpointer.py](../ai_waiter_core/ai_waiter_core/agent/memory/checkpointer.py)):
+
+- `thread_id = id phiên ACTIVE`; mỗi lượt chat agent resolve phiên hiện tại của bàn
+  ([graph.py](../ai_waiter_core/ai_waiter_core/agent/graph.py)).
+- **Trong 1 lượt khách** → cùng session id → nhớ ngữ cảnh xuyên suốt.
+- **Sau thanh toán** (phiên CLOSED) → không còn phiên ACTIVE → khách kế tiếp mở **phiên mới** →
+  **thread mới → ngữ cảnh sạch** (không lẫn giữa các lượt khách). Fallback `table-{id}-nosession`
+  chỉ dùng trước khi có seating.

@@ -2,7 +2,7 @@
 
 > How a UI command produced by the shared agent reaches the **right** customer screen.
 > Status: design agreed (2026-06-25). Not yet implemented.
-> Read with [system-architecture.md](system-architecture.md) (§2, §12) and the action seam in
+> Read with [system-design.md](system-design.md) (§2, §12) and the action seam in
 > `ai_waiter_core/ai_waiter_core/agent/actions.py` (`emit_action`).
 
 ---
