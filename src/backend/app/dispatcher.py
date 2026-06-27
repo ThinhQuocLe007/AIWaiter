@@ -249,6 +249,7 @@ async def on_robot_disconnect(robot_id: str) -> None:
     is a no-op.
     """
     _last_seen.pop(robot_id, None)
+    manager.unbind_robot(robot_id)  # no longer at any table — stop routing voice to it
     with get_conn() as conn:
         row = conn.execute(
             "SELECT current_task_id FROM robots WHERE id = ?", (robot_id,)
@@ -325,7 +326,10 @@ async def on_arrived(robot_id: str, task_id: int | None) -> None:
                 'UPDATE "tables" SET status = ? WHERE id = ?', (new_status, task.table_id)
             )
             await _broadcast_table(conn, task.table_id)
-    log.info("task %s arrived (table %s)", task_id, task.table_id)
+    # The robot is now standing at the table, so route this table's "talk to AI" button to this
+    # robot's mic. Held until the robot is dispatched elsewhere (re-bind) or drops (on disconnect).
+    manager.bind_table_robot(task.table_id, robot_id)
+    log.info("task %s arrived (table %s) — voice bound to %s", task_id, task.table_id, robot_id)
 
 
 async def on_done(robot_id: str, task_id: int | None) -> None:

@@ -1,11 +1,13 @@
 """AI Waiter — voice device (runs on the machine with the microphone: Jetson/laptop).
 
 This is NOT an always-on loop anymore. It is a *command-driven* service: it preloads + warms the
-mic/VAD/STT models, connects to the backend WS hub as ``role=voice-device`` for its table, then idles
-until the table's tablet (customer_ui) pushes the "talk to AI" button. On ``start_listening`` it
-captures ONE utterance (mic → VAD → Whisper) and POSTs the recognised text to the agent (``POST
-/chat``). The agent runs the LLM and mirrors the turn back to the tablet via the voice bridge, so the
-web UI shows the conversation — the browser never touches the microphone (so no HTTPS requirement).
+mic/VAD/STT models, connects to the backend WS hub as ``role=voice-device&robot_id=<id>``, then idles
+until a tablet pushes the "talk to AI" button. The device is **table-agnostic** — the dispatcher
+binds it to a table when this robot arrives there, and each ``start_listening`` command carries the
+``table_id`` the guest belongs to. On the command it captures ONE utterance (mic → VAD → Whisper) and
+POSTs the text to the agent (``POST /chat`` tagged with that table). The agent runs the LLM and
+mirrors the turn back to the tablet via the voice bridge, so the web UI shows the conversation — the
+browser never touches the microphone (so no HTTPS requirement).
 
 Why a resident service instead of the web spawning it: a browser page can't launch a process on the
 device (sandbox), and the mic needs a secure context. Running here as a service that the web *signals*
@@ -18,6 +20,7 @@ Run on the device (point AGENT_URL / ORCHESTRATOR_URL at the server over the net
 import asyncio
 import json
 import logging
+import os
 import signal
 import sys
 
@@ -28,13 +31,16 @@ from dotenv import load_dotenv
 from ai_waiter_core.config import settings
 from ai_waiter_core.perception import SileroVAD, PhoWhisperSTT
 from ai_waiter_core.perception.queues import get_transcript, shutdown_all
-from ai_waiter_core.services.orchestrator_client import _table_int
 from ai_waiter_core.utils import flush_traces, log_struct
 
 load_dotenv()
 logger = logging.getLogger("ai_waiter_core.voice_device")
 
-TABLE_ID = "T1"
+# This device's robot identity — the SAME id the robot's motion client uses (mock_robot.py --id).
+# The mic is bound to a *table* dynamically by the server: when the dispatcher sends this robot to a
+# table and it arrives, the backend routes that table's "talk to AI" button here. So this device is
+# table-agnostic; each start_listening command tells it which table the guest belongs to.
+ROBOT_ID = os.getenv("VOICE_ROBOT_ID", "robo-1")
 # Local model latency can be a few seconds; give the agent call generous headroom.
 CHAT_TIMEOUT = httpx.Timeout(60.0, connect=5.0)
 # After the button: how long to wait for the guest to finish speaking, and then for STT to emit text.
@@ -44,14 +50,15 @@ WS_RETRY_MAX = 10.0  # cap on reconnect backoff
 
 
 def _backend_ws_url() -> str:
-    """ws://<backend>/ws?role=voice-device&table_id=<int> derived from ORCHESTRATOR_URL."""
+    """ws://<backend>/ws?role=voice-device&robot_id=<id> derived from ORCHESTRATOR_URL."""
     base = settings.ORCHESTRATOR_URL.rstrip("/").replace("https://", "wss://").replace("http://", "ws://")
-    return f"{base}/ws?role=voice-device&table_id={_table_int(TABLE_ID)}"
+    return f"{base}/ws?role=voice-device&robot_id={ROBOT_ID}"
 
 
-def _capture_and_send(vad: SileroVAD, agent_client: httpx.Client) -> None:
-    """Blocking: arm one utterance, wait for it, transcribe, POST to the agent. Runs off the WS
-    loop via asyncio.to_thread so the socket stays responsive."""
+def _capture_and_send(vad: SileroVAD, agent_client: httpx.Client, table_id: int) -> None:
+    """Blocking: arm one utterance, wait for it, transcribe, POST to the agent for `table_id` (the
+    table the server says this robot is serving). Runs off the WS loop via asyncio.to_thread so the
+    socket stays responsive."""
     # Drop any stale transcript so we POST only what the guest says now.
     while get_transcript(timeout=0.0) is not None:
         pass
@@ -68,12 +75,12 @@ def _capture_and_send(vad: SileroVAD, agent_client: httpx.Client) -> None:
         return
 
     text = transcript.text
-    print(f"[HEARD @ {transcript.timestamp:.1f}s]: {text}")
+    print(f"[HEARD @ {transcript.timestamp:.1f}s | bàn {table_id}]: {text}")
 
     # Send to the server-side agent. No sticky session_id: the agent re-resolves the table's backend
     # session each turn (thread resets after payment). The server mirrors this turn to the tablet.
     try:
-        resp = agent_client.post("/chat", json={"table_id": TABLE_ID, "text": text})
+        resp = agent_client.post("/chat", json={"table_id": table_id, "text": text})
         resp.raise_for_status()
         result = resp.json()
     except httpx.HTTPError as e:
@@ -92,14 +99,19 @@ async def voice_device_loop(vad: SileroVAD, agent_client: httpx.Client) -> None:
             async with websockets.connect(url) as ws:
                 retry = 0
                 logger.info("voice-device connected: %s", url)
-                print(f"[READY] đã kết nối backend — chờ web bấm 'nói chuyện' (bàn {_table_int(TABLE_ID)}).")
+                print(f"[READY] đã kết nối backend ({ROBOT_ID}) — chờ điều tới bàn + web bấm 'nói chuyện'.")
                 async for raw in ws:
                     try:
                         msg = json.loads(raw)
                     except json.JSONDecodeError:
                         continue
                     if msg.get("type") == "start_listening":
-                        await asyncio.to_thread(_capture_and_send, vad, agent_client)
+                        # The server tags the command with the table this robot is currently serving.
+                        table_id = msg.get("table_id")
+                        if table_id is None:
+                            print("[WARN] start_listening thiếu table_id, bỏ qua.")
+                            continue
+                        await asyncio.to_thread(_capture_and_send, vad, agent_client, table_id)
         except (OSError, websockets.WebSocketException) as e:
             delay = min(2 ** retry, WS_RETRY_MAX)
             retry += 1
@@ -123,10 +135,10 @@ def main():
     stt.warmup()
 
     print("=" * 50)
-    print(f" AI Waiter voice device — Table {TABLE_ID}")
+    print(f" AI Waiter voice device — Robot {ROBOT_ID}")
     print(f" Agent (LLM)  @ {settings.AGENT_URL}")
     print(f" Backend (WS) @ {settings.ORCHESTRATOR_URL}")
-    print(" Models warmed. Bấm 'nói chuyện' trên web để nói. Ctrl+C để dừng.")
+    print(" Models warmed. Bàn được gán động khi robot tới bàn. Ctrl+C để dừng.")
     print("=" * 50)
 
     def shutdown(*_):

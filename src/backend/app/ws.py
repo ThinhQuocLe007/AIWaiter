@@ -11,6 +11,12 @@ Two kinds of clients share this hub:
   one *specific* robot (`send_to_robot`), and the robot reports back (`task_accepted`, `arrived`,
   `task_done`, `heartbeat`) which the dispatcher acts on. So robot sockets are tracked by id and
   their inbound frames are parsed and routed, not dropped.
+* **Voice devices** (`role=voice-device&robot_id=robo-1`): the mic loop on a robot's Jetson. Keyed
+  by the *same* robot id as the robot socket — one physical robot, two sockets (motion vs mic). The
+  device is reached by *table*, not id: the dispatcher binds `table → robot` when that robot arrives
+  at the table (`bind_table_robot`), so "table 3 wants to talk" resolves to whichever robot is
+  currently standing at table 3. This is the dynamic-dispatch model: a robot isn't tied to a table,
+  it's tied to one *while serving it*.
 """
 
 import json
@@ -29,36 +35,40 @@ class ConnectionManager:
         self._by_role: dict[str, set[WebSocket]] = {}
         # Robot sockets are also indexed by id so the dispatcher can target one robot.
         self._robots: dict[str, WebSocket] = {}
-        # Voice-device sockets (the mic loop on a table's Jetson/laptop) are indexed by table id so
-        # the "start listening" command from that table's tablet reaches the right microphone.
-        self._voice_devices: dict[int, WebSocket] = {}
+        # Voice-device (mic) sockets, indexed by robot id — the same id as the robot's motion socket.
+        self._voice_devices: dict[str, WebSocket] = {}
+        # Dynamic "which robot's mic serves which table" binding. The dispatcher sets it when a robot
+        # arrives at a table; "table N wants to talk" resolves through here to the robot's mic. Empty
+        # until a robot is actually standing at a table — that's why an unattended table has no mic.
+        self._table_to_robot: dict[int, str] = {}
 
     async def connect(
         self,
         ws: WebSocket,
         role: str,
         robot_id: str | None = None,
-        table_id: int | None = None,
     ) -> None:
         await ws.accept()
         self._by_role.setdefault(role, set()).add(ws)
-        if robot_id:
+        # A robot opens two sockets sharing one id (role=robot for motion, role=voice-device for the
+        # mic); key each into its own registry so the mic socket never clobbers the motion socket.
+        if role == "robot" and robot_id:
             self._robots[robot_id] = ws
-        if role == "voice-device" and table_id is not None:
-            self._voice_devices[table_id] = ws
+        if role == "voice-device" and robot_id:
+            self._voice_devices[robot_id] = ws
 
     def disconnect(
         self,
         ws: WebSocket,
         role: str,
         robot_id: str | None = None,
-        table_id: int | None = None,
     ) -> None:
         self._by_role.get(role, set()).discard(ws)
-        if robot_id and self._robots.get(robot_id) is ws:
+        if role == "robot" and robot_id and self._robots.get(robot_id) is ws:
             del self._robots[robot_id]
-        if table_id is not None and self._voice_devices.get(table_id) is ws:
-            del self._voice_devices[table_id]
+        if role == "voice-device" and robot_id and self._voice_devices.get(robot_id) is ws:
+            del self._voice_devices[robot_id]
+            self.unbind_robot(robot_id)  # its mic is gone — no table should route to it
 
     async def broadcast(self, role: str, message: dict) -> None:
         """Send a JSON message to every socket of `role`; drop ones that error out."""
@@ -81,17 +91,39 @@ class ConnectionManager:
             self._robots.pop(robot_id, None)
             return False
 
+    def bind_table_robot(self, table_id: int, robot_id: str) -> None:
+        """Record that `robot_id`'s mic now serves `table_id` (the robot just arrived there).
+
+        A robot serves one table at a time and a table is served by one robot, so any stale mapping
+        on either side is dropped first — e.g. the robot's previous table, or whoever was at this
+        table before. Idempotent.
+        """
+        for t in [t for t, r in self._table_to_robot.items() if r == robot_id]:
+            del self._table_to_robot[t]  # robot moved on from an earlier table
+        self._table_to_robot[table_id] = robot_id
+
+    def unbind_robot(self, robot_id: str) -> None:
+        """Forget any table this robot was serving (it left, finished, or went offline)."""
+        for t in [t for t, r in self._table_to_robot.items() if r == robot_id]:
+            del self._table_to_robot[t]
+
     async def send_to_voice_device(self, table_id: int, message: dict) -> bool:
-        """Tell one table's voice device to do something (e.g. start listening). Returns False if
-        no device is connected for that table."""
-        ws = self._voice_devices.get(table_id)
+        """Tell the robot currently serving `table_id` to do something (e.g. start listening).
+
+        Resolves table → robot (bound by the dispatcher on arrival) → that robot's mic socket.
+        Returns False if no robot is standing at the table or its mic device isn't connected.
+        """
+        robot_id = self._table_to_robot.get(table_id)
+        if robot_id is None:
+            return False
+        ws = self._voice_devices.get(robot_id)
         if ws is None:
             return False
         try:
             await ws.send_text(json.dumps(message, default=str, ensure_ascii=False))
             return True
         except Exception:
-            self._voice_devices.pop(table_id, None)
+            self._voice_devices.pop(robot_id, None)
             return False
 
     def connected_robot_ids(self) -> set[str]:
@@ -115,10 +147,9 @@ async def ws_endpoint(
     websocket: WebSocket,
     role: str = "panel",
     robot_id: str | None = None,
-    table_id: int | None = None,
 ) -> None:
-    await manager.connect(websocket, role, robot_id, table_id)
-    log.info("ws connected role=%s robot_id=%s table_id=%s", role, robot_id, table_id)
+    await manager.connect(websocket, role, robot_id)
+    log.info("ws connected role=%s robot_id=%s", role, robot_id)
 
     # Lazy import to avoid a circular import (dispatcher imports `manager` from this module).
     from . import dispatcher
@@ -133,8 +164,8 @@ async def ws_endpoint(
             if role == "robot" and robot_id:
                 await _handle_robot_message(dispatcher, robot_id, raw)
     except WebSocketDisconnect:
-        manager.disconnect(websocket, role, robot_id, table_id)
-        log.info("ws disconnected role=%s robot_id=%s table_id=%s", role, robot_id, table_id)
+        manager.disconnect(websocket, role, robot_id)
+        log.info("ws disconnected role=%s robot_id=%s", role, robot_id)
         if role == "robot" and robot_id:
             await dispatcher.on_robot_disconnect(robot_id)
 

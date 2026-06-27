@@ -42,11 +42,13 @@ async def voice_event(ev: VoiceEvent) -> dict:
 
 
 class ListenRequest(BaseModel):
-    """The tablet's "talk to the AI" button: ask this table's voice device to capture one utterance.
+    """The tablet's "talk to the AI" button: ask the robot serving this table to capture one utterance.
 
-    The mic lives on the table's Jetson/laptop (a `role=voice-device` WS client), not the browser —
-    so the button doesn't record audio, it just signals the device to start listening. The device
-    then does mic → VAD → STT → POST /chat, and the agent mirrors the turn back here via /event.
+    The mic lives on the robot's Jetson (a `role=voice-device` WS client), not the browser — so the
+    button doesn't record audio, it just signals the device to start listening. The table→robot
+    binding is dynamic (the dispatcher sets it when the robot arrives), so this resolves to whichever
+    robot is currently at the table. The device then does mic → VAD → STT → POST /chat, and the agent
+    mirrors the turn back here via /event.
     """
 
     table_id: int
@@ -54,7 +56,11 @@ class ListenRequest(BaseModel):
 
 @router.post("/listen")
 async def voice_listen(req: ListenRequest) -> dict:
-    """Forward a "start listening" command to the table's voice device. Returns no_device (and the
-    tablet shows the assistant is offline) when no microphone is connected for that table."""
-    ok = await manager.send_to_voice_device(req.table_id, {"type": "start_listening"})
+    """Forward a "start listening" command to the robot serving this table. The command carries the
+    table_id so the (table-agnostic) device tags its /chat turn with the right table. Returns
+    no_device (tablet shows the assistant offline) when no robot is at the table or its mic is down.
+    """
+    ok = await manager.send_to_voice_device(
+        req.table_id, {"type": "start_listening", "table_id": req.table_id}
+    )
     return {"status": "ok" if ok else "no_device"}
