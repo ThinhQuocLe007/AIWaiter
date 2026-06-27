@@ -390,6 +390,46 @@ async def release_robot_at_table(table_id: int) -> None:
     log.info("released robot %s from table %s (task %s) — heading home", robot_id, table_id, task_id)
 
 
+async def cancel_table_tasks(table_id: int) -> None:
+    """Close out a table's outstanding work when its visit ends (paid, or staff ends the table).
+
+    Every PENDING/ASSIGNED/IN_PROGRESS task for the table is marked DONE so it leaves the panel's
+    queue instead of lingering forever (e.g. a `call`/`deliver` that no robot ever picked up because
+    the only robot went offline). Any **online** robot still assigned one is told to drive home
+    (`task.release`) and freed via the normal `on_done` path; offline robots were already cleared by
+    `on_robot_disconnect`. Idempotent: a second call finds no non-DONE task and does nothing.
+    """
+    online = manager.connected_robot_ids()
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT id, robot_id FROM tasks WHERE table_id = ? AND status != 'DONE'",
+            (table_id,),
+        ).fetchall()
+        if not rows:
+            return
+        robots_to_send_home = {r["robot_id"] for r in rows if r["robot_id"] in online}
+        for r in rows:
+            conn.execute(
+                "UPDATE tasks SET status = 'DONE', updated_at = datetime('now') WHERE id = ?",
+                (r["id"],),
+            )
+            await _broadcast_task(conn, r["id"], "task.updated")
+    # Nudge any robot still parked at the table to head back; on_done will free it + unbind its mic
+    # when it reports in. Also drop the voice binding now so the table stops routing to it.
+    for robot_id in robots_to_send_home:
+        manager.unbind_robot(robot_id)
+        await manager.send_to_robot(
+            robot_id, {"type": "task.release", "table_id": table_id}
+        )
+    log.info(
+        "table %s ended — cancelled %d task(s); sent home: %s",
+        table_id,
+        len(rows),
+        robots_to_send_home or "—",
+    )
+    await try_assign()  # any freed robot can now pick up another table's queued work
+
+
 async def _requeue_task(task_id: int, robot_id: str) -> None:
     """Put a task back on the queue (robot died/vanished) and try to reassign it."""
     with get_conn() as conn:

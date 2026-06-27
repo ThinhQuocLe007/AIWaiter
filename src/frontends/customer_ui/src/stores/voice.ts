@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import type { FoodItem } from '@/types'
 import { useCartStore } from '@/stores/cart'
 import { getStoredTableId } from '@/data/tableSession'
-import { startVoiceListen } from '@/data/api'
+import { startVoiceListen, createPayment } from '@/data/api'
 import router from '@/router'
 import { connectEvents, type WsHandle } from '@shared/ws'
 import type { UiAction, WsEvent } from '@shared/types'
@@ -91,12 +91,30 @@ export const useVoiceStore = defineStore('voice', () => {
 
   // Mirror the agent's tablet command: a successful order step opens the menu, a payment request
   // brings up the bill. Guarded so we don't re-navigate to the screen we're already on.
-  function applyAction(action: UiAction | null) {
+  async function applyAction(action: UiAction | null) {
     if (!action) return
-    const target =
-      action.action === 'open_payment' ? 'payment' : action.action === 'open_menu' ? 'menu' : null
-    if (target && router.currentRoute.value.name !== target) {
-      router.push({ name: target })
+    if (action.action === 'open_payment') {
+      if (router.currentRoute.value.name === 'payment') return
+      // The agent already opened the gộp payment server-side; fetch it (idempotent) so we can carry
+      // its amount + QR + id to the payment screen as query params — the same shape the manual
+      // "Thanh toán" button passes. Without this the screen reads no amount and shows 0đ.
+      try {
+        const payment = await createPayment(getStoredTableId())
+        router.push({
+          name: 'payment',
+          query: {
+            amount: String(payment.amount),
+            qrUrl: payment.qr_url ?? '',
+            paymentId: String(payment.id),
+          },
+        })
+      } catch {
+        router.push({ name: 'payment' })  // still show the screen; better than staying put
+      }
+      return
+    }
+    if (action.action === 'open_menu' && router.currentRoute.value.name !== 'menu') {
+      router.push({ name: 'menu' })
     }
   }
 

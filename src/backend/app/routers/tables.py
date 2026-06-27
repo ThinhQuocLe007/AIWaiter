@@ -97,4 +97,8 @@ async def update_table_status(table_id: int, payload: TableStatusUpdate) -> Tabl
         updated = _fetch_table(conn, table_id)
     assert updated is not None
     await manager.broadcast("panel", {"type": "table.updated", "table": updated.model_dump()})
+    # Ending a table also clears any task still queued for it (and sends its robot home), so the
+    # panel's task queue doesn't keep stale work for a table that's now free.
+    if payload.status == "TRONG":
+        await dispatcher.cancel_table_tasks(table_id)
     return updated
