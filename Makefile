@@ -1,7 +1,7 @@
 # Makefile - Convenience commands for AI Waiter project
 # Run 'make help' to see available commands
 
-.PHONY: help setup install update frontend menu kiosk panel backend reindex agent mockrobot build serve kill reset clean
+.PHONY: help setup install update frontend menu kiosk panel backend reindex agent voice mockrobot build serve kill reset clean
 
 # Role-specific Python extras for the backend env (see docs/setup-deploy.md). Each machine
 # picks ONLY its role: fastapi/uvicorn live in `--extra server`, STT/TTS in `--extra voice`,
@@ -25,11 +25,14 @@ help:
 	@echo "  make panel      - Start kitchen panel dev server (port 5175)"
 	@echo "  make build      - Build frontend for production (outputs dist/)"
 	@echo "  make serve      - Serve production build locally (port 4173)"
-	@echo "  make backend    - Start backend dev server (port 8000)"
+	@echo "  make backend    - Start orchestrator backend (FastAPI, port 8000)"
+	@echo "  make agent      - Start LLM agent HTTP service (port 8100); auto-rebuilds the index first"
+	@echo "  make voice      - Start edge voice device (Jetson / any mic-capable machine)"
 	@echo "  make mockrobot  - Start a mock robot WS client (ID=robo-1 ARGS=...) to test the dispatcher"
+	@echo "  make reindex    - Clean rebuild of FAISS + BM25 + centroid artifacts"
 	@echo "  make reset      - Wipe demo data: clear orders/seatings, free all tables (backend must be running)"
-	@echo "  make kill       - Stop all dev servers (backend 8000, frontends 5173-5175)"
-	@echo "  make clean      - Remove node_modules and .venv"
+	@echo "  make kill       - Stop all dev servers (backend 8000/8100, frontends 5173-5175, voice)"
+	@echo "  make clean      - Remove node_modules, .venv, and Python __pycache__"
 	@echo ""
 
 setup:
@@ -88,7 +91,7 @@ serve:
 	@cd src/frontends/customer_ui && npm run preview -- --host 0.0.0.0 --port 4173
 
 backend:
-	@uv run uvicorn src.backend.app.main:app --reload --host 0.0.0.0 --port 8000
+	@uv run uvicorn src.server_orchestrator.main:app --reload --host 0.0.0.0 --port 8000
 
 # Clean rebuild of the embedding artifacts (FAISS + BM25 + router centroids) from scratch using the
 # current EMBEDDING_MODEL in .env. Wipes the old files first so nothing stale survives a model/dim
@@ -96,19 +99,24 @@ backend:
 reindex:
 	@echo "Wiping old vector / BM25 / centroid artifacts..."
 	@rm -rf storage/vector \
-		ai_waiter_core/ai_waiter_core/agent/resources/centroids/centroids.npz \
-		ai_waiter_core/ai_waiter_core/agent/resources/centroids/embedding_model.txt
+		src/agent_brain/agent/resources/centroids/centroids.npz \
+		src/agent_brain/agent/resources/centroids/embedding_model.txt
 	@echo "Rebuilding FAISS + BM25 + centroids with EMBEDDING_MODEL from .env..."
 	@uv run python scripts/setup.py --force
 
-# Agent (LLM) HTTP service — the brain on the SERVER. The Jetson voice loop (ai_waiter_core/main.py)
-# POSTs recognised text to POST /chat; this runs the LangGraph agent and mirrors the turn to the
-# customer tablet via the backend's /voice bridge. Depends on `reindex` so every start rebuilds the
-# embeddings clean (you asked for a fresh index each run while testing new models). Run from
-# ai_waiter_core/ so `ai_waiter_core` resolves to the inner package (same convention as the voice loop).
-# To restart WITHOUT rebuilding, run the uvicorn line directly (see below) instead of `make agent`.
+# Agent (LLM) HTTP service — the brain on the SERVER. The Jetson voice loop
+# (src/edge_voice/main.py) POSTs recognised text to POST /chat; this runs the LangGraph agent
+# and mirrors the turn to the customer tablet via the backend's /voice bridge. Depends on
+# `reindex` so every start rebuilds the embeddings clean (you asked for a fresh index each run
+# while testing new models). To restart WITHOUT rebuilding, run the uvicorn line directly.
 agent: reindex
-	@cd ai_waiter_core && uv run --project .. uvicorn ai_waiter_core.server:app --host 0.0.0.0 --port 8100
+	@uv run uvicorn src.agent_brain.server:app --host 0.0.0.0 --port 8100
+
+# Edge voice device — runs on the Jetson (or any machine with a mic + speaker). Idles for
+# /start_listening commands from the backend's WS hub. Preloads the VAD + STT models at boot
+# (slow first import). .env must point AGENT_URL + ORCHESTRATOR_URL at the server.
+voice:
+	@uv run python src/edge_voice/main.py
 
 # Mock robot WS client — stands in for a real Jetson robot to test the dispatcher end-to-end.
 # Override id/position: make mockrobot ID=robo-2 ARGS="--x 2.3 --y 0.5".
@@ -125,21 +133,26 @@ reset:
 		|| echo "  backend not running on :8000 — start 'make backend', or rm storage/db/orchestrator.db"
 
 kill:
-	@echo "Stopping dev servers (ports 8000, 5173-5175)..."
-	@-for p in 8000 5173 5174 5175; do \
+	@echo "Stopping dev servers (ports 8000/8100/5173-5175 + voice device)..."
+	@-for p in 8000 8100 5173 5174 5175; do \
 		pids=$$(ss -ltnp 2>/dev/null | grep ":$$p " | grep -oP 'pid=\K[0-9]+' | sort -u); \
 		if [ -n "$$pids" ]; then kill $$pids 2>/dev/null && echo "  killed port $$p (pid: $$pids)"; fi; \
 	done
 	@# Bracket trick ([u]vicorn / [v]ite) + token-free echoes so the pattern never
 	@# matches this recipe's own shell command line (which would self-terminate make).
-	@-pkill -f '[u]vicorn src.backend.app.main' 2>/dev/null && echo "  stopped backend (incl. --reload parent)" || true
+	@-pkill -f '[u]vicorn src.server_orchestrator.main' 2>/dev/null && echo "  stopped orchestrator backend (incl. --reload parent)" || true
+	@-pkill -f '[u]vicorn src.agent_brain.server' 2>/dev/null && echo "  stopped agent HTTP service" || true
+	@-pkill -f 'src.edge_voice.main' 2>/dev/null && echo "  stopped voice device" || true
 	@-pkill -f 'frontends/.*[v]ite' 2>/dev/null && echo "  stopped frontend dev servers" || true
 	@echo "Done."
 
 clean:
-	@echo "Removing node_modules and .venv directories..."
+	@echo "Removing node_modules, .venv, and Python __pycache__ directories..."
 	@rm -rf src/frontends/customer_ui/node_modules
 	@rm -rf src/frontends/kiosk/node_modules
 	@rm -rf src/frontends/panel/node_modules
 	@rm -rf .venv
+	@# Wipe all __pycache__ inside src/ (skip .venv / node_modules). Keeps the
+	@# working tree clean after refactors / branch switches.
+	@find src -name __pycache__ -type d -prune -exec rm -rf {} +
 	@echo "Done. Run 'make install' to reinstall."
