@@ -7,15 +7,12 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-SRC_DIR = os.path.join(PROJECT_ROOT, 'ai_waiter_core')
-if os.path.isdir(SRC_DIR):
-    sys.path.insert(0, SRC_DIR)
 
 from dotenv import load_dotenv
 load_dotenv()
 
-from ai_waiter_core.agent.agent import get_agent_app
-from ai_waiter_core.config import settings
+from src.agent_brain.agent.agent import get_agent_app
+from src.agent_brain.config import settings
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 
 E2E_DATA_DIR = os.path.join(PROJECT_ROOT, "evals", "data", "e2e")

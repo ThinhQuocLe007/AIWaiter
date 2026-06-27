@@ -7,13 +7,10 @@ from pathlib import Path
 from tqdm import tqdm
 from collections import defaultdict
 
-# Add ai_waiter_core to Python path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-AI_WAITER_CORE_PATH = PROJECT_ROOT / "ai_waiter_core"
-sys.path.insert(0, str(AI_WAITER_CORE_PATH))
 
 from langchain_core.messages import HumanMessage
-from ai_waiter_core.agent.nodes.hybrid_router_node import hybrid_router_node
+from src.agent_brain.agent.nodes.hybrid_router_node import hybrid_router_node
 
 EVAL_DATA_PATH = PROJECT_ROOT / "evals" / "data" / "router" / "router_eval.json"
 RESULTS_DIR = PROJECT_ROOT / "evals" / "results"

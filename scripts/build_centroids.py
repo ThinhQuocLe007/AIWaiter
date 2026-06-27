@@ -19,7 +19,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
 PACKAGE_RESOURCES = (
     PROJECT_ROOT
-    / "ai_waiter_core/ai_waiter_core/agent/resources"
+    / "src/agent_brain/agent/resources"
 )
 
 DEFAULT_UTTERANCES = PACKAGE_RESOURCES / "few_shots" / "utterances.json"
@@ -59,7 +59,7 @@ def build_centroids(
     print(f"\nCentroids saved to: {npz_path} ({size_kb:.1f} KB)")
 
     # Stamp the model name so the router can detect a stale/mismatched centroid set.
-    from ai_waiter_core.services.retriever.indices.fingerprint import write_fingerprint
+    from src.agent_brain.services.retriever.indices.fingerprint import write_fingerprint
     write_fingerprint(output_dir)
     print(f"Stamped embedding model fingerprint: {model_name}")
 
@@ -102,17 +102,18 @@ def main(argv: list[str] | None = None) -> None:
         print(f"ERROR: utterances.json not found at {args.utterances}", file=sys.stderr)
         sys.exit(1)
 
-    # Make ai_waiter_core importable and load .env (mirrors the eval scripts).
+    # Make repo root importable so scripts.build_centroids (this file) is reachable
+    # when called as a module from setup.py. The src/ tree is importable by default from
+    # repo root, so no extra path shim is needed for the src.agent_brain.* imports.
     # --model is applied to the environment BEFORE settings is first imported so it
     # overrides .env. (When invoked from setup.py settings is already loaded, so that
     # path uses setup's EMBEDDING_MODEL rather than --model.)
-    sys.path.insert(0, str(PROJECT_ROOT / "ai_waiter_core"))
     sys.path.insert(0, str(PROJECT_ROOT))
     if args.model:
         os.environ["EMBEDDING_MODEL"] = args.model
     from dotenv import load_dotenv
     load_dotenv()  # does not override already-set env vars
-    from ai_waiter_core.services.retriever.indices.embeddings import (
+    from src.agent_brain.services.retriever.indices.embeddings import (
         encode_queries,
         active_model_name,
     )

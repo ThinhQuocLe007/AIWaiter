@@ -16,9 +16,6 @@ import sys
 import time
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-SRC_DIR = os.path.join(PROJECT_ROOT, "ai_waiter_core")
-if os.path.isdir(SRC_DIR):
-    sys.path.insert(0, SRC_DIR)
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -47,7 +44,7 @@ def main():
     base = rss_mb()
     report("startup", base)
 
-    from ai_waiter_core.perception.vad_silero import SileroVAD, CHUNK_SIZE
+    from src.edge_voice.perception.vad_silero import SileroVAD, CHUNK_SIZE
 
     vad = SileroVAD()
     t0 = time.time()

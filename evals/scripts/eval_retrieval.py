@@ -7,12 +7,10 @@ from pathlib import Path
 from typing import List, Dict, Any
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-AI_WAITER_CORE_PATH = PROJECT_ROOT / "ai_waiter_core"
-sys.path.insert(0, str(AI_WAITER_CORE_PATH))
 
-from ai_waiter_core.services.retriever.builder import IndexBuilder
-from ai_waiter_core.services.retriever.hybrid_retriever import RetrieverManager
-from ai_waiter_core.config import settings
+from src.agent_brain.services.retriever.builder import IndexBuilder
+from src.agent_brain.services.retriever.hybrid_retriever import RetrieverManager
+from src.agent_brain.config import settings
 
 # Paths
 EVAL_DATA_PATH = settings.PROJECT_ROOT / "evals/data/retrieval/retrieval_eval.json"

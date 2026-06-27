@@ -19,13 +19,14 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
 
-sys.path.insert(0, str(PROJECT_ROOT / "ai_waiter_core"))
+# Make repo root importable so `from scripts.build_centroids import main` resolves
+# (scripts/ is a flat directory, not a package). The src/ tree is importable by
+# default from repo root.
 sys.path.insert(0, str(PROJECT_ROOT))
 os.environ["PROJECT_ROOT"] = str(PROJECT_ROOT)
 
-import ai_waiter_core  # noqa: E402 ensure path is set before other imports
-from ai_waiter_core.config import settings
-from ai_waiter_core.services.retriever.builder import IndexBuilder
+from src.agent_brain.config import settings
+from src.agent_brain.services.retriever.builder import IndexBuilder
 from scripts.build_centroids import main as build_centroids_main
 
 
@@ -37,17 +38,17 @@ REQUIRED_FILES = [
     "assets/data/customer_info.json",
     "assets/data/restaurant_info.txt",
     # Few-shots
-    "ai_waiter_core/ai_waiter_core/agent/resources/few_shots/utterances.json",
-    "ai_waiter_core/ai_waiter_core/agent/resources/few_shots/router.json",
-    "ai_waiter_core/ai_waiter_core/agent/resources/few_shots/search_worker.json",
+    "src/agent_brain/agent/resources/few_shots/utterances.json",
+    "src/agent_brain/agent/resources/few_shots/router.json",
+    "src/agent_brain/agent/resources/few_shots/search_worker.json",
     # Prompts
-    "ai_waiter_core/ai_waiter_core/agent/resources/system_prompts/router_agent.md",
-    "ai_waiter_core/ai_waiter_core/agent/resources/system_prompts/order_worker_agent.md",
-    "ai_waiter_core/ai_waiter_core/agent/resources/system_prompts/search_agent.md",
-    "ai_waiter_core/ai_waiter_core/agent/resources/system_prompts/waiter_agent.md",
-    "ai_waiter_core/ai_waiter_core/agent/resources/skills/hospitality.md",
-    "ai_waiter_core/ai_waiter_core/agent/resources/skills/menu_grounding.md",
-    "ai_waiter_core/ai_waiter_core/agent/resources/skills/no_service_response.md",
+    "src/agent_brain/agent/resources/system_prompts/router_agent.md",
+    "src/agent_brain/agent/resources/system_prompts/order_worker_agent.md",
+    "src/agent_brain/agent/resources/system_prompts/search_agent.md",
+    "src/agent_brain/agent/resources/system_prompts/waiter_agent.md",
+    "src/agent_brain/agent/resources/skills/hospitality.md",
+    "src/agent_brain/agent/resources/skills/menu_grounding.md",
+    "src/agent_brain/agent/resources/skills/no_service_response.md",
     # Centroids
     "evals/data/router/router_eval.json",
     "evals/data/retrieval/retrieval_eval.json",
@@ -55,7 +56,7 @@ REQUIRED_FILES = [
 
 CENTROIDS_PATH = (
     PROJECT_ROOT
-    / "ai_waiter_core/ai_waiter_core/agent/resources/centroids/centroids.npz"
+    / "src/agent_brain/agent/resources/centroids/centroids.npz"
 )
 
 
@@ -164,7 +165,7 @@ def main():
     print()
 
     # The business ledger (orchestrator.db) is owned and created by the backend on startup
-    # (src/backend/app/main.py lifespan → init_db + seeds); setup.py no longer creates it.
+    # (src/server_orchestrator/main.py lifespan → init_db + seeds); setup.py no longer creates it.
 
     print("3. Initializing Checkpoints DB...")
     init_checkpoints_db(args.force)

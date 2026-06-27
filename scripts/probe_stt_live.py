@@ -4,7 +4,7 @@ probe_stt_live.py — real-time microphone -> VAD -> STT, prints Vietnamese text
 
 Unlike probe_stt.py (which transcribes a single wav file), this opens the
 microphone and runs the REAL perception threads — SileroVAD + PhoWhisperSTT, the
-same ones used by the production pipeline in ai_waiter_core/main.py — but WITHOUT
+same ones used by the production pipeline in src/edge_voice/main.py — but WITHOUT
 the agent / LLM / TTS. Use it to validate "speak -> see text" end to end.
 
 Speak into the mic; each finished utterance prints as:
@@ -30,16 +30,13 @@ import sys
 import signal
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-SRC_DIR = os.path.join(PROJECT_ROOT, "ai_waiter_core")
-if os.path.isdir(SRC_DIR):
-    sys.path.insert(0, SRC_DIR)
 
 from dotenv import load_dotenv
 load_dotenv()
 
-from ai_waiter_core.perception import SileroVAD, PhoWhisperSTT
-from ai_waiter_core.perception.queues import get_transcript, shutdown_all
-from ai_waiter_core.config import settings
+from src.edge_voice.perception import SileroVAD, PhoWhisperSTT
+from src.edge_voice.perception.queues import get_transcript, shutdown_all
+from src.agent_brain.config import settings
 
 
 def main():

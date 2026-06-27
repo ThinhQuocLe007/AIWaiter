@@ -36,7 +36,7 @@ MOVE_STEP = 0.2  # seconds between pose updates while driving → smooth dot on 
 ACTION_SECONDS = 3.0  # fake time doing the action at the table
 
 # Approach waypoints per table and the dock — in the saved SLAM map frame, mirroring the server's
-# dispatcher (src/backend/app/dispatcher.py), which copies them from the sim's food_delivery.py.
+# dispatcher (src/server_orchestrator/services/dispatcher.py), which copies them from the sim's food_delivery.py.
 TABLE_POS = {
     1: (7.99985, 1.36319),
     2: (8.05419, 0.33537),

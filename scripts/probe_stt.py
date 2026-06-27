@@ -18,9 +18,6 @@ import sys
 import time
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-SRC_DIR = os.path.join(PROJECT_ROOT, "ai_waiter_core")
-if os.path.isdir(SRC_DIR):
-    sys.path.insert(0, SRC_DIR)
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -100,8 +97,8 @@ def main():
     base = rss_mb()
     report("startup", base)
 
-    from ai_waiter_core.perception.stt_phowhisper import PhoWhisperSTT, MODEL_SIZE
-    from ai_waiter_core.config import settings
+    from src.edge_voice.perception.stt_phowhisper import PhoWhisperSTT, MODEL_SIZE
+    from src.agent_brain.config import settings
     print(f"[cfg] DEVICE={settings.DEVICE}  -> compute={'float16' if settings.DEVICE=='cuda' else 'int8'}")
 
     # Prefetch the exact model PhoWhisperSTT will load (MODEL_SIZE in stt_phowhisper.py),
