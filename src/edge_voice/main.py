@@ -28,6 +28,14 @@ import httpx
 import websockets
 from dotenv import load_dotenv
 
+# Make the repo root importable so `from src.agent_brain...` resolves when this file is
+# invoked as `python src/edge_voice/main.py` (uvicorn's `:` form sets sys.path automatically,
+# but a plain script run puts the *script's* directory on sys.path[0] which hides the `src/`
+# package from absolute imports). `parents[2]` from this file = repo root.
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
 from src.agent_brain.config import settings
 from src.edge_voice.perception import SileroVAD, PhoWhisperSTT
 from src.edge_voice.perception.queues import get_transcript, shutdown_all

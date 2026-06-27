@@ -22,8 +22,9 @@ from ..services.dispatcher import DOCK_POS, TABLE_HEADING, TABLE_POS
 
 router = APIRouter(tags=["layout"])
 
-# robot_ws map dir, resolved relative to the repo root (this file: src/backend/app/routers/).
-_MAP_DIR = Path(__file__).resolve().parents[4] / "robot_ws/src/sim/turtlebot4_navigation/maps"
+# robot_ws map dir, resolved relative to the repo root (this file:
+# src/server_orchestrator/routers/layout.py -> parents[0..3] = routers/orchestrator/src/repo).
+_MAP_DIR = Path(__file__).resolve().parents[3] / "robot_ws/src/sim/turtlebot4_navigation/maps"
 _PGM = _MAP_DIR / "restaurant.pgm"
 _YAML = _MAP_DIR / "restaurant.yaml"
 

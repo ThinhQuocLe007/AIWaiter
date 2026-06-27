@@ -2,16 +2,17 @@
 
 This server is the restaurant "coordination brain" (mục 8 of docs/SYSTEM_ARCHITECTURE.md):
 it owns table/order/payment state and dispatches tasks to robots. It is intentionally
-standalone — it does NOT import ai_waiter_core (the per-robot Brain), so it can later run
-on its own machine.
+standalone — it does NOT import src.agent_brain (the LLM Brain that runs on the same
+server but as a separate FastAPI service), so it can later run on its own machine.
 """
 
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# .../AI_Waiver/src/backend/app/config.py -> repo root is 4 levels up.
-REPO_ROOT = Path(__file__).resolve().parents[3]
+# .../AI_Waiter/src/server_orchestrator/config.py -> repo root is 2 levels up
+# (parents[0]=server_orchestrator, parents[1]=src, parents[2]=repo).
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):

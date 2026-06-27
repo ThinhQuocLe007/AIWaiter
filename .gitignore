@@ -107,7 +107,7 @@ install/
 !**/requirements.txt
 # Embedding-model fingerprint travels WITH the committed centroids.npz so the
 # router can verify the centroids match the active model after a fresh clone.
-!ai_waiter_core/ai_waiter_core/agent/resources/centroids/embedding_model.txt
+!src/agent_brain/agent/resources/centroids/embedding_model.txt
 # Re-include frontend manifests — MUST be committed for reproducible installs.
 # (node_modules/ is an excluded directory so its internal .json files stay ignored.)
 !**/package.json
