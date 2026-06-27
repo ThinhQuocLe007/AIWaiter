@@ -1,7 +1,8 @@
 """AI Waiter — central Orchestrator API (FastAPI).
 
 Run (from repo root):
-    uv run uvicorn src.backend.app.main:app --reload --port 8000
+    uv run uvicorn src.server_orchestrator.main:app --reload --port 8000
+    # or: make backend
 
 This is the single backend that serves all web clients (customer UI, kiosk, panel) and the
 robot WS hub. Bước 0 ships the skeleton + GET /menu; orders/payments/tasks come next.
@@ -13,12 +14,12 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from . import dispatcher
+from .services import dispatcher
 from .config import settings
-from .db import init_db
-from .menu import seed_dishes, seed_robots, seed_tables
+from .data.db import init_db
+from .services.menu_loader import seed_dishes, seed_robots, seed_tables
 from .routers import admin, layout, menu, orders, payments, robots, tables, tasks, voice
-from .ws import router as ws_router
+from .realtime.ws import router as ws_router
 
 
 @asynccontextmanager

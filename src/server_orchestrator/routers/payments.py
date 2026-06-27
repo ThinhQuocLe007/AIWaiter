@@ -17,11 +17,11 @@ import uuid
 
 from fastapi import APIRouter, HTTPException
 
-from .. import dispatcher
-from ..db import get_conn
+from ..services import dispatcher
+from ..data.db import get_conn
 from ..schemas import PaymentCreate, PaymentOut, PaymentVerify, TableOut
-from ..sessions import close_session, get_active_session, session_total
-from ..ws import manager
+from ..services.sessions import close_session, get_active_session, session_total
+from ..realtime.connection_manager import manager
 
 router = APIRouter(tags=["payments"])
 

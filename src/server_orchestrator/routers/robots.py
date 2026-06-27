@@ -8,8 +8,8 @@ also gets realtime `robot.updated` pushes over the WS hub (app/ws.py, role=panel
 
 from fastapi import APIRouter
 
-from .. import fleet
-from ..db import get_conn
+from ..services import fleet
+from ..data.db import get_conn
 from ..schemas import RobotOut
 
 router = APIRouter(tags=["robots"])

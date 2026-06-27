@@ -10,8 +10,8 @@ We also seed the `dishes` table from the same file so future orders can FK to a 
 import json
 from functools import lru_cache
 
-from .config import settings
-from .db import get_conn
+from ..config import settings
+from ..data.db import get_conn
 
 
 @lru_cache(maxsize=1)

@@ -18,10 +18,10 @@ import math
 import time
 
 from . import fleet
-from .config import settings
-from .db import get_conn
-from .schemas import RobotOut, TaskOut
-from .ws import manager
+from ..config import settings
+from ..data.db import get_conn
+from ..schemas import RobotOut, TaskOut
+from ..realtime.connection_manager import manager
 
 log = logging.getLogger(__name__)
 

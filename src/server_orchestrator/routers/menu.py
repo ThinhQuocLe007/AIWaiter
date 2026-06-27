@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from ..menu import load_menu
+from ..services.menu_loader import load_menu
 
 router = APIRouter(tags=["menu"])
 

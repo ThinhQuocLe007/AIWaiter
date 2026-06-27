@@ -9,7 +9,7 @@ import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 
-from .config import settings
+from ..config import settings
 
 # Mục 8 data model. `tables` is quoted because TABLE is a SQL keyword.
 SCHEMA = """

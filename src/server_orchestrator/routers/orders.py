@@ -7,11 +7,11 @@ total), mark the table as waiting-for-kitchen, and return the saved order.
 
 from fastapi import APIRouter, HTTPException
 
-from .. import dispatcher
-from ..db import get_conn
+from ..services import dispatcher
+from ..data.db import get_conn
 from ..schemas import OrderCreate, OrderOut, OrderStatusUpdate, TableOut
-from ..sessions import ensure_active_session
-from ..ws import manager
+from ..services.sessions import ensure_active_session
+from ..realtime.connection_manager import manager
 
 router = APIRouter(tags=["orders"])
 

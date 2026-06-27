@@ -7,8 +7,8 @@ curl): it enqueues a `call` task so a robot drives over to ask add-more vs. pay.
 
 from fastapi import APIRouter, HTTPException
 
-from .. import dispatcher
-from ..db import get_conn
+from ..services import dispatcher
+from ..data.db import get_conn
 from ..schemas import TaskOut
 
 router = APIRouter(tags=["tasks"])

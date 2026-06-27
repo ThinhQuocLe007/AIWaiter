@@ -8,10 +8,10 @@ reloads immediately. Not meant for production.
 
 from fastapi import APIRouter
 
-from .. import fleet
-from ..db import get_conn
-from ..menu import SEED_ROBOTS
-from ..ws import manager
+from ..services import fleet
+from ..data.db import get_conn
+from ..services.menu_loader import SEED_ROBOTS
+from ..realtime.connection_manager import manager
 
 router = APIRouter(tags=["admin"])
 

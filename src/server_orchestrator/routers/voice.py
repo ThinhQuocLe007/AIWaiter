@@ -14,7 +14,7 @@ import), keeping the standalone-orchestrator boundary intact — the bridge is p
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from ..ws import manager
+from ..realtime.connection_manager import manager
 
 router = APIRouter(prefix="/voice", tags=["voice"])
 

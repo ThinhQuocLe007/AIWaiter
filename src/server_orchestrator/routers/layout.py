@@ -18,7 +18,7 @@ from pathlib import Path
 from fastapi import APIRouter, Response
 from PIL import Image
 
-from ..dispatcher import DOCK_POS, TABLE_HEADING, TABLE_POS
+from ..services.dispatcher import DOCK_POS, TABLE_HEADING, TABLE_POS
 
 router = APIRouter(tags=["layout"])
 
