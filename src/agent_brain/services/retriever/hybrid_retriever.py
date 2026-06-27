@@ -1,9 +1,9 @@
 from typing import List, Tuple
 from concurrent.futures import ThreadPoolExecutor
-from ai_waiter_core.utils import logger
-from ai_waiter_core.schemas.search import SearchResult
-from ai_waiter_core.services.retriever.fusion import get_fusion_strategy
-from ai_waiter_core.services.retriever.filters import by_menu_metadata
+from src.agent_brain.utils import logger
+from src.agent_brain.schemas.search import SearchResult
+from src.agent_brain.services.retriever.fusion import get_fusion_strategy
+from src.agent_brain.services.retriever.filters import by_menu_metadata
 
 
 class RetrieverManager:

@@ -38,7 +38,7 @@ class AgentSettings(BaseSettings):
     # this seam (POST /orders, /payments, /payments/verify) instead of touching a DB directly.
     ORCHESTRATOR_URL: str = Field(default="http://localhost:8000", env="ORCHESTRATOR_URL")
 
-    # Base URL of the agent (LLM) HTTP service (ai_waiter_core/server.py). The Jetson voice loop
+    # Base URL of the agent (LLM) HTTP service (src/agent_brain/server.py). The Jetson voice loop
     # (main.py) does mic→VAD→Whisper locally, then POSTs the recognised text here for the LLM to
     # process. Point this at the server box on the Jetson's .env (e.g. http://192.168.1.10:8100);
     # the default suits running everything on one machine.

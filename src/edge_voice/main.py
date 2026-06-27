@@ -14,7 +14,7 @@ device (sandbox), and the mic needs a secure context. Running here as a service 
 gives the production feel ("open web → press talk → speak") without either limitation.
 
 Run on the device (point AGENT_URL / ORCHESTRATOR_URL at the server over the network in .env):
-    cd ai_waiter_core && uv run python main.py
+    uv run python src/edge_voice/main.py    # or: make voice
 """
 
 import asyncio
@@ -28,13 +28,13 @@ import httpx
 import websockets
 from dotenv import load_dotenv
 
-from ai_waiter_core.config import settings
-from ai_waiter_core.perception import SileroVAD, PhoWhisperSTT
-from ai_waiter_core.perception.queues import get_transcript, shutdown_all
-from ai_waiter_core.utils import flush_traces, log_struct
+from src.agent_brain.config import settings
+from src.edge_voice.perception import SileroVAD, PhoWhisperSTT
+from src.edge_voice.perception.queues import get_transcript, shutdown_all
+from src.agent_brain.utils import flush_traces, log_struct
 
 load_dotenv()
-logger = logging.getLogger("ai_waiter_core.voice_device")
+logger = logging.getLogger("src.edge_voice")
 
 # This device's robot identity — the SAME id the robot's motion client uses (mock_robot.py --id).
 # The mic is bound to a *table* dynamically by the server: when the dispatcher sends this robot to a

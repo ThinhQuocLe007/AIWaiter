@@ -1,7 +1,7 @@
 import json
 from typing import List
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, BaseMessage
-from ai_waiter_core.config import settings
+from src.agent_brain.config import settings
 
 def load_prompt(filename: str, sub_dir: str = "system_prompts") -> str:
     """

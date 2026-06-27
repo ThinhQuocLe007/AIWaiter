@@ -1,7 +1,7 @@
 from langchain_core.tools import tool
-from ai_waiter_core.schemas.payment import PaymentRequest, PaymentResponse
-from ai_waiter_core.services.orchestrator_client import OrchestratorClient
-from ai_waiter_core.utils import trace_latency
+from src.agent_brain.schemas.payment import PaymentRequest, PaymentResponse
+from src.agent_brain.services.orchestrator_client import OrchestratorClient
+from src.agent_brain.utils import trace_latency
 
 client = OrchestratorClient()
 

@@ -1,7 +1,7 @@
 from typing import List
 from langchain_core.tools import tool
-from ai_waiter_core.schemas.order import OrderItem, SyncCartResponse
-from ai_waiter_core.utils import MenuManager, trace_latency
+from src.agent_brain.schemas.order import OrderItem, SyncCartResponse
+from src.agent_brain.utils import MenuManager, trace_latency
 
 menu_manager = MenuManager()
 

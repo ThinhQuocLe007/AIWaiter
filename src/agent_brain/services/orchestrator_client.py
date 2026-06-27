@@ -12,8 +12,8 @@ import re
 
 import httpx
 
-from ai_waiter_core.config import settings
-from ai_waiter_core.utils import logger
+from src.agent_brain.config import settings
+from src.agent_brain.utils import logger
 
 _TIMEOUT = httpx.Timeout(10.0)
 

@@ -9,11 +9,11 @@ from langchain_core.prompts import (
     FewShotChatMessagePromptTemplate,
 )
 
-from ai_waiter_core.schemas.routing import IntentPrediction
-from ai_waiter_core.config import settings
-from ai_waiter_core.agent.state import AgentState
-from ai_waiter_core.utils import trace_latency
-from ai_waiter_core.utils.prompt_utils import load_prompt, load_json_data
+from src.agent_brain.schemas.routing import IntentPrediction
+from src.agent_brain.config import settings
+from src.agent_brain.agent.state import AgentState
+from src.agent_brain.utils import trace_latency
+from src.agent_brain.utils.prompt_utils import load_prompt, load_json_data
 
 logger = logging.getLogger(__name__)
 

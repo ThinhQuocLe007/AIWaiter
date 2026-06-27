@@ -8,8 +8,8 @@ Project root resolution
   no more counting `parent.parent...` levels that break when files move.
 - The `PROJECT_ROOT` env var (or `.env` entry) overrides the auto-detected
   root, useful for Docker / production deployments.
-- `PACKAGE_ROOT` always points to the inner Python package
-  (`ai_waiter_core/ai_waiter_core/`), resolved as `parents[1]`
+- `PACKAGE_ROOT` always points to the brain Python package
+  (`src/agent_brain/`), resolved as `parents[1]`
   from this file.
 """
 from pathlib import Path

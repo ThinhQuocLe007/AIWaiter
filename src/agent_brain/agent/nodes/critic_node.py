@@ -2,11 +2,11 @@ from pathlib import Path
 from typing import Dict, Any
 
 from langchain_ollama import ChatOllama
-from ai_waiter_core.agent.state import AgentState
-from ai_waiter_core.config import settings
-from ai_waiter_core.utils import trace_latency
-from ai_waiter_core.schemas.menu_registry import MENU_NAMES
-from ai_waiter_core.schemas.reflection import CriticVerdict
+from src.agent_brain.agent.state import AgentState
+from src.agent_brain.config import settings
+from src.agent_brain.utils import trace_latency
+from src.agent_brain.schemas.menu_registry import MENU_NAMES
+from src.agent_brain.schemas.reflection import CriticVerdict
 
 # Resolved path from centralized config settings
 SKILL_PATH = settings.resources_dir / "skills" / "menu_grounding.md"

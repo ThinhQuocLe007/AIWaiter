@@ -1,8 +1,8 @@
 from typing import List
 from langchain_core.tools import tool
-from ai_waiter_core.schemas.order import OrderItem, ConfirmOrderResponse
-from ai_waiter_core.services.orchestrator_client import OrchestratorClient
-from ai_waiter_core.utils import MenuManager, trace_latency
+from src.agent_brain.schemas.order import OrderItem, ConfirmOrderResponse
+from src.agent_brain.services.orchestrator_client import OrchestratorClient
+from src.agent_brain.utils import MenuManager, trace_latency
 
 client = OrchestratorClient()
 menu_manager = MenuManager()

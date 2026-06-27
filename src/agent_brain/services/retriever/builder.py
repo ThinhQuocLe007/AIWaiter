@@ -2,11 +2,11 @@ import os
 from typing import List
 from langchain_core.documents import Document
 
-from ai_waiter_core.config import settings
-from ai_waiter_core.utils import logger
-from ai_waiter_core.services.retriever.document_loader import DocumentLoader
-from ai_waiter_core.services.retriever.indices.vector import VectorStore
-from ai_waiter_core.services.retriever.indices.bm25 import BM25Index
+from src.agent_brain.config import settings
+from src.agent_brain.utils import logger
+from src.agent_brain.services.retriever.document_loader import DocumentLoader
+from src.agent_brain.services.retriever.indices.vector import VectorStore
+from src.agent_brain.services.retriever.indices.bm25 import BM25Index
 
 
 class IndexBuilder:

@@ -1,4 +1,4 @@
-from ai_waiter_core.agent.graph import AIWaiterGraph
+from src.agent_brain.agent.graph import AIWaiterGraph
 
 def get_agent_app():
     """

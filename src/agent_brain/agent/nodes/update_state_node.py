@@ -1,9 +1,9 @@
 import logging
 from typing import Dict, Any, Callable
 
-from ai_waiter_core.agent.state import AgentState
-from ai_waiter_core.agent.actions import ui_action_for_tool
-from ai_waiter_core.schemas.order import Cart
+from src.agent_brain.agent.state import AgentState
+from src.agent_brain.agent.actions import ui_action_for_tool
+from src.agent_brain.schemas.order import Cart
 
 logger = logging.getLogger(__name__)
 

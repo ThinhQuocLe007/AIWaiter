@@ -2,8 +2,8 @@ from typing import Annotated, TypedDict, List, Optional, Literal, Dict, Any
 from langgraph.graph.message import add_messages
 
 # Import our decoupled schemas
-from ai_waiter_core.schemas.order import Cart, OrderStage
-from ai_waiter_core.schemas.search import SearchResult
+from src.agent_brain.schemas.order import Cart, OrderStage
+from src.agent_brain.schemas.search import SearchResult
 
 class AgentState(TypedDict):
     # Save conversation history only ( user + ai conversations )

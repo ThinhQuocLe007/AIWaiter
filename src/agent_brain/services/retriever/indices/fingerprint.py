@@ -13,8 +13,8 @@ artifact at build time (`write_fingerprint`) and check it at load time
 """
 from pathlib import Path
 
-from ai_waiter_core.utils import logger
-from ai_waiter_core.services.retriever.indices.embeddings import active_model_name
+from src.agent_brain.utils import logger
+from src.agent_brain.services.retriever.indices.embeddings import active_model_name
 
 FINGERPRINT_FILENAME = "embedding_model.txt"
 

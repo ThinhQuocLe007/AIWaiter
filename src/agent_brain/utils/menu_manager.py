@@ -1,6 +1,6 @@
 import json
 import logging
-from ai_waiter_core.config import settings
+from src.agent_brain.config import settings
 
 logger = logging.getLogger(__name__)
 

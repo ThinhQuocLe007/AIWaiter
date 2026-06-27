@@ -1,7 +1,7 @@
 from typing import List, Tuple
 from langchain_core.documents import Document
-from ai_waiter_core.schemas.search import SearchResult
-from ai_waiter_core.utils import logger
+from src.agent_brain.schemas.search import SearchResult
+from src.agent_brain.utils import logger
 
 
 def compute_reciprocal_rank(rank: int, k: int = 60) -> float:

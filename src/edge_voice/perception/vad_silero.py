@@ -7,7 +7,7 @@ from math import gcd
 import numpy as np
 import torch
 
-from ai_waiter_core.perception.queues import AudioChunk, put_speech
+from src.edge_voice.perception.queues import AudioChunk, put_speech
 
 logger = logging.getLogger(__name__)
 

@@ -2,7 +2,7 @@ import json
 import logging
 import unicodedata
 from typing import List, Optional, TypedDict
-from ai_waiter_core.config import settings
+from src.agent_brain.config import settings
 
 logger = logging.getLogger(__name__)
 

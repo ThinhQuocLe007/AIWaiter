@@ -1,8 +1,8 @@
 import logging
 from typing import Dict, Any, List
 from langchain_core.messages import ToolMessage
-from ai_waiter_core.agent.state import AgentState
-from ai_waiter_core.utils import resolve_menu_name
+from src.agent_brain.agent.state import AgentState
+from src.agent_brain.utils import resolve_menu_name
 
 logger = logging.getLogger(__name__)
 

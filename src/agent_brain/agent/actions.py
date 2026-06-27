@@ -43,7 +43,7 @@ def build_action(ui_action: Optional[str]) -> Optional[dict]:
 def emit_action(table_id: str, action: dict) -> None:
     """In-process decision log for the action this turn produced.
 
-    The *delivery* bridge is now wired in the agent HTTP service (``ai_waiter_core/server.py``):
+    The *delivery* bridge is now wired in the agent HTTP service (``src/agent_brain/server.py``):
     after each turn it POSTs the reply **and** this action to the backend (``POST /voice/event``),
     which fans it to ``customer_ui`` over the ``role=customer`` WebSocket. Delivery lives there —
     not here — because that's the layer with the full turn (transcript + reply + action) and the

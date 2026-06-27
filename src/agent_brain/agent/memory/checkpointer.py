@@ -1,7 +1,7 @@
 import sqlite3
 import os
 from langgraph.checkpoint.sqlite import SqliteSaver
-from ai_waiter_core.config import settings
+from src.agent_brain.config import settings
 
 
 def get_checkpointer():

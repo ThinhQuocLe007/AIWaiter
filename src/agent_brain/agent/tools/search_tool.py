@@ -1,9 +1,9 @@
 from langchain_core.tools import tool
 from typing import Optional
-from ai_waiter_core.schemas.search import SearchInput, SearchResponse
-from ai_waiter_core.services.retriever.builder import IndexBuilder
-from ai_waiter_core.services.retriever.hybrid_retriever import RetrieverManager
-from ai_waiter_core.utils import trace_latency
+from src.agent_brain.schemas.search import SearchInput, SearchResponse
+from src.agent_brain.services.retriever.builder import IndexBuilder
+from src.agent_brain.services.retriever.hybrid_retriever import RetrieverManager
+from src.agent_brain.utils import trace_latency
 
 builder = IndexBuilder()
 builder.load_database()

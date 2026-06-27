@@ -9,10 +9,8 @@ class Settings(DatabaseSettings, AgentSettings, HardwareSettings):
     # Pin .env to an ABSOLUTE path anchored at the project root. The per-class
     # configs use a relative `env_file=".env"`, which pydantic-settings resolves
     # against the current working directory — so the file was only found when the
-    # process happened to run from the repo root. Because `ai_waiter_core` is run
-    # from inside its own package dir (it is not installed editable), the root
-    # `.env` was never read and every model silently fell back to its hardcoded
-    # default. Resolving against ROOT makes .env load regardless of CWD.
+    # process happened to run from the repo root. Resolving against ROOT makes
+    # .env load regardless of CWD.
     model_config = SettingsConfigDict(
         env_file=str(ROOT / ".env"),
         env_file_encoding="utf-8",

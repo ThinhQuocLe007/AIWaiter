@@ -2,10 +2,10 @@ import logging
 import time
 from typing import Dict, Any
 
-from ai_waiter_core.agent.state import AgentState
-from ai_waiter_core.agent.nodes.semantic_router_node import semantic_router_node
-from ai_waiter_core.agent.nodes.slm_router_node import slm_router_node
-from ai_waiter_core.utils import trace_latency
+from src.agent_brain.agent.state import AgentState
+from src.agent_brain.agent.nodes.semantic_router_node import semantic_router_node
+from src.agent_brain.agent.nodes.slm_router_node import slm_router_node
+from src.agent_brain.utils import trace_latency
 
 logger = logging.getLogger(__name__)
 

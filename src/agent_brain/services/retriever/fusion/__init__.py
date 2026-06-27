@@ -1,4 +1,4 @@
-from ai_waiter_core.services.retriever.fusion.rrf import RRFFusion
+from src.agent_brain.services.retriever.fusion.rrf import RRFFusion
 
 def get_fusion_strategy(mode: str):
     strategies = {

@@ -3,18 +3,18 @@ from typing import Dict, Any, Literal
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
 
-from ai_waiter_core.agent.state import AgentState
-from ai_waiter_core.agent.actions import build_action, emit_action
-from ai_waiter_core.agent.memory.checkpointer import get_checkpointer, create_thread_config
-from ai_waiter_core.agent.tools import search, sync_cart, confirm_order, request_payment, verify_payment
-from ai_waiter_core.services.orchestrator_client import OrchestratorClient
-from ai_waiter_core.agent.nodes.hybrid_router_node import hybrid_router_node
-from ai_waiter_core.agent.nodes.order_worker_node import order_worker_node
-from ai_waiter_core.agent.nodes.search_worker_node import search_worker_node
-from ai_waiter_core.agent.nodes.payment_worker_node import payment_worker_node
-from ai_waiter_core.agent.nodes.deterministic_validator_node import deterministic_validator_node
-from ai_waiter_core.agent.nodes.update_state_node import update_state_node
-from ai_waiter_core.agent.nodes.response_node import response_node
+from src.agent_brain.agent.state import AgentState
+from src.agent_brain.agent.actions import build_action, emit_action
+from src.agent_brain.agent.memory.checkpointer import get_checkpointer, create_thread_config
+from src.agent_brain.agent.tools import search, sync_cart, confirm_order, request_payment, verify_payment
+from src.agent_brain.services.orchestrator_client import OrchestratorClient
+from src.agent_brain.agent.nodes.hybrid_router_node import hybrid_router_node
+from src.agent_brain.agent.nodes.order_worker_node import order_worker_node
+from src.agent_brain.agent.nodes.search_worker_node import search_worker_node
+from src.agent_brain.agent.nodes.payment_worker_node import payment_worker_node
+from src.agent_brain.agent.nodes.deterministic_validator_node import deterministic_validator_node
+from src.agent_brain.agent.nodes.update_state_node import update_state_node
+from src.agent_brain.agent.nodes.response_node import response_node
 
 logger = logging.getLogger(__name__)
 

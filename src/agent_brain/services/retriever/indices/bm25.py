@@ -7,7 +7,7 @@ from langchain_core.documents import Document
 from rank_bm25 import BM25Okapi
 import underthesea
 
-from ai_waiter_core.utils import logger
+from src.agent_brain.utils import logger
 
 class BM25Index:
     def __init__(self, db_path: str):

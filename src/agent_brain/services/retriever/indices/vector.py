@@ -5,9 +5,9 @@ from typing import List, Tuple
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 
-from ai_waiter_core.utils import logger
-from ai_waiter_core.services.retriever.indices.embeddings import get_embedding_model
-from ai_waiter_core.services.retriever.indices.fingerprint import (
+from src.agent_brain.utils import logger
+from src.agent_brain.services.retriever.indices.embeddings import get_embedding_model
+from src.agent_brain.services.retriever.indices.fingerprint import (
     write_fingerprint,
     verify_fingerprint,
 )

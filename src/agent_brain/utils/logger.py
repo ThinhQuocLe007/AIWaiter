@@ -13,7 +13,7 @@ logging.basicConfig(
     format='[%(levelname)s] [%(name)s]: %(message)s'
 )
 
-logger = logging.getLogger("ai_waiter_core")
+logger = logging.getLogger("src.agent_brain")
 
 def log_struct(message: str, **kwargs):
     """Log a message with structured key-value pairs."""

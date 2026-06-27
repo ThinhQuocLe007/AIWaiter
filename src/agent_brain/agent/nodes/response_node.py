@@ -4,10 +4,10 @@ from typing import Dict, Any
 from langchain_ollama import ChatOllama
 from langchain_core.messages import AIMessage
 
-from ai_waiter_core.agent.state import AgentState
-from ai_waiter_core.config import settings
-from ai_waiter_core.utils import trace_latency
-from ai_waiter_core.utils.prompt_utils import build_system_prompt, build_dynamic_suffix
+from src.agent_brain.agent.state import AgentState
+from src.agent_brain.config import settings
+from src.agent_brain.utils import trace_latency
+from src.agent_brain.utils.prompt_utils import build_system_prompt, build_dynamic_suffix
 
 logger = logging.getLogger(__name__)
 

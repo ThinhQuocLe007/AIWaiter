@@ -6,7 +6,7 @@ import underthesea
 from langchain_core.embeddings import Embeddings
 from sentence_transformers import SentenceTransformer
 
-from ai_waiter_core.config import settings
+from src.agent_brain.config import settings
 
 # Default embedding model when settings.EMBEDDING_MODEL is unset.
 EMBEDDING_MODEL_NAME = "AITeamVN/Vietnamese_Embedding"

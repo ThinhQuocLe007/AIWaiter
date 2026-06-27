@@ -1,5 +1,5 @@
 from typing import Literal
-from ai_waiter_core.utils import MENU_NAMES
+from src.agent_brain.utils import MENU_NAMES
 
 
 # Use to control the order_worker

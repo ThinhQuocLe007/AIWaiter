@@ -1,7 +1,7 @@
 """AI Waiter — agent (LLM) HTTP service.
 
 Runs on the central server: **the LLM lives here**. The Jetson does only mic → VAD → Whisper and
-TTS (see ``ai_waiter_core/main.py``); it POSTs the recognised text to ``POST /chat`` and this
+TTS (see ``src/edge_voice/main.py``); it POSTs the recognised text to ``POST /chat`` and this
 service runs the LangGraph agent, returning the spoken reply (+ stage) for the Jetson to speak.
 
 It also mirrors each turn to the table's ``customer_ui`` through the orchestrator's voice bridge
@@ -9,9 +9,8 @@ It also mirrors each turn to the table's ``customer_ui`` through the orchestrato
 actions (open the menu / the bill). The agent already *decides* those actions
 (``agent/actions.py``); this service is where the *delivery* to the tablet is wired.
 
-Run (on the server, alongside the orchestrator backend) — from the ai_waiter_core/ dir so
-``ai_waiter_core`` resolves to the inner package (same as the voice loop), or just ``make agent``:
-    cd ai_waiter_core && uv run --project .. uvicorn ai_waiter_core.server:app --host 0.0.0.0 --port 8100
+Run (on the server, alongside the orchestrator backend) — from the repo root, or just ``make agent``:
+    uv run uvicorn src.agent_brain.server:app --host 0.0.0.0 --port 8100
 """
 
 import asyncio
@@ -22,9 +21,9 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from ai_waiter_core.agent.graph import AIWaiterGraph
-from ai_waiter_core.config import settings
-from ai_waiter_core.services.orchestrator_client import OrchestratorClient, _table_int
+from src.agent_brain.agent.graph import AIWaiterGraph
+from src.agent_brain.config import settings
+from src.agent_brain.services.orchestrator_client import OrchestratorClient, _table_int
 
 load_dotenv()
 log = logging.getLogger(__name__)
@@ -59,7 +58,7 @@ def _warmup() -> None:
 
     try:
         log.info("Warming up RAG retriever (embedding model) ...")
-        from ai_waiter_core.agent.tools.search_tool import search
+        from src.agent_brain.agent.tools.search_tool import search
 
         search.invoke({"query": "khởi động"})
     except Exception as e:

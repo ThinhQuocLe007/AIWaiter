@@ -5,11 +5,11 @@ from typing import Dict, Any
 from sklearn.metrics.pairwise import cosine_similarity
 
 from langchain_core.messages import HumanMessage
-from ai_waiter_core.agent.state import AgentState
-from ai_waiter_core.config import settings
-from ai_waiter_core.services.retriever.indices.embeddings import encode_queries
-from ai_waiter_core.services.retriever.indices.fingerprint import verify_fingerprint
-from ai_waiter_core.utils import log_struct, trace_latency
+from src.agent_brain.agent.state import AgentState
+from src.agent_brain.config import settings
+from src.agent_brain.services.retriever.indices.embeddings import encode_queries
+from src.agent_brain.services.retriever.indices.fingerprint import verify_fingerprint
+from src.agent_brain.utils import log_struct, trace_latency
 
 UTTERANCES_PATH = settings.resources_dir / "few_shots" / "utterances.json"
 CENTROIDS_PATH = settings.resources_dir / "centroids" / "centroids.npz"

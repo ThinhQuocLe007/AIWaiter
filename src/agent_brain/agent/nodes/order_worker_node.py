@@ -4,10 +4,10 @@ from typing import Dict, Any
 from langchain_ollama import ChatOllama
 from langchain_core.messages import AIMessage
 
-from ai_waiter_core.agent.state import AgentState
-from ai_waiter_core.config import settings
-from ai_waiter_core.utils import trace_latency, MENU_NAMES
-from ai_waiter_core.utils.prompt_utils import build_system_prompt, build_few_shot_examples, build_dynamic_suffix
+from src.agent_brain.agent.state import AgentState
+from src.agent_brain.config import settings
+from src.agent_brain.utils import trace_latency, MENU_NAMES
+from src.agent_brain.utils.prompt_utils import build_system_prompt, build_few_shot_examples, build_dynamic_suffix
 
 from ..tools import sync_cart, confirm_order
 

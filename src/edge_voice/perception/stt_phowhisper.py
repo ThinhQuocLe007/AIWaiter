@@ -5,8 +5,8 @@ import logging
 import numpy as np
 from faster_whisper import WhisperModel
 
-from ai_waiter_core.config import settings
-from ai_waiter_core.perception.queues import speech_queue, put_transcript, Transcript
+from src.agent_brain.config import settings
+from src.edge_voice.perception.queues import speech_queue, put_transcript, Transcript
 
 logger = logging.getLogger(__name__)
 

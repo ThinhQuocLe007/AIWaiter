@@ -1,6 +1,6 @@
 import logging
 from typing import List
-from ai_waiter_core.schemas import SearchResult
+from src.agent_brain.schemas import SearchResult
 
 logger = logging.getLogger(__name__)
 
