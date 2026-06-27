@@ -2,10 +2,19 @@
 
 It speaks the same WS contract a real `ws_client.py` (Mốc A) will: connects as
 `/ws?role=robot&robot_id=<id>`, sends periodic heartbeats, and when it receives a `task.assign`
-it walks the task lifecycle (accept → drive → arrive → finish) on a timer instead of using Nav2.
+it walks the task lifecycle (accept → drive → arrive → serve → finish) instead of using Nav2.
+
+Serving is event-driven, not on a timer: for a `go_to_table` / `call` task the robot ARRIVES and
+then WAITS at the table (so you can talk to it via the voice device) until the server sends a
+`task.release` frame — which the dispatcher emits when the guest places an order (`POST /orders`)
+or pays (`/payments/verify`). Only then does it report `task_done` and drive back to the dock. A
+`deliver` task still auto-completes after dropping the food.
 
 Run (backend must be up on :8000):
     uv run python scripts/mock_robot.py --id robo-1
+
+Typical demo: seat a table (kiosk) → this robot drives over and parks ("đang phục vụ") → talk to it
+on customer_ui → place an order or pay → it reports done and returns to the dock.
 
 The dispatcher is written to handle a fleet of N robots, but the demo seeds a single robot
 (robo-1). Pass a different --id only if you have added more robots to the seed.
@@ -83,20 +92,36 @@ async def drive_to(ws, state: dict, target: tuple[float, float]) -> bool:
 
 
 async def run_task(ws, task: dict, state: dict) -> None:
-    """Walk one assigned task: accept → drive to table → arrive → act → done → drive back to dock."""
+    """Walk one assigned task: accept → drive to table → arrive → serve → done → drive back to dock.
+
+    The "serve" step depends on the task kind, mirroring the real flow:
+      * ``go_to_table`` / ``call`` — the robot WAITS at the table (taking the order / helping) until
+        the server says the guest is finished. That signal is a ``task.release`` frame, sent by the
+        dispatcher when the guest places an order or pays. Only then does it report done and leave.
+      * ``deliver`` — it just hands the food over (a few seconds) and heads back on its own.
+    """
     task_id = task["task_id"]
     table_id = task["table_id"]
+    kind = task.get("kind", "go_to_table")
     target = TABLE_POS.get(table_id, DOCK_POS)
-    print(f"[{state['id']}] task {task_id} ({task['kind']}, table {table_id}) → accept")
+    print(f"[{state['id']}] task {task_id} ({kind}, table {table_id}) → accept")
     await ws.send(json.dumps({"type": "task_accepted", "task_id": task_id}))
 
     if not await drive_to(ws, state, target):  # froze while driving — never report arrival
         print(f"[{state['id']}] task {task_id} frozen mid-drive, not reporting")
         return
-    print(f"[{state['id']}] task {task_id} → arrived")
+    print(f"[{state['id']}] task {task_id} → arrived (bàn {table_id})")
     await ws.send(json.dumps({"type": "arrived", "task_id": task_id}))
 
-    await asyncio.sleep(ACTION_SECONDS)
+    if kind in ("go_to_table", "call"):
+        # Stand at the table and serve the guest. Heartbeats keep streaming our (unchanged) pose, so
+        # the panel shows the robot parked at the table the whole time. Block until the server sends
+        # task.release (guest ordered / paid).
+        print(f"[{state['id']}] task {task_id} → đang phục vụ bàn {table_id}, chờ khách đặt món / thanh toán...")
+        await state["release"].wait()
+        print(f"[{state['id']}] task {task_id} → khách xong, rời bàn {table_id}")
+    else:
+        await asyncio.sleep(ACTION_SECONDS)  # deliver: drop the food and go
     if state.get("hung"):
         return
     print(f"[{state['id']}] task {task_id} → done")
@@ -130,7 +155,16 @@ async def main(args) -> None:
                     if task_runner and not task_runner.done():
                         print(f"[{args.id}] busy, ignoring extra task {msg.get('task_id')}")
                         continue
+                    # Fresh "guest is done" gate for this task; run_task waits on it, the release
+                    # frame below sets it.
+                    state["release"] = asyncio.Event()
                     task_runner = asyncio.create_task(run_task(ws, msg, state))
+                elif msg.get("type") == "task.release":
+                    # Server says the guest ordered / paid → let the waiting task finish and leave.
+                    ev = state.get("release")
+                    if ev is not None:
+                        ev.set()
+                    print(f"[{args.id}] <- task.release (bàn {msg.get('table_id')})")
                 else:
                     print(f"[{args.id}] <- {msg}")
         finally:

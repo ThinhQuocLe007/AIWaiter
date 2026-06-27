@@ -17,6 +17,7 @@ import uuid
 
 from fastapi import APIRouter, HTTPException
 
+from .. import dispatcher
 from ..db import get_conn
 from ..schemas import PaymentCreate, PaymentOut, PaymentVerify, TableOut
 from ..sessions import close_session, get_active_session, session_total
@@ -120,6 +121,8 @@ async def verify_payment_by_table(payload: PaymentVerify) -> PaymentOut:
         trow = _settle_payment(conn, pay)
         pay = _fetch_payment(conn, pay["id"])
     await _broadcast_table(trow)
+    # Bill settled → if a robot was still at the table (e.g. came on a "call"), send it home.
+    await dispatcher.release_robot_at_table(payload.table_id)
     return PaymentOut(**dict(pay))
 
 
@@ -133,4 +136,6 @@ async def verify_payment(payment_id: int) -> PaymentOut:
         trow = _settle_payment(conn, pay)
         pay = _fetch_payment(conn, payment_id)
     await _broadcast_table(trow)
+    if trow is not None:  # freshly settled — release the robot serving that table, if any
+        await dispatcher.release_robot_at_table(trow["id"])
     return PaymentOut(**dict(pay))

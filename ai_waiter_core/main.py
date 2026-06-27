@@ -80,7 +80,9 @@ def _capture_and_send(vad: SileroVAD, agent_client: httpx.Client, table_id: int)
     # Send to the server-side agent. No sticky session_id: the agent re-resolves the table's backend
     # session each turn (thread resets after payment). The server mirrors this turn to the tablet.
     try:
-        resp = agent_client.post("/chat", json={"table_id": table_id, "text": text})
+        # The agent's /chat keys tables as the "T<N>" string convention; we got an int from the
+        # server's start_listening command, so format it back.
+        resp = agent_client.post("/chat", json={"table_id": f"T{table_id}", "text": text})
         resp.raise_for_status()
         result = resp.json()
     except httpx.HTTPError as e:

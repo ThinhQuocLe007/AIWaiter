@@ -68,7 +68,9 @@ class ConnectionManager:
             del self._robots[robot_id]
         if role == "voice-device" and robot_id and self._voice_devices.get(robot_id) is ws:
             del self._voice_devices[robot_id]
-            self.unbind_robot(robot_id)  # its mic is gone — no table should route to it
+            # Don't unbind the table here: the table↔robot binding tracks the robot's *physical*
+            # presence (its role=robot lifecycle), not the mic socket. A mic restart shouldn't force
+            # a re-arrival — and while the mic is down send_to_voice_device already returns no_device.
 
     async def broadcast(self, role: str, message: dict) -> None:
         """Send a JSON message to every socket of `role`; drop ones that error out."""
@@ -106,6 +108,10 @@ class ConnectionManager:
         """Forget any table this robot was serving (it left, finished, or went offline)."""
         for t in [t for t, r in self._table_to_robot.items() if r == robot_id]:
             del self._table_to_robot[t]
+
+    def table_robot(self, table_id: int) -> str | None:
+        """Which robot is currently standing at / serving this table, if any."""
+        return self._table_to_robot.get(table_id)
 
     async def send_to_voice_device(self, table_id: int, message: dict) -> bool:
         """Tell the robot currently serving `table_id` to do something (e.g. start listening).

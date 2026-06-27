@@ -70,6 +70,8 @@ async def create_order(payload: OrderCreate) -> OrderOut:
     await manager.broadcast(
         "panel", {"type": "table.updated", "table": TableOut(**dict(table_row)).model_dump()}
     )
+    # The guest has ordered, so the robot that came to take the order can head back to the dock.
+    await dispatcher.release_robot_at_table(payload.table_id)
     return order
 
 

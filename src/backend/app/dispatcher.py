@@ -72,11 +72,19 @@ TABLE_HEADING: dict[int, tuple[float, float]] = {
     6: (-1.0, 0.0),   # SOUTH
 }
 
-# What a robot is doing, for the panel's robot board (human-readable, not coordinates).
+# What a robot is doing *while travelling* to the table, for the panel's robot board.
 _ACTIVITY = {
     "go_to_table": "Đang tới bàn {table}",
     "deliver": "Đang giao món · Bàn {table}",
     "call": "Đang tới bàn {table} (gọi phục vụ)",
+}
+# What a robot is doing *after it has arrived* and is standing at the table (serving the guest).
+# go_to_table / call mean the robot waits there (taking the order / helping) until the guest orders
+# or pays; deliver just hands the food over and leaves on its own.
+_SERVING_ACTIVITY = {
+    "go_to_table": "Đang phục vụ · Bàn {table}",
+    "call": "Đang hỗ trợ · Bàn {table}",
+    "deliver": "Đang giao món · Bàn {table}",
 }
 _IDLE_ACTIVITY = "Đang ở dock"
 
@@ -326,14 +334,23 @@ async def on_arrived(robot_id: str, task_id: int | None) -> None:
                 'UPDATE "tables" SET status = ? WHERE id = ?', (new_status, task.table_id)
             )
             await _broadcast_table(conn, task.table_id)
+        # Flip the panel's robot board from "đang tới" to "đang phục vụ" — it's standing there now.
+        serving = _SERVING_ACTIVITY.get(task.kind, "Đang phục vụ · Bàn {table}").format(
+            table=task.table_id
+        )
+        conn.execute("UPDATE robots SET activity = ? WHERE id = ?", (serving, robot_id))
+        await _broadcast_robot(conn, robot_id)
     # The robot is now standing at the table, so route this table's "talk to AI" button to this
-    # robot's mic. Held until the robot is dispatched elsewhere (re-bind) or drops (on disconnect).
+    # robot's mic. Held until the robot leaves (on_done), is dispatched elsewhere (re-bind), or
+    # drops (on disconnect). For go_to_table/call the robot now WAITS here until the guest orders
+    # or pays — the orders/payments routers then call release_robot_at_table to send it home.
     manager.bind_table_robot(task.table_id, robot_id)
     log.info("task %s arrived (table %s) — voice bound to %s", task_id, task.table_id, robot_id)
 
 
 async def on_done(robot_id: str, task_id: int | None) -> None:
     """Task finished: close it, free the robot, then pull the next queued task."""
+    manager.unbind_robot(robot_id)  # robot is driving home — it no longer serves any table's mic
     with get_conn() as conn:
         if task_id is not None:
             conn.execute(
@@ -349,6 +366,28 @@ async def on_done(robot_id: str, task_id: int | None) -> None:
         await _broadcast_robot(conn, robot_id)
     log.info("task %s done by %s", task_id, robot_id)
     await try_assign()
+
+
+async def release_robot_at_table(table_id: int) -> None:
+    """Tell the robot standing at `table_id` that its visit is over (the guest just ordered or paid)
+    so it can head back to the dock. We only *signal* the robot; it drives home and reports
+    ``task_done`` through the normal path (on_done → free + unbind + try_assign).
+
+    No-op if no robot is serving the table (e.g. it already left, or none ever arrived). Idempotent:
+    a second order/payment event after the robot has gone simply finds no binding.
+    """
+    robot_id = manager.table_robot(table_id)
+    if robot_id is None:
+        return
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT current_task_id FROM robots WHERE id = ?", (robot_id,)
+        ).fetchone()
+    task_id = row["current_task_id"] if row else None
+    await manager.send_to_robot(
+        robot_id, {"type": "task.release", "task_id": task_id, "table_id": table_id}
+    )
+    log.info("released robot %s from table %s (task %s) — heading home", robot_id, table_id, task_id)
 
 
 async def _requeue_task(task_id: int, robot_id: str) -> None:
