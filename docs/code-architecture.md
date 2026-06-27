@@ -73,7 +73,7 @@ backend (REST). Robot telemetry lands in RAM (`fleet.py`); the DB gets only an o
 
 ## 2. Data model — `orchestrator.db`
 
-Defined in [src/backend/app/db.py](../src/backend/app/db.py) (plain SQLite, no ORM).
+Defined in [src/server_orchestrator/data/db.py](../src/server_orchestrator/data/db.py) (plain SQLite, no ORM).
 
 ```mermaid
 erDiagram
@@ -177,18 +177,19 @@ sequenceDiagram
     Note over Agent: next turn resolves NO active session<br/>→ fresh thread for the next guest
 ```
 
-Endpoints: [tables.py](../src/backend/app/routers/tables.py),
-[orders.py](../src/backend/app/routers/orders.py),
-[payments.py](../src/backend/app/routers/payments.py); session helpers in
-[sessions.py](../src/backend/app/sessions.py).
+Endpoints: [tables.py](../src/server_orchestrator/routers/tables.py),
+[orders.py](../src/server_orchestrator/routers/orders.py),
+[payments.py](../src/server_orchestrator/routers/payments.py); session helpers in
+[sessions.py](../src/server_orchestrator/services/sessions.py).
 
 ---
 
 ## 4. The agent seam (how the LLM writes data)
 
 The agent never touches a DB. Tools call the backend via
-[orchestrator_client.py](../ai_waiter_core/ai_waiter_core/services/orchestrator_client.py)
-(`ORCHESTRATOR_URL`, table id normalised `"T1" → 1`).
+[orchestrator_client.py](../src/agent_brain/services/orchestrator_client.py)
+(`ORCHESTRATOR_URL`, table id normalised `"T1" → 1` via
+[normalise_table_id](../src/_shared/types.py)).
 
 ```mermaid
 flowchart LR
@@ -208,9 +209,9 @@ flowchart LR
 
 ### Conversation memory = session (the checkpoint fix)
 
-`thread_id = active session id` ([checkpointer.py](../ai_waiter_core/ai_waiter_core/agent/memory/checkpointer.py)).
+`thread_id = active session id` ([checkpointer.py](../src/agent_brain/agent/memory/checkpointer.py)).
 `graph.chat` resolves the table's current session each turn
-([graph.py](../ai_waiter_core/ai_waiter_core/agent/graph.py)):
+([graph.py](../src/agent_brain/agent/graph.py)):
 
 - **Within a visit** → same session id → memory persists.
 - **After payment** (session CLOSED) → no active session → next guest opens a **new** session →
@@ -221,8 +222,8 @@ flowchart LR
 
 ## 5. Robot dispatch + telemetry
 
-Robots connect over `/ws?role=robot&robot_id=...` ([ws.py](../src/backend/app/ws.py)); the
-dispatcher ([dispatcher.py](../src/backend/app/dispatcher.py)) turns business events into tasks.
+Robots connect over `/ws?role=robot&robot_id=...` ([ws.py](../src/server_orchestrator/realtime/ws.py)); the
+dispatcher ([dispatcher.py](../src/server_orchestrator/services/dispatcher.py)) turns business events into tasks.
 
 ```mermaid
 sequenceDiagram
@@ -280,9 +281,9 @@ Jetson speaks the reply (TTS)                         ▼
 ```
 
 The agent never reaches the tablet directly: it POSTs to the backend bridge
-([routers/voice.py](../src/backend/app/routers/voice.py)), keeping the backend's
-"does-not-import-ai_waiter_core" boundary intact. This is the *delivery* half of the agent's
-action seam ([actions.py](../ai_waiter_core/ai_waiter_core/agent/actions.py) decides; the agent
+([routers/voice.py](../src/server_orchestrator/routers/voice.py)), keeping the backend's
+"does-not-import-agent_brain" boundary intact. This is the *delivery* half of the agent's
+action seam ([actions.py](../src/agent_brain/agent/actions.py) decides; the agent
 service delivers). Tablets filter events by their own `table_id`.
 
 ---
@@ -291,21 +292,25 @@ service delivers). Tablets filter events by their own `table_id`.
 
 | Concern | File |
 |---|---|
-| App entry, lifespan, routers | [src/backend/app/main.py](../src/backend/app/main.py) |
-| DB schema + migrations | [src/backend/app/db.py](../src/backend/app/db.py) |
-| Session helpers | [src/backend/app/sessions.py](../src/backend/app/sessions.py) |
-| Live robot telemetry (RAM) | [src/backend/app/fleet.py](../src/backend/app/fleet.py) |
-| Task dispatch + heartbeat + watchdog | [src/backend/app/dispatcher.py](../src/backend/app/dispatcher.py) |
-| WebSocket hub | [src/backend/app/ws.py](../src/backend/app/ws.py) |
-| REST contracts (pydantic) | [src/backend/app/schemas.py](../src/backend/app/schemas.py) |
-| Endpoints | [src/backend/app/routers/](../src/backend/app/routers/) (tables, orders, payments, robots, menu, tasks, admin, layout) |
-| Agent graph + chat() | [ai_waiter_core/.../agent/graph.py](../ai_waiter_core/ai_waiter_core/agent/graph.py) |
-| Thread = session | [ai_waiter_core/.../agent/memory/checkpointer.py](../ai_waiter_core/ai_waiter_core/agent/memory/checkpointer.py) |
-| Agent tools | [ai_waiter_core/.../agent/tools/](../ai_waiter_core/ai_waiter_core/agent/tools/) |
-| Agent → backend HTTP seam | [ai_waiter_core/.../services/orchestrator_client.py](../ai_waiter_core/ai_waiter_core/services/orchestrator_client.py) |
-| Voice loop on Jetson (mic → VAD → Whisper → POST /chat → TTS) | [ai_waiter_core/main.py](../ai_waiter_core/main.py) |
-| Agent HTTP service (LLM on the server; POST /chat) | [ai_waiter_core/.../server.py](../ai_waiter_core/ai_waiter_core/server.py) |
-| Voice bridge → customer tablet (role=customer WS) | [src/backend/app/routers/voice.py](../src/backend/app/routers/voice.py) |
+| App entry, lifespan, routers | [src/server_orchestrator/main.py](../src/server_orchestrator/main.py) |
+| DB schema + migrations | [src/server_orchestrator/data/db.py](../src/server_orchestrator/data/db.py) |
+| Session helpers | [src/server_orchestrator/services/sessions.py](../src/server_orchestrator/services/sessions.py) |
+| Live robot telemetry (RAM) | [src/server_orchestrator/services/fleet.py](../src/server_orchestrator/services/fleet.py) |
+| Task dispatch + heartbeat + watchdog | [src/server_orchestrator/services/dispatcher.py](../src/server_orchestrator/services/dispatcher.py) |
+| WebSocket hub (router + registry) | [src/server_orchestrator/realtime/ws.py](../src/server_orchestrator/realtime/ws.py) + [connection_manager.py](../src/server_orchestrator/realtime/connection_manager.py) |
+| REST contracts (pydantic) | [src/server_orchestrator/schemas/__init__.py](../src/server_orchestrator/schemas/__init__.py) |
+| Endpoints | [src/server_orchestrator/routers/](../src/server_orchestrator/routers/) (admin, layout, menu, orders, payments, robots, tables, tasks, voice) |
+| Cross-role paths + types | [src/_shared/paths.py](../src/_shared/paths.py) + [types.py](../src/_shared/types.py) |
+| Agent graph + chat() | [src/agent_brain/agent/graph.py](../src/agent_brain/agent/graph.py) |
+| Thread = session | [src/agent_brain/agent/memory/checkpointer.py](../src/agent_brain/agent/memory/checkpointer.py) |
+| Agent tools | [src/agent_brain/agent/tools/](../src/agent_brain/agent/tools/) |
+| Agent → backend HTTP seam | [src/agent_brain/services/orchestrator_client.py](../src/agent_brain/services/orchestrator_client.py) |
+| Agent resources (centroids, few-shots, prompts, skills) | [src/agent_brain/agent/resources/](../src/agent_brain/agent/resources/) |
+| Voice loop on Jetson (mic → VAD → Whisper → POST /chat → TTS) | [src/edge_voice/main.py](../src/edge_voice/main.py) |
+| VAD + STT + cross-thread queues | [src/edge_voice/perception/](../src/edge_voice/perception/) |
+| TTS | [src/edge_voice/output/tts_engine.py](../src/edge_voice/output/tts_engine.py) |
+| Agent HTTP service (LLM on the server; POST /chat) | [src/agent_brain/server.py](../src/agent_brain/server.py) |
+| Voice bridge → customer tablet (role=customer WS) | [src/server_orchestrator/routers/voice.py](../src/server_orchestrator/routers/voice.py) |
 
 ## 8. Key endpoints
 

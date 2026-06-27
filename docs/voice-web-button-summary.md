@@ -61,7 +61,7 @@ robot tự lên + tự kết nối lại. → việc còn lại: viết systemd 
 ## Đã làm gì (code) — đợt bind động
 
 ### Backend
-- `src/backend/app/ws.py`:
+- `src/server_orchestrator/realtime/ws.py` + `connection_manager.py`:
   - `_voice_devices` đổi key từ `table_id` → `robot_id`. Gate `_robots` theo `role=="robot"` để
     socket mic (cùng id) không ghi đè socket motion.
   - Thêm map `_table_to_robot` + `bind_table_robot()` / `unbind_robot()` (mỗi robot 1 bàn, 2 chiều
@@ -69,17 +69,17 @@ robot tự lên + tự kết nối lại. → việc còn lại: viết systemd 
   - `send_to_voice_device(table_id)` giờ tra `table → robot → socket`; `no_device` khi không có robot
     ở bàn hoặc mic của nó offline.
   - `ws_endpoint` bỏ query `table_id` (voice-device dùng `robot_id`).
-- `src/backend/app/dispatcher.py`: `on_arrived` → `bind_table_robot` + đổi activity panel sang
+- `src/server_orchestrator/services/dispatcher.py`: `on_arrived` → `bind_table_robot` + đổi activity panel sang
   "Đang phục vụ · Bàn N"; `on_done`/`on_robot_disconnect` → `unbind_robot`; thêm
   `release_robot_at_table(table_id)` (gửi `task.release` tới robot đang ở bàn).
-- `src/backend/app/routers/voice.py`: `start_listening` mang theo `table_id` để device tag `/chat`.
-- `src/backend/app/routers/orders.py`: đặt món xong → `release_robot_at_table`.
-- `src/backend/app/routers/payments.py`: thanh toán xong (cả 2 endpoint verify) → `release_robot_at_table`.
+- `src/server_orchestrator/routers/voice.py`: `start_listening` mang theo `table_id` để device tag `/chat`.
+- `src/server_orchestrator/routers/orders.py`: đặt món xong → `release_robot_at_table`.
+- `src/server_orchestrator/routers/payments.py`: thanh toán xong (cả 2 endpoint verify) → `release_robot_at_table`.
 - `scripts/mock_robot.py`: `go_to_table`/`call` → arrived rồi **chờ `task.release`** mới `done` (thay
   vì tự xong sau 3s); `deliver` vẫn auto. Heartbeat giữ nguyên vị trí bàn khi đang phục vụ.
 
 ### Thiết bị có mic
-- `ai_waiter_core/main.py`: `VOICE_TABLE_ID` → `VOICE_ROBOT_ID` (mặc định `robo-1`); đăng ký
+- `src/edge_voice/main.py`: `VOICE_TABLE_ID` → `VOICE_ROBOT_ID` (mặc định `robo-1`); đăng ký
   `role=voice-device&robot_id=<id>`; `_capture_and_send(..., table_id)` dùng `table_id` từ lệnh
   `start_listening` cho `POST /chat`, gửi dạng `"T<n>"` (agent yêu cầu chuỗi — fix lỗi 422).
 
@@ -105,11 +105,10 @@ make mockrobot ID=robo-1 ARGS="--host 100.66.165.221 --port 8000"
 
 **Terminal 2 — mic của `robo-1` (`main.py`, cùng `robot_id`):**
 ```bash
-cd ai_waiter_core
 VOICE_ROBOT_ID=robo-1 \
 AGENT_URL=http://100.66.165.221:8100 \
 ORCHESTRATOR_URL=http://100.66.165.221:8000 \
-uv run python main.py
+uv run python src/edge_voice/main.py    # hoặc: make voice
 ```
 → chờ `PhoWhisper warmup done` → `[READY] đã kết nối backend (robo-1)...`. Kiểm tra banner in đúng
 IP (không thừa dấu chấm).

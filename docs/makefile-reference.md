@@ -54,11 +54,11 @@
 |---|---|---|---|
 | `make backend` | Uvicorn orchestrator (REST + `/voice` bridge + WS hub), `--reload`. | 8000 | server |
 | `make reindex` | **Xoá sạch** `storage/vector/` (FAISS + BM25) + `centroids.npz`, rồi `scripts/setup.py --force` build lại FAISS + BM25 + centroids theo `EMBEDDING_MODEL` trong `.env`. **`--force` wipe luôn `checkpoints.db`** (bộ nhớ hội thoại); **không** đụng `orchestrator.db`. | — | server |
-| `make agent` | Chạy `reindex` trước (rebuild embeddings sạch), rồi uvicorn **agent service** (LLM, `POST /chat`). Chạy từ thư mục `ai_waiter_core/`. | 8100 | server |
+| `make agent` | Chạy `reindex` trước (rebuild embeddings sạch), rồi uvicorn **agent service** (LLM, `POST /chat`). Chạy từ repo root. | 8100 | server |
 
 > Restart agent **không** rebuild (sau khi đã build xong): chạy thẳng, đừng `make agent`:
 > ```bash
-> cd ai_waiter_core && uv run --project .. uvicorn ai_waiter_core.server:app --host 0.0.0.0 --port 8100
+> uv run uvicorn src.agent_brain.server:app --host 0.0.0.0 --port 8100
 > ```
 
 ### Tiện ích demo
@@ -79,7 +79,7 @@
   - `checkpoints.db` (memory hội thoại) → `make reindex`/`make agent` (qua `--force`).
   - `orchestrator.db` (ledger) → nút **Reset hệ thống** trên panel / `make reset` (xoá dữ liệu), hoặc
     `rm storage/db/orchestrator.db` (xoá hẳn file, backend seed lại khi khởi động).
-- **Vòng lặp voice không có target make** (chủ ý — chạy trên Jetson/laptop, không phải server):
+- **Vòng lặp voice** — `make voice` (chạy từ repo root; khởi động `src/edge_voice/main.py`):
   ```bash
-  cd ai_waiter_core && uv run python main.py
+  make voice    # hoặc: uv run python src/edge_voice/main.py
   ```

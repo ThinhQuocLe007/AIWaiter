@@ -122,7 +122,7 @@ uv run python scripts/setup.py               # dựng storage/: SQLite + FAISS +
 
 **(5) Chạy backend (serve API + web + WS hub):**
 ```bash
-make backend            # uvicorn src.backend.app.main:app --host 0.0.0.0 --port 8000
+make backend            # uvicorn src.server_orchestrator.main:app --host 0.0.0.0 --port 8000
 ```
 
 ---
@@ -225,7 +225,7 @@ mic → VAD → STT → WS↑ SERVER (LLM/agent) → WS↓ Jetson → TTS đọc
 
 > ⚠️ **Hiện CHƯA có file `ws_client.py`** — các placeholder cũ trong `interfaces/` đều rỗng và đã được
 > dọn. Đây là việc cần viết (SYSTEM_ARCHITECTURE §4 "robot-agent", §11 Mốc B). Tạm thời
-> `ai_waiter_core/main.py` là pipeline voice **all-in-one cũ** (VAD+STT+agent+TTS cùng máy) để test cục bộ.
+> `src/edge_voice/main.py` là pipeline voice **all-in-one cũ** (VAD+STT+agent+TTS cùng máy) để test cục bộ.
 
 ---
 
@@ -436,7 +436,7 @@ uv run python scripts/probe_stt.py --audio test.wav   # dòng cuối [stt out] '
 
 `probe_stt.py` chỉ làm *file → text*. Để test trải nghiệm thật — **nói và xem text hiện** — dùng
 `probe_stt_live.py`. Nó chạy `SileroVAD` + `PhoWhisperSTT` thật (cùng wiring với
-`ai_waiter_core/main.py`) nhưng **bỏ** agent/LLM/TTS, nên cô lập đúng đường *mic → VAD → STT*.
+`src/edge_voice/main.py`) nhưng **bỏ** agent/LLM/TTS, nên cô lập đúng đường *mic → VAD → STT*.
 **Không cần Ollama.**
 
 ```bash

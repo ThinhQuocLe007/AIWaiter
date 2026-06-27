@@ -23,7 +23,7 @@ mic(USB) → VAD → Whisper → text                  Ollama (LLM)
 ```
 
 **3 thứ chạy trên SERVER:** `make backend` + `make agent` + `make menu` (và **Ollama**).
-**1 thứ chạy trên JETSON/laptop:** vòng lặp voice `ai_waiter_core/main.py`.
+**1 thứ chạy trên JETSON/laptop:** vòng lặp voice `src/edge_voice/main.py`.
 
 | Máy | Vai trò | Chạy | Extra cài |
 |---|---|---|---|
@@ -79,7 +79,7 @@ Mỗi lần chạy nó **rebuild sạch embedding trước** rồi mới serve (
 ```
 reindex: xoá storage/vector/ + centroids.npz  →  scripts/setup.py --force
          (rebuild FAISS + BM25 + centroids theo EMBEDDING_MODEL; wipe checkpoints.db)
-agent:   uvicorn ai_waiter_core.server:app :8100
+agent:   uvicorn src.agent_brain.server:app :8100
 ```
 - ⚠️ `--force` **wipe cả `checkpoints.db`** (bộ nhớ hội thoại) nhưng **không** đụng `orchestrator.db`.
   Muốn reset ledger (đơn/lượt ngồi/thanh toán) có 3 cách, đều OK:
@@ -90,7 +90,7 @@ agent:   uvicorn ai_waiter_core.server:app :8100
 - Lần đầu sẽ tải model embedding về (vài trăm MB–2GB) → hơi lâu, bình thường.
 - **Restart agent KHÔNG rebuild** (sau khi đã build): chạy thẳng, đừng `make agent`:
   ```bash
-  cd ai_waiter_core && uv run --project .. uvicorn ai_waiter_core.server:app --host 0.0.0.0 --port 8100
+  uv run uvicorn src.agent_brain.server:app --host 0.0.0.0 --port 8100
   ```
 - Khởi động xong in `Agent ready.`
 
@@ -113,7 +113,7 @@ RESPONSE_MODEL=<model-ollama>
 
 Chạy vòng lặp voice:
 ```bash
-cd ai_waiter_core && uv run python main.py
+uv run python src/edge_voice/main.py    # hoặc: make voice
 ```
 In ra:
 ```
