@@ -3,21 +3,39 @@
 Plain sqlite3 (no ORM) keeps Bước 0 small; swapping to SQLAlchemy later only changes this
 file. Connections are per-call (FastAPI is multi-threaded by default) with row factory set so
 rows behave like dicts.
+
+The status-string vocabulary used in the TEXT columns is the same one exported by
+``src._shared.types`` (TableStatus, SessionStatus, OrderStatus, OrderItemStatus,
+PaymentStatus, RobotStatus, TaskStatus, TaskKind). SQLite stores raw TEXT so the
+enums aren't enforced at the DB level — they're enforced on the Python side by
+Pydantic in the REST schemas (``schemas/__init__.py``). The defaults in the
+schema below match the enum ``.value`` strings; if you change one, change the other.
 """
 
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 
+from src._shared.types import (
+    OrderItemStatus,
+    OrderStatus,
+    PaymentStatus,
+    RobotStatus,
+    SessionStatus,
+    TableStatus,
+    TaskKind,
+    TaskStatus,
+)
+
 from ..config import settings
 
 # Mục 8 data model. `tables` is quoted because TABLE is a SQL keyword.
-SCHEMA = """
+SCHEMA = f"""
 CREATE TABLE IF NOT EXISTS "tables" (
     id               INTEGER PRIMARY KEY,
     name             TEXT NOT NULL,
     capacity         INTEGER NOT NULL DEFAULT 4,
-    status           TEXT NOT NULL DEFAULT 'TRONG',
+    status           TEXT NOT NULL DEFAULT '{TableStatus.TRONG.value}',
     current_order_id INTEGER,
     party_size       INTEGER,
     seated_at        TEXT
@@ -28,7 +46,7 @@ CREATE TABLE IF NOT EXISTS "tables" (
 CREATE TABLE IF NOT EXISTS sessions (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     table_id   INTEGER NOT NULL,
-    status     TEXT NOT NULL DEFAULT 'ACTIVE',   -- ACTIVE | CLOSED
+    status     TEXT NOT NULL DEFAULT '{SessionStatus.ACTIVE.value}',   -- {SessionStatus.ACTIVE.value} | {SessionStatus.CLOSED.value}
     party_size INTEGER,
     started_at TEXT NOT NULL DEFAULT (datetime('now')),
     ended_at   TEXT,
@@ -50,7 +68,7 @@ CREATE TABLE IF NOT EXISTS orders (
     -- 2) starts setting it; table_id stays for fast kitchen/robot lookups.
     session_id INTEGER,
     table_id   INTEGER NOT NULL,
-    status     TEXT NOT NULL DEFAULT 'CHO_BEP',
+    status     TEXT NOT NULL DEFAULT '{OrderStatus.CHO_BEP.value}',
     total      REAL NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (table_id) REFERENCES "tables"(id),
@@ -65,14 +83,14 @@ CREATE TABLE IF NOT EXISTS order_items (
     qty      INTEGER NOT NULL DEFAULT 1,
     price    REAL NOT NULL DEFAULT 0,
     note     TEXT,
-    status   TEXT NOT NULL DEFAULT 'CHO_BEP',
+    status   TEXT NOT NULL DEFAULT '{OrderItemStatus.CHO_BEP.value}',
     FOREIGN KEY (order_id) REFERENCES orders(id)
 );
 
 CREATE TABLE IF NOT EXISTS robots (
     id              TEXT PRIMARY KEY,
     name            TEXT,
-    status          TEXT NOT NULL DEFAULT 'offline',
+    status          TEXT NOT NULL DEFAULT '{RobotStatus.OFFLINE.value}',
     battery         REAL,
     x               REAL,
     y               REAL,
@@ -81,11 +99,11 @@ CREATE TABLE IF NOT EXISTS robots (
 
 CREATE TABLE IF NOT EXISTS tasks (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    kind       TEXT NOT NULL,
+    kind       TEXT NOT NULL,        -- {TaskKind.GO_TO_TABLE.value} | {TaskKind.DELIVER.value} | {TaskKind.CALL.value}
     table_id   INTEGER,
     order_id   INTEGER,
     robot_id   TEXT,
-    status     TEXT NOT NULL DEFAULT 'PENDING',
+    status     TEXT NOT NULL DEFAULT '{TaskStatus.PENDING.value}',
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -95,13 +113,13 @@ CREATE TABLE IF NOT EXISTS tasks (
 # Payments live in their own DDL because the model changed from per-order → per-session (gộp 1
 # lần / phiên). Changing order_id → session_id flips a NOT NULL column, which SQLite can't ALTER,
 # so legacy per-order tables are dropped and recreated (see _migrate_payments_to_session).
-PAYMENTS_DDL = """
+PAYMENTS_DDL = f"""
 CREATE TABLE IF NOT EXISTS payments (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     session_id INTEGER NOT NULL,
     method     TEXT,
     amount     REAL NOT NULL,
-    status     TEXT NOT NULL DEFAULT 'PENDING',   -- PENDING | PAID
+    status     TEXT NOT NULL DEFAULT '{PaymentStatus.PENDING.value}',   -- {PaymentStatus.PENDING.value} | {PaymentStatus.PAID.value}
     txn_ref    TEXT,
     qr_url     TEXT,
     paid_at    TEXT,

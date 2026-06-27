@@ -2,9 +2,25 @@
 
 Kept in one module (small for now) so the frontends and — later — the robot Brain share a
 single contract. These mirror the SQLite schema in db.py (mục 8 of SYSTEM_ARCHITECTURE.md).
+
+Status fields are typed against the cross-role enums in ``src._shared.types`` so the
+orchestrator, the brain, and the voice device all speak the same vocabulary. Update
+(input) fields stay as ``str`` for forward-compat (e.g. legacy clients that send a
+status the orchestrator doesn't know about yet).
 """
 
 from pydantic import BaseModel, Field
+
+from src._shared.types import (
+    OrderItemStatus,
+    OrderStatus,
+    PaymentStatus,
+    RobotStatus,
+    SessionStatus,
+    TableStatus,
+    TaskKind,
+    TaskStatus,
+)
 
 
 # --- Orders -------------------------------------------------------------------------------
@@ -25,13 +41,13 @@ class OrderCreate(BaseModel):
 
 class OrderItemOut(OrderItemIn):
     id: int
-    status: str
+    status: OrderItemStatus
 
 
 class OrderOut(BaseModel):
     id: int
     table_id: int
-    status: str
+    status: OrderStatus
     total: float
     created_at: str
     items: list[OrderItemOut] = []
@@ -46,7 +62,7 @@ class TableOut(BaseModel):
     id: int
     name: str
     capacity: int
-    status: str
+    status: TableStatus
     current_order_id: int | None = None
     party_size: int | None = None
     seated_at: str | None = None
@@ -71,7 +87,7 @@ class SessionOut(BaseModel):
 
     id: int
     table_id: int
-    status: str
+    status: SessionStatus
     party_size: int | None = None
     started_at: str
     ended_at: str | None = None
@@ -98,7 +114,7 @@ class PaymentOut(BaseModel):
     session_id: int
     method: str | None = None
     amount: float
-    status: str
+    status: PaymentStatus
     txn_ref: str | None = None
     qr_url: str | None = None
     paid_at: str | None = None
@@ -109,11 +125,11 @@ class TaskOut(BaseModel):
     """A system task the dispatcher hands to a robot (go_to_table / deliver / call)."""
 
     id: int
-    kind: str
+    kind: TaskKind
     table_id: int | None = None
     order_id: int | None = None
     robot_id: str | None = None
-    status: str
+    status: TaskStatus
     created_at: str
     updated_at: str
 
@@ -122,7 +138,7 @@ class TaskOut(BaseModel):
 class RobotOut(BaseModel):
     id: str
     name: str | None = None
-    status: str
+    status: RobotStatus
     battery: float | None = None
     # Human-readable "what it's doing" (e.g. "Đang giao món · Bàn 4", "Đang ở dock") — the panel
     # shows this on the robot board. Set by the dispatcher for real robots later.

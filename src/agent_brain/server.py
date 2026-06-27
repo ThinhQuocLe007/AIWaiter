@@ -21,9 +21,10 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from pydantic import BaseModel
 
+from src._shared.types import normalise_table_id
 from src.agent_brain.agent.graph import AIWaiterGraph
 from src.agent_brain.config import settings
-from src.agent_brain.services.orchestrator_client import OrchestratorClient, _table_int
+from src.agent_brain.services.orchestrator_client import OrchestratorClient
 
 load_dotenv()
 log = logging.getLogger(__name__)
@@ -82,7 +83,7 @@ app = FastAPI(title="AI Waiter Agent", version="0.1.0", lifespan=lifespan)
 class ChatRequest(BaseModel):
     # The agent layer speaks "T1"-style table refs (graph.chat / main.py / the LLM prompts); only
     # the backend keys tables by INT. We keep the agent convention here and convert to the INT id
-    # at the tablet seam via _table_int — matching orchestrator_client.
+    # at the tablet seam via normalise_table_id — matching orchestrator_client.
     table_id: str = "T1"
     text: str
 
@@ -108,7 +109,7 @@ def chat(req: ChatRequest) -> ChatResponse:
     """
     text = req.text.strip()
     table_id = req.table_id
-    table_int = _table_int(table_id)  # backend/tablet key tables by INT
+    table_int = normalise_table_id(table_id)  # backend/tablet key tables by INT
 
     # Show the guest's words on the tablet right away (user bubble + "thinking") — before the LLM,
     # which on a local model can take a couple of seconds.
