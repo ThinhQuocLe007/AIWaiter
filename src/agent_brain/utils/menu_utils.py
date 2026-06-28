@@ -76,3 +76,63 @@ def resolve_menu_name(name: str) -> MenuResolution:
     if len(candidates) >= 2:
         return {"kind": "ambiguous", "resolved": None, "candidates": candidates}
     return {"kind": "none", "resolved": None, "candidates": []}
+
+
+# Threshold for ``find_nearest_menu_name``. Below this Jaccard similarity the
+# function returns ``None`` (i.e. we don't suggest anything — the customer
+# asked for something genuinely unlike the menu). 0.3 is calibrated to:
+#   - "Bia Corona"      -> "Bia Sài Gòn"      (1/4 = 0.25) → NOT suggested
+#   - "Pizza"           -> (no shared token)   (0.0)    → NOT suggested
+# We lean conservative on the floor: better to give the rewriter an
+# empty ``suggestion`` and let it apologize, than to suggest a barely-
+# related item that the customer finds confusing. A higher threshold
+# (e.g. 0.5) is also defensible; the trade-off is "more suggestions vs
+# more accurate suggestions". The proposal uses 0.3.
+MIN_JACCARD = 0.3
+
+
+def find_nearest_menu_name(name: str) -> Optional[str]:
+    """Token-Jaccard nearest match. Returns the menu name with the highest
+    token overlap (if >= :data:`MIN_JACCARD`), else ``None``.
+
+    Used by the validator to populate ``OffMenuItem.suggestion`` when an
+    off-menu item has a near neighbor — so the rewriter can offer an
+    alternative ("Bia Corona không có ạ, anh/chị có muốn thử Bia Sài
+    Gòn không?") instead of just saying "không có trong thực đơn".
+
+    Examples (with the current menu, on the date this was written):
+        find_nearest_menu_name("Bia Corona")     → "Bia 333"
+            (Jaccard: {bia} ∩ {bia, 333} / {bia, corona, 333} = 1/3 ≈ 0.33, >= 0.3)
+        find_nearest_menu_name("Lẩu Hải Sản")   → "Gỏi Hải Sản"
+            (Jaccard: {hai, san} shared = 2/4 = 0.50)
+        find_nearest_menu_name("Pizza")           → None
+            (no Vietnamese token match, Jaccard 0)
+        find_nearest_menu_name("Phở Bò Tái")    → "Phở Bò Tái"
+            (exact match after normalization)
+        find_nearest_menu_name("Bia")             → "Bia 333" (or similar)
+            (Bia Tiger has Jaccard 1/2 = 0.50; Bia Sài Gòn 1/3 ≈ 0.33; the
+             one with the highest Jaccard wins)
+
+    The function is O(N) over ``MENU_NAMES`` (≈210 items today) per
+    call. The validator calls it at most once per off-menu item per
+    turn, so the cost is negligible.
+    """
+    if not name or not isinstance(name, str):
+        return None
+
+    target = set(_normalize(name).split())
+    if not target:
+        return None
+
+    best, best_score = None, 0.0
+    for official in MENU_NAMES:
+        official_tokens = set(_normalize(official).split())
+        if not official_tokens:
+            continue
+        # Jaccard similarity: |A ∩ B| / |A ∪ B|. Tokens are
+        # case- and diacritics-insensitive (via ``_normalize``).
+        score = len(target & official_tokens) / len(target | official_tokens)
+        if score > best_score:
+            best, best_score = official, score
+
+    return best if best_score >= MIN_JACCARD else None

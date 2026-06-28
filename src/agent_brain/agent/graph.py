@@ -15,6 +15,8 @@ from src.agent_brain.agent.nodes.payment_worker_node import payment_worker_node
 from src.agent_brain.agent.nodes.deterministic_validator_node import deterministic_validator_node
 from src.agent_brain.agent.nodes.update_state_node import update_state_node
 from src.agent_brain.agent.nodes.response_node import response_node
+from src.agent_brain.agent.nodes.chat_worker_node import chat_worker_node
+from src.agent_brain.agent.nodes.state_outcome_node import state_outcome_node
 
 logger = logging.getLogger(__name__)
 
@@ -25,11 +27,12 @@ INTENT_TO_WORKER = {
     "ORDER_CONFIRM": "order_worker",
     "SEARCH": "search_worker",
     "PAYMENT": "payment_worker",
-    "CHAT": "response_node",
+    "CHAT": "chat_worker",
 }
 
-DEFAULT_WORKER = "response_node"
+DEFAULT_WORKER = "chat_worker"
 TOOL_WORKERS = ("order_worker", "search_worker", "payment_worker")
+CHAT_WORKERS = ("chat_worker",)  # leaf worker that builds the chat context, no tool calls
 
 
 def _get_next_worker(state: AgentState) -> str:
@@ -83,15 +86,21 @@ def _route_after_validator(state: AgentState) -> str:
 
 
 def _route_after_updater(state: AgentState) -> str:
-    """Routes to the next worker if more intents remain, otherwise generates response or ends."""
+    """Routes to the next worker if more intents remain, otherwise to ``state_outcome``.
+
+    After Phase 1.7, ``state_outcome`` always runs at the end of every
+    turn (it finalizes per-turn resets and builds the response context
+    for ``response_node`` to consume). It then routes to
+    ``response_node``, which goes to ``END``.
+
+    The previous "end" branch is gone: ``state_outcome`` always runs
+    after the last worker finishes, even on the defensive path where
+    the last message isn't a tool result.
+    """
     intents = state.get("current_intents") or []
     if intents:
         return _get_next_worker(state)
-    
-    messages = state.get("messages", [])
-    if messages and messages[-1].type == "tool":
-        return "response_node"
-    return "end"
+    return "state_outcome"
 
 
 class AIWaiterGraph:
@@ -110,12 +119,14 @@ class AIWaiterGraph:
         workflow.add_node("order_worker", order_worker_node)
         workflow.add_node("search_worker", search_worker_node)
         workflow.add_node("payment_worker", payment_worker_node)
+        workflow.add_node("chat_worker", chat_worker_node)
         workflow.add_node("validator", deterministic_validator_node)
         workflow.add_node("tools", ToolNode(
             [search, sync_cart, confirm_order, request_payment, verify_payment],
             messages_key="messages"
         ))
         workflow.add_node("state_updater", update_state_node)
+        workflow.add_node("state_outcome", state_outcome_node)
         workflow.add_node("response_node", response_node)
 
         # START → router
@@ -129,11 +140,15 @@ class AIWaiterGraph:
                 "order_worker": "order_worker",
                 "search_worker": "search_worker",
                 "payment_worker": "payment_worker",
-                "response_node": "response_node",
+                "chat_worker": "chat_worker",
             },
         )
 
-        # Worker → validator (if tool call) | response_node (if no tool call)
+        # Worker → validator (if tool call) | response_node (if no tool call).
+        # The "no tool call" branch still routes to response_node directly
+        # (defensive: the legacy response_node reads from the legacy state
+        # fields, not the new typed context). Phase 3 will rewrite
+        # response_node to use the typed context.
         for worker in TOOL_WORKERS:
             workflow.add_conditional_edges(
                 worker,
@@ -157,7 +172,13 @@ class AIWaiterGraph:
         # Tools → state_updater
         workflow.add_edge("tools", "state_updater")
 
-        # state_updater → next worker (more intents) | response_node (all done) | END
+        # Chat worker → state_outcome (direct edge, no tool calls).
+        # chat_worker is a leaf: it builds the ChatResponseContext and
+        # state_outcome finalizes (per-turn resets) before response_node
+        # verbalizes.
+        workflow.add_edge("chat_worker", "state_outcome")
+
+        # state_updater → next worker (more intents) | state_outcome (finalize)
         workflow.add_conditional_edges(
             "state_updater",
             _route_after_updater,
@@ -165,10 +186,14 @@ class AIWaiterGraph:
                 "order_worker": "order_worker",
                 "search_worker": "search_worker",
                 "payment_worker": "payment_worker",
-                "response_node": "response_node",
-                "end": END,
+                "state_outcome": "state_outcome",
             },
         )
+
+        # state_outcome → response_node (always). state_outcome builds
+        # the typed ResponseContext (or finalizes if chat_worker set it),
+        # then response_node verbalizes.
+        workflow.add_edge("state_outcome", "response_node")
 
         # response_node → END
         workflow.add_edge("response_node", END)

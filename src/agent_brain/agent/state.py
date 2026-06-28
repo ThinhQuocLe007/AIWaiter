@@ -4,6 +4,7 @@ from langgraph.graph.message import add_messages
 # Import our decoupled schemas
 from src.agent_brain.schemas.order import Cart, OrderStage
 from src.agent_brain.schemas.search import SearchResult
+from src.agent_brain.schemas.response_context import ResponseContext
 
 class AgentState(TypedDict):
     # Save conversation history only ( user + ai conversations )
@@ -26,6 +27,22 @@ class AgentState(TypedDict):
     feedback: Optional[str]  # Actionable error message
     loop_count: int          # Circuit breaker limit
 
+    # ── Inter-node contract: validator → state_outcome (+ workers on retry) ──
+    # The three fields below are NOT user-facing state. They're how the
+    # validator communicates per-turn findings to (a) state_outcome_node
+    # (which builds the typed ResponseContext from them) and (b) the workers
+    # on retry (which read ``feedback`` to know what to fix).
+    #
+    # Lifecycle:
+    #   1. validator writes them (raw dicts) in its return dict
+    #   2. workers read ``feedback`` on retry
+    #   3. state_outcome reads ``unavailable_items`` / ``ambiguous_items``
+    #      to build OrderResponseContext, then clears all three via _finalize
+    #   4. response_node never reads these directly — it reads the typed
+    #      context (which has these fields as Pydantic lists)
+    #
+    # Don't remove without rewriting the validator ↔ state_outcome contract.
+
     # Items the customer requested that are NOT on the menu. Captured by the
     # validator (after stripping them from the cart) so the response node can
     # explicitly tell the customer instead of silently dropping/substituting.
@@ -46,3 +63,8 @@ class AgentState(TypedDict):
     # (see agent/actions.py); the conversation reply is spoken, this drives the screen.
     # Reset to None at the start of every turn so a command never leaks to the next.
     ui_action: Optional[str]
+
+    # The typed handoff from the implement stage to the response stage.
+    # Set by chat_worker (CHAT path) or state_outcome (tool path), read and
+    # cleared by response_node. Nothing else in the graph touches it.
+    response_context: Optional[ResponseContext]

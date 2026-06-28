@@ -2,7 +2,7 @@ import logging
 from typing import Dict, Any, List
 from langchain_core.messages import ToolMessage
 from src.agent_brain.agent.state import AgentState
-from src.agent_brain.utils import resolve_menu_name
+from src.agent_brain.utils import resolve_menu_name, find_nearest_menu_name
 
 logger = logging.getLogger(__name__)
 
@@ -87,9 +87,25 @@ def deterministic_validator_node(state: AgentState) -> Dict[str, Any]:
                         name, len(resolution["candidates"]), resolution["candidates"][:5],
                     )
                 else:
-                    # Genuinely off-menu.
-                    unavailable_items.append({"name": name, "suggestion": None})
-                    logger.warning("[validator] dropped off-menu item %r (no match).", name)
+                    # Genuinely off-menu. Try to find a near-neighbor menu
+                    # item via token-Jaccard so the rewriter can offer
+                    # "Bia Corona không có ạ, anh/chị có muốn thử Bia Sài
+                    # Gòn không?" instead of just "không có trong thực đơn".
+                    # ``find_nearest_menu_name`` returns ``None`` if no menu
+                    # item is close enough (Jaccard < 0.3).
+                    suggestion = find_nearest_menu_name(name)
+                    unavailable_items.append({"name": name, "suggestion": suggestion})
+                    if suggestion:
+                        logger.warning(
+                            "[validator] dropped off-menu item %r; "
+                            "suggesting near neighbor %r (Jaccard >= 0.3).",
+                            name, suggestion,
+                        )
+                    else:
+                        logger.warning(
+                            "[validator] dropped off-menu item %r (no near neighbor).",
+                            name,
+                        )
 
             # Strip unavailable items in-place so the tool executes with valid items only.
             # `sync_cart` always receives the full intended cart, so keeping only the
