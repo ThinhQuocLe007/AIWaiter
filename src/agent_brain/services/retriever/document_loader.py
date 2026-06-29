@@ -2,10 +2,16 @@ import json
 import os 
 from langchain_core.documents import Document
 from src.agent_brain.config import settings
-from src.agent_brain.utils import logger
+from src.agent_brain.utils import logger, MenuManager
+
+# Best-seller entries (best_seller.json) carry only dish_name + reason — no price.
+# We resolve the price from the canonical menu so search results render the real
+# price instead of defaulting to 0₫ (response_node._format_search_for_llm reads
+# metadata['price']).
+_menu_manager = MenuManager()
 
 
-class DocumentLoader: 
+class DocumentLoader:
     def __init__(self): 
         self.parsers = {
             "menu.json": self._parse_menu_json,
@@ -135,10 +141,25 @@ class DocumentLoader:
         docs = []
         for item in data:
             name = item.get("dish_name")
-            content = f"Món bán chạy: {name}\nLý do yêu thích: {item.get('reason')}"
+            price_val = _menu_manager.get_price(name)
+            if not price_val:
+                logger.warning(
+                    f"best_seller '{name}' has no matching price in menu.json; "
+                    "search results will show 0₫ for this dish."
+                )
+            content = (
+                f"Món bán chạy: {name}\n"
+                f"Giá: {int(price_val)}\n"
+                f"Lý do yêu thích: {item.get('reason')}"
+            )
             docs.append(Document(
                 page_content=content,
-                metadata={"source": "best_seller.json", "type": "best_seller", "name": name}
+                metadata={
+                    "source": "best_seller.json",
+                    "type": "best_seller",
+                    "name": name,
+                    "price": price_val,
+                },
             ))
         return docs
 
