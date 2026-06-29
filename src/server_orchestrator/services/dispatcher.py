@@ -20,7 +20,7 @@ import time
 from . import fleet
 from ..config import settings
 from ..data.db import get_conn
-from ..schemas import RobotOut, TableOut, TaskOut
+from ..schemas import RobotOut, TaskOut
 from ..realtime.connection_manager import manager
 
 log = logging.getLogger(__name__)
@@ -118,14 +118,6 @@ async def _broadcast_robot(conn, robot_id: str) -> None:
         robot = RobotOut(**fleet.overlay(dict(row)))
         await manager.broadcast(
             "panel", {"type": "robot.updated", "robot": robot.model_dump()}
-        )
-
-
-async def _broadcast_table(conn, table_id: int) -> None:
-    row = conn.execute('SELECT * FROM "tables" WHERE id = ?', (table_id,)).fetchone()
-    if row:
-        await manager.broadcast(
-            "panel", {"type": "table.updated", "table": TableOut(**dict(row)).model_dump()}
         )
 
 
@@ -316,22 +308,18 @@ async def on_accepted(robot_id: str, task_id: int | None) -> None:
 
 
 async def on_arrived(robot_id: str, task_id: int | None) -> None:
-    """Robot reached the table — advance the table's serving lifecycle by task kind."""
+    """Robot reached the table — flip its panel board to "serving" and bind the table's voice.
+
+    The table's own status is NOT touched here: it's already DANG_PHUC_VU from seating
+    (the lifecycle collapsed to TRONG / DANG_PHUC_VU / DA_THANH_TOAN — see TableStatus), so the
+    finer "ordering / eating" states are gone. Only the robot board + voice binding change.
+    """
     if task_id is None:
         return
     with get_conn() as conn:
         task = _fetch_task(conn, task_id)
         if task is None or task.table_id is None:
             return
-        new_status = {
-            "go_to_table": "DANG_GOI_MON",  # robot waits, /menu open for ordering
-            "deliver": "DANG_AN",  # food delivered, guests eating
-        }.get(task.kind)  # "call" leaves table status as-is (guest then picks add/pay)
-        if new_status:
-            conn.execute(
-                'UPDATE "tables" SET status = ? WHERE id = ?', (new_status, task.table_id)
-            )
-            await _broadcast_table(conn, task.table_id)
         # Flip the panel's robot board from "đang tới" to "đang phục vụ" — it's standing there now.
         serving = _SERVING_ACTIVITY.get(task.kind, "Đang phục vụ · Bàn {table}").format(
             table=task.table_id
