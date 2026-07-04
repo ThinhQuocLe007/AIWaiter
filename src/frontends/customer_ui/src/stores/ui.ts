@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { FoodItem } from '@/types'
 import { getStoredTableId, storeTableId } from '@/data/tableSession'
+import { useCartStore } from '@/stores/cart'
+import { useVoiceStore } from '@/stores/voice'
 
 export const useUiStore = defineStore('ui', () => {
   const cartOpen = ref(false)
@@ -13,8 +15,13 @@ export const useUiStore = defineStore('ui', () => {
   const availableTables = Array.from({ length: 6 }, (_, i) => i + 1)
 
   function setTableId(id: number) {
+    if (id === tableId.value) return
     tableId.value = id
     storeTableId(id)
+    // Each table has its own cart bucket and its own conversation: bàn 6 must not show bàn 1's
+    // dishes or chat. The old table's cart stays persisted under its own key.
+    useCartStore().switchTable(id)
+    useVoiceStore().resetConversation()
   }
 
   function openCart() {

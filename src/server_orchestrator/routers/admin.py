@@ -52,6 +52,8 @@ async def reset_state() -> dict:
     # Also drop the in-RAM live telemetry, otherwise GET /robots would keep overlaying the last
     # heartbeat pose on top of the now-zeroed DB snapshot (robot dot stuck at its old spot).
     fleet.clear()
-    # Tell any live panel to reload its boards (orders gone, tables freed, fleet reset).
+    # Tell any live panel to reload its boards (orders gone, tables freed, fleet reset), and any
+    # customer tablet to drop its persisted cart + conversation (the sessions no longer exist).
     await manager.broadcast("panel", {"type": "reset"})
+    await manager.broadcast("customer", {"type": "reset"})
     return {"status": "ok", "tables_freed": table_count}

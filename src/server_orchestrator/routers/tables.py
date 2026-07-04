@@ -58,7 +58,9 @@ async def create_seating(payload: SeatingCreate) -> TableOut:
         create_session(conn, payload.table_id, payload.party_size)
         updated = _fetch_table(conn, payload.table_id)
     assert updated is not None
-    await manager.broadcast("panel", {"type": "table.updated", "table": updated.model_dump()})
+    event = {"type": "table.updated", "table": updated.model_dump()}
+    await manager.broadcast("panel", event)
+    await manager.broadcast("customer", event)
     # A seated party needs a robot to come take the order → enqueue a go_to_table task.
     await dispatcher.create_task("go_to_table", table_id=payload.table_id)
     return updated
@@ -96,7 +98,10 @@ async def update_table_status(table_id: int, payload: TableStatusUpdate) -> Tabl
             )
         updated = _fetch_table(conn, table_id)
     assert updated is not None
-    await manager.broadcast("panel", {"type": "table.updated", "table": updated.model_dump()})
+    event = {"type": "table.updated", "table": updated.model_dump()}
+    await manager.broadcast("panel", event)
+    # The tablet clears its cart card when its table is ended (TRONG) from the panel.
+    await manager.broadcast("customer", event)
     # Ending a table also clears any task still queued for it (and sends its robot home), so the
     # panel's task queue doesn't keep stale work for a table that's now free.
     if payload.status == "TRONG":

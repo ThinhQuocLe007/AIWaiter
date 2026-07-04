@@ -68,12 +68,35 @@ export const useVoiceStore = defineStore('voice', () => {
     } else if (e.type === 'voice.reply') {
       if (e.table_id !== getStoredTableId()) return
       onReply(e.text, e.action, e.stage, e.cart, e.confirmed ?? false)
+    } else if (e.type === 'table.updated') {
+      // Session lifecycle for THIS table: paid (DA_THANH_TOAN) or ended from the panel (TRONG)
+      // means the visit is over — the dishes must leave the cart card, no matter where the
+      // payment was confirmed (tablet, voice agent, or panel).
+      if (e.table.id !== getStoredTableId()) return
+      if (e.table.status === 'DA_THANH_TOAN' || e.table.status === 'TRONG') {
+        endSession()
+      }
     } else if (e.type === 'reset') {
-      // Panel-side system reset: drop everything, including the persisted cart.
-      useCartStore().clearAll()
-      messages.value = []
-      closePanel()
+      // Panel-side system reset: every session is gone — drop everything on this tablet too.
+      endSession()
     }
+  }
+
+  // The visit is over (paid / table ended / system reset): clear the persisted cart AND the
+  // conversation, so the next guest at this table starts from zero.
+  function endSession() {
+    useCartStore().clearAll()
+    resetConversation()
+  }
+
+  // Drop the visible conversation only (e.g. the operator switched the tablet to another table —
+  // the chat on screen belonged to the previous table). The cart is handled separately: it swaps
+  // per-table buckets in the cart store rather than being wiped.
+  function resetConversation() {
+    clearTimeout(speakingTimer)
+    messages.value = []
+    suppressTurn = false
+    closePanel()
   }
 
   // The robot heard the guest: surface the words immediately and show "thinking" while the
@@ -246,6 +269,7 @@ export const useVoiceStore = defineStore('voice', () => {
     disconnect,
     openPanel,
     closePanel,
+    resetConversation,
     toggleSound,
     startListening,
     stop,

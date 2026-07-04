@@ -1,20 +1,28 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import type { CartItem, FoodItem } from '@/types'
+import { getStoredTableId } from '@/data/tableSession'
 
 // The cart survives page reloads and closing the voice sheet: a guest who ordered by voice and
 // then closed the assistant must still see their dishes on the cart card. Menu-independent —
 // the FoodItem snapshot is persisted whole, so restoring doesn't wait for /menu.
-const STORAGE_KEY = 'aiwaiter.cart.v1'
+// Keyed PER TABLE: one demo tablet stands in for several tables, and bàn 6 must never show
+// bàn 1's dishes.
+const STORAGE_PREFIX = 'aiwaiter.cart.v1'
+
+function storageKey(tableId: number): string {
+  return `${STORAGE_PREFIX}:t${tableId}`
+}
 
 interface PersistedCart {
   items: CartItem[]
   ordered: CartItem[]
 }
 
-function loadPersisted(): PersistedCart {
+function loadPersisted(tableId: number): PersistedCart {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    localStorage.removeItem(STORAGE_PREFIX) // drop the legacy un-keyed cart from older builds
+    const raw = localStorage.getItem(storageKey(tableId))
     if (raw) {
       const parsed = JSON.parse(raw) as PersistedCart
       return { items: parsed.items ?? [], ordered: parsed.ordered ?? [] }
@@ -36,7 +44,11 @@ function normalizeName(s: string): string {
 }
 
 export const useCartStore = defineStore('cart', () => {
-  const persisted = loadPersisted()
+  // Which table's cart bucket is loaded. Kept in module state (not reactive) so the persistence
+  // watcher below always writes to the bucket the current lists came from.
+  let activeTable = getStoredTableId()
+
+  const persisted = loadPersisted(activeTable)
   // Draft: what the guest is still composing (editable).
   const items = ref<CartItem[]>(persisted.items)
   // Already sent to the kitchen (confirmed by the voice agent or via "Xác Nhận Đặt Món").
@@ -50,7 +62,7 @@ export const useCartStore = defineStore('cart', () => {
     () => {
       try {
         localStorage.setItem(
-          STORAGE_KEY,
+          storageKey(activeTable),
           JSON.stringify({ items: items.value, ordered: orderedItems.value }),
         )
       } catch {
@@ -59,6 +71,17 @@ export const useCartStore = defineStore('cart', () => {
     },
     { deep: true },
   )
+
+  // The operator switched which table this tablet stands in for: swap to that table's cart
+  // bucket. The old table's lists are already persisted under its own key by the watcher.
+  function switchTable(tableId: number) {
+    if (tableId === activeTable) return
+    activeTable = tableId
+    const next = loadPersisted(tableId)
+    items.value = next.items
+    orderedItems.value = next.ordered
+    lastOrder.value = null
+  }
 
   // Draft totals (what would be sent by "Xác Nhận Đặt Món")
   const totalPrice = computed(() =>
@@ -173,6 +196,7 @@ export const useCartStore = defineStore('cart', () => {
     quantityFor,
     syncFromVoice,
     markOrdered,
+    switchTable,
     clear,
     clearAll,
   }

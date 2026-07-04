@@ -101,9 +101,11 @@ def create_payment(payload: PaymentCreate) -> PaymentOut:
 
 async def _broadcast_table(trow) -> None:
     if trow is not None:
-        await manager.broadcast(
-            "panel", {"type": "table.updated", "table": TableOut(**dict(trow)).model_dump()}
-        )
+        event = {"type": "table.updated", "table": TableOut(**dict(trow)).model_dump()}
+        await manager.broadcast("panel", event)
+        # The tablet listens too: a settled table (DA_THANH_TOAN) means the session is over, so
+        # it clears its cart card even when payment was confirmed by voice or from the panel.
+        await manager.broadcast("customer", event)
 
 
 @router.post("/payments/verify", response_model=PaymentOut)
