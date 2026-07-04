@@ -74,6 +74,7 @@ Thumbs.db
 storage/db/*.db
 storage/vector/bm25.pkl
 storage/vector/faiss_index/
+storage/conversations/
 data/vector_db/
 data/sqlite/
 data/samples/

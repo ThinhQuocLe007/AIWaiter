@@ -24,6 +24,7 @@ from pydantic import BaseModel
 from src._shared.types import normalise_table_id
 from src.agent_brain.agent.graph import AIWaiterGraph
 from src.agent_brain.config import settings
+from src.agent_brain.services.conversation_logger import log_turn
 from src.agent_brain.services.orchestrator_client import OrchestratorClient
 
 load_dotenv()
@@ -121,15 +122,26 @@ def chat(req: ChatRequest) -> ChatResponse:
     response = result["response"]
     action = result.get("action")
     stage = result.get("final_stage", "IDLE")
+    session_id = result.get("session_id")
 
     # Mirror the spoken reply + any UI action (open menu / bill) to the tablet.
     _orchestrator.post_voice_event(
         {"type": "voice.reply", "table_id": table_int, "text": response, "action": action, "stage": stage}
     )
 
+    # Persist the turn to a JSONL transcript for offline review / eval (best-effort).
+    log_turn(
+        table_id=table_id,
+        session_id=session_id,
+        user_text=text,
+        response=response,
+        stage=stage,
+        action=action,
+    )
+
     return ChatResponse(
         response=response,
         final_stage=stage,
         action=action,
-        session_id=result.get("session_id"),
+        session_id=session_id,
     )
