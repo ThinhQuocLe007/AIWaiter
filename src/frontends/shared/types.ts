@@ -83,6 +83,15 @@ export interface UiAction {
   action: 'open_menu' | 'open_payment'
 }
 
+// One line of the agent's live cart draft, mirrored to the tablet with each voice.reply so the
+// web cart can stay in sync with what the guest ordered by voice. Names are official menu names
+// (the agent's validator strips off-menu items).
+export interface VoiceCartItem {
+  name: string
+  quantity: number
+  note?: string | null
+}
+
 // WebSocket events pushed from the backend hub (src/backend/app/ws.py).
 export type WsEvent =
   | { type: 'order.created'; order: Order }
@@ -101,4 +110,8 @@ export type WsEvent =
       text: string
       action: UiAction | null
       stage?: string
+      // The agent's cart draft after this turn; null/undefined when the turn didn't touch it.
+      cart?: VoiceCartItem[] | null
+      // True only on the turn the order was sent to the kitchen (confirm_order ran).
+      confirmed?: boolean | null
     }

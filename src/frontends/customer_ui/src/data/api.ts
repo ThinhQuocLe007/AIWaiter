@@ -40,6 +40,12 @@ export function startVoiceListen(tableId: number): Promise<ListenResult> {
   return postJson<ListenResult>('/voice/listen', { table_id: tableId })
 }
 
+// POST /voice/cancel → abort the in-flight capture on this table's voice device (the "Hủy"
+// button). The device drops the utterance so nothing is sent to the LLM.
+export function cancelVoiceListen(tableId: number): Promise<ListenResult> {
+  return postJson<ListenResult>('/voice/cancel', { table_id: tableId })
+}
+
 // --- Tables -----------------------------------------------------------------
 // Minimal view of a table row (mirror of backend TableOut) — enough for this
 // tablet to decide which screen to show on load.

@@ -2,11 +2,12 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { FoodItem } from '@/types'
 import { useCartStore } from '@/stores/cart'
+import { useMenuStore } from '@/stores/menu'
 import { getStoredTableId } from '@/data/tableSession'
-import { startVoiceListen, createPayment } from '@/data/api'
+import { startVoiceListen, cancelVoiceListen, createPayment } from '@/data/api'
 import router from '@/router'
 import { connectEvents, type WsHandle } from '@shared/ws'
-import type { UiAction, WsEvent } from '@shared/types'
+import type { UiAction, VoiceCartItem, WsEvent } from '@shared/types'
 
 // AI assistant lifecycle:
 // - 'idle': nothing happening
@@ -38,6 +39,10 @@ export const useVoiceStore = defineStore('voice', () => {
   let messageId = 0
   let wsHandle: WsHandle | null = null
   let speakingTimer: ReturnType<typeof setTimeout> | undefined
+  // "Hủy" was pressed for the turn in flight: swallow its voice.heard/voice.reply when (if)
+  // they arrive, so a cancelled utterance never shows up nor mutates the cart. Cleared when
+  // the suppressed reply lands, or when the guest deliberately starts a new turn.
+  let suppressTurn = false
 
   function pushMessage(role: ChatMessage['role'], text: string) {
     messages.value.push({ id: messageId++, role, text })
@@ -62,13 +67,20 @@ export const useVoiceStore = defineStore('voice', () => {
       onHeard(e.text)
     } else if (e.type === 'voice.reply') {
       if (e.table_id !== getStoredTableId()) return
-      onReply(e.text, e.action)
+      onReply(e.text, e.action, e.stage, e.cart, e.confirmed ?? false)
+    } else if (e.type === 'reset') {
+      // Panel-side system reset: drop everything, including the persisted cart.
+      useCartStore().clearAll()
+      messages.value = []
+      closePanel()
     }
   }
 
   // The robot heard the guest: surface the words immediately and show "thinking" while the
   // server runs the LLM. Auto-open the panel so the guest sees the conversation start.
   function onHeard(text: string) {
+    // A cancelled utterance that slipped past the device-side abort: don't show it.
+    if (suppressTurn) return
     clearTimeout(speakingTimer)
     isAiOpen.value = true
     aiState.value = 'thinking'
@@ -77,16 +89,52 @@ export const useVoiceStore = defineStore('voice', () => {
     if (text.trim()) pushMessage('user', text)
   }
 
-  // The agent replied: show the spoken text and follow any UI action (open the menu / the bill).
-  function onReply(text: string, action: UiAction | null) {
+  // The agent replied: show the spoken text, mirror its cart into the web cart, and follow any
+  // UI action (open the menu / the bill).
+  function onReply(
+    text: string,
+    action: UiAction | null,
+    stage?: string,
+    voiceCart?: VoiceCartItem[] | null,
+    confirmed = false,
+  ) {
+    // The guest cancelled this turn: swallow the reply entirely (no bubble, no cart change,
+    // no navigation) and re-arm for the next turn.
+    if (suppressTurn) {
+      suppressTurn = false
+      return
+    }
     aiState.value = 'speaking'
     aiResponse.value = text
     if (text.trim()) pushMessage('ai', text)
+    syncCart(stage, voiceCart, confirmed)
     applyAction(action)
     clearTimeout(speakingTimer)
     speakingTimer = setTimeout(() => {
       if (aiState.value === 'speaking') aiState.value = 'idle'
     }, SPEAKING_HOLD_MS)
+  }
+
+  // Mirror the agent's cart into the tablet cart so both stay one cart:
+  // - while drafting / awaiting confirmation → the agent's draft REPLACES the web draft;
+  // - on the turn the order was sent to the kitchen (`confirmed`) → move it into the
+  //   "đã gửi bếp" list, so closing the voice sheet keeps the dishes on the cart card;
+  // - any other turn (plain chat, post-confirm smalltalk) leaves the web cart alone, so a
+  //   manually-composed cart is never wiped by an unrelated voice turn.
+  async function syncCart(stage?: string, voiceCart?: VoiceCartItem[] | null, confirmed = false) {
+    const cart = useCartStore()
+    const menu = useMenuStore()
+    const applyDraft = async (items: VoiceCartItem[]) => {
+      if (menu.foodItems.length === 0) await menu.loadMenu() // need prices/images to map names
+      cart.syncFromVoice(items, menu.foodItems)
+    }
+    if (confirmed) {
+      // Prefer the agent's authoritative list (covers a reloaded tablet with an empty draft).
+      if (voiceCart && voiceCart.length > 0) await applyDraft(voiceCart)
+      cart.markOrdered()
+    } else if (stage === 'DRAFTING' || stage === 'AWAITING_CONFIRMATION') {
+      if (Array.isArray(voiceCart)) await applyDraft(voiceCart)
+    }
   }
 
   // Mirror the agent's tablet command: a successful order step opens the menu, a payment request
@@ -123,6 +171,9 @@ export const useVoiceStore = defineStore('voice', () => {
     isAiOpen.value = true
   }
 
+  // Close the sheet WITHOUT forgetting anything: the conversation stays (reopening shows the
+  // robot still remembers the order — its memory lives server-side per session anyway) and the
+  // cart is untouched (it lives in the cart store, synced + persisted).
   function closePanel() {
     clearTimeout(speakingTimer)
     isAiOpen.value = false
@@ -130,7 +181,6 @@ export const useVoiceStore = defineStore('voice', () => {
     speechText.value = ''
     aiResponse.value = ''
     recommendedItem.value = null
-    messages.value = []
   }
 
   function toggleSound() {
@@ -144,6 +194,7 @@ export const useVoiceStore = defineStore('voice', () => {
   async function startListening() {
     clearTimeout(speakingTimer)
     connect()
+    suppressTurn = false // a new deliberate turn always shows its own transcript + reply
     aiState.value = 'listening'
     try {
       const res = await startVoiceListen(getStoredTableId())
@@ -157,12 +208,22 @@ export const useVoiceStore = defineStore('voice', () => {
     }
   }
 
-  // Stop button: drop back to idle. (Interrupting the robot's TTS would need a separate signal to
-  // the robot; not wired — this only resets the tablet's view.)
+  // The "Hủy"/"Dừng" button. What it does depends on where the turn is:
+  // - listening: tell the voice device to abort the capture → the utterance is never sent to
+  //   the LLM. Suppress the turn's events too, in case the device had already posted it.
+  // - thinking: the utterance is (probably) already at the LLM — we can't unsend it, but we
+  //   suppress its reply so the guest never sees an answer to the cancelled sentence.
+  // - speaking / idle: just settle the view back to idle.
   function stop() {
+    const phase = aiState.value
     clearTimeout(speakingTimer)
     speechText.value = ''
     aiState.value = 'idle'
+    if (phase === 'listening' || phase === 'thinking') {
+      suppressTurn = true
+      // Best-effort device-side abort; harmless if the utterance already left the device.
+      cancelVoiceListen(getStoredTableId()).catch(() => {})
+    }
   }
 
   // Adds the recommended dish to the real cart (the "add to cart" intent).

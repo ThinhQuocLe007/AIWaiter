@@ -23,6 +23,7 @@ import logging
 import os
 import signal
 import sys
+import threading
 
 import httpx
 import websockets
@@ -63,10 +64,14 @@ def _backend_ws_url() -> str:
     return f"{base}/ws?role=voice-device&robot_id={ROBOT_ID}"
 
 
-def _capture_and_send(vad: SileroVAD, agent_client: httpx.Client, table_id: int) -> None:
+def _capture_and_send(
+    vad: SileroVAD, agent_client: httpx.Client, table_id: int, cancel: "threading.Event"
+) -> None:
     """Blocking: arm one utterance, wait for it, transcribe, POST to the agent for `table_id` (the
     table the server says this robot is serving). Runs off the WS loop via asyncio.to_thread so the
-    socket stays responsive."""
+    socket stays responsive. `cancel` (set by the tablet's "Hủy" button) aborts the turn at every
+    stage before the POST — so a cancelled utterance is never sent to the LLM."""
+    cancel.clear()
     # Drop any stale transcript so we POST only what the guest says now.
     while get_transcript(timeout=0.0) is not None:
         pass
@@ -76,10 +81,16 @@ def _capture_and_send(vad: SileroVAD, agent_client: httpx.Client, table_id: int)
     if not vad.wait_for_utterance(UTTERANCE_TIMEOUT):
         print("[TIMEOUT] không nghe thấy gì, quay lại chờ.")
         return
+    if cancel.is_set():
+        print("[CANCELLED] khách bấm hủy — bỏ lượt nói, không gửi LLM.")
+        return
 
     transcript = get_transcript(timeout=TRANSCRIPT_TIMEOUT)
     if transcript is None or not transcript.text.strip():
         print("[EMPTY] không nhận ra lời nói.")
+        return
+    if cancel.is_set():
+        print("[CANCELLED] khách bấm hủy — bỏ transcript, không gửi LLM.")
         return
 
     text = transcript.text
@@ -101,9 +112,15 @@ def _capture_and_send(vad: SileroVAD, agent_client: httpx.Client, table_id: int)
 
 
 async def voice_device_loop(vad: SileroVAD, agent_client: httpx.Client) -> None:
-    """Connect to the backend WS hub and react to start_listening commands. Reconnects with backoff."""
+    """Connect to the backend WS hub and react to start/cancel commands. Reconnects with backoff.
+
+    The capture runs as a background task (not awaited inline) so the socket keeps reading while
+    the mic is armed — that's what lets a cancel_listening command land mid-capture.
+    """
     url = _backend_ws_url()
     retry = 0
+    cancel = threading.Event()  # tablet's "Hủy": aborts the in-flight capture before the LLM POST
+    capture_task: asyncio.Task | None = None
     while True:
         try:
             async with websockets.connect(url) as ws:
@@ -121,7 +138,17 @@ async def voice_device_loop(vad: SileroVAD, agent_client: httpx.Client) -> None:
                         if table_id is None:
                             print("[WARN] start_listening thiếu table_id, bỏ qua.")
                             continue
-                        await asyncio.to_thread(_capture_and_send, vad, agent_client, table_id)
+                        if capture_task and not capture_task.done():
+                            print("[BUSY] đang trong một lượt nghe, bỏ qua lệnh mới.")
+                            continue
+                        capture_task = asyncio.create_task(
+                            asyncio.to_thread(_capture_and_send, vad, agent_client, table_id, cancel)
+                        )
+                    elif msg.get("type") == "cancel_listening":
+                        if capture_task and not capture_task.done():
+                            cancel.set()
+                            vad.cancel_listen()  # unblock the waiter + drop any half-built audio
+                            print("[CANCEL] nhận lệnh hủy từ tablet.")
         except (OSError, websockets.WebSocketException) as e:
             delay = min(2 ** retry, WS_RETRY_MAX)
             retry += 1

@@ -42,14 +42,6 @@
         <RobotBoard :robots="robots" />
       </section>
 
-      <section class="zone">
-        <h2 class="zone-head">
-          Hàng đợi nhiệm vụ
-          <span class="zone-sub">{{ activeTaskCount }} đang chờ / thực hiện</span>
-        </h2>
-        <TasksBoard :tasks="tasks" :now="now" />
-      </section>
-
       <section class="zone grow">
         <h2 class="zone-head">Bếp (KDS)</h2>
         <KitchenBoard :orders="orders" :tables="tables" :busy="busy" :now="now" @advance="advance" />
@@ -63,14 +55,13 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
-import type { Layout, Order, Robot, Table, Task, WsEvent } from '@shared/types'
+import type { Layout, Order, Robot, Table, WsEvent } from '@shared/types'
 import {
   callRobot,
   fetchLayout,
   fetchOrders,
   fetchRobots,
   fetchTables,
-  fetchTasks,
   resetSystem,
   updateOrderStatus,
   updateTableStatus,
@@ -80,7 +71,6 @@ import TablesOverview from './components/TablesOverview.vue'
 import RobotBoard from './components/RobotBoard.vue'
 import MiniMap from './components/MiniMap.vue'
 import KitchenBoard from './components/KitchenBoard.vue'
-import TasksBoard from './components/TasksBoard.vue'
 
 // Kitchen workflow: a new order waits, then is being cooked, then done.
 const nextStatus: Record<string, string> = { CHO_BEP: 'DANG_LAM', DANG_LAM: 'XONG' }
@@ -89,7 +79,6 @@ const orders = ref<Order[]>([])
 const tables = ref<Table[]>([])
 const robots = ref<Robot[]>([])
 const layout = ref<Layout | null>(null)
-const tasks = ref<Task[]>([])
 const connected = ref(false)
 const loadError = ref<string | null>(null)
 const busy = reactive(new Set<number>()) // order ids with an in-flight PATCH
@@ -111,7 +100,6 @@ let pollTimer: ReturnType<typeof setInterval> | undefined
 let clockTimer: ReturnType<typeof setInterval> | undefined
 
 const freeCount = computed(() => tables.value.filter((t) => t.status === 'TRONG').length)
-const activeTaskCount = computed(() => tasks.value.filter((t) => t.status !== 'DONE').length)
 
 function upsertOrder(order: Order) {
   const i = orders.value.findIndex((o) => o.id === order.id)
@@ -131,17 +119,12 @@ function upsertRobot(robot: Robot) {
   else robots.value.push(robot)
 }
 
-function upsertTask(task: Task) {
-  const i = tasks.value.findIndex((t) => t.id === task.id)
-  if (i >= 0) tasks.value[i] = task
-  else tasks.value.push(task)
-}
-
 async function callTable(id: number) {
   if (callBusy.has(id)) return
   callBusy.add(id)
   try {
-    upsertTask(await callRobot(id)) // instant feedback; WS task.created echo is idempotent
+    // Robot progress shows up on the Robot board (status/activity) via WS robot.updated events.
+    await callRobot(id)
   } catch (err) {
     loadError.value = err instanceof Error ? err.message : 'Không gọi được robot'
   } finally {
@@ -187,16 +170,10 @@ async function resetAll() {
 
 async function load() {
   try {
-    const [t, o, r, k] = await Promise.all([
-      fetchTables(),
-      fetchOrders(),
-      fetchRobots(),
-      fetchTasks(),
-    ])
+    const [t, o, r] = await Promise.all([fetchTables(), fetchOrders(), fetchRobots()])
     tables.value = t
     orders.value = o
     robots.value = r
-    tasks.value = k
     loadError.value = null
   } catch (err) {
     loadError.value = err instanceof Error ? err.message : 'Không tải được dữ liệu'
@@ -207,7 +184,6 @@ function onEvent(e: WsEvent) {
   if (e.type === 'order.created' || e.type === 'order.updated') upsertOrder(e.order)
   else if (e.type === 'table.updated') upsertTable(e.table)
   else if (e.type === 'robot.updated') upsertRobot(e.robot)
-  else if (e.type === 'task.created' || e.type === 'task.updated') upsertTask(e.task)
   else if (e.type === 'reset') load() // demo reset: re-pull everything (orders cleared, tables freed)
 }
 

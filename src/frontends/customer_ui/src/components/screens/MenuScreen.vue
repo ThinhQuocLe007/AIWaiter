@@ -115,9 +115,11 @@
     <CartDrawer
       :open="ui.cartOpen"
       :submitting="submitting"
+      :paying="paying"
       :error="orderError"
       @close="ui.closeCart()"
       @confirm="confirmOrder"
+      @pay="payFromCart"
     />
 
     <!-- Food detail modal -->
@@ -134,7 +136,7 @@ import { useRouter } from 'vue-router'
 import { BEST_SELLER_ID, useMenuStore } from '@/stores/menu'
 import { useUiStore } from '@/stores/ui'
 import { useCartStore } from '@/stores/cart'
-import { createOrder } from '@/data/api'
+import { createOrder, createPayment } from '@/data/api'
 import CategoryTabs from '@/components/menu/CategoryTabs.vue'
 import CartButton from '@/components/menu/CartButton.vue'
 import BestSellerSection from '@/components/menu/BestSellerSection.vue'
@@ -151,6 +153,7 @@ const ui = useUiStore()
 const cart = useCartStore()
 
 const submitting = ref(false)
+const paying = ref(false)
 const orderError = ref<string | null>(null)
 const tablePickerOpen = ref(false)
 const clock = ref(formatClock()) // live wall-clock HH:MM:SS
@@ -223,8 +226,8 @@ onUnmounted(() => {
   if (clockTimer) clearInterval(clockTimer)
 })
 
-// POST the cart to the Orchestrator, then move to the confirmation screen. The cart is left
-// intact so ConfirmationScreen can snapshot its totals; it clears itself on the redirect home.
+// POST the cart to the Orchestrator, move the draft into the "đã gửi bếp" list (markOrdered
+// snapshots the batch totals for ConfirmationScreen), then show the confirmation screen.
 async function confirmOrder() {
   if (submitting.value || cart.isEmpty) return
   submitting.value = true
@@ -239,6 +242,7 @@ async function confirmOrder() {
         dish_id: Number(i.foodItem.id) || undefined,
       })),
     )
+    cart.markOrdered()
     ui.closeCart()
     router.push('/confirmation')
   } catch (err) {
@@ -246,6 +250,30 @@ async function confirmOrder() {
     console.error('[order] confirmOrder failed:', err)
   } finally {
     submitting.value = false
+  }
+}
+
+// "Thanh toán" on the cart card (e.g. after ordering by voice): open the session's gộp payment
+// (sum of every order this seating, computed server-side) and carry it to the payment screen.
+async function payFromCart() {
+  if (paying.value) return
+  paying.value = true
+  orderError.value = null
+  try {
+    const payment = await createPayment(ui.tableId)
+    ui.closeCart()
+    router.push({
+      name: 'payment',
+      query: {
+        amount: String(payment.amount),
+        qrUrl: payment.qr_url ?? '',
+        paymentId: String(payment.id),
+      },
+    })
+  } catch (err) {
+    orderError.value = err instanceof Error ? err.message : 'Không lấy được hoá đơn'
+  } finally {
+    paying.value = false
   }
 }
 </script>

@@ -160,6 +160,16 @@ class SileroVAD(threading.Thread):
         """Block until the armed utterance is flushed (True) or `timeout` seconds pass (False)."""
         return self._utt_done.wait(timeout)
 
+    def cancel_listen(self) -> None:
+        """Abort an armed capture (guest hit "Hủy"): disarm the gate and release the waiter now.
+
+        The run loop drops any half-built utterance once `_listening` clears, so nothing captured
+        so far leaks to STT. The waiter must check its own cancel flag — `wait_for_utterance`
+        returns True here just to unblock it immediately.
+        """
+        self._listening.clear()
+        self._utt_done.set()
+
     def run(self):
         self._load_model()
         self._open_mic()

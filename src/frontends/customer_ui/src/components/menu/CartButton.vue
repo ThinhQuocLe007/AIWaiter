@@ -12,7 +12,8 @@ import { computed } from 'vue'
 import { useCartStore } from '@/stores/cart'
 
 const cart = useCartStore()
-const count = computed(() => cart.totalQuantity)
+// Draft + already-sent-to-kitchen: the badge shows everything the guest has in play.
+const count = computed(() => cart.badgeCount)
 </script>
 
 <style scoped>

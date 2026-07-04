@@ -13,25 +13,56 @@
         </button>
       </header>
 
-      <div v-if="cart.isEmpty" class="empty">
+      <div v-if="cart.hasNothing" class="empty">
         <span class="empty-icon">🛒</span>
         <p>Chưa có món nào trong đơn hàng</p>
       </div>
 
       <div v-else class="items">
+        <!-- Draft: still editable, not sent yet -->
         <CartItem v-for="item in cart.items" :key="item.foodItem.id" :item="item" />
+
+        <!-- Already sent to the kitchen (confirmed by voice or by this screen) — read-only -->
+        <section v-if="cart.orderedItems.length" class="ordered">
+          <h3 class="ordered-head">
+            <i class="ti ti-chef-hat" aria-hidden="true"></i>
+            Đã gửi bếp
+          </h3>
+          <div v-for="item in cart.orderedItems" :key="item.foodItem.id" class="ordered-row">
+            <span class="ordered-qty">{{ item.quantity }}×</span>
+            <span class="ordered-name">{{ item.foodItem.name }}</span>
+            <span class="ordered-price">{{ formatPrice(item.foodItem.price * item.quantity) }}</span>
+          </div>
+          <div class="ordered-total">
+            <span>Tạm tính phần đã đặt</span>
+            <strong>{{ formatPrice(cart.orderedTotal) }}</strong>
+          </div>
+        </section>
       </div>
 
-      <footer v-if="!cart.isEmpty" class="drawer-footer">
-        <CartSummary />
-        <p v-if="error" class="order-error">{{ error }}</p>
+      <footer v-if="!cart.hasNothing" class="drawer-footer">
+        <template v-if="!cart.isEmpty">
+          <CartSummary />
+          <p v-if="error" class="order-error">{{ error }}</p>
+          <TouchButton
+            variant="primary"
+            block
+            :disabled="submitting"
+            @click="$emit('confirm')"
+          >
+            {{ submitting ? 'Đang gửi đơn…' : 'Xác Nhận Đặt Món' }}
+          </TouchButton>
+        </template>
+        <!-- Everything ordered (e.g. by voice) → the guest can go straight to the bill -->
         <TouchButton
-          variant="primary"
+          v-if="cart.orderedItems.length"
+          :variant="cart.isEmpty ? 'primary' : 'secondary'"
           block
-          :disabled="submitting"
-          @click="$emit('confirm')"
+          :disabled="paying"
+          @click="$emit('pay')"
         >
-          {{ submitting ? 'Đang gửi đơn…' : 'Xác Nhận Đặt Món' }}
+          <i class="ti ti-qrcode" aria-hidden="true"></i>
+          {{ paying ? 'Đang lấy hoá đơn…' : 'Thanh toán' }}
         </TouchButton>
       </footer>
     </aside>
@@ -40,15 +71,17 @@
 
 <script setup lang="ts">
 import { useCartStore } from '@/stores/cart'
+import { formatPrice } from '@/utils/format'
 import CartItem from './CartItem.vue'
 import CartSummary from './CartSummary.vue'
 import TouchButton from '@/components/common/TouchButton.vue'
 
-defineProps<{ open: boolean; submitting?: boolean; error?: string | null }>()
+defineProps<{ open: boolean; submitting?: boolean; paying?: boolean; error?: string | null }>()
 
 defineEmits<{
   (e: 'close'): void
   (e: 'confirm'): void
+  (e: 'pay'): void
 }>()
 
 const cart = useCartStore()
@@ -137,6 +170,64 @@ const cart = useCartStore()
 .drawer-footer :deep(.touch-button) {
   min-height: 2.75rem;
   font-size: 1rem;
+}
+
+.ordered {
+  margin: 0.75rem 0 1rem;
+  padding: 0.75rem;
+  background: var(--color-bg);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md, 12px);
+}
+
+.ordered-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+
+.ordered-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  font-size: 0.9375rem;
+}
+
+.ordered-qty {
+  flex: 0 0 auto;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-accent);
+}
+
+.ordered-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ordered-price {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+.ordered-total {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.9375rem;
 }
 
 .order-error {

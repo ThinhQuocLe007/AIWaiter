@@ -24,7 +24,9 @@ def _handle_sync_cart_result(tool_result) -> Dict[str, Any]:
 
 def _handle_confirm_order_result(tool_result) -> Dict[str, Any]:
     """Handle successful confirm_order tool result."""
-    return {"order_stage": "CONFIRMED"}
+    # order_confirmed is the per-turn "the order was JUST sent to the kitchen" signal the
+    # tablet needs (order_stage stays CONFIRMED on later turns, so it can't carry that).
+    return {"order_stage": "CONFIRMED", "order_confirmed": True}
 
 
 def _handle_search_result(tool_result) -> Dict[str, Any]:

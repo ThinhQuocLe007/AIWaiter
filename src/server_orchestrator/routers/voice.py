@@ -32,6 +32,11 @@ class VoiceEvent(BaseModel):
     # {"type": "ui", "action": "open_menu" | "open_payment"} or None when nothing should move.
     action: dict | None = None
     stage: str | None = None
+    # The agent's live cart draft ([{name, quantity, note}]) so the tablet can mirror the
+    # voice-ordered items into its own cart UI. None when the turn didn't touch the cart.
+    cart: list | None = None
+    # True only on the turn the order was sent to the kitchen (confirm_order ran).
+    confirmed: bool | None = None
 
 
 @router.post("/event")
@@ -62,5 +67,19 @@ async def voice_listen(req: ListenRequest) -> dict:
     """
     ok = await manager.send_to_voice_device(
         req.table_id, {"type": "start_listening", "table_id": req.table_id}
+    )
+    return {"status": "ok" if ok else "no_device"}
+
+
+@router.post("/cancel")
+async def voice_cancel(req: ListenRequest) -> dict:
+    """The tablet's "Hủy" button: abort the in-flight capture on the table's voice device.
+
+    The device disarms its mic / drops the captured utterance so nothing is sent to the LLM.
+    If the utterance already reached the agent, the tablet suppresses the reply on its side —
+    this endpoint only stops what hasn't been sent yet.
+    """
+    ok = await manager.send_to_voice_device(
+        req.table_id, {"type": "cancel_listening", "table_id": req.table_id}
     )
     return {"status": "ok" if ok else "no_device"}

@@ -123,10 +123,22 @@ def chat(req: ChatRequest) -> ChatResponse:
     action = result.get("action")
     stage = result.get("final_stage", "IDLE")
     session_id = result.get("session_id")
+    cart = result.get("cart")
+    confirmed = result.get("order_confirmed", False)
 
-    # Mirror the spoken reply + any UI action (open menu / bill) to the tablet.
+    # Mirror the spoken reply + any UI action (open menu / bill) + the live cart draft to the
+    # tablet, so the web cart stays in sync with what the guest ordered by voice. `confirmed`
+    # marks the one turn the order was sent to the kitchen (tablet moves draft → "đã gửi bếp").
     _orchestrator.post_voice_event(
-        {"type": "voice.reply", "table_id": table_int, "text": response, "action": action, "stage": stage}
+        {
+            "type": "voice.reply",
+            "table_id": table_int,
+            "text": response,
+            "action": action,
+            "stage": stage,
+            "cart": cart,
+            "confirmed": confirmed,
+        }
     )
 
     # Persist the turn to a JSONL transcript for offline review / eval (best-effort).

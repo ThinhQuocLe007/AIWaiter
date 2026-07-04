@@ -37,6 +37,7 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
 import { useUiStore } from '@/stores/ui'
+import { createPayment } from '@/data/api'
 import { formatPrice } from '@/utils/format'
 import TouchButton from '@/components/common/TouchButton.vue'
 
@@ -45,18 +46,35 @@ const cart = useCartStore()
 const ui = useUiStore()
 const countdown = ref(10)
 
-// Snapshot the order totals before the cart is cleared on redirect.
-const itemCount = ref(cart.totalQuantity)
-const totalPrice = ref(cart.totalPrice)
+// The just-confirmed batch (markOrdered moved the draft into "đã gửi bếp" and snapshotted it).
+const itemCount = ref(cart.lastOrder?.count ?? cart.totalQuantity)
+const totalPrice = ref(cart.lastOrder?.total ?? cart.totalPrice)
 
 let interval: ReturnType<typeof setInterval> | undefined
+const paying = ref(false)
 
-function goToPayment() {
-  const qrUrl = `https://img.vietqr.io/image/ICB-123456789-qr_only.png?amount=${totalPrice.value}&addInfo=AI_Waiter_Payment`
-  router.push({
-    name: 'payment',
-    query: { amount: String(totalPrice.value), qrUrl },
-  })
+// Open the session's gộp payment (every order of this seating, summed server-side) — same flow
+// as the cart card's "Thanh toán" button, so the bill always covers voice + manual orders.
+async function goToPayment() {
+  if (paying.value) return
+  paying.value = true
+  try {
+    const payment = await createPayment(ui.tableId)
+    router.push({
+      name: 'payment',
+      query: {
+        amount: String(payment.amount),
+        qrUrl: payment.qr_url ?? '',
+        paymentId: String(payment.id),
+      },
+    })
+  } catch {
+    // Fallback: static QR with this batch's total (no payment id → verify is skipped).
+    const qrUrl = `https://img.vietqr.io/image/ICB-123456789-qr_only.png?amount=${totalPrice.value}&addInfo=AI_Waiter_Payment`
+    router.push({ name: 'payment', query: { amount: String(totalPrice.value), qrUrl } })
+  } finally {
+    paying.value = false
+  }
 }
 
 onMounted(() => {
@@ -64,8 +82,7 @@ onMounted(() => {
     countdown.value--
     if (countdown.value <= 0) {
       clearInterval(interval)
-      cart.clear()
-      router.push('/')
+      router.push('/') // '/' resolves to the service-choice screen while the table is dining
     }
   }, 1000)
 })

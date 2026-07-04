@@ -1,22 +1,4 @@
 <template>
-  <!-- Siri / Gemini-style listening orb, centered over the whole screen -->
-  <Transition name="orb">
-    <div v-if="voice.isAiOpen && voice.aiState === 'listening'" class="voice-orb-overlay">
-      <div class="orb">
-        <span class="orb-ring orb-ring-1" aria-hidden="true"></span>
-        <span class="orb-ring orb-ring-2" aria-hidden="true"></span>
-        <span class="orb-ring orb-ring-3" aria-hidden="true"></span>
-        <span class="orb-core" aria-hidden="true"></span>
-        <i class="ti ti-microphone orb-mic" aria-hidden="true"></i>
-      </div>
-      <span class="orb-label">ĐANG LẮNG NGHE...</span>
-      <button class="orb-cancel" type="button" @click="voice.stop()">
-        <i class="ti ti-x" aria-hidden="true"></i>
-        Hủy
-      </button>
-    </div>
-  </Transition>
-
   <Transition name="sheet">
     <div v-if="voice.isAiOpen" class="voice-panel">
       <!-- Header -->
@@ -81,22 +63,37 @@
         </div>
       </div>
 
-      <!-- Footer: stop while busy, mic button when ready.
-           While listening, the centered orb overlay replaces these controls. -->
+      <!-- Footer: compact inline listening row (the chat above stays fully visible),
+           stop while busy, mic button when ready. -->
       <div class="vp-footer">
+        <!-- Listening: small pulsing orb + cancel, no overlay hiding the AI's advice -->
+        <div v-if="voice.aiState === 'listening'" class="listen-row">
+          <div class="orb-mini">
+            <span class="orb-ring" aria-hidden="true"></span>
+            <span class="orb-ring orb-ring-2" aria-hidden="true"></span>
+            <span class="orb-core" aria-hidden="true"></span>
+            <i class="ti ti-microphone orb-mic" aria-hidden="true"></i>
+          </div>
+          <span class="listen-label">Đang lắng nghe...</span>
+          <button class="stop-btn stop-btn-ghost listen-cancel" type="button" @click="voice.stop()">
+            <i class="ti ti-x" aria-hidden="true"></i>
+            Hủy
+          </button>
+        </div>
+
         <!-- Thinking: stop the processing -->
         <button
-          v-if="voice.aiState === 'thinking'"
+          v-else-if="voice.aiState === 'thinking'"
           class="stop-btn"
           type="button"
           @click="voice.stop()"
         >
           <i class="ti ti-player-stop-filled" aria-hidden="true"></i>
-          Dừng
+          Hủy — không trả lời câu này
         </button>
 
         <!-- Idle / speaking: talk again, plus stop while the AI is replying -->
-        <template v-else-if="voice.aiState !== 'listening'">
+        <template v-else>
           <button class="mic-btn" type="button" @click="voice.startListening()">
             <i class="ti ti-microphone" aria-hidden="true"></i>
             Nói tiếp
@@ -387,25 +384,19 @@ watch(
   gap: 0.6rem;
 }
 
-/* Centered listening orb overlay (Siri / Gemini style) */
-.voice-orb-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 60;
+/* Compact inline listening row — the chat (the AI's advice) stays fully visible above it */
+.listen-row {
+  width: 100%;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 1.6rem;
-  background: radial-gradient(circle at center, rgba(31, 27, 22, 0.7), rgba(20, 17, 13, 0.94));
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
+  gap: 0.85rem;
 }
 
-.orb {
+.orb-mini {
   position: relative;
-  width: 180px;
-  height: 180px;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -413,8 +404,8 @@ watch(
 }
 
 .orb-core {
-  width: 128px;
-  height: 128px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   background:
     radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.5), transparent 55%),
@@ -426,60 +417,42 @@ watch(
       var(--color-accent)
     );
   box-shadow:
-    0 0 50px 10px rgba(168, 133, 62, 0.55),
-    inset 0 0 28px rgba(255, 255, 255, 0.28);
+    0 0 16px 4px rgba(168, 133, 62, 0.45),
+    inset 0 0 10px rgba(255, 255, 255, 0.28);
   animation: orb-spin 7s linear infinite;
 }
 
 .orb-mic {
   position: absolute;
-  font-size: 2.4rem;
+  font-size: 1.05rem;
   color: #1f1b16;
   text-shadow: 0 1px 3px rgba(255, 255, 255, 0.35);
 }
 
 .orb-ring {
   position: absolute;
-  width: 128px;
-  height: 128px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   border: 2px solid rgba(168, 133, 62, 0.5);
   animation: orb-sonar 2.4s ease-out infinite;
 }
 
 .orb-ring-2 {
-  animation-delay: 0.8s;
+  animation-delay: 1.2s;
 }
 
-.orb-ring-3 {
-  animation-delay: 1.6s;
-}
-
-.orb-label {
-  font-size: 0.75rem;
+.listen-label {
+  flex: 1;
+  font-size: 0.8rem;
   font-weight: 700;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.12em;
   color: var(--color-accent);
   animation: blink 1.6s infinite;
 }
 
-.orb-cancel {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  background: rgba(52, 48, 42, 0.85);
-  color: #e8e2d6;
-  border: 1px solid #4a443b;
-  font-family: inherit;
-  font-weight: 600;
-  font-size: 0.8rem;
-  padding: 0.5rem 1.4rem;
-  border-radius: var(--radius-full);
-}
-
-.orb-cancel:active {
-  transform: scale(0.96);
-  background: #443f37;
+.listen-cancel {
+  flex: 0 0 auto;
 }
 
 .mic-btn {
@@ -598,16 +571,6 @@ watch(
 .sheet-enter-from,
 .sheet-leave-to {
   transform: translateY(100%);
-}
-
-/* Orb overlay fade */
-.orb-enter-active,
-.orb-leave-active {
-  transition: opacity 0.3s ease;
-}
-.orb-enter-from,
-.orb-leave-to {
-  opacity: 0;
 }
 
 .reco-enter-active {

@@ -64,6 +64,11 @@ class AgentState(TypedDict):
     # Reset to None at the start of every turn so a command never leaks to the next.
     ui_action: Optional[str]
 
+    # True only on the turn confirm_order successfully ran (per-turn, reset each turn like
+    # ui_action). The tablet uses it to move its cart draft into the "đã gửi bếp" list exactly
+    # once — order_stage alone can't tell "just confirmed" from "still CONFIRMED since earlier".
+    order_confirmed: bool
+
     # The typed handoff from the implement stage to the response stage.
     # Set by chat_worker (CHAT path) or state_outcome (tool path), read and
     # cleared by response_node. Nothing else in the graph touches it.

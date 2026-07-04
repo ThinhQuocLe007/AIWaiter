@@ -222,6 +222,7 @@ class AIWaiterGraph:
             "is_valid": True,
             "order_stage": existing_stage,
             "ui_action": None,  # reset each turn so a command never leaks to the next
+            "order_confirmed": False,  # per-turn flag, same lifecycle as ui_action
         }
         result = self.app.invoke(inputs, config)
 
@@ -231,10 +232,24 @@ class AIWaiterGraph:
         if action:
             emit_action(table_id, action)
 
+        # Serialize the live cart draft so the tablet can mirror voice-ordered items into its own
+        # cart UI. None (not []) when there is no cart, so "no cart" and "cart emptied" differ.
+        active_cart = result.get("active_cart")
+        cart = (
+            [
+                {"name": i.name, "quantity": i.quantity, "note": i.special_requests}
+                for i in active_cart.items
+            ]
+            if active_cart is not None
+            else None
+        )
+
         return {
             "response": result["messages"][-1].content,
             "session_id": config["configurable"]["thread_id"],
             "status": "success",
             "final_stage": result["order_stage"],
             "action": action,
+            "cart": cart,
+            "order_confirmed": bool(result.get("order_confirmed")),
         }

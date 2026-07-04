@@ -75,7 +75,7 @@ async function done() {
   error.value = null
   try {
     if (paymentId) await verifyPayment(paymentId)
-    cart.clear()
+    cart.clearAll() // session settled: draft AND the "đã gửi bếp" list both go
     goHome()
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Xác nhận thanh toán thất bại'
