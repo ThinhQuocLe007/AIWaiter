@@ -3,6 +3,8 @@ import { onMounted, onUnmounted } from 'vue'
 import { RouterView } from 'vue-router'
 import { useViewportScale } from '@/composables/useViewportScale'
 import { useVoiceStore } from '@/stores/voice'
+import { useCartStore } from '@/stores/cart'
+import { getStoredTableId } from '@/data/tableSession'
 
 // Scale the fixed 1024x600 stage to fit the current viewport (kiosk: scale = 1).
 useViewportScale()
@@ -10,7 +12,13 @@ useViewportScale()
 // Open the voice mirror (role=customer WS) for the whole app lifetime so the assistant panel can
 // pop up the moment the robot hears this table speak — even before the guest taps the banner.
 const voice = useVoiceStore()
-onMounted(() => voice.connect())
+const cart = useCartStore()
+onMounted(() => {
+  voice.connect()
+  // The persisted cart may belong to a session that died while this tablet was closed
+  // (system reset/restart, bill settled elsewhere) — verify with the backend and drop it.
+  void cart.pruneIfSessionOver(getStoredTableId())
+})
 onUnmounted(() => voice.disconnect())
 </script>
 

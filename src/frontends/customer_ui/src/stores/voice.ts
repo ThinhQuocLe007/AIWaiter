@@ -77,8 +77,10 @@ export const useVoiceStore = defineStore('voice', () => {
         endSession()
       }
     } else if (e.type === 'reset') {
-      // Panel-side system reset: every session is gone — drop everything on this tablet too.
-      endSession()
+      // Panel-side system reset: every session is gone — wipe EVERY table's persisted cart
+      // bucket (not just the active one) plus the conversation.
+      useCartStore().clearAllTables()
+      resetConversation()
     }
   }
 

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import type { CartItem, FoodItem } from '@/types'
 import { getStoredTableId } from '@/data/tableSession'
+import { fetchTable } from '@/data/api'
 
 // The cart survives page reloads and closing the voice sheet: a guest who ordered by voice and
 // then closed the assistant must still see their dishes on the cart card. Menu-independent —
@@ -179,6 +180,32 @@ export const useCartStore = defineStore('cart', () => {
     lastOrder.value = null
   }
 
+  // Panel-side system reset: EVERY session is gone, so wipe every table's persisted bucket —
+  // not just the one this tablet is currently standing in for.
+  function clearAllTables() {
+    clearAll()
+    try {
+      for (const key of Object.keys(localStorage)) {
+        if (key.startsWith(STORAGE_PREFIX)) localStorage.removeItem(key)
+      }
+    } catch {
+      // storage unavailable — in-memory state is already cleared
+    }
+  }
+
+  // Self-heal against stale storage: ask the backend whether this table actually has a live
+  // serving visit. If it doesn't (system was reset/restarted while this tablet was closed, or
+  // the bill was settled elsewhere), the persisted dishes belong to a dead session — drop them.
+  // Call with the CURRENT table (after switchTable) — clearAll works on the active bucket.
+  async function pruneIfSessionOver(tableId: number) {
+    try {
+      const table = await fetchTable(tableId)
+      if (table.status !== 'DANG_PHUC_VU') clearAll()
+    } catch {
+      // backend unreachable — keep local state rather than guessing
+    }
+  }
+
   return {
     items,
     orderedItems,
@@ -199,5 +226,7 @@ export const useCartStore = defineStore('cart', () => {
     switchTable,
     clear,
     clearAll,
+    clearAllTables,
+    pruneIfSessionOver,
   }
 })

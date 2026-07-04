@@ -20,7 +20,11 @@ export const useUiStore = defineStore('ui', () => {
     storeTableId(id)
     // Each table has its own cart bucket and its own conversation: bàn 6 must not show bàn 1's
     // dishes or chat. The old table's cart stays persisted under its own key.
-    useCartStore().switchTable(id)
+    const cart = useCartStore()
+    cart.switchTable(id)
+    // Validate the loaded bucket against the backend — drops leftovers from a dead session
+    // (reset/restart that happened while this tablet wasn't looking).
+    void cart.pruneIfSessionOver(id)
     useVoiceStore().resetConversation()
   }
 

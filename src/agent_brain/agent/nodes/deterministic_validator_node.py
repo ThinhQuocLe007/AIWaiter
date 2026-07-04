@@ -6,6 +6,61 @@ from src.agent_brain.utils import resolve_menu_name, find_nearest_menu_name
 
 logger = logging.getLogger(__name__)
 
+# Deterministic protection for the cart on ADDITIVE turns ("thêm 1 trà ổi"): small local
+# models routinely violate the "pass the ENTIRE cart" contract and send only the new item,
+# which would wipe everything ordered so far. When the guest's wording is clearly additive
+# (and not destructive) and the LLM's list contains NONE of the existing cart items, we
+# re-inject the existing items instead of trusting the LLM's amnesia.
+_ADDITIVE_MARKERS = ("thêm", "nữa", "lấy thêm", "gọi thêm", "cho thêm")
+_DESTRUCTIVE_MARKERS = (
+    "bỏ", "hủy", "huỷ", "xóa", "xoá", "đổi", "thay", "bớt", "giảm",
+    "chỉ lấy", "chỉ cần", "thôi không", "không lấy", "không đặt",
+)
+
+
+def _last_user_text(state: AgentState) -> str:
+    """The guest's utterance for this turn (the most recent human message)."""
+    for msg in reversed(state.get("messages", [])):
+        if getattr(msg, "type", None) == "human":
+            return msg.content if isinstance(msg.content, str) else ""
+    return ""
+
+
+def _restore_cart_if_additive(state: AgentState, valid_items: List[dict]) -> List[dict]:
+    """If this is an additive turn but the LLM forgot every existing cart item, prepend them.
+
+    Conservative on purpose: if the LLM included ANY existing item in its list, we assume it
+    did the merge deliberately (it may also be removing something) and leave it alone.
+    """
+    prev_cart = state.get("active_cart")
+    if not prev_cart or not prev_cart.items:
+        return valid_items
+
+    text = _last_user_text(state).lower()
+    additive = any(m in text for m in _ADDITIVE_MARKERS)
+    destructive = any(m in text for m in _DESTRUCTIVE_MARKERS)
+    if not additive or destructive:
+        return valid_items
+
+    new_names = {i.get("name", "").lower() for i in valid_items}
+    if any(it.name.lower() in new_names for it in prev_cart.items):
+        return valid_items  # LLM kept (some of) the cart — trust its list
+
+    restored = [
+        {
+            "name": it.name,
+            "quantity": it.quantity,
+            "special_requests": it.special_requests,
+            "is_valid": True,
+        }
+        for it in prev_cart.items
+    ]
+    logger.warning(
+        "[validator] additive turn but the LLM dropped the existing cart — restored %d item(s): %s",
+        len(restored), [r["name"] for r in restored],
+    )
+    return restored + valid_items
+
 def deterministic_validator_node(state: AgentState) -> Dict[str, Any]:
     """
     Pure Python guardrail node.
@@ -110,7 +165,9 @@ def deterministic_validator_node(state: AgentState) -> Dict[str, Any]:
             # Strip unavailable items in-place so the tool executes with valid items only.
             # `sync_cart` always receives the full intended cart, so keeping only the
             # valid items leaves the existing/valid cart correct.
-            args["items"] = valid_items
+            # Then guard against LLM cart-amnesia on additive turns ("thêm X" must never
+            # replace the whole cart with just X).
+            args["items"] = _restore_cart_if_additive(state, valid_items)
 
         # 3. State Guardrail for Order Confirmation
         elif tool_name == "confirm_order":

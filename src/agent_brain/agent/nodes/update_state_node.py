@@ -8,28 +8,44 @@ from src.agent_brain.schemas.order import Cart
 logger = logging.getLogger(__name__)
 
 
-def _handle_sync_cart_result(tool_result) -> Dict[str, Any]:
+def _handle_sync_cart_result(tool_result, state: AgentState) -> Dict[str, Any]:
     """Handle successful sync_cart tool result."""
-    # If every requested item was out-of-menu (stripped by the validator), the cart
-    # is empty — stay IDLE instead of asking the customer to confirm an empty order.
     has_items = bool(tool_result.items)
+
+    if not has_items:
+        prev_cart = state.get("active_cart")
+        stripped = bool(state.get("unavailable_items") or state.get("ambiguous_items"))
+        if prev_cart and prev_cart.items and stripped:
+            # The list came back empty ONLY because the validator stripped every requested
+            # item (off-menu / ambiguous) — the LLM had sent just the new invalid item
+            # instead of the full cart. Wiping here would destroy the guest's confirmed
+            # draft (the "chào ủi wipes 445k" bug). Keep the cart and the stage untouched;
+            # the response node still tells the guest the item isn't on the menu.
+            return {}
+        # Genuinely empty (guest cancelled: sync_cart([])) — stay IDLE instead of asking
+        # the customer to confirm an empty order.
+        return {
+            "active_cart": Cart(items=[], total_price=0.0),
+            "order_stage": "IDLE",
+        }
+
     return {
         "active_cart": Cart(
             items=tool_result.items,
             total_price=tool_result.total_price
         ),
-        "order_stage": "AWAITING_CONFIRMATION" if has_items else "IDLE",
+        "order_stage": "AWAITING_CONFIRMATION",
     }
 
 
-def _handle_confirm_order_result(tool_result) -> Dict[str, Any]:
+def _handle_confirm_order_result(tool_result, state: AgentState) -> Dict[str, Any]:
     """Handle successful confirm_order tool result."""
     # order_confirmed is the per-turn "the order was JUST sent to the kitchen" signal the
     # tablet needs (order_stage stays CONFIRMED on later turns, so it can't carry that).
     return {"order_stage": "CONFIRMED", "order_confirmed": True}
 
 
-def _handle_search_result(tool_result) -> Dict[str, Any]:
+def _handle_search_result(tool_result, state: AgentState) -> Dict[str, Any]:
     """Handle successful search tool result."""
     return {"search_context": tool_result.results}
 
@@ -63,7 +79,7 @@ def update_state_node(state: AgentState) -> Dict[str, Any]:
             if status == "success":
                 handler = TOOL_STATE_HANDLERS.get(tool_name)
                 if handler:
-                    result.update(handler(tool_result))
+                    result.update(handler(tool_result, state))
                 else:
                     logger.debug(f"No state handler for tool: {tool_name}")
                 # A successful tool is the agent's cue to also act on the tablet (open the

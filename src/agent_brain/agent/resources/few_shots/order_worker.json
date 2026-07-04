@@ -156,6 +156,26 @@
   },
   {
     "role": "user",
+    "content": "Thêm 1 Hàu Nướng Phô Mai nữa"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "sync_cart",
+        "args": {
+          "items": [
+            {"name": "Bia Sài Gòn", "quantity": 3, "special_requests": null},
+            {"name": "Hàu Nướng Phô Mai", "quantity": 1, "special_requests": null}
+          ]
+        },
+        "id": "call_sync_add_merge"
+      }
+    ]
+  },
+  {
+    "role": "user",
     "content": "Thôi không đặt nữa, hủy đơn đi"
   },
   {
