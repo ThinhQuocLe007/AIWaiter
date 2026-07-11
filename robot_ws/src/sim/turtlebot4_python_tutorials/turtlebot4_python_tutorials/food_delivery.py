@@ -37,8 +37,13 @@ DOCK_MARKER_ID = 0
 MARKER_SIZE = 0.18
 
 DESTINATIONS = {
-    'Table 1': {'id': 1, 'approach': ([7.99985, 1.36319], TurtleBot4Directions.SOUTH)},
-    'Table 2': {'id': 2, 'approach': ([8.05419, 0.33537], TurtleBot4Directions.NORTH)},
+    # Markers for Tables 1,3,4,6 are on the south rail (world y=-0.89), face +Y_world.
+    # Robot approaches from track center (X_map≈8.0) and faces SOUTH (-Y_world = -X_map).
+    'Table 1': {'id': 1, 'approach': ([7.99985,  1.36319], TurtleBot4Directions.SOUTH)},
+    # Markers for Tables 2 and 5 are on the north rail (world y=+0.89), rotated 180° in SDF,
+    # so their ArUco face points -Y_world (southward, into the track).
+    # Robot approaches from track center (X_map≈8.05) and faces NORTH (+Y_world = +X_map).
+    'Table 2': {'id': 2, 'approach': ([8.05419,  0.33537], TurtleBot4Directions.NORTH)},
     'Table 3': {'id': 3, 'approach': ([7.97830, -0.64879], TurtleBot4Directions.SOUTH)},
     'Table 4': {'id': 4, 'approach': ([7.92656, -3.28752], TurtleBot4Directions.SOUTH)},
     'Table 5': {'id': 5, 'approach': ([7.98864, -4.28860], TurtleBot4Directions.NORTH)},
@@ -58,7 +63,10 @@ ALIGN_CENTER_TOL = 0.06
 ALIGN_FWD_GATE = 0.20              
 ALIGN_STOP_WIDTH = 0.34            
 ALIGN_TIMEOUT = 30.0
-ALIGN_LOST_TIMEOUT = 2.5           
+ALIGN_LOST_TIMEOUT = 3.5           
+
+# Distance (m) in front of the marker the robot should stand for face-on alignment
+APPROACH_DIST = 0.80
 
 def invert_tf(T):
     R = T[:3, :3]
@@ -116,7 +124,7 @@ def get_marker_global_tf(marker_id):
         T_world_marker[:3, :3] = np.array([[-1, 0, 0], [0, 0, -1], [0, -1, 0]])
         T_world_marker[:3, 3] = [x, y - 0.006, z]
     else: # Faces +y in world
-        T_world_marker[:3, :3] = np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]])
+        T_world_marker[:3, :3] = np.array([[1, 0, 0], [0, 0, 1], [0, -1, 0]])
         T_world_marker[:3, 3] = [x, y + 0.006, z]
         
     # The AMCL map frame is rotated and translated relative to the Gazebo world frame.
@@ -147,6 +155,12 @@ class ArucoTracker(Node):
         self._lock = threading.Lock()
         
         self.last_correction_time = 0.0
+        # When set, only this marker ID may trigger opportunistic pose corrections.
+        # None means any sufficiently large marker can correct (normal free-roam).
+        self._correction_target = None
+        # Becomes True after the first correction fires within a locked session;
+        # prevents any further automatic corrections until the target is cleared.
+        self._correction_done = False
 
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
@@ -169,6 +183,21 @@ class ArucoTracker(Node):
         self.initialpose_pub = self.create_publisher(PoseWithCovarianceStamped, '/initialpose', 10)
 
         self.get_logger().info(f'[ArUco] Subscribed: {CAMERA_TOPIC} and {CAMERA_INFO_TOPIC}')
+
+    # ------------------------------------------------------------------
+    # Correction-target filter
+    # ------------------------------------------------------------------
+    def set_correction_target(self, marker_id: int):
+        """Restrict opportunistic AMCL corrections to marker_id only (first detection wins)."""
+        self._correction_target = marker_id
+        self._correction_done = False
+        self.get_logger().info(f'[ArUco] Correction target locked to marker {marker_id}')
+
+    def clear_correction_target(self):
+        """Remove the restriction — any large marker may correct AMCL again."""
+        self._correction_target = None
+        self._correction_done = False
+        self.get_logger().info('[ArUco] Correction target cleared (free-roam mode)')
 
     def _camera_info_cb(self, msg: CameraInfo):
         if self.camera_matrix is None:
@@ -228,11 +257,21 @@ class ArucoTracker(Node):
                     with self._lock:
                         self._markers[marker_id] = (cx, cy, bbox_w, bbox_h, w, h, now, rvec, tvec, msg.header.frame_id)
                         
-                    # Opportunistic continuous localization to fix drift
-                    if now - self.last_correction_time > 3.0:
-                        if bbox_w / w > 0.05: # Marker is large enough to trust
+                    # Opportunistic continuous localization to fix drift.
+                    # Rules:
+                    #  - Only the correction-target marker may fire (when target is locked).
+                    #  - When locked, only ONE correction is allowed per delivery session
+                    #    (_correction_done blocks all repeats after the first fires).
+                    target_ok = (self._correction_target is None or
+                                 marker_id == self._correction_target)
+                    already_done = (self._correction_target is not None
+                                    and self._correction_done)
+                    if target_ok and not already_done and now - self.last_correction_time > 3.0:
+                        if bbox_w / w > 0.05:  # Marker is large enough to trust
                             self.trigger_pose_correction(marker_id)
                             self.last_correction_time = now
+                            if self._correction_target is not None:
+                                self._correction_done = True  # block further auto-corrections
 
         # Publish debug image
         try:
@@ -369,8 +408,14 @@ def visual_align(nav, tracker, cmd_pub, marker_id, approach=True) -> bool:
         if m is None:
             if time.time() - last_seen > ALIGN_LOST_TIMEOUT:
                 _stop(cmd_pub)
-                nav.warn(f'[Align] Marker {marker_id} lost.')
-                return False
+                nav.warn(f'[Align] Marker {marker_id} lost. Falling back to 360 sweep...')
+                if search_marker_360(nav, tracker, cmd_pub, marker_id):
+                    last_seen = time.time()
+                    last_err = 0.0
+                    continue
+                else:
+                    nav.error(f'[Align] Failed to recover marker {marker_id}.')
+                    return False
             twist.angular.z = math.copysign(0.25, -last_err) if abs(last_err) > 1e-3 else 0.25
             cmd_pub.publish(twist)
             time.sleep(0.03)
@@ -432,6 +477,82 @@ def startup_sequence(nav, tracker, cmd_pub):
 
     nav.info('[STARTUP] Complete.')
 
+def compute_face_on_goal(marker_id, approach_dist=APPROACH_DIST):
+    """
+    Return (x, y, yaw_deg) in map frame for the standoff position that is
+    directly in front of marker_id at approach_dist metres, facing the marker.
+
+    Strategy: use the known marker global TF (get_marker_global_tf) instead of
+    the noisy per-frame detection so the goal is always exact.
+
+    South-rail markers (X_map < 8.0) face +X_map  → robot stands at
+       marker_X + dist, same Y, heading SOUTH (180°).
+    North-rail markers (X_map ≥ 8.0) face -X_map  → robot stands at
+       marker_X - dist, same Y, heading NORTH (0°).
+    Dock marker is a special case (face -Y_map from kitchen side).
+    """
+    T = get_marker_global_tf(marker_id)
+    if T is None:
+        return None
+    mx, my = T[0, 3], T[1, 3]
+    if marker_id == DOCK_MARKER_ID:
+        # Dock marker faces -Y_map (toward kitchen): robot arrives from -Y_map side
+        return mx, my - approach_dist, 90.0   # EAST heading (face +Y_map toward dock)
+    elif mx < 8.0:   # south-rail markers (1, 3, 4, 6)
+        return mx + approach_dist, my, 180.0  # SOUTH heading
+    else:            # north-rail markers (2, 5)
+        return mx - approach_dist, my, 0.0    # NORTH heading
+
+
+def _search_then_align(nav, tracker, cmd_pub, marker_id, label):
+    """
+    1. Lock the correction target so only the delivery marker can update AMCL.
+    2. Spin frames so tracker has fresh images after robot stops.
+    3. Do a 360° search if marker not immediately visible.
+    4. Once the marker is found, trigger AMCL pose correction.
+    5. Navigate to the exact face-on standoff position in front of the marker.
+    6. Do final fine visual alignment.
+    7. Clear the correction target when done.
+    """
+    tracker.set_correction_target(marker_id)
+    try:
+        # Let the tracker process fresh frames after navigation stops
+        for _ in range(15):
+            rclpy.spin_once(tracker, timeout_sec=0.05)
+
+        # 360° search if marker not immediately visible
+        found = tracker.get_marker(marker_id) is not None
+        if not found:
+            nav.info(f'[{label}] Marker {marker_id} not visible on arrival — searching...')
+            found = search_marker_360(nav, tracker, cmd_pub, marker_id)
+
+        if found:
+            # Fix AMCL drift: use the detected marker to update the robot pose
+            nav.info(f'[{label}] Marker found. Correcting AMCL pose...')
+            tracker.trigger_pose_correction(marker_id)
+            time.sleep(1.2)   # wait for AMCL to digest the correction
+
+            # Navigate to the exact face-on standoff position
+            goal = compute_face_on_goal(marker_id)
+            if goal is not None:
+                gx, gy, gyaw = goal
+                nav.info(f'[{label}] Navigating face-on to marker {marker_id} '
+                         f'at ({gx:.3f}, {gy:.3f}) yaw={gyaw:.0f}°...')
+                nav.clearAllCostmaps()
+                pose = nav.getPoseStamped([gx, gy], gyaw)
+                nav.startToPose(pose)
+                # Spin tracker during navigation so fresh frames accumulate
+                while not nav.isTaskComplete():
+                    rclpy.spin_once(tracker, timeout_sec=0.05)
+                    time.sleep(0.05)
+
+        # Final fine visual alignment
+        visual_align(nav, tracker, cmd_pub, marker_id, approach=False)
+
+    finally:
+        tracker.clear_correction_target()
+
+
 def deliver_to(nav, name, tracker, cmd_pub):
     dest = DESTINATIONS[name]
     marker_id = dest['id']
@@ -441,8 +562,9 @@ def deliver_to(nav, name, tracker, cmd_pub):
     goto_approach(nav, position, heading)
     _run_nav_primitive(nav)
     nav.info(f'[{name}] Arrived at approach point. Initiating Visual Alignment...')
-    visual_align(nav, tracker, cmd_pub, marker_id, approach=False)
+    _search_then_align(nav, tracker, cmd_pub, marker_id, name)
     nav.info(f'[{name}] Delivery complete.')
+
 
 def return_to_dock(nav, tracker, cmd_pub):
     position, heading = DOCK_APPROACH
@@ -450,7 +572,7 @@ def return_to_dock(nav, tracker, cmd_pub):
     goto_approach(nav, position, heading)
     _run_nav_primitive(nav)
     nav.info('[Dock] Arrived. Aligning...')
-    visual_align(nav, tracker, cmd_pub, DOCK_MARKER_ID, approach=False)
+    _search_then_align(nav, tracker, cmd_pub, DOCK_MARKER_ID, 'Dock')
     nav.info('[Dock] Returned. Complete.')
 
 def main(args=None):
