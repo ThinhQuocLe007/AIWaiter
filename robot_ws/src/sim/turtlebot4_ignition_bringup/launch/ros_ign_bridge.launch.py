@@ -88,7 +88,7 @@ def generate_launch_description():
         ])
 
     # Camera sensor bridge
-    oakd_camera_bridge = Node(
+    d435_camera_bridge = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
         name='camera_bridge',
@@ -97,42 +97,42 @@ def generate_launch_description():
         arguments=[
             ['/world/', world,
              '/model/', robot_name,
-             '/link/oakd_rgb_camera_frame/sensor/rgbd_camera/image' +
+             '/link/camera_color_frame/sensor/rgbd_camera/image' +
              '@sensor_msgs/msg/Image' +
              '[ignition.msgs.Image'],
             ['/world/', world,
              '/model/', robot_name,
-             '/link/oakd_rgb_camera_frame/sensor/rgbd_camera/depth_image' +
+             '/link/camera_color_frame/sensor/rgbd_camera/depth_image' +
              '@sensor_msgs/msg/Image' +
              '[ignition.msgs.Image'],
             ['/world/', world,
              '/model/', robot_name,
-             '/link/oakd_rgb_camera_frame/sensor/rgbd_camera/points' +
+             '/link/camera_color_frame/sensor/rgbd_camera/points' +
              '@sensor_msgs/msg/PointCloud2' +
              '[ignition.msgs.PointCloudPacked'],
             ['/world/', world,
              '/model/', robot_name,
-             '/link/oakd_rgb_camera_frame/sensor/rgbd_camera/camera_info' +
+             '/link/camera_color_frame/sensor/rgbd_camera/camera_info' +
              '@sensor_msgs/msg/CameraInfo' +
              '[ignition.msgs.CameraInfo'],
             ],
         remappings=[
             (['/world/', world,
               '/model/', robot_name,
-              '/link/oakd_rgb_camera_frame/sensor/rgbd_camera/image'],
-             'oakd/rgb/preview/image_raw'),
+              '/link/camera_color_frame/sensor/rgbd_camera/image'],
+             'camera/color/image_raw'),
             (['/world/', world,
               '/model/', robot_name,
-              '/link/oakd_rgb_camera_frame/sensor/rgbd_camera/depth_image'],
-             'oakd/rgb/preview/depth'),
+              '/link/camera_color_frame/sensor/rgbd_camera/depth_image'],
+             'camera/depth/image_rect_raw'),
             (['/world/', world,
               '/model/', robot_name,
-              '/link/oakd_rgb_camera_frame/sensor/rgbd_camera/points'],
-             'oakd/rgb/preview/depth/points'),
+              '/link/camera_color_frame/sensor/rgbd_camera/points'],
+             'camera/depth/color/points'),
             (['/world/', world,
               '/model/', robot_name,
-              '/link/oakd_rgb_camera_frame/sensor/rgbd_camera/camera_info'],
-             'oakd/rgb/preview/camera_info')
+              '/link/camera_color_frame/sensor/rgbd_camera/camera_info'],
+             'camera/color/camera_info')
             ]
     )
 
@@ -140,5 +140,5 @@ def generate_launch_description():
     ld = LaunchDescription(ARGUMENTS)
     ld.add_action(create3_bridge)
     ld.add_action(lidar_bridge)
-    ld.add_action(oakd_camera_bridge)
+    ld.add_action(d435_camera_bridge)
     return ld

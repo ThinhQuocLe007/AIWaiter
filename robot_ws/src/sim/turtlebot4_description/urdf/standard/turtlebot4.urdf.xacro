@@ -3,7 +3,7 @@
   <!-- Base create3 model -->
   <xacro:include filename="$(find irobot_create_description)/urdf/create3.urdf.xacro" />
   <xacro:include filename="$(find turtlebot4_description)/urdf/sensors/rplidar.urdf.xacro" />
-  <xacro:include filename="$(find turtlebot4_description)/urdf/sensors/oakd.urdf.xacro" />
+  <xacro:include filename="$(find turtlebot4_description)/urdf/sensors/d435.urdf.xacro" />
   <xacro:include filename="$(find turtlebot4_description)/urdf/sensors/camera_bracket.urdf.xacro" />
   <xacro:include filename="$(find turtlebot4_description)/urdf/standard/tower_standoff.urdf.xacro" />
   <xacro:include filename="$(find turtlebot4_description)/urdf/standard/tower_sensor_plate.urdf.xacro" />
@@ -36,9 +36,9 @@
   <xacro:property name="camera_mount_y_offset"         value="${0*cm2m}"/>
   <xacro:property name="camera_mount_z_offset"         value="${5.257*cm2m}"/>
 
-  <xacro:property name="oakd_pro_x_offset"             value="${5.84*cm2m}"/>
-  <xacro:property name="oakd_pro_y_offset"             value="${0*cm2m}"/>
-  <xacro:property name="oakd_pro_z_offset"             value="${9.676*cm2m}"/>
+  <xacro:property name="d435_x_offset"             value="${5.84*cm2m}"/>
+  <xacro:property name="d435_y_offset"             value="${0*cm2m}"/>
+  <xacro:property name="d435_z_offset"             value="${9.676*cm2m}"/>
 
   <joint name="shell_link_joint" type="fixed">
     <parent link="base_link"/>
@@ -116,12 +116,12 @@
             rpy="0 0 ${pi/2}"/>
   </xacro:rplidar>
 
-  <xacro:camera_bracket name="oakd_camera_bracket">
+  <xacro:camera_bracket name="camera_bracket">
     <origin xyz="${camera_mount_x_offset} ${camera_mount_y_offset} ${camera_mount_z_offset}"/>
   </xacro:camera_bracket>
 
-  <xacro:oakd model="pro" parent_link="oakd_camera_bracket">
-    <origin xyz="${oakd_pro_x_offset} ${oakd_pro_y_offset} ${oakd_pro_z_offset}"/>
-  </xacro:oakd>
+  <xacro:d435 name="camera" parent_link="camera_bracket">
+    <origin xyz="${d435_x_offset} ${d435_y_offset} ${d435_z_offset}"/>
+  </xacro:d435>
 
 </robot>
