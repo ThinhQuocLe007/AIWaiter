@@ -58,6 +58,11 @@ class AgentState(TypedDict):
     # Router metadata for debugging/evaluation
     routing_meta: Optional[Dict[str, Any]]
 
+    # The tool the worker last tried to call (set by validator for the retry
+    # / circuit-breaker path). Used by ``state_outcome_node._build_retry_context``
+    # to populate ``RetryResponseContext.tool``.
+    last_tool: Optional[str]
+
     # Action command the agent emits this turn for the table's tablet (mục 12). One of
     # "open_menu" | "open_payment" | None. Set deterministically from the tool that ran
     # (see agent/actions.py); the conversation reply is spoken, this drives the screen.

@@ -18,9 +18,14 @@
           "role": "user",
           "content": "Cho mình 2 phần Ốc Hương xốt trứng muối",
           "assert": {
-            "tool_called": "sync_cart",
-            "tool_output_contains": "Đã cập nhật",
-            "response_should_contain_one_of": ["Ốc Hương", "tạm tính", "xác nhận", "đặt"]
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm",
+            "response_should_contain_one_of": [
+              "Ốc Hương",
+              "tạm tính",
+              "xác nhận",
+              "đặt"
+            ]
           }
         },
         {
@@ -48,9 +53,14 @@
           "role": "user",
           "content": "Cho 6 con Hàu Nướng Phô Mai và 3 chai Bia Tiger Bạc nha",
           "assert": {
-            "tool_called": "sync_cart",
-            "tool_output_contains": "Đã cập nhật",
-            "response_should_contain_one_of": ["Hàu Nướng", "Bia", "tạm tính", "xác nhận"]
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm",
+            "response_should_contain_one_of": [
+              "Hàu Nướng",
+              "Bia",
+              "tạm tính",
+              "xác nhận"
+            ]
           }
         },
         {
@@ -80,7 +90,11 @@
           "assert": {
             "tool_called": "search",
             "tool_must_NOT_call": "confirm_order",
-            "response_should_contain_one_of": ["cay", "Lẩu Thái", "chua"]
+            "response_should_contain_one_of": [
+              "cay",
+              "Lẩu Thái",
+              "chua"
+            ]
           }
         },
         {
@@ -88,9 +102,13 @@
           "role": "user",
           "content": "Vậy cho mình 1 phần Lẩu Thái",
           "assert": {
-            "tool_called": "sync_cart",
-            "tool_output_contains": "Đã cập nhật",
-            "response_should_contain_one_of": ["Lẩu Thái", "tạm tính", "xác nhận"]
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm",
+            "response_should_contain_one_of": [
+              "Lẩu Thái",
+              "tạm tính",
+              "xác nhận"
+            ]
           }
         },
         {
@@ -117,8 +135,8 @@
           "role": "user",
           "content": "Cho mình 1 tô Cháo Hàu",
           "assert": {
-            "tool_called": "sync_cart",
-            "tool_output_contains": "Đã cập nhật"
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm"
           }
         },
         {
@@ -136,7 +154,11 @@
           "content": "Cho mình tính tiền nha",
           "assert": {
             "tool_called": "request_payment",
-            "response_should_contain_one_of": ["QR", "Tổng tiền", "thanh toán"]
+            "response_should_contain_one_of": [
+              "QR",
+              "Tổng tiền",
+              "thanh toán"
+            ]
           }
         }
       ]
@@ -156,7 +178,10 @@
           "assert": {
             "tool_called": "search",
             "tool_must_NOT_call": "sync_cart",
-            "response_should_contain_one_of": ["Lẩu", "lẩu"]
+            "response_should_contain_one_of": [
+              "Lẩu",
+              "lẩu"
+            ]
           }
         },
         {
@@ -166,7 +191,11 @@
           "assert": {
             "tool_called": "search",
             "tool_must_NOT_call": "confirm_order",
-            "response_should_contain_one_of": ["85", "Ốc Hương", "giá"]
+            "response_should_contain_one_of": [
+              "85",
+              "Ốc Hương",
+              "giá"
+            ]
           }
         }
       ]
@@ -184,8 +213,8 @@
           "role": "user",
           "content": "Cho mình 2 phần Ốc Hương",
           "assert": {
-            "tool_called": "sync_cart",
-            "tool_output_contains": "Đã cập nhật"
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm"
           }
         },
         {
@@ -193,9 +222,13 @@
           "role": "user",
           "content": "Thêm 1 dĩa Khoai Tây Lắc Phô Mai nữa",
           "assert": {
-            "tool_called": "sync_cart",
+            "tool_called": "add_cart",
             "tool_must_NOT_call": "confirm_order",
-            "response_should_contain_one_of": ["Khoai Tây", "Ốc Hương", "tạm tính"]
+            "response_should_contain_one_of": [
+              "Khoai Tây",
+              "Ốc Hương",
+              "tạm tính"
+            ]
           }
         },
         {

@@ -24,7 +24,9 @@ log = logging.getLogger(__name__)
 # a payment requested -> show the bill + QR. confirm_order is intentionally left out (neutral —
 # the confirmation reply is spoken, no screen change needed).
 _TOOL_TO_UI_ACTION = {
-    "sync_cart": "open_menu",
+    "add_cart": "open_menu",
+    "remove_cart": "open_menu",
+    "clear_cart": "open_menu",
     "search": "open_menu",
     "request_payment": "open_payment",
 }

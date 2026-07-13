@@ -4,54 +4,83 @@ from typing import Dict, Any, Callable
 from src.agent_brain.agent.state import AgentState
 from src.agent_brain.agent.actions import ui_action_for_tool
 from src.agent_brain.schemas.order import Cart
+from src.agent_brain.utils import MenuManager
 
 logger = logging.getLogger(__name__)
 
+menu_manager = MenuManager()
 
-def _handle_sync_cart_result(tool_result, state: AgentState) -> Dict[str, Any]:
-    """Handle successful sync_cart tool result."""
-    has_items = bool(tool_result.items)
 
-    if not has_items:
-        prev_cart = state.get("active_cart")
-        stripped = bool(state.get("unavailable_items") or state.get("ambiguous_items"))
-        if prev_cart and prev_cart.items and stripped:
-            # The list came back empty ONLY because the validator stripped every requested
-            # item (off-menu / ambiguous) — the LLM had sent just the new invalid item
-            # instead of the full cart. Wiping here would destroy the guest's confirmed
-            # draft (the "chào ủi wipes 445k" bug). Keep the cart and the stage untouched;
-            # the response node still tells the guest the item isn't on the menu.
-            return {}
-        # Genuinely empty (guest cancelled: sync_cart([])) — stay IDLE instead of asking
-        # the customer to confirm an empty order.
-        return {
-            "active_cart": Cart(items=[], total_price=0.0),
-            "order_stage": "IDLE",
-        }
+def _recalc_cart(cart: Cart) -> Cart:
+    """Recalculate total_price and per-item unit_price from MenuManager."""
+    cart.total_price = 0.0
+    for item in cart.items:
+        price = menu_manager.get_price(item.name)
+        if price:
+            item.unit_price = price
+            cart.total_price += price * item.quantity
+        elif item.unit_price:
+            cart.total_price += item.unit_price * item.quantity
+    return cart
+
+
+def _handle_add_cart_result(state: AgentState, tool_result) -> Dict[str, Any]:
+    """Merge new items into existing cart (ADD semantics)."""
+    existing = state.get("active_cart")
+    if existing is None or not existing.items:
+        cart = Cart(items=list(tool_result.items), total_price=tool_result.total_price)
+    else:
+        cart = Cart(items=list(existing.items), total_price=existing.total_price)
+        for new_item in tool_result.items:
+            match = next((i for i in cart.items if i.name == new_item.name), None)
+            if match:
+                match.quantity += new_item.quantity
+                if new_item.special_requests:
+                    match.special_requests = new_item.special_requests
+            else:
+                cart.items.append(new_item)
+        cart = _recalc_cart(cart)
 
     return {
-        "active_cart": Cart(
-            items=tool_result.items,
-            total_price=tool_result.total_price
-        ),
-        "order_stage": "AWAITING_CONFIRMATION",
+        "active_cart": cart,
+        "order_stage": "AWAITING_CONFIRMATION" if cart.items else "IDLE",
     }
 
 
-def _handle_confirm_order_result(tool_result, state: AgentState) -> Dict[str, Any]:
-    """Handle successful confirm_order tool result."""
-    # order_confirmed is the per-turn "the order was JUST sent to the kitchen" signal the
-    # tablet needs (order_stage stays CONFIRMED on later turns, so it can't carry that).
-    return {"order_stage": "CONFIRMED", "order_confirmed": True}
+def _handle_remove_cart_result(state: AgentState, tool_result) -> Dict[str, Any]:
+    """Remove item by name from existing cart."""
+    existing = state.get("active_cart")
+    if existing is None:
+        return {"active_cart": Cart(), "order_stage": "IDLE"}
+
+    removed_name = tool_result.removed
+    cart = Cart(
+        items=[i for i in existing.items if i.name != removed_name],
+        total_price=existing.total_price,
+    )
+    cart = _recalc_cart(cart)
+    return {
+        "active_cart": cart,
+        "order_stage": "AWAITING_CONFIRMATION" if cart.items else "IDLE",
+    }
 
 
-def _handle_search_result(tool_result, state: AgentState) -> Dict[str, Any]:
-    """Handle successful search tool result."""
+def _handle_clear_cart_result(state: AgentState, tool_result) -> Dict[str, Any]:
+    return {"active_cart": Cart(), "order_stage": "IDLE"}
+
+
+def _handle_confirm_order_result(state: AgentState, tool_result) -> Dict[str, Any]:
+    return {"order_stage": "CONFIRMED"}
+
+
+def _handle_search_result(state: AgentState, tool_result) -> Dict[str, Any]:
     return {"search_context": tool_result.results}
 
 
 TOOL_STATE_HANDLERS: Dict[str, Callable] = {
-    "sync_cart": _handle_sync_cart_result,
+    "add_cart": _handle_add_cart_result,
+    "remove_cart": _handle_remove_cart_result,
+    "clear_cart": _handle_clear_cart_result,
     "confirm_order": _handle_confirm_order_result,
     "search": _handle_search_result,
 }
@@ -60,34 +89,47 @@ TOOL_STATE_HANDLERS: Dict[str, Callable] = {
 def update_state_node(state: AgentState) -> Dict[str, Any]:
     """
     Extracts tool results and updates AgentState, manages intent queue.
-    
-    Responsibilities:
-    1. Parse tool artifacts and update relevant state fields
-    2. Pop processed intent from the queue
-    """
-    last_msg = state["messages"][-1]
-    result = {}
 
-    if last_msg.type == "tool":
-        tool_name = getattr(last_msg, "name", "")
-        tool_result = getattr(last_msg, "artifact", None)
-        
-        if tool_result is None:
-            logger.warning(f"update_state_node: no artifact found for tool {tool_name}")
+    Processes ALL ToolMessages from the current turn (not just the last
+    one) — when the worker emits multiple tool calls in one message, the
+    ToolNode produces multiple ToolMessages. Each must be handled so the
+    cart reflects the full set of operations.
+    """
+    result = {}
+    current_state = dict(state)
+
+    # Collect all ToolMessages from the current turn in chronological order.
+    messages = state["messages"]
+    tool_messages = []
+    for m in reversed(messages):
+        if hasattr(m, "type") and m.type == "tool":
+            tool_messages.insert(0, m)
         else:
-            status = getattr(tool_result, "status", None)
-            if status == "success":
-                handler = TOOL_STATE_HANDLERS.get(tool_name)
-                if handler:
-                    result.update(handler(tool_result, state))
-                else:
-                    logger.debug(f"No state handler for tool: {tool_name}")
-                # A successful tool is the agent's cue to also act on the tablet (open the
-                # menu / the bill). Decided here where the tool name is known; delivered later
-                # by the bridge. Last write wins for multi-intent turns (most recent action).
-                ui_action = ui_action_for_tool(tool_name)
-                if ui_action:
-                    result["ui_action"] = ui_action
+            break
+
+    for msg in tool_messages:
+        tool_name = getattr(msg, "name", "")
+        tool_result = getattr(msg, "artifact", None)
+
+        if tool_result is None:
+            logger.warning("update_state_node: no artifact for tool %s", tool_name)
+            continue
+
+        status = getattr(tool_result, "status", None)
+        if status != "success":
+            continue
+
+        handler = TOOL_STATE_HANDLERS.get(tool_name)
+        if handler:
+            handler_update = handler(current_state, tool_result)
+            result.update(handler_update)
+            current_state.update(handler_update)
+        else:
+            logger.debug("No state handler for tool: %s", tool_name)
+
+        ui_action = ui_action_for_tool(tool_name)
+        if ui_action:
+            result["ui_action"] = ui_action
 
     intents = state.get("current_intents") or []
     if intents:

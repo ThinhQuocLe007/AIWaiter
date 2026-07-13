@@ -1,0 +1,364 @@
+{
+  "dataset": "e2e_real_life",
+  "version": "1.0",
+  "description": "Real-life Vietnamese restaurant scenarios — multi-turn, ambiguous items, off-menu, modifications, group orders. Tests full agent pipeline end-to-end.",
+  "total_scenarios": 4,
+  "scenarios": [
+    {
+      "id": "REAL-001",
+      "name": "first_time_couple_date",
+      "description": "Đôi bạn trẻ đi ăn lần đầu. Hỏi món ngon nhất → gọi ốc (bị ambiguous 11 loại) → chọn loại → gọi thêm lẩu → đổi ý số lượng → confirm → tính tiền.",
+      "table_id": "T_date_1",
+      "difficulty": "hard",
+      "expected_outcome": "payment_requested",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Chào em, tụi anh mới tới lần đầu, quán mình có món gì ngon nhất vậy em?",
+          "assert": {
+            "tool_called": "search",
+            "tool_must_NOT_call": "sync_cart",
+            "response_should_contain_one_of": [
+              "ngon",
+              "bán chạy",
+              "best",
+              "nổi tiếng",
+              "đặc biệt"
+            ]
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Vậy cho anh 2 phần Ốc Hương đi em",
+          "assert": {
+            "tool_called": "add_cart",
+            "response_should_contain_one_of": [
+              "Ốc Hương",
+              "loại",
+              "chọn",
+              "xốt",
+              "muối",
+              "phô mai",
+              "me"
+            ]
+          }
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "content": "Cho anh loại Xốt Trứng Muối đi",
+          "assert": {
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm",
+            "response_should_contain_one_of": [
+              "Ốc Hương",
+              "Trứng Muối",
+              "tạm tính"
+            ]
+          }
+        },
+        {
+          "turn": 4,
+          "role": "user",
+          "content": "Thêm 1 phần Lẩu Thái nữa nha, tối nay anh muốn ăn cay cay",
+          "assert": {
+            "tool_called": "add_cart",
+            "tool_must_NOT_call": "confirm_order",
+            "response_should_contain_one_of": [
+              "Lẩu Thái",
+              "tạm tính",
+              "Ốc Hương"
+            ]
+          }
+        },
+        {
+          "turn": 5,
+          "role": "user",
+          "content": "À mà lẩu cho 2 phần đi, bạn anh cũng thích lẩu lắm",
+          "assert": {
+            "tool_called": "add_cart",
+            "tool_must_NOT_call": "confirm_order"
+          }
+        },
+        {
+          "turn": 6,
+          "role": "user",
+          "content": "Ok chốt đơn luôn nha em",
+          "assert": {
+            "tool_called": "confirm_order",
+            "response_contains": "đơn hàng",
+            "confirmed_items_must_contain": "Lẩu Thái"
+          }
+        },
+        {
+          "turn": 7,
+          "role": "user",
+          "content": "Em ơi tính tiền cho anh",
+          "assert": {
+            "tool_called": "request_payment",
+            "response_should_contain_one_of": [
+              "QR",
+              "Tổng tiền",
+              "thanh toán"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "REAL-002",
+      "name": "allergic_customer_then_party_join",
+      "description": "Khách dị ứng hải sản, tới quán ốc (!). Hỏi kỹ nguyên liệu → tìm món không hải sản → gọi → bạn tới sau gọi thêm bia → confirm → một người đòi tính tiền riêng.",
+      "table_id": "T_allergy_2",
+      "difficulty": "hard",
+      "expected_outcome": "payment_requested",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Chào em, anh bị dị ứng hải sản. Quán mình có món nào không có hải sản không em?",
+          "assert": {
+            "tool_called": "search",
+            "tool_must_NOT_call": "sync_cart"
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Món Khoai Tây Lắc Phô Mai có hải sản không em?",
+          "assert": {
+            "tool_called": "search",
+            "response_should_contain_one_of": [
+              "Khoai Tây",
+              "phô mai",
+              "hải sản",
+              "không"
+            ]
+          }
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "content": "Ok cho anh 1 dĩa Khoai Tây Lắc Phô Mai",
+          "assert": {
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm"
+          }
+        },
+        {
+          "turn": 4,
+          "role": "user",
+          "content": "Thêm cho anh 1 phần Cơm Chiên Dương Châu nữa",
+          "assert": {
+            "tool_called": "add_cart",
+            "tool_must_NOT_call": "confirm_order",
+            "response_should_contain_one_of": [
+              "Cơm",
+              "Dương Châu",
+              "tạm tính",
+              "Khoai Tây"
+            ]
+          }
+        },
+        {
+          "turn": 5,
+          "role": "user",
+          "content": "Tới giờ bạn anh ghé. Cho thêm 3 chai Bia Sài Gòn nữa nha",
+          "assert": {
+            "tool_called": "add_cart",
+            "tool_must_NOT_call": "confirm_order",
+            "response_should_contain_one_of": [
+              "Bia",
+              "tạm tính"
+            ]
+          }
+        },
+        {
+          "turn": 6,
+          "role": "user",
+          "content": "Đặt luôn đi em, tụi anh đói quá rồi",
+          "assert": {
+            "tool_called": "confirm_order",
+            "confirmed_items_must_contain": "Bia"
+          }
+        },
+        {
+          "turn": 7,
+          "role": "user",
+          "content": "Tính tiền đi em, mà tính chung hết nha",
+          "assert": {
+            "tool_called": "request_payment",
+            "response_should_contain_one_of": [
+              "QR",
+              "Tổng tiền",
+              "thanh toán"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "REAL-003",
+      "name": "drunk_group_late_night",
+      "description": "Nhóm nhậu khuya. Gọi nhiều món 1 lúc → một món off-menu → sửa → thêm → bớt → confirm → gọi thêm sau khi đã confirm → tính tiền. Kiểm tra agent xử lý multi-intent và state phức tạp.",
+      "table_id": "T_drunk_3",
+      "difficulty": "hard",
+      "expected_outcome": "payment_requested",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho tụi anh 3 phần Ốc Hương Xốt Trứng Muối, 5 con Hàu Nướng Phô Mai, 2 dĩa Mực Chiên Xù, và 6 chai Bia Tiger Bạc",
+          "assert": {
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm",
+            "response_should_contain_one_of": [
+              "Ốc Hương",
+              "Hàu",
+              "Mực",
+              "Bia",
+              "tạm tính"
+            ]
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "À thêm 1 phần Bò Lúc Lắc nữa",
+          "assert": {
+            "tool_called": "add_cart",
+            "tool_must_NOT_call": "confirm_order"
+          }
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "content": "Thôi bỏ Mực Chiên Xù đi, thằng bạn anh nói dở lắm. Mà cho thêm 3 chai Bia Tiger Bạc nữa là 9 chai tổng cộng nha",
+          "assert": {
+            "tool_called": "add_cart",
+            "tool_must_NOT_call": "confirm_order",
+            "response_should_contain_one_of": [
+              "Bia",
+              "tạm tính"
+            ]
+          }
+        },
+        {
+          "turn": 4,
+          "role": "user",
+          "content": "Ok chốt đi em, nhậu thôi!",
+          "assert": {
+            "tool_called": "confirm_order",
+            "confirmed_items_must_NOT_contain": "Mực Chiên Xù"
+          }
+        },
+        {
+          "turn": 5,
+          "role": "user",
+          "content": "Em ơi, cho thêm 2 phần Ốc Hương Xốt Me nữa nha, đang nhậu vui quá",
+          "assert": {
+            "tool_called": "add_cart",
+            "response_should_contain_one_of": [
+              "Ốc Hương",
+              "Me",
+              "tạm tính"
+            ]
+          }
+        },
+        {
+          "turn": 6,
+          "role": "user",
+          "content": "Xác nhận thêm 2 phần ốc đó luôn em",
+          "assert": {
+            "tool_called": "confirm_order",
+            "confirmed_items_must_contain": "Ốc Hương Xốt Me"
+          }
+        },
+        {
+          "turn": 7,
+          "role": "user",
+          "content": "Tính tiền đi em, khuya rồi",
+          "assert": {
+            "tool_called": "request_payment",
+            "response_should_contain_one_of": [
+              "QR",
+              "Tổng tiền",
+              "thanh toán"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "REAL-004",
+      "name": "curious_tourist_with_questions",
+      "description": "Khách du lịch hỏi đủ thứ — món lạ, cách ăn, giá cả, gợi ý — rồi mới gọi món. Agent phải phân biệt câu hỏi (search/chat) với câu gọi món (order). Không được tạo đơn khi khách chỉ đang hỏi.",
+      "table_id": "T_tourist_4",
+      "difficulty": "medium",
+      "expected_outcome": "order_placed",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Chào em, anh là khách du lịch. Ốc Quậy là quán ốc hả? Có món gì đặc sắc không em?",
+          "assert": {
+            "tool_called": "search",
+            "tool_must_NOT_call": "sync_cart"
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Ốc Hương với Ốc Mỡ khác nhau sao em?",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order"
+          }
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "content": "Món Hàu Nướng Phô Mai bao nhiêu 1 con vậy em? Có cay không?",
+          "assert": {
+            "tool_called": "search",
+            "tool_must_NOT_call": "sync_cart"
+          }
+        },
+        {
+          "turn": 4,
+          "role": "user",
+          "content": "Ngon quá. Vậy cho anh 4 con Hàu Nướng Phô Mai và 1 chai Bia Sài Gòn đi em",
+          "assert": {
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm"
+          }
+        },
+        {
+          "turn": 5,
+          "role": "user",
+          "content": "Mà Hàu Nướng Phô Mai ăn kèm với gì ngon vậy em? Có nên gọi thêm món gì không?",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "response_should_contain_one_of": [
+              "ăn kèm",
+              "gợi ý",
+              "khoai",
+              "bánh mì",
+              "rau"
+            ]
+          }
+        },
+        {
+          "turn": 6,
+          "role": "user",
+          "content": "Ok, xác nhận đơn cho anh đi. À cho anh thêm 1 phần Khoai Tây Lắc Phô Mai nữa",
+          "assert": {
+            "tool_called": "confirm_order",
+            "confirmed_items_must_contain": "Hàu Nướng Phô Mai"
+          }
+        }
+      ]
+    }
+  ]
+}

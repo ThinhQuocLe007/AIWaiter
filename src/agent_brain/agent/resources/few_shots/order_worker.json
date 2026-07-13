@@ -1,65 +1,116 @@
 [
   {
     "role": "user",
-    "content": "Cho mình 2 phần Ốc Hương"
+    "content": "Cho em 2 phần Ốc Hương Xốt Trứng Muối"
   },
   {
     "role": "assistant",
     "content": "",
     "tool_calls": [
       {
-        "name": "sync_cart",
+        "name": "add_cart",
         "args": {
           "items": [
-            {"name": "Ốc Hương", "quantity": 2, "special_requests": null}
+            {"name": "Ốc Hương Xốt Trứng Muối", "quantity": 2, "special_requests": null}
           ]
         },
-        "id": "call_sync_generic"
+        "id": "call_add_1"
       }
     ]
   },
   {
     "role": "user",
-    "content": "Cho tôi 1 Lẩu Thái và 2 Bia Sài Gòn"
+    "content": "Thêm 1 phần Lẩu Thái nữa"
   },
   {
     "role": "assistant",
     "content": "",
     "tool_calls": [
       {
-        "name": "sync_cart",
+        "name": "add_cart",
         "args": {
           "items": [
-            {"name": "Lẩu Thái", "quantity": 1, "special_requests": null},
-            {"name": "Bia Sài Gòn", "quantity": 2, "special_requests": null}
+            {"name": "Lẩu Thái", "quantity": 1, "special_requests": null}
           ]
         },
-        "id": "call_sync_1"
+        "id": "call_add_2"
       }
     ]
   },
   {
     "role": "user",
-    "content": "Đổi Lẩu Thái thành 3 phần nhé, bỏ Bia Sài Gòn"
+    "content": "Cho 2 con Hàu Nướng Phô Mai và 3 chai Bia Sài Gòn"
   },
   {
     "role": "assistant",
     "content": "",
     "tool_calls": [
       {
-        "name": "sync_cart",
+        "name": "add_cart",
         "args": {
           "items": [
-            {"name": "Lẩu Thái", "quantity": 3, "special_requests": null}
+            {"name": "Hàu Nướng Phô Mai", "quantity": 2, "special_requests": null},
+            {"name": "Bia Sài Gòn", "quantity": 3, "special_requests": null}
           ]
         },
-        "id": "call_sync_2"
+        "id": "call_add_3"
       }
     ]
   },
   {
     "role": "user",
-    "content": "Đúng rồi, xác nhận đặt hàng cho tôi"
+    "content": "Cho anh Lẩu Thái 1 phần, không cay nha em"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "add_cart",
+        "args": {
+          "items": [
+            {"name": "Lẩu Thái", "quantity": 1, "special_requests": "không cay"}
+          ]
+        },
+        "id": "call_add_4"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "Bỏ Bia Sài Gòn đi em"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "remove_cart",
+        "args": {
+          "name": "Bia Sài Gòn"
+        },
+        "id": "call_remove_1"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "Thôi hủy đơn đi, anh không đặt nữa"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "clear_cart",
+        "args": {},
+        "id": "call_clear_1"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "Xác nhận đặt hàng cho anh"
   },
   {
     "role": "assistant",
@@ -68,10 +119,7 @@
       {
         "name": "confirm_order",
         "args": {
-          "table_id": "T1",
-          "items": [
-            {"name": "Lẩu Thái", "quantity": 3, "special_requests": null}
-          ]
+          "table_id": "T1"
         },
         "id": "call_confirm_1"
       }
@@ -79,115 +127,53 @@
   },
   {
     "role": "user",
-    "content": "Cho anh 2 ly Trà Tắc và 1 Bánh Mì Bơ Tỏi"
+    "content": "bỏ Bia Tiger Bạc ra, đổi qua 2 Trà Đào Cam Sả"
   },
   {
     "role": "assistant",
     "content": "",
     "tool_calls": [
       {
-        "name": "sync_cart",
+        "name": "remove_cart",
+        "args": {
+          "name": "Bia Tiger Bạc"
+        },
+        "id": "call_remove_2"
+      },
+      {
+        "name": "add_cart",
         "args": {
           "items": [
-            {"name": "Trà Tắc", "quantity": 2, "special_requests": null},
-            {"name": "Bánh Mì Bơ Tỏi", "quantity": 1, "special_requests": null}
+            {"name": "Trà Đào Cam Sả", "quantity": 2, "special_requests": null}
           ]
         },
-        "id": "call_sync_3"
+        "id": "call_add_5"
       }
     ]
   },
   {
     "role": "user",
-    "content": "Bỏ Bánh Mì Bơ Tỏi đi"
+    "content": "thay Lẩu Thái bằng Cháo Hàu đi em"
   },
   {
     "role": "assistant",
     "content": "",
     "tool_calls": [
       {
-        "name": "sync_cart",
+        "name": "remove_cart",
+        "args": {
+          "name": "Lẩu Thái"
+        },
+        "id": "call_remove_3"
+      },
+      {
+        "name": "add_cart",
         "args": {
           "items": [
-            {"name": "Trà Tắc", "quantity": 2, "special_requests": null}
+            {"name": "Cháo Hàu", "quantity": 1, "special_requests": null}
           ]
         },
-        "id": "call_sync_4"
-      }
-    ]
-  },
-  {
-    "role": "user",
-    "content": "Đổi Trà Tắc thành Bia Sài Gòn giúp em"
-  },
-  {
-    "role": "assistant",
-    "content": "",
-    "tool_calls": [
-      {
-        "name": "sync_cart",
-        "args": {
-          "items": [
-            {"name": "Bia Sài Gòn", "quantity": 2, "special_requests": null}
-          ]
-        },
-        "id": "call_sync_5"
-      }
-    ]
-  },
-  {
-    "role": "user",
-    "content": "Tăng Bia Sài Gòn lên 3 chai"
-  },
-  {
-    "role": "assistant",
-    "content": "",
-    "tool_calls": [
-      {
-        "name": "sync_cart",
-        "args": {
-          "items": [
-            {"name": "Bia Sài Gòn", "quantity": 3, "special_requests": null}
-          ]
-        },
-        "id": "call_sync_6"
-      }
-    ]
-  },
-  {
-    "role": "user",
-    "content": "Thêm 1 Hàu Nướng Phô Mai nữa"
-  },
-  {
-    "role": "assistant",
-    "content": "",
-    "tool_calls": [
-      {
-        "name": "sync_cart",
-        "args": {
-          "items": [
-            {"name": "Bia Sài Gòn", "quantity": 3, "special_requests": null},
-            {"name": "Hàu Nướng Phô Mai", "quantity": 1, "special_requests": null}
-          ]
-        },
-        "id": "call_sync_add_merge"
-      }
-    ]
-  },
-  {
-    "role": "user",
-    "content": "Thôi không đặt nữa, hủy đơn đi"
-  },
-  {
-    "role": "assistant",
-    "content": "",
-    "tool_calls": [
-      {
-        "name": "sync_cart",
-        "args": {
-          "items": []
-        },
-        "id": "call_sync_7"
+        "id": "call_add_6"
       }
     ]
   }

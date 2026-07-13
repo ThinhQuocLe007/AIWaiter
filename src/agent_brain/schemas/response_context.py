@@ -55,6 +55,28 @@ class AmbiguousItem(BaseModel):
     candidates: List[str]
 
 
+class CuratedDish(BaseModel):
+    """A dish that appeared in a previous SEARCH turn, stored as conversational memory.
+
+    Lightweight — just the fields useful for answering follow-up questions
+    (price, tags, taste profile, category). Converted from SearchResult metadata
+    by ``chat_worker_node._to_curated_memory``.
+
+    Metadata source mapping (see ``document_loader.py:47-56``):
+    - name          ← metadata["name"]
+    - price         ← int(metadata["price"])       # float → int (VND)
+    - tags          ← split metadata["tags"]       # comma-sep string → list
+    - taste_profile ← metadata["taste_profile"]    # e.g. "Giòn ngọt, đậm đà, béo cay"
+    - category      ← metadata["category"]
+    """
+
+    name: str
+    price: Optional[int] = None
+    tags: List[str] = Field(default_factory=list)
+    taste_profile: Optional[str] = None
+    category: Optional[str] = None
+
+
 class OrderResponseContext(BaseModel):
     """Context for sync_cart / confirm_order turns.
 
@@ -68,7 +90,7 @@ class OrderResponseContext(BaseModel):
     """
 
     kind: Literal["ORDER"] = "ORDER"
-    tool: Literal["sync_cart", "confirm_order"]
+    tool: Literal["add_cart", "remove_cart", "clear_cart", "sync_cart", "confirm_order"]
     status: Literal["success", "error"] = "success"
     cart: List[OrderItem] = Field(default_factory=list)
     total_vnd: str = "0"               # pre-formatted Vietnamese ("170.000")
@@ -156,6 +178,7 @@ class ChatResponseContext(BaseModel):
     active_cart: Cart = Field(default_factory=Cart)
     order_stage: OrderStage = "IDLE"
     chat_history: List[BaseMessage] = Field(default_factory=list)
+    curated_memory: List[CuratedDish] = Field(default_factory=list)
     ui_action: None = None
     error_message: None = None
 

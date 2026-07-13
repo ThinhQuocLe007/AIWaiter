@@ -46,7 +46,7 @@ def hybrid_router_node(state: AgentState) -> Dict[str, Any]:
     routing_meta = {
         "decided_by": decided_by,
         "semantic_confidence": sem_conf,
-        "semantic_intent": sem_intent if sem_intent else "NONE",
+        "semantic_intent": sem_intent if sem_intent else (current_intents[0] if current_intents else "NONE"),
         "semantic_all_sims": {k: round(v, 4) for k, v in all_sims.items()},
         "slm_intents": slm_predicted,
         "latency_seconds": latency,

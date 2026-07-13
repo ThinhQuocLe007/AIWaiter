@@ -170,6 +170,34 @@ def _build_payment_context_verify(artifact, state, ui, tool_args) -> PaymentResp
     )
 
 
+def _build_order_context_remove(artifact, state, total_vnd, stage, ui, tool_args) -> OrderResponseContext:
+    status, error_message = _status_and_error(artifact)
+    cart = state.get("active_cart")
+    removed = getattr(artifact, "removed", "") if artifact else ""
+    return OrderResponseContext(
+        tool="remove_cart",
+        status=status,
+        cart=cart.items if cart else [],
+        total_vnd=total_vnd,
+        stage=stage,
+        ui_action=ui,
+        error_message=error_message if status == "error" else None,
+    )
+
+
+def _build_order_context_clear(artifact, state, ui) -> OrderResponseContext:
+    status, error_message = _status_and_error(artifact)
+    return OrderResponseContext(
+        tool="clear_cart",
+        status=status,
+        cart=[],
+        total_vnd="0",
+        stage="IDLE",
+        ui_action=ui,
+        error_message=error_message if status == "error" else None,
+    )
+
+
 # --- Dispatcher ------------------------------------------------------------
 
 def _build_from_tool_message(last: ToolMessage, state: AgentState) -> ResponseContext:
@@ -182,6 +210,12 @@ def _build_from_tool_message(last: ToolMessage, state: AgentState) -> ResponseCo
     stage = state.get("order_stage", "IDLE")
     tool_args = _last_tool_call_args(state)
 
+    if tool_name == "add_cart":
+        return _build_order_context_sync_cart(artifact, state, total_vnd, stage, ui, tool_args)
+    if tool_name == "remove_cart":
+        return _build_order_context_remove(artifact, state, total_vnd, stage, ui, tool_args)
+    if tool_name == "clear_cart":
+        return _build_order_context_clear(artifact, state, ui)
     if tool_name == "sync_cart":
         return _build_order_context_sync_cart(artifact, state, total_vnd, stage, ui, tool_args)
     if tool_name == "confirm_order":
@@ -205,21 +239,20 @@ def _build_from_tool_message(last: ToolMessage, state: AgentState) -> ResponseCo
 
 def _is_retry_state(state: AgentState) -> bool:
     """True if the validator rejected the worker's last tool call and the
-    customer is being asked to retry."""
+    customer is being asked to retry (or the circuit breaker has tripped).
+
+    The validator always appends ToolMessages (even for error feedback),
+    so we check ``is_valid`` + ``feedback`` rather than message type."""
     return (
         state.get("is_valid") is False
         and bool(state.get("feedback"))
-        and not isinstance(state["messages"][-1], ToolMessage)
     )
 
 
 def _build_retry_context(state: AgentState) -> RetryResponseContext:
     """Build a RetryResponseContext from the validator's feedback."""
     return RetryResponseContext(
-        # `last_tool` is not yet populated by the validator; default to
-        # "unknown" rather than "" so the rewriter can render a graceful
-        # message even if the field is missing.
-        tool=state.get("last_tool", "") or "unknown",
+        tool=state.get("last_tool") or "unknown",
         feedback=state.get("feedback", "") or "",
         intent="ORDER",  # most retries are order-domain; can be enriched
     )
@@ -231,15 +264,25 @@ def _finalize(ctx: ResponseContext) -> Dict[str, Any]:
     """Return the dict to update the state with: the new context + per-turn resets.
 
     Per-turn resets are critical — without them, ``unavailable_items``,
-    ``ambiguous_items``, and ``feedback`` from the previous turn would
-    leak into the next turn and contaminate the new context.
+    ``ambiguous_items``, ``last_tool``, and ``feedback`` from the previous
+    turn would leak into the next turn and contaminate the new context.
+
+    Clears ``search_context`` only on PAYMENT turns — the conversation
+    ended. On ORDER turns, curated memory from prior SEARCH turns is NOT
+    cleared so it's available if the ORDER worker falls through to CHAT
+    (see _route_if_tool_call in graph.py).
     """
-    return {
+    updates = {
         "response_context": ctx,
         "unavailable_items": None,
         "ambiguous_items": None,
         "feedback": None,
+        "last_tool": None,
     }
+    kind = getattr(ctx, "kind", None)
+    if kind == "PAYMENT":
+        updates["search_context"] = None
+    return updates
 
 
 def state_outcome_node(state: AgentState) -> Dict[str, Any]:
@@ -260,13 +303,13 @@ def state_outcome_node(state: AgentState) -> Dict[str, Any]:
     existing = state.get("response_context")
     if existing is not None:
         return _finalize(existing)
-
     last = state["messages"][-1]
-    if isinstance(last, ToolMessage):
-        return _finalize(_build_from_tool_message(last, state))
 
     if _is_retry_state(state):
         return _finalize(_build_retry_context(state))
+
+    if isinstance(last, ToolMessage):
+        return _finalize(_build_from_tool_message(last, state))
 
     # Defensive: should be unreachable for tool paths. Degrade to a
     # chat context so the rewriter always has something to read.

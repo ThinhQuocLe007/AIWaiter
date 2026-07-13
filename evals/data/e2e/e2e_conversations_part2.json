@@ -18,8 +18,8 @@
           "role": "user",
           "content": "Cho mình 1 phần Mực Chiên Xù",
           "assert": {
-            "tool_called": "sync_cart",
-            "tool_output_contains": "Đã cập nhật"
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm"
           }
         },
         {
@@ -27,9 +27,12 @@
           "role": "user",
           "content": "Thôi không lấy Mực nữa, đổi thành Cháo Hàu đi",
           "assert": {
-            "tool_called": "sync_cart",
+            "tool_called": "add_cart",
             "tool_must_NOT_call": "confirm_order",
-            "response_should_contain_one_of": ["Cháo Hàu", "Cháo"]
+            "response_should_contain_one_of": [
+              "Cháo Hàu",
+              "Cháo"
+            ]
           }
         },
         {
@@ -58,8 +61,8 @@
           "role": "user",
           "content": "Cho mình 1 phần Tôm Càng Xanh Nướng Phô Mai và 2 chai Bia Sài Gòn",
           "assert": {
-            "tool_called": "sync_cart",
-            "tool_output_contains": "Đã cập nhật"
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm"
           }
         },
         {
@@ -77,7 +80,11 @@
           "content": "Cho mình xin mã QR thanh toán",
           "assert": {
             "tool_called": "request_payment",
-            "response_should_contain_one_of": ["QR", "Tổng tiền", "thanh toán"]
+            "response_should_contain_one_of": [
+              "QR",
+              "Tổng tiền",
+              "thanh toán"
+            ]
           }
         },
         {
@@ -86,7 +93,10 @@
           "content": "Mình chuyển khoản xong rồi nha",
           "assert": {
             "tool_called": "verify_payment",
-            "response_should_contain_one_of": ["thành công", "Cảm ơn"]
+            "response_should_contain_one_of": [
+              "thành công",
+              "Cảm ơn"
+            ]
           }
         }
       ]
@@ -104,8 +114,8 @@
           "role": "user",
           "content": "Cho mình 2 con Hàu Nướng Phô Mai",
           "assert": {
-            "tool_called": "sync_cart",
-            "tool_output_contains": "Đã cập nhật"
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm"
           }
         },
         {
@@ -113,9 +123,13 @@
           "role": "user",
           "content": "Mà thôi cho mình 5 con luôn đi",
           "assert": {
-            "tool_called": "sync_cart",
+            "tool_called": "add_cart",
             "tool_must_NOT_call": "confirm_order",
-            "response_should_contain_one_of": ["Hàu", "5", "tạm tính"]
+            "response_should_contain_one_of": [
+              "Hàu",
+              "5",
+              "tạm tính"
+            ]
           }
         },
         {
@@ -143,7 +157,12 @@
           "content": "Chào em, quán hôm nay đông ghê ha",
           "assert": {
             "tool_must_NOT_call": "sync_cart",
-            "response_should_contain_one_of": ["dạ", "chào", "ạ", "quán"]
+            "response_should_contain_one_of": [
+              "dạ",
+              "chào",
+              "ạ",
+              "quán"
+            ]
           }
         },
         {
@@ -151,9 +170,13 @@
           "role": "user",
           "content": "Thôi cho anh 1 phần Lẩu Thái đi",
           "assert": {
-            "tool_called": "sync_cart",
-            "tool_output_contains": "Đã cập nhật",
-            "response_should_contain_one_of": ["Lẩu Thái", "tạm tính", "xác nhận"]
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm",
+            "response_should_contain_one_of": [
+              "Lẩu Thái",
+              "tạm tính",
+              "xác nhận"
+            ]
           }
         },
         {
@@ -180,8 +203,8 @@
           "role": "user",
           "content": "Cho mình 2 phần Ốc Hương Xốt Trứng Muối và 2 chai Bia Sài Gòn",
           "assert": {
-            "tool_called": "sync_cart",
-            "tool_output_contains": "Đã cập nhật"
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm"
           }
         },
         {
@@ -189,9 +212,13 @@
           "role": "user",
           "content": "Bỏ bia đi, không lấy bia nữa",
           "assert": {
-            "tool_called": "sync_cart",
+            "tool_called": "remove_cart",
             "tool_must_NOT_call": "confirm_order",
-            "response_should_contain_one_of": ["Ốc Hương", "tạm tính", "bỏ"]
+            "response_should_contain_one_of": [
+              "Ốc Hương",
+              "tạm tính",
+              "bỏ"
+            ]
           }
         },
         {

@@ -18,6 +18,7 @@ CENTROIDS_PATH = settings.resources_dir / "centroids" / "centroids.npz"
 SOFTMAX_TEMPERATURE = 0.20
 PROB_THRESHOLD = 0.30
 GAP_THRESHOLD = 0.20
+MIN_SIM_THRESHOLD = 0.55
 
 
 def softmax_routing(
@@ -25,6 +26,7 @@ def softmax_routing(
     T: float = SOFTMAX_TEMPERATURE,
     prob_threshold: float = PROB_THRESHOLD,
     gap_threshold: float = GAP_THRESHOLD,
+    min_sim_threshold: float = MIN_SIM_THRESHOLD,
 ) -> Dict[str, Any]:
     """
     Convert cosine similarities to a softmax probability distribution,
@@ -33,6 +35,14 @@ def softmax_routing(
     Returns:
         {"intent": resolved_intent or None, "confidence": P1, "all_similarities": {...}}
     """
+    max_sim = max(all_similarities.values())
+    if max_sim < min_sim_threshold:
+        return {
+            "intent": None,
+            "confidence": max_sim,
+            "all_similarities": all_similarities,
+        }
+
     scores = np.array(list(all_similarities.values()))
     labels = list(all_similarities.keys())
 

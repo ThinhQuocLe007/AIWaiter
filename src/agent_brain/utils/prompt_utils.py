@@ -3,6 +3,36 @@ from typing import List
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, BaseMessage
 from src.agent_brain.config import settings
 
+
+def last_n_turns(messages: list, n: int) -> list:
+    """Return the last N HumanMessage-anchored spans.
+
+    Each span: [HumanMessage, AIMessage?, ToolMessage?*].
+    On retry (validator feedback loop), the ToolMessages injected
+    after the last AIMessage stay in the final span — the worker
+    still sees its own failed attempt + the validator feedback in
+    the trimmed history.
+
+    Returns all messages if there are fewer than N turns.
+    """
+    if n <= 0 or not messages:
+        return []
+
+    spans = []
+    current = []
+    for msg in messages:
+        if isinstance(msg, HumanMessage) and current:
+            spans.append(current)
+            current = []
+        current.append(msg)
+    if current:
+        spans.append(current)
+
+    trimmed = []
+    for span in spans[-n:]:
+        trimmed.extend(span)
+    return trimmed
+
 def load_prompt(filename: str, sub_dir: str = "system_prompts") -> str:
     """
     Loads a markdown or text prompt file from the resources directory.

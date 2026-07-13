@@ -112,7 +112,7 @@ def slm_router_node(state: AgentState) -> Dict[str, Any]:
         return {"current_intents": ["CHAT"]}
 
     query = user_message.content
-    chat_history = _format_last_n_turns(state["messages"], n=5)
+    chat_history = _format_last_n_turns(state["messages"], n=2)
     order_stage = state.get("order_stage") or "IDLE"
 
     try:

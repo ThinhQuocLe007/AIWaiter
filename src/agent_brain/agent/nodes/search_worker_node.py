@@ -2,12 +2,12 @@ import logging
 from typing import Dict, Any, Optional
 
 from langchain_ollama import ChatOllama
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, SystemMessage
 
 from src.agent_brain.agent.state import AgentState
 from src.agent_brain.config import settings
 from src.agent_brain.utils import trace_latency
-from src.agent_brain.utils.prompt_utils import build_system_prompt, build_few_shot_examples, build_dynamic_suffix
+from src.agent_brain.utils.prompt_utils import build_system_prompt, build_few_shot_examples, build_dynamic_suffix, last_n_turns
 from ..tools import search
 
 logger = logging.getLogger(__name__)
@@ -71,7 +71,7 @@ def search_worker_node(state: AgentState) -> Dict[str, Any]:
         [static_system_message]
         + static_few_shot_messages
         + [dynamic_suffix_message]
-        + state["messages"]
+        + last_n_turns(state["messages"], n=1)
     )
 
     try:
@@ -87,6 +87,26 @@ def search_worker_node(state: AgentState) -> Dict[str, Any]:
             "feedback": None,
             "loop_count": state.get("loop_count", 0) + 1,
         }
+
+    if not response.tool_calls:
+        logger.warning(
+            "SEARCH worker produced no tool_calls on first attempt — retrying "
+            "with forced instruction"
+        )
+        retry_prompt = SystemMessage(
+            content=(
+                "⚠ CRITICAL: Bạn PHẢI gọi search(). KHÔNG được trả lời bằng text. "
+                "Chỉ trả về tool call search() với query phù hợp từ câu cuối cùng "
+                "của khách. Gọi NGAY BÂY GIỜ."
+            )
+        )
+        try:
+            response = _search_model.invoke([retry_prompt] + list(input_messages))
+        except Exception as e:
+            logger.error(f"Search Worker retry failed: {e}")
+            response = AIMessage(
+                content="Xin lỗi, em xử lý thông tin bị lỗi. Anh/chị có thể nhắc lại được không ạ?"
+            )
 
     return {
         "messages": [response],

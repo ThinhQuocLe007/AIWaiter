@@ -6,17 +6,17 @@ from langgraph.prebuilt import ToolNode
 from src.agent_brain.agent.state import AgentState
 from src.agent_brain.agent.actions import build_action, emit_action
 from src.agent_brain.agent.memory.checkpointer import get_checkpointer, create_thread_config
-from src.agent_brain.agent.tools import search, sync_cart, confirm_order, request_payment, verify_payment
+from src.agent_brain.agent.tools import search, add_cart, remove_cart, clear_cart, confirm_order, request_payment, verify_payment
 from src.agent_brain.services.orchestrator_client import OrchestratorClient
 from src.agent_brain.agent.nodes.hybrid_router_node import hybrid_router_node
 from src.agent_brain.agent.nodes.order_worker_node import order_worker_node
 from src.agent_brain.agent.nodes.search_worker_node import search_worker_node
-from src.agent_brain.agent.nodes.payment_worker_node import payment_worker_node
+from src.agent_brain.agent.nodes.payment_dispatch_node import payment_dispatch_node
 from src.agent_brain.agent.nodes.deterministic_validator_node import deterministic_validator_node
 from src.agent_brain.agent.nodes.update_state_node import update_state_node
 from src.agent_brain.agent.nodes.response_node import response_node
-from src.agent_brain.agent.nodes.chat_worker_node import chat_worker_node
-from src.agent_brain.agent.nodes.state_outcome_node import state_outcome_node
+from src.agent_brain.agent.nodes.chat_worker_node import chat_worker_node, _to_curated_memory
+from src.agent_brain.agent.nodes.state_outcome_node import state_outcome_node, last_user_text
 
 logger = logging.getLogger(__name__)
 
@@ -26,12 +26,12 @@ INTENT_TO_WORKER = {
     "ORDER": "order_worker",
     "ORDER_CONFIRM": "order_worker",
     "SEARCH": "search_worker",
-    "PAYMENT": "payment_worker",
+    "PAYMENT": "payment_dispatch",
     "CHAT": "chat_worker",
 }
 
 DEFAULT_WORKER = "chat_worker"
-TOOL_WORKERS = ("order_worker", "search_worker", "payment_worker")
+TOOL_WORKERS = ("order_worker", "search_worker", "payment_dispatch")
 CHAT_WORKERS = ("chat_worker",)  # leaf worker that builds the chat context, no tool calls
 
 
@@ -45,23 +45,85 @@ def _get_next_worker(state: AgentState) -> str:
 
 def _route_by_intent(state: AgentState) -> str:
     """Routes to the correct worker based on the first unprocessed intent."""
-    return _get_next_worker(state)
+    worker = _get_next_worker(state)
+    if worker == "search_worker" and _should_shortcut_search(state):
+        intents = state.get("current_intents") or []
+        if len(intents) == 1:
+            logger.info(
+                "SEARCH intent rerouted to CHAT — question references known dishes"
+            )
+            return "chat_worker"
+        else:
+            logger.info(
+                "SEARCH intent kept (multi-intent %s) — SEARCH may produce "
+                "new context needed by downstream intents", intents
+            )
+    return worker
 
 
-def _route_if_tool_call(state: AgentState) -> Literal["tools", "response_node"]:
+CART_REVIEW_PATTERNS = (
+    "giỏ hàng", "xem giỏ", "kiểm tra giỏ",
+    "đơn hàng", "đã đặt", "đã gọi", "đang có những gì",
+    "đã chọn",
+)
+
+
+def _should_shortcut_search(state: AgentState) -> bool:
+    """Return True if the SEARCH intent should be rerouted to CHAT.
+
+    When the customer asks a follow-up question about a dish that is
+    already in the cart or in the curated memory from a previous
+    SEARCH turn, routing to CHAT gives the LLM access to cart state,
+    taste_profile, tags, and conversation history — it can answer
+    "có cay không?" directly without hitting the RAG pipeline.
+
+    Only overrides SEARCH; ORDER, PAYMENT, CHAT pass through unchanged.
+    """
+    user_msg = last_user_text(state).lower().casefold().strip()
+    if not user_msg:
+        return False
+
+    cart = state.get("active_cart")
+    cart_has_items = bool(cart and cart.items)
+
+    if cart_has_items and any(p in user_msg for p in CART_REVIEW_PATTERNS):
+        return True
+
+    known_names: set = set()
+
+    if cart_has_items:
+        for item in cart.items:
+            known_names.add(item.name.lower().casefold())
+
+    curated = _to_curated_memory(state.get("search_context"))
+    for dish in curated:
+        known_names.add(dish.name.lower().casefold())
+
+    return any(name in user_msg.casefold() for name in known_names)
+
+
+def _route_if_tool_call(state: AgentState) -> Literal["tools", "chat_worker", "response_node"]:
     """
     Routes worker output:
         - has tool_calls -> "tools" (validator runs next)
-        - no tool_calls  -> "response_node" (verbalize whatever the worker said)
+        - no tool_calls + ORDER/ORDER_CONFIRM intent -> "chat_worker"
+          (question routed to ORDER by mistake — let CHAT handle it with curated memory)
+        - no tool_calls + other intent -> "response_node" (defensive verbalization)
 
-    With `tool_choice="any"` in the worker LLMs the no-tool-calls branch should
+    With ``tool_choice="any"`` in the worker LLMs the no-tool-calls branch should
     be unreachable. Kept as defense-in-depth: if Ollama or a model ever ignores
-    the tool choice, the customer's text reply is still verbalized instead of
-    silently dropped.
+    the tool choice, the response is still verbalized instead of silently dropped.
     """
     last_msg = state["messages"][-1]
     if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
         return "tools"
+    intents = state.get("current_intents") or []
+    if intents and intents[0] in ("ORDER", "ORDER_CONFIRM"):
+        logger.info(
+            "ORDER worker produced no tool call — redirecting to chat_worker "
+            "(question misrouted to ORDER)"
+        )
+        return "chat_worker"
     logger.warning(
         "Worker produced no tool_calls despite tool_choice='any'; "
         "routing to response_node for verbalization."
@@ -74,12 +136,12 @@ def _route_after_validator(state: AgentState) -> str:
     Routes after the deterministic validator runs.
 
     Order matters — check circuit breaker FIRST:
-        1. loop_count >= MAX_RETRY_LOOPS -> response_node (give up, verbalize)
+        1. loop_count >= MAX_RETRY_LOOPS -> state_outcome (build retry context, then verbalize)
         2. is_valid -> tools (execute the tool call)
         3. otherwise -> back to the current worker for correction
     """
     if state.get("loop_count", 0) >= MAX_RETRY_LOOPS:
-        return "response_node"
+        return "state_outcome"
     if state.get("is_valid"):
         return "tools"
     return _get_next_worker(state)
@@ -118,11 +180,11 @@ class AIWaiterGraph:
         workflow.add_node("router", hybrid_router_node)
         workflow.add_node("order_worker", order_worker_node)
         workflow.add_node("search_worker", search_worker_node)
-        workflow.add_node("payment_worker", payment_worker_node)
+        workflow.add_node("payment_dispatch", payment_dispatch_node)
         workflow.add_node("chat_worker", chat_worker_node)
         workflow.add_node("validator", deterministic_validator_node)
         workflow.add_node("tools", ToolNode(
-            [search, sync_cart, confirm_order, request_payment, verify_payment],
+            [search, add_cart, remove_cart, clear_cart, confirm_order, request_payment, verify_payment],
             messages_key="messages"
         ))
         workflow.add_node("state_updater", update_state_node)
@@ -139,24 +201,20 @@ class AIWaiterGraph:
             {
                 "order_worker": "order_worker",
                 "search_worker": "search_worker",
-                "payment_worker": "payment_worker",
+                "payment_dispatch": "payment_dispatch",
                 "chat_worker": "chat_worker",
             },
         )
 
-        # Worker → validator (if tool call) | response_node (if no tool call).
-        # The "no tool call" branch still routes to response_node directly
-        # (defensive: the legacy response_node reads from the legacy state
-        # fields, not the new typed context). Phase 3 will rewrite
-        # response_node to use the typed context.
+        # Worker → validator (if tool call) | chat_worker (ORDER w/ no tool call) | response_node (defensive)
         for worker in TOOL_WORKERS:
             workflow.add_conditional_edges(
                 worker,
                 _route_if_tool_call,
-                {"tools": "validator", "response_node": "response_node"},
+                {"tools": "validator", "chat_worker": "chat_worker", "response_node": "response_node"},
             )
 
-        # Validator → tools (valid) | worker (invalid correction) | END (circuit breaker)
+        # Validator → tools (valid) | worker (invalid correction) | state_outcome (circuit breaker)
         workflow.add_conditional_edges(
             "validator",
             _route_after_validator,
@@ -164,8 +222,8 @@ class AIWaiterGraph:
                 "tools": "tools",
                 "order_worker": "order_worker",
                 "search_worker": "search_worker",
-                "payment_worker": "payment_worker",
-                "response_node": "response_node",
+                "payment_dispatch": "payment_dispatch",
+                "state_outcome": "state_outcome",
             },
         )
 
@@ -185,7 +243,7 @@ class AIWaiterGraph:
             {
                 "order_worker": "order_worker",
                 "search_worker": "search_worker",
-                "payment_worker": "payment_worker",
+                "payment_dispatch": "payment_dispatch",
                 "state_outcome": "state_outcome",
             },
         )

@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, PROJECT_ROOT)
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -45,7 +46,7 @@ def extract_tool_calls_from_stream(stream_updates: List[Dict]) -> List[Dict]:
     """Extract all tool calls from stream updates."""
     tool_calls = []
     for update in stream_updates:
-        for node_name in ["order_worker", "search_worker", "payment_worker"]:
+        for node_name in ["order_worker", "search_worker", "payment_dispatch"]:
             if node_name in update:
                 messages = update[node_name].get("messages", [])
                 for msg in messages:
@@ -77,7 +78,7 @@ def extract_ai_response_from_stream(stream_updates: List[Dict]) -> str:
             for msg in reversed(messages):
                 if isinstance(msg, AIMessage) and msg.content:
                     return msg.content
-        for node_name in ["order_worker", "search_worker", "payment_worker"]:
+        for node_name in ["order_worker", "search_worker", "payment_dispatch"]:
             if node_name in update:
                 messages = update[node_name].get("messages", [])
                 for msg in reversed(messages):
@@ -90,10 +91,14 @@ def format_tool_call(tc: Dict) -> str:
     """Format a tool call for logging."""
     name = tc.get("name", "unknown")
     args = tc.get("args", {})
-    if name == "sync_cart":
+    if name in ("add_cart", "sync_cart"):
         items = args.get("items", [])
         item_strs = [f"{{name: {i.get('name')}, qty: {i.get('quantity')}}}" for i in items]
-        return f"sync_cart(items=[{', '.join(item_strs)}])"
+        return f"{name}(items=[{', '.join(item_strs)}])"
+    elif name == "remove_cart":
+        return f"remove_cart(name={args.get('name')})"
+    elif name == "clear_cart":
+        return "clear_cart()"
     elif name == "confirm_order":
         return f"confirm_order(table_id={args.get('table_id')}, items={len(args.get('items', []))} items)"
     elif name == "search":
@@ -390,6 +395,21 @@ def run_evaluation(limit: int = None, datasets: List[str] = None):
             conn.commit()
             conn.close()
             log(f"Reset orchestrator DB tables: {orchestrator_db}")
+
+            # Seed sessions for all tables that eval scenarios will use.
+            # Without an active session, confirm_order / request_payment return 404.
+            try:
+                import httpx
+                back_url = os.getenv("ORCHESTRATOR_URL", "http://localhost:8000")
+                with httpx.Client(base_url=back_url, timeout=httpx.Timeout(5.0)) as cli:
+                    for tid in range(1, 16):
+                        try:
+                            cli.post("/seatings", json={"table_id": tid, "party_size": 2})
+                        except Exception:
+                            pass  # table may not exist, that's fine
+                log("Seeded eval table sessions (1-15)")
+            except Exception as e:
+                log(f"Session seeding skipped (backend not running?): {e}")
         except sqlite3.Error as e:
             log(f"Orchestrator DB reset failed (non-fatal): {e}")
 
