@@ -1,3 +1,4 @@
+import httpx
 from typing import List
 from langchain_core.tools import tool
 from src.agent_brain.schemas.order import OrderItem, ConfirmOrderResponse
@@ -37,7 +38,7 @@ def confirm_order(table_id: str, items: List[OrderItem]) -> ConfirmOrderResponse
             message=f"Đã xác nhận đơn hàng #{order['id']} cho bàn {table_id}.",
         )
         return (result.message, result)
-    except Exception as e:
+    except httpx.HTTPError as e:
         result = ConfirmOrderResponse(
             status="error",
             message=f"Lỗi xử lý đơn hàng: {str(e)}",

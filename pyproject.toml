@@ -125,3 +125,45 @@ explicit = true
 name = "pytorch-cu121"
 url = "https://download.pytorch.org/whl/cu121"
 explicit = true
+
+# ── Ruff — fast Python linter + import sorter ──────────────────────────────
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "F",      # pyflakes (unused imports, undefined names)
+    "I",      # isort (import sorting)
+    "N",      # pep8-naming
+    "W",      # pycodestyle warnings
+    "UP",     # pyupgrade (modern syntax)
+    "B",      # flake8-bugbear (bug-prone patterns)
+    "C4",     # flake8-comprehensions
+    "SIM",    # flake8-simplify
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+
+# ── Mypy — static type checker ─────────────────────────────────────────────
+[tool.mypy]
+python_version = "3.10"
+strict = false
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "langchain_core.*",
+    "langchain_ollama.*",
+    "langgraph.*",
+    "langgraph_prebuilt.*",
+    "rank_bm25.*",
+    "sentence_transformers.*",
+    "faster_whisper.*",
+    "pyaudio.*",
+]
+ignore_missing_imports = true

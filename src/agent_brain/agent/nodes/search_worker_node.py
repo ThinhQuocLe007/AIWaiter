@@ -1,8 +1,9 @@
 import logging
+import httpx
 from typing import Dict, Any, Optional
 
 from langchain_ollama import ChatOllama
-from langchain_core.messages import AIMessage, SystemMessage
+from langchain_core.messages import AIMessage
 
 from src.agent_brain.agent.state import AgentState
 from src.agent_brain.config import settings
@@ -21,13 +22,6 @@ _search_model = ChatOllama(
     keep_alive=settings.llm_keep_alive,
     metadata={"ls_model_name": settings.WORKER_MODEL, "ls_provider": "ollama"}
 ).bind_tools([search], tool_choice="any")
-# NOTE: `tool_choice="any"` is currently ignored by ChatOllama (see its
-# bind_tools docstring: "not supported by Ollama"). The binding is kept for
-# forward-compatibility and to signal intent. Today's tool-call enforcement
-# comes from the system prompt + Pydantic-constrained schema + few-shot
-# examples. If the LLM ever replies in text despite that, the graph's
-# defensive routing in `_route_if_tool_call` (agent/graph.py) sends the
-# message to response_node so the customer still gets a verbalized reply.
 
 
 def _build_search_dynamic_context(state: AgentState) -> Optional[str]:
@@ -76,8 +70,8 @@ def search_worker_node(state: AgentState) -> Dict[str, Any]:
 
     try:
         response = _search_model.invoke(input_messages)
-    except Exception as e:
-        logger.error(f"Search Worker Failed: {e}")
+    except (httpx.HTTPError, ConnectionError) as e:
+        logger.error("Search Worker Failed: %s", e)
         return {
             "messages": [
                 AIMessage(
@@ -87,26 +81,6 @@ def search_worker_node(state: AgentState) -> Dict[str, Any]:
             "feedback": None,
             "loop_count": state.get("loop_count", 0) + 1,
         }
-
-    if not response.tool_calls:
-        logger.warning(
-            "SEARCH worker produced no tool_calls on first attempt — retrying "
-            "with forced instruction"
-        )
-        retry_prompt = SystemMessage(
-            content=(
-                "⚠ CRITICAL: Bạn PHẢI gọi search(). KHÔNG được trả lời bằng text. "
-                "Chỉ trả về tool call search() với query phù hợp từ câu cuối cùng "
-                "của khách. Gọi NGAY BÂY GIỜ."
-            )
-        )
-        try:
-            response = _search_model.invoke([retry_prompt] + list(input_messages))
-        except Exception as e:
-            logger.error(f"Search Worker retry failed: {e}")
-            response = AIMessage(
-                content="Xin lỗi, em xử lý thông tin bị lỗi. Anh/chị có thể nhắc lại được không ạ?"
-            )
 
     return {
         "messages": [response],

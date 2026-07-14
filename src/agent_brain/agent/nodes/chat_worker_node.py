@@ -25,7 +25,7 @@ from src.agent_brain.agent.state import AgentState
 from src.agent_brain.schemas import ChatResponseContext
 from src.agent_brain.schemas.response_context import CuratedDish
 from src.agent_brain.schemas.order import Cart
-from src.agent_brain.agent.nodes.state_outcome_node import last_user_text
+from src.agent_brain.utils import last_user_text
 
 
 def _to_curated_memory(search_results, max_items: int = 5) -> List[CuratedDish]:

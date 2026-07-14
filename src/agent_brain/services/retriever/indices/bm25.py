@@ -37,7 +37,7 @@ class BM25Index:
             logger.info(f'[INFO] BM25 index built and saved to {self.db_path}')
             return True
 
-        except Exception as e:
+        except (pickle.PickleError, OSError) as e:
             logger.error(f'[ERROR] Creating BM25 index: {e}')
             return False
     
@@ -50,7 +50,7 @@ class BM25Index:
                 self.tokenized_docs = data['tokenized_docs']
             logger.info(f'[INFO] BM25 index loaded from {self.db_path}')
             return True
-        except Exception as e:
+        except (pickle.PickleError, OSError) as e:
             logger.error(f'[ERROR] Loading BM25 index: {e}')
             return False  
     
@@ -105,7 +105,7 @@ class BM25Index:
             doc_scores.sort(key=lambda x: x[1], reverse=True)
 
             return doc_scores[:k]
-        except Exception as e:
+        except (ValueError, RuntimeError) as e:
             logger.error(f'[ERROR] Searching BM25 index: {e}')
             return []
 
@@ -121,6 +121,6 @@ class BM25Index:
                 pickle.dump(data, f)
             logger.info(f'[INFO] BM25 index saved to {self.db_path}')
             return True
-        except Exception as e:
+        except (pickle.PickleError, OSError) as e:
             logger.error(f'[ERROR] Saving BM25 index: {e}')
             return False

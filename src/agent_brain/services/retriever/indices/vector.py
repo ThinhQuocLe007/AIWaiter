@@ -26,14 +26,14 @@ class VectorStore:
             write_fingerprint(Path(self.db_path))
             logger.info(f'[INFO] Vector store saved to {self.db_path}')
             return True
-        except Exception as e:
+        except OSError as e:
             logger.error(f'[ERROR] Creating vector store: {e}')
             return False
     
     def load(self) -> bool:
         try:
             self.vector_db = FAISS.load_local(self.db_path, self.embedding, allow_dangerous_deserialization=True)
-        except Exception as e:
+        except OSError as e:
             logger.error(f'[ERROR] Loading vector store: {e}')
             return False
 
@@ -48,6 +48,6 @@ class VectorStore:
         try:
             results = self.vector_db.similarity_search_with_score(query, k=k)
             return results
-        except Exception as e:
+        except (OSError, RuntimeError) as e:
             logger.error(f'[ERROR] Searching vector store: {e}')
             return []

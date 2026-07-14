@@ -36,13 +36,6 @@ class Cart(BaseModel):
         return "\n".join(item_lines) + f"\nTổng: {total}₫"
 
 
-class SyncCartResponse(BaseModel):
-    status: Literal["success", "error"]
-    items: List[OrderItem]
-    total_price: float
-    message: str
-
-
 class CartAddItem(BaseModel):
     """Single item delta for add_cart — lighter than OrderItem (no is_valid, no error_msg)."""
     name: str
@@ -66,13 +59,6 @@ class CartRemoveResponse(BaseModel):
 
 class CartClearResponse(BaseModel):
     status: Literal["success", "error"]
-    message: str
-
-
-class SyncCartResponse(BaseModel):
-    status: Literal["success", "error"]
-    items: List[OrderItem]
-    total_price: float
     message: str
 
 

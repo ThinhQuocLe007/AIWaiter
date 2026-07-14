@@ -55,7 +55,7 @@ def _warmup() -> None:
                 num_ctx=settings.LLM_NUM_CTX,
                 keep_alive=settings.llm_keep_alive,
             ).invoke("ok")
-        except Exception as e:  # Ollama down / model not pulled — log and carry on.
+        except Exception as e:  # noqa: BLE001 — Ollama down / model not pulled — log and carry on
             log.warning("LLM warmup failed for %s: %s", model_id, e)
 
     try:
@@ -63,7 +63,7 @@ def _warmup() -> None:
         from src.agent_brain.agent.tools.search_tool import search
 
         search.invoke({"query": "khởi động"})
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 — startup time; RAG may fail for any reason at warmup
         log.warning("Retriever warmup failed: %s", e)
 
 

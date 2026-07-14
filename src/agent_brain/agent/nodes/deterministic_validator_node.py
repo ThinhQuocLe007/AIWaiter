@@ -3,7 +3,7 @@ import re
 from typing import Dict, Any, List
 from langchain_core.messages import ToolMessage
 from src.agent_brain.agent.state import AgentState
-from src.agent_brain.utils import resolve_menu_name, find_nearest_menu_name
+from src.agent_brain.utils import resolve_menu_name, find_nearest_menu_name, last_user_text
 
 logger = logging.getLogger(__name__)
 
@@ -25,14 +25,6 @@ _MODIFIER_PATTERNS = [
 ]
 
 
-def _last_user_text(state: AgentState) -> str:
-    """The guest's utterance for this turn (the most recent human message)."""
-    for msg in reversed(state.get("messages", [])):
-        if getattr(msg, "type", None) == "human":
-            return msg.content if isinstance(msg.content, str) else ""
-    return ""
-
-
 def _restore_cart_if_additive(state: AgentState, valid_items: List[dict]) -> List[dict]:
     """If this is an additive turn but the LLM forgot every existing cart item, prepend them.
 
@@ -43,7 +35,7 @@ def _restore_cart_if_additive(state: AgentState, valid_items: List[dict]) -> Lis
     if not prev_cart or not prev_cart.items:
         return valid_items
 
-    text = _last_user_text(state).lower()
+    text = last_user_text(state).lower()
     additive = any(m in text for m in _ADDITIVE_MARKERS)
     destructive = any(m in text for m in _DESTRUCTIVE_MARKERS)
     if not additive or destructive:
@@ -226,14 +218,6 @@ def deterministic_validator_node(state: AgentState) -> Dict[str, Any]:
                     }
                     for i in cart.items
                 ]
-
-        # --- sync_cart: backward-compat (deprecated) ---
-        elif tool_name == "sync_cart":
-            items = args.get("items", [])
-            valid_items = _validate_menu_items(
-                items, errors, unavailable_items, ambiguous_items
-            )
-            args["items"] = valid_items
 
         # --- payment tools ---
         elif tool_name == "request_payment":

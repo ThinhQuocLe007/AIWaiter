@@ -60,7 +60,7 @@ The CONTEXT block is built by `_format_chat_for_llm` in `response_node.py`.
 ## What's NOT in the prompts
 
 The previous version of this file (100 lines) enumerated 7 sub-templates
-(sync_cart / confirm_order / search / request_payment / verify_payment /
+(add_cart / confirm_order / search / request_payment / verify_payment /
 off-menu / validation errors). **That was for the legacy design where
 `response_node` was a single LLM call that did everything.**
 

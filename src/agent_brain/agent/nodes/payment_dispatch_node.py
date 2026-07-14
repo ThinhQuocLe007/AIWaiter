@@ -1,6 +1,6 @@
 """payment_dispatch_node — deterministic PAYMENT dispatcher (no LLM call).
 
-Replaces ``payment_worker_node``. When the hybrid router resolves the
+When the hybrid router resolves the
 intent as PAYMENT, this node always emits a ``request_payment`` tool
 call. No LLM, no keyword dispatch — the router already decided the
 intent, and ``request_payment`` is the only payment action the agent

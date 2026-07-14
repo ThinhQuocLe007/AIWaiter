@@ -1,29 +1,71 @@
+import functools
 import json
 import logging
 import unicodedata
-from typing import List, Optional, TypedDict
+from typing import Dict, List, Optional, TypedDict, Iterator, Union
 from src.agent_brain.config import settings
 
 logger = logging.getLogger(__name__)
 
+
 def get_menu_names() -> List[str]:
     """Dynamically loads menu item names from the JSON asset."""
     menu_path = settings.assets_dir / "data" / "menu.json"
-    
+
     if not menu_path.exists():
         logger.error(f"Menu JSON file not found at {menu_path} for dynamic extraction.")
         return []
-        
+
     try:
         with open(menu_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
             return [item['name'] for item in data]
-    except Exception as e:
+    except (json.JSONDecodeError, OSError) as e:
         logger.error(f"Error loading menu names for schemas: {e}")
         return []
 
-# Dynamic import-time array containing official menu items
-MENU_NAMES = get_menu_names()
+
+class _LazyMenuNames:
+    """Lazy-loading proxy for the menu names list.
+
+    Avoids eager ``get_menu_names()`` at import time — defers file I/O to
+    the first actual access.  The proxy implements the full list interface
+    so that ``MENU_NAMES`` behaves identically to a plain ``list[str]`` in
+    all existing call sites (iteration, containment, bool, indexing,
+    ``tuple()``, ``len()``, ``str()``).
+    """
+
+    def __init__(self):
+        self._cache: Optional[List[str]] = None
+
+    def _load(self) -> List[str]:
+        if self._cache is None:
+            self._cache = get_menu_names()
+        return self._cache
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._load())
+
+    def __len__(self) -> int:
+        return len(self._load())
+
+    def __bool__(self) -> bool:
+        return bool(self._load())
+
+    def __contains__(self, item: str) -> bool:
+        return item in self._load()
+
+    def __getitem__(self, index: Union[int, slice]) -> Union[str, List[str]]:
+        return self._load()[index]
+
+    def __repr__(self) -> str:
+        return repr(self._load())
+
+    def __str__(self) -> str:
+        return str(self._load())
+
+
+MENU_NAMES = _LazyMenuNames()
 
 
 def _normalize(text: str) -> str:
@@ -34,8 +76,9 @@ def _normalize(text: str) -> str:
     return " ".join(text.lower().split())
 
 
-# Precomputed normalized index: normalized_name -> official menu name.
-_NORMALIZED_MENU = {_normalize(name): name for name in MENU_NAMES}
+@functools.lru_cache(maxsize=1)
+def _get_normalized_menu() -> Dict[str, str]:
+    return {_normalize(name): name for name in MENU_NAMES}
 
 
 class MenuResolution(TypedDict):
@@ -61,15 +104,16 @@ def resolve_menu_name(name: str) -> MenuResolution:
         return {"kind": "none", "resolved": None, "candidates": []}
 
     norm = _normalize(name)
+    norm_menu = _get_normalized_menu()
 
     # 1. Exact (case/diacritics-insensitive) match.
-    if norm in _NORMALIZED_MENU:
-        return {"kind": "exact", "resolved": _NORMALIZED_MENU[norm], "candidates": [_NORMALIZED_MENU[norm]]}
+    if norm in norm_menu:
+        return {"kind": "exact", "resolved": norm_menu[norm], "candidates": [norm_menu[norm]]}
 
     # 2. Prefix matches first (most intuitive: "Ốc Hương" -> "Ốc Hương Xốt ..."),
     #    fall back to substring matches if no prefix hit.
-    prefix = [official for n, official in _NORMALIZED_MENU.items() if n.startswith(norm)]
-    candidates = prefix or [official for n, official in _NORMALIZED_MENU.items() if norm in n]
+    prefix = [official for n, official in norm_menu.items() if n.startswith(norm)]
+    candidates = prefix or [official for n, official in norm_menu.items() if norm in n]
 
     if len(candidates) == 1:
         return {"kind": "single", "resolved": candidates[0], "candidates": candidates}

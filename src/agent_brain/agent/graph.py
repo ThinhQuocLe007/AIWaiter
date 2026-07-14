@@ -1,4 +1,5 @@
 import logging
+import httpx
 from typing import Dict, Any, Literal
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
@@ -16,7 +17,8 @@ from src.agent_brain.agent.nodes.deterministic_validator_node import determinist
 from src.agent_brain.agent.nodes.update_state_node import update_state_node
 from src.agent_brain.agent.nodes.response_node import response_node
 from src.agent_brain.agent.nodes.chat_worker_node import chat_worker_node, _to_curated_memory
-from src.agent_brain.agent.nodes.state_outcome_node import state_outcome_node, last_user_text
+from src.agent_brain.agent.nodes.state_outcome_node import state_outcome_node
+from src.agent_brain.utils import last_user_text
 
 logger = logging.getLogger(__name__)
 
@@ -267,8 +269,8 @@ class AIWaiterGraph:
             try:
                 sess = self.orchestrator.get_active_session(table_id)
                 session_id = sess["id"] if sess else None
-            except Exception:
-                session_id = None  # backend unreachable → table-scoped fallback thread
+            except httpx.HTTPError as e:
+                logger.warning("Backend unreachable — falling back to table-scoped thread: %s", e)
         config = create_thread_config(table_id, session_id)
         current_state = self.app.get_state(config)
         existing_stage = current_state.values.get("order_stage", "IDLE") if current_state and current_state.values else "IDLE"

@@ -1,5 +1,6 @@
 import json
 import logging
+import httpx
 from typing import Dict, Any
 
 from langchain_ollama import ChatOllama
@@ -123,8 +124,8 @@ def slm_router_node(state: AgentState) -> Dict[str, Any]:
         })
         intents = result.intents or ["CHAT"]
         logger.info(f"SLM Router Output: {intents} | reason: {result.reasoning}")
-    except Exception:
-        logger.exception("SLM Router LLM call failed, defaulting to CHAT")
+    except (httpx.HTTPError, ConnectionError) as e:
+        logger.exception("SLM Router LLM call failed: %s", e)
         intents = ["CHAT"]
 
     return {"current_intents": intents}

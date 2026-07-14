@@ -23,7 +23,7 @@ src/agent_brain/
 │   ├── actions.py               # UI actions (open_menu, open_payment, ...)
 │   ├── memory/checkpointer.py   # SQLite checkpointer (thread_id = session_id)
 │   ├── nodes/                   # 10 LangGraph nodes (routers, workers, validators, critic, response, update)
-│   ├── tools/                   # 5 LangChain tools (search, sync_cart, confirm_order, request_payment, verify_payment)
+│   ├── tools/                   # 5 LangChain tools (search, add_cart, remove_cart, clear_cart, confirm_order, request_payment, verify_payment)
 │   └── resources/               # static assets (centroids, few_shots, skills, system_prompts)
 ├── services/
 │   ├── orchestrator_client.py   # agent → backend REST client
@@ -54,7 +54,7 @@ uv run uvicorn src.agent_brain.server:app --host 0.0.0.0 --port 8100
   → deterministic validator → critic → response.
 - **Hybrid RAG** — BM25 + FAISS vector + reciprocal rank fusion. The fingerprint
   check fails fast on embedding-model/dim swap.
-- **Function calling** — `search` · `sync_cart` · `confirm_order` ·
+- **Function calling** — `search` · `add_cart` · `remove_cart` · `clear_cart` · `confirm_order` ·
   `request_payment` · `verify_payment` (each posts to the orchestrator).
 - **Session memory** — `thread_id = active session_id`; after payment the next guest
   opens a new session → clean context.

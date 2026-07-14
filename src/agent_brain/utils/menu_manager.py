@@ -25,7 +25,7 @@ class MenuManager:
                 # Create a clean lookup table: {"item name": price}
                 self.menu_map = {item['name'].lower().strip(): float(item['price']) for item in data}
             logger.info(f"Successfully loaded {len(self.menu_map)} items into MenuManager price map.")
-        except Exception as e:
+        except (json.JSONDecodeError, OSError) as e:
             logger.exception(f"Error loading menu inside MenuManager: {e}")
 
     def get_price(self, item_name: str) -> float:

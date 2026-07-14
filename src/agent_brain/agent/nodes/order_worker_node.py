@@ -22,52 +22,6 @@ _llm = ChatOllama(
     metadata={"ls_model_name": settings.WORKER_MODEL, "ls_provider": "ollama"},
 ).bind_tools([add_cart, remove_cart, clear_cart, confirm_order], tool_choice="any")
 
-_OLLAMA_TOOLS = _llm.kwargs.get("tools", []) if hasattr(_llm, "kwargs") else []
-
-
-def _force_tool_call_via_ollama(messages: list) -> AIMessage:
-    last_user = None
-    ollama_msgs = []
-    for m in messages:
-        if isinstance(m, SystemMessage):
-            ollama_msgs.append({"role": "system", "content": m.content})
-        elif hasattr(m, "type"):
-            if m.type == "human":
-                ollama_msgs.append({"role": "user", "content": m.content})
-                last_user = m.content
-            elif m.type == "ai" and m.content:
-                ollama_msgs.append({"role": "assistant", "content": m.content})
-
-    if not last_user:
-        raise ValueError("No user message found in tool call retry")
-
-    resp = httpx.post(
-        "http://localhost:11434/api/chat",
-        json={
-            "model": settings.WORKER_MODEL,
-            "messages": ollama_msgs,
-            "tools": _OLLAMA_TOOLS,
-            "tool_choice": "required",
-            "stream": False,
-            "options": {"temperature": 0.1},
-        },
-        timeout=90.0,
-    )
-    resp.raise_for_status()
-    data = resp.json()
-    msg = data.get("message", {})
-    tool_calls = []
-    for tc in msg.get("tool_calls", []):
-        fn = tc.get("function", {})
-        tool_calls.append({
-            "name": fn.get("name", ""),
-            "args": fn.get("arguments", {}),
-            "id": tc.get("id") or f"call_{fn.get('name', 'unknown')}",
-            "type": "tool_call",
-        })
-    content = msg.get("content", "")
-    return AIMessage(content=content, tool_calls=tool_calls if tool_calls else [])
-
 
 def _build_dynamic_context_block(state: AgentState, order_stage: str) -> str:
     """Assembles the current order stage, cart summary, and validation feedback.
@@ -117,15 +71,12 @@ def order_worker_node(state: AgentState) -> Dict[str, Any]:
 
     try:
         ai_msg = _llm.invoke(input_messages)
-    except Exception as e:
+    except (httpx.HTTPError, ConnectionError) as e:
         logger.error("Order Worker Failed: %s", e)
         ai_msg = AIMessage(content="Xin lỗi, em xử lý thông tin bị lỗi. Anh/chị có thể nhắc lại được không ạ?")
 
     if not ai_msg.tool_calls:
-        logger.warning(
-            "ORDER worker produced no tool_calls on first attempt — retrying "
-            "with forced instruction"
-        )
+        logger.warning("ORDER worker produced no tool_calls on first attempt — retrying with forced instruction")
         retry_prompt = SystemMessage(
             content=(
                 "⚠ CRITICAL: Bạn PHẢI gọi một tool call (add_cart, remove_cart, "
@@ -136,19 +87,8 @@ def order_worker_node(state: AgentState) -> Dict[str, Any]:
         )
         try:
             ai_msg = _llm.invoke([retry_prompt] + list(input_messages))
-        except Exception as e:
+        except (httpx.HTTPError, ConnectionError) as e:
             logger.error("Order Worker retry failed: %s", e)
-            ai_msg = AIMessage(content="Xin lỗi, em xử lý thông tin bị lỗi. Anh/chị có thể nhắc lại được không ạ?")
-
-    if not ai_msg.tool_calls:
-        logger.warning(
-            "ORDER worker still no tool_calls after retry — forcing via "
-            "Ollama native tool_choice=required"
-        )
-        try:
-            ai_msg = _force_tool_call_via_ollama(input_messages)
-        except Exception as e:
-            logger.error("Order Worker forced-tool fallback failed: %s", e)
             ai_msg = AIMessage(content="Xin lỗi, em xử lý thông tin bị lỗi. Anh/chị có thể nhắc lại được không ạ?")
 
     return {"messages": [ai_msg], "feedback": None}

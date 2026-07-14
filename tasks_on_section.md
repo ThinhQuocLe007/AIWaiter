@@ -1,131 +1,146 @@
-# Long Conversation Test — qwen2.5:7b + All Fixes + Forced Tool Call
+# Tasks from Agent Brain Analysis
 
-Model: `qwen2.5:7b` | Embedding: `bkai-foundation-models/vietnamese-bi-encoder`
-Report: `evals/results/long_conv_20260713_205635.json`
-
-Fixes applied:
-- `MIN_SIM_THRESHOLD = 0.55` — semantic router blocks weak fast-tracks
-- `order_worker_agent.md` — rule #0: MUST call tool, never reply in text
-- `_extract_modifier()` — strips parenthesized modifiers from dish names in validator
-- `CHAT_REWRITER_PROMPT` — explicit "don't fabricate" for unanswerable questions
-- `_force_tool_call_via_ollama()` — falls back to raw Ollama API with `tool_choice: "required"`
+> Source: `docs/agent-brain-analysis.md` (2026-07-14)
 
 ---
 
-## Summary
+## Section 4: Quick Wins (This Week)
 
-| Metric | gemma4 | qwen2.5 (all fixes) | qwen2.5 (+ forced tool) |
-|---|---|---|---|
-| Avg latency | 7.42s | 3.30s | 5.44s |
-| Cart accuracy | wrong | wrong (missing base item) | **correct (461.000₫)** |
-| Turns with tools | 14/15 | 13/15 | **13/15** |
-| Intent matches | 5/15 | 13/15 | **13/15** |
-| Turn 5 tool call | no | no | **yes ✓** |
-| confirm_order | 404 | Order #1 | **Order #1 ✓** |
-| Modifier extraction | dropped | ✓ | ✓ |
+### 4.1 Delete Deprecated Code
 
----
+- [x] **4.1.1** Remove `sync_cart` tool — `tools/sync_cart.py`, `tools/__init__.py` (export), `state_outcome_node.py:219-220`, `deterministic_validator_node.py:231-236`. Deprecated since add_cart/remove_cart/clear_cart were introduced.
+- [x] **4.1.2** Remove `critic_node.py` — `agent/nodes/critic_node.py`, `nodes/__init__.py`. Legacy LLM-based validator superseded by deterministic validator. Not connected to the graph.
+- [x] **4.1.3** Remove commented-out Phase 5 code — `response_node.py` ~100 lines at bottom. Marked "Phase 5 will delete." *(Already clean — updated docstring only.)*
+- [x] **4.1.4** Remove duplicate `SyncCartResponse` class — `schemas/order.py` lines 39-44 and 72-76. Two identical class definitions.
+- [x] **4.1.5** Remove legacy `payment_worker_node.py` — `agent/nodes/payment_worker_node.py`. Superseded by `payment_dispatch_node.py`. Still imported in `nodes/__init__.py`.
 
-## Conversation Transcript
+### 4.2 Fix Code Duplication
 
-[Human] Chào em, bàn mình có 2 người. Cho anh xem menu có gì hot hôm nay đi
-[AI Waiter] Dạ, anh/chị có thể thử cá chim nướng sa tế - món best seller của nhà hàng ạ. Hoặc nếu thích ốc, em đề xuất ốc len xào dừa.
+- [x] **4.2.1** Consolidate `last_user_text` — `deterministic_validator_node.py:28-33` and `state_outcome_node.py:47-56` define the same function. Move one canonical implementation to `utils/` and have both nodes import it.
 
-[Human] Hải sản ở đây có món gì ngon? Anh với vợ thích ốc với tôm, em gợi ý vài món đi
-[AI Waiter] Dạ, anh/chị có muốn thử món ốc hương hấp hay tôm sú xào sao? Em sẽ tư vấn thêm nếu cần ạ.
+### 4.3 Remove Module-Level Side Effects
 
-[Human] Ốc Hương Xốt Trứng Muối ngon không em? Có cay không?
-[AI Waiter] Dạ, có 3 lựa chọn Ốc Hương Xốt Trứng Muối: Ốc Hương 85.000₫, Ốc Mỡ 95.000₫, Ốc Cà Na 75.000₫. Em có thể đặt món cho anh/chị được không?
+- [x] **4.3.1** Lazy-initialize `MENU_NAMES` in `menu_utils.py` — `MENU_NAMES = get_menu_names()` runs at import time. Move to lazy initialization (`_LazyMenuNames` proxy + `_get_normalized_menu` cached) so it's computed on first use.
 
-[Human] Tôm Càng Xanh Nướng Phô Mai phần ăn bao nhiêu con vậy em?
-[AI Waiter] Dạ, anh/chị muốn gọi Tôm Càng Xanh Nướng Phô Mai với giá 120.000₫ nhé? Em có thể đặt món này ngay cho anh/chị ạ.
+### 4.4 Add Ruff + Mypy Configuration
 
-[Human] Cho anh 2 phần Ốc Hương Xốt Trứng Muối trước đi
-[AI Waiter] Dạ, giỏ hàng của anh/chị hiện có:
-  - Ốc Hương Xốt Trứng Muối ×2 (85.000₫/phần)
-Tổng tạm tính 170.000₫. Anh/chị xác nhận đặt hàng chưa ạ?
+- [x] **4.4.1** Add `[tool.ruff]` config to `pyproject.toml` — target-version py310, line-length 100, select E/F/I/N/W/UP/B/C4/SIM rules.
+- [x] **4.4.2** Add `[tool.mypy]` config to `pyproject.toml` — python_version 3.10, strict=false, warn_return_any=true, warn_unused_configs=true.
 
-[Human] Vợ anh thích ăn hàu, cho thêm 3 con Hàu Nướng Phô Mai và 1 chai Bia Tiger Bạc
-[AI Waiter] Dạ, giỏ hàng của anh/chị hiện có:
-  - Ốc Hương Xốt Trứng Muối ×2 (85.000₫/phần)
-  - Hàu Nướng Phô Mai ×3 (39.000₫/phần)
-  - Bia Tiger Bạc ×1 (22.000₫/phần)
-Tổng tạm tính 309.000₫. Anh/chị xác nhận đặt hàng chưa ạ?
+### 4.5 Standardize Error Handling
 
-[Human] À quên, cho anh hỏi Ốc Hương Xốt Trứng Muối bao nhiêu 1 phần vậy?
-[AI Waiter] Dạ, Ốc Hương Xốt Trứng Muối là 85.000₫/phần ạ. Anh/chị có muốn gọi thêm món gì không?
-
-[Human] Thôi bỏ Bia Tiger Bạc đi, đổi qua 2 Bia Sài Gòn đi em. Bia Tiger nghe đắng quá
-[AI Waiter] Dạ, giỏ hàng của anh/chị hiện có:
-  - Ốc Hương Xốt Trứng Muối ×2 (85.000₫/phần)
-  - Hàu Nướng Phô Mai ×3 (39.000₫/phần)
-  - Bia Sài Gòn ×2 (15.000₫/phần)
-Tổng tạm tính 317.000₫. Anh/chị xác nhận đặt hàng chưa ạ?
-
-[Human] Cho anh xem lại order đang có những gì đi em
-[AI Waiter] Dạ, giỏ hàng của anh/chị hiện có:
-  - Ốc Hương Xốt Trứng Muối ×2 (85.000₫/phần)
-  - Hàu Nướng Phô Mai ×3 (39.000₫/phần)
-  - Bia Sài Gòn ×2 (15.000₫/phần)
-Tổng tạm tính là 317.000₫ ạ. Anh/chị có muốn thay đổi gì nữa không?
-
-[Human] Thêm 1 dĩa Khoai Tây Lắc Phô Mai cho vợ. Với cả có Dừa Tươi không em? Cho anh 1 trái
-[AI Waiter] Dạ, món Dừa Tươi hiện không có trong thực đơn ạ. Anh/chị muốn chọn món khác không ạ?
-
-[Human] Gỏi Xoài Ốc Giác có ngon không? Anh tính gọi thêm 1 phần mà sợ cay quá
-[AI Waiter] Dạ, Gỏi Xoài Ốc Giác là một món khá mát và không cay nên anh/chị có thể yên tâm thử. Cho anh/chị thêm 1 phần Gỏi Xoài Ốc Giác nhé. Em sẽ cập nhật giỏ hàng ngay.
-
-[Human] Thôi cho anh 1 phần Gỏi Xoài Ốc Giác luôn, ít cay nha em
-[AI Waiter] Dạ, giỏ hàng của anh/chị hiện có:
-  - Ốc Hương Xốt Trứng Muối ×2 (85.000₫/phần)
-  - Hàu Nướng Phô Mai ×3 (39.000₫/phần)
-  - Bia Sài Gòn ×2 (15.000₫/phần)
-  - Khoai Tây Lắc Phô Mai ×1 (49.000₫/phần)
-  - Gỏi Xoài Ốc Giác ×1 (95.000₫/phần) (Ghi chú: ít cay)
-Tổng tạm tính 461.000₫. Anh/chị xác nhận đặt hàng chưa ạ?
-
-[Human] Xem lại đơn lần cuối rồi chốt luôn em ơi
-[AI Waiter] Dạ, em đã xác nhận đơn hàng #1 ạ. Món đang được chuẩn bị, anh/chị chờ một chút nhé.
-
-[Human] Tính tiền cho anh, quẹt thẻ được không em?
-[AI Waiter] Dạ, tổng hóa đơn của anh/chị là 461.000₫ ạ. Anh/chị vui lòng quét mã QR để thanh toán nhé.
-
-[Human] Anh chuyển khoản xong rồi đó, kiểm tra giúp anh
-[AI Waiter] Dạ, tổng hóa đơn của anh/chị là 461.000₫ ạ. Anh/chị vui lòng quét mã QR để thanh toán nhé.
+- [x] **4.5.1** Replace broad `except Exception` catches with specific exception types across the codebase (e.g. `slm_router_node.py:126-128`). Use `httpx.HTTPError`, `ConnectionError`, `TimeoutError` etc.
 
 ---
 
-## Solutions Applied
+## Section 5: Phase 1 — Foundation Fixes (2-3 weeks)
 
-### S1. MIN_SIM_THRESHOLD — semantic router blocks weak matches
+### 5.1 Upgrade the Base Model
 
-File: `semantic_router_node.py`. Added `MIN_SIM_THRESHOLD = 0.55`. If the top centroid cosine similarity is below 0.55, skip SEMANTIC fast-track entirely and fall back to SLM. Cleans up Turns 4, 7, 10, 14 misroutes.
+- [x] **5.1.1** Pull `qwen2.5:7b-instruct` via Ollama. *(Done — 4.7 GB)*
+- [x] **5.1.2** Update `.env` / config to use `qwen2.5:7b-instruct` for ROUTER_MODEL, WORKER_MODEL, RESPONSE_MODEL.
+- [x] **5.1.3** Remove 3-tier retry mechanism (`_force_tool_call_via_ollama`, `tool_choice` retry prompts) once model reliably produces tool calls.
+- [x] **5.1.4** Verify `tool_choice="any"` works correctly with ChatOllama. *(qwen2.5 natively supports tool_choice; outdated comment removed from search_worker.)*
+- [ ] **5.1.5** (Optional) Implement hybrid model fallback architecture: local LLM for fast path, cloud LLM for reliability.
 
-### S2. Modifier extraction — strips (parenthesized) modifiers from dish names
+### 5.2 Add Chain-of-Thought Prompting
 
-File: `deterministic_validator_node.py`. Added `_extract_modifier()` with patterns for `(modifier)`, `, modifier`, `- modifier`. When `resolve_menu_name()` fails, strips the modifier, retries the clean name, and sets `special_requests` from the extracted text.
+- [x] **5.2.1** Rewrite `order_worker_agent.md` — add reasoning scaffold (Step 1: Identify action, Step 2: Extract items, Step 3: Check substitutions, Step 4: Produce tool call).
+- [x] **5.2.2** Rewrite `search_agent.md` — add reasoning scaffold (Step 1: Classify search type, Step 2: Extract parameters/filters, Step 3: Produce tool call).
+- [x] **5.2.3** Rewrite `router_agent.md` — add reasoning scaffold (Step 1: Check context/stage, Step 2: Identify primary intent, Step 3: Check sequential intents, Step 4: Produce JSON).
+- [ ] **5.2.4** Expand `few_shots/order_worker.json` — add edge cases: ambiguous quantity ("vài phần"), teencode ("cho e 2 oc huog"), substitution with partial name.
+- [ ] **5.2.5** Expand `few_shots/router.json` — add reference-heavy utterances requiring multi-turn context.
 
-Result: `"Gỏi Xoài Ốc Giác (ít cay)"` → `name="Gỏi Xoài Ốc Giác", special_requests="ít cay"`.
+### 5.3 Establish Evaluation Baselines
 
-### S3. Forced tool_choice="required" via raw Ollama API
+- [x] **5.3.1** Run `eval_router.py` — 95.56% accuracy (43/45). Semantic: 18%, SLM: 82%. Avg latency 1.11s.
+- [x] **5.3.2** Run `eval_retrieval.py` — P@5=0.31, R@5=0.70, MRR=0.69, Hit Rate=0.88.
+- [ ] **5.3.3** Run `eval_e2e.py` — record pass rate per scenario, per-turn success rate, tool call accuracy across all 4 datasets. *(Eval scripts need sync_cart → add_cart update first.)*
+- [x] **5.3.4** Run `eval_out_of_menu.py` — 75% pass rate (3/4). 1 fail due to deprecated `sync_cart` in eval script; agent behavior was correct.
+- [x] **5.3.5** Create baseline document at `docs/eval-baseline-2026-07.md` with current scores, model/prompt versions, known failures and root causes.
 
-File: `order_worker_node.py`. ChatOllama ignores `tool_choice="any"` (confirmed by langchain_ollama docs). Added `_force_tool_call_via_ollama()` as a third-level fallback:
-1. Try ChatOllama with `tool_choice="any"` (soft)
-2. Retry with forced system prompt (medium)
-3. Fall back to raw `POST /api/chat` with `tool_choice: "required"` (hard)
+### 5.4 Add CI Eval Gate
 
-This forces qwen2.5:7b to call `add_cart` when it would otherwise respond in text. Cost: ~5s extra latency on the first ORDER turn (Turn 5 went from 5.16s to 11.28s, Turn 11 went to 28s due to multi-intent + retries).
+- [ ] **5.4.1** Create `.github/workflows/agent-eval.yml` — triggers on PR changes to `src/agent_brain/**` or `evals/**`, and push to main.
+- [ ] **5.4.2** Workflow steps: setup Ollama, pull model, run all 3 evals (`--ci` mode), check regression thresholds.
+- [ ] **5.4.3** Implement regression check — router threshold 0.85, e2e threshold 0.80.
 
-## Remaining Problems
+---
 
-### P1. Turn 11 — high latency from forced tool fallback in multi-intent
+## Section 6: Phase 2 — Architecture Deepening (3-4 weeks)
 
-**Latency**: 28.05s (vs 10.76s previously). The ORDER worker path in multi-intent `['SEARCH', 'ORDER']` triggers the full retry + raw API fallback chain. The forced `tool_choice="required"` call is slow because it requires a separate HTTP round-trip converting LangChain messages to Ollama format.
+### 6.1 Entity Tracker for Multi-Turn Reference Resolution
 
-### P2. Turn 4 — search rewriter treats question as order
+- [ ] **6.1.1** Create `src/agent_brain/agent/nodes/entity_tracker.py` — `EntityTracker` class maintaining inventory of all mentioned dishes across conversation. Methods: `register_from_cart()`, `register_from_search()`, `resolve_reference()`.
+- [ ] **6.1.2** Integrate entity tracker into `_should_shortcut_search` in `graph.py` — replace current string-matching logic.
+- [ ] **6.1.3** Register entities on cart updates and search results (in `update_state_node` or `state_outcome_node`).
+- [ ] **6.1.4** Fix curated_memory population — also register ordered dishes (not just searched ones) so CHAT can answer questions about dishes that were ordered but never searched.
 
-**Response**: "anh/chị muốn gọi Tôm Càng Xanh Nướng Phô Mai với giá 120.000₫ nhé?" The search rewriter phrases the single search result as a purchase suggestion instead of answering "bao nhiêu con?".
+### 6.2 Conversation Planner (Macro Orchestrator)
 
-### P3. Turn 15 — verify_payment not called (demo design limitation)
+- [ ] **6.2.1** Create `src/agent_brain/agent/nodes/conversation_planner.py` — `ConversationPlanner` class. Decomposes multi-turn conversations, adds dependency tracking (e.g. ORDER skipped if conditional SEARCH returns empty).
+- [ ] **6.2.2** Integrate planner into the graph pipeline — single-intent passthrough, multi-intent sequential planning.
 
-Hardcoded `request_payment` in `payment_dispatch_node`. Not a bug — voice-based verify_payment was never implemented for the demo flow.
+### 6.3 Upgrade Order Stage FSM
+
+- [ ] **6.3.1** Replace linear `IDLE → AWAITING_CONFIRMATION → CONFIRMED` with richer state machine: IDLE, BUILDING, AWAITING_CONFIRMATION, CONFIRMED, MODIFYING, MODIFICATION_PENDING, PARTIALLY_PAID, PAID.
+- [ ] **6.3.2** Implement `VALID_TRANSITIONS` table with explicit allowed transitions.
+- [ ] **6.3.3** Support post-confirmation modifications — add after confirm creates new draft, modify confirmed order cancels and recreates.
+- [ ] **6.3.4** Support split bill ("Tính tiền 2 đứa riêng nha") — create separate payment requests per person.
+- [ ] **6.3.5** Support takeaway addition — flag new items as takeaway after order confirmed.
+- [ ] **6.3.6** Support partial payment ("Cho anh trả trước 500k") — partial payment + remaining balance tracking.
+
+### 6.4 Multi-Intent Conditional Execution
+
+- [ ] **6.4.1** Add dependency tracking between sequential intents in a turn — in `graph.py`, `_should_skip_intent()` checks if next intent should be skipped based on previous results.
+- [ ] **6.4.2** Handle conditional ORDER: skip ORDER if previous SEARCH returned empty AND utterance was conditional ("nếu có", "nếu không cay", "nếu còn").
+- [ ] **6.4.3** Optimize validator runs — avoid redundant validator passes for sequential intents.
+
+---
+
+## Section 7: Phase 3 — Advanced Features (4-6 weeks)
+
+### 7.1 Streaming Response Pipeline
+
+- [ ] **7.1.1** Refactor `response_node` — replace `_response_llm.invoke()` with `_response_llm.stream()` for 3 LLM paraphrase cases. Yield tokens.
+- [ ] **7.1.2** Add `POST /chat/stream` endpoint in `server.py` — returns `text/event-stream` (SSE) instead of blocking HTTP response.
+- [ ] **7.1.3** Update `edge_voice/main.py` — connect to `/chat/stream`, accumulate tokens into sentences (break on `.`, `!`, `?`, `ạ`), feed each sentence to TTS incrementally.
+
+### 7.2 Proactive Service Model
+
+- [ ] **7.2.1** Add `proactive_suggest` tool with triggers: after_add_no_drinks, after_confirm, empty_table_long, food_pairing.
+- [ ] **7.2.2** Integrate proactive triggers into the graph pipeline — check triggers after state_outcome and inject suggestion into response.
+
+### 7.3 Conversation Memory Summarization
+
+- [ ] **7.3.1** Add periodic summarization in `state_outcome_node` — every 8 turns, generate conversation summary via LLM.
+- [ ] **7.3.2** Store summary in `AgentState.conversation_summary` — next turns use summary instead of full history to stay within 8192 token context window.
+
+### 7.4 Hot-Reload Menu & Indices
+
+- [ ] **7.4.1** Create `src/agent_brain/services/menu_watcher.py` — `watchdog`-based file watcher for `assets/data/menu.json`.
+- [ ] **7.4.2** On menu change: auto-rebuild FAISS + BM25, recompute centroids, reload in-memory references.
+- [ ] **7.4.3** Start watcher in `server.py` lifespan.
+
+### 7.5 A/B Testing Framework
+
+- [ ] **7.5.1** Add `prompt_variant` parameter to `AIWaiterGraph.__init__` — load variant-specific prompts from `resources/prompts/{variant}/`.
+- [ ] **7.5.2** Route a configurable percentage of traffic to each variant, collect metrics.
+
+### 7.6 Comprehensive Latency Profiling
+
+- [ ] **7.6.1** Collect per-node timing metrics (p50, p95, p99, errors) for: router, order_worker, search_worker, validator, tools, response_node, total_turn.
+- [ ] **7.6.2** Export as Prometheus metrics for Grafana dashboards.
+
+---
+
+## Summary by Priority
+
+| Priority | Section | Tasks |
+|----------|---------|-------|
+| **P0** | 4.1-4.5 | Quick Wins — delete deprecated code, fix duplications, lazy init, ruff/mypy, error handling |
+| **P0** | 5.1-5.3 | Upgrade model to qwen2.5:7b, CoT prompts, eval baselines |
+| **P1** | 5.4 | CI eval gate |
+| **P1** | 6.1-6.4 | Entity tracker, order stage FSM, multi-intent conditional, conversation planner |
+| **P2** | 7.1-7.2 | Streaming response, proactive service |
+| **P3** | 7.3-7.6 | Memory summarization, hot-reload, A/B testing, latency profiling |

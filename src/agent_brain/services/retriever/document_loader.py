@@ -31,7 +31,7 @@ class DocumentLoader:
 
         try:
             return parser(file_path)
-        except Exception as e:
+        except OSError as e:
             logger.error(f"Error parsing {file_path}: {e}")
             return []
 

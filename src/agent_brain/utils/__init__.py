@@ -3,6 +3,7 @@ from .tracing import trace_latency, flush_traces
 from .menu_manager import MenuManager
 from .menu_utils import MENU_NAMES, get_menu_names, resolve_menu_name, find_nearest_menu_name
 from .search_debug import print_database_summary, print_search_results
+from .state_helpers import last_user_text
 
 __all__ = [
     "log_struct",
@@ -15,6 +16,7 @@ __all__ = [
     "resolve_menu_name",
     "find_nearest_menu_name",
     "print_database_summary",
-    "print_search_results"
+    "print_search_results",
+    "last_user_text",
 ]
 

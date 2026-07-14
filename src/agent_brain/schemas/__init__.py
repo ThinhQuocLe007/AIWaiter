@@ -1,7 +1,7 @@
 from .search import SearchResult, SearchInput, SearchResponse
 from .order import (
     OrderItem, Cart, OrderStage,
-    SyncCartResponse, ConfirmOrderResponse,
+    ConfirmOrderResponse,
     CartAddItem, CartAddResponse, CartRemoveResponse, CartClearResponse,
 )
 from .reflection import CriticVerdict

@@ -40,7 +40,7 @@ def verify_payment(table_id: str) -> VerifyPaymentResponse:
         )
         result = VerifyPaymentResponse(status="error", table_id=table_id, message=msg)
         return (result.message, result)
-    except Exception as e:
+    except httpx.HTTPError as e:
         result = VerifyPaymentResponse(
             status="error",
             table_id=table_id,

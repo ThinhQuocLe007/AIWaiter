@@ -73,5 +73,5 @@ class OrchestratorClient:
         """
         try:
             self._post("/voice/event", event)
-        except Exception as e:  # backend unreachable / no tablet — degrade silently
+        except httpx.HTTPError as e:  # backend unreachable / no tablet — degrade silently
             logger.warning(f"voice event not delivered to tablet: {e}")

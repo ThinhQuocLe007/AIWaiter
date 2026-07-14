@@ -1,3 +1,4 @@
+import httpx
 from langchain_core.tools import tool
 from src.agent_brain.schemas.payment import PaymentRequest, PaymentResponse
 from src.agent_brain.services.orchestrator_client import OrchestratorClient
@@ -36,7 +37,7 @@ def request_payment(table_id: str) -> PaymentResponse:
             message=f"Tổng tiền: {int(total):,} VND. Vui lòng quét mã QR để thanh toán.",
         )
         return (result.message, result)
-    except Exception as e:
+    except httpx.HTTPError as e:
         result = PaymentResponse(
             status="error",
             table_id=table_id,

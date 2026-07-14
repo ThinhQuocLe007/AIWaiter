@@ -4,9 +4,9 @@ from pydantic import Field
 from .base_settings import ROOT
 
 class AgentSettings(BaseSettings):
-    ROUTER_MODEL: str = Field(default="gemma4:e2b-it-qat", env="ROUTER_MODEL")
-    WORKER_MODEL: str = Field(default="gemma4:e2b-it-qat", env="WORKER_MODEL")
-    RESPONSE_MODEL: str = Field(default="gemma4:e2b-it-qat", env="RESPONSE_MODEL")
+    ROUTER_MODEL: str = Field(default="qwen2.5:7b-instruct", env="ROUTER_MODEL")
+    WORKER_MODEL: str = Field(default="qwen2.5:7b-instruct", env="WORKER_MODEL")
+    RESPONSE_MODEL: str = Field(default="qwen2.5:7b-instruct", env="RESPONSE_MODEL")
 
     # Context window pinned for ALL Ollama calls. The model supports up to 262144
     # tokens; left unset, Ollama may allocate a large KV cache (a major RAM cost on
