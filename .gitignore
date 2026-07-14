@@ -72,9 +72,14 @@ Thumbs.db
 # Project-Specific: RAG Databases & Pickled/Vector Indexes
 # Ignore dynamically created SQLite DBs and vector store serialized files
 storage/db/*.db
+storage/db/*.db-shm
+storage/db/*.db-wal
 storage/vector/bm25.pkl
 storage/vector/faiss_index/
 storage/conversations/
+storage/tts/*.onnx
+storage/tts/*.onnx.json
+storage/tts/*.wav
 data/vector_db/
 data/sqlite/
 data/samples/

@@ -14,15 +14,20 @@ Run (on the server, alongside the orchestrator backend) — from the repo root, 
 """
 
 import asyncio
+import json
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
+from queue import Queue, Empty
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from src._shared.types import normalise_table_id
 from src.agent_brain.agent.graph import AIWaiterGraph
+from src.agent_brain.agent.nodes.response_node import set_output_queue
 from src.agent_brain.config import settings
 from src.agent_brain.services.conversation_logger import log_turn
 from src.agent_brain.services.orchestrator_client import OrchestratorClient
@@ -157,3 +162,85 @@ def chat(req: ChatRequest) -> ChatResponse:
         action=action,
         session_id=session_id,
     )
+
+
+@app.post("/chat/stream")
+def chat_stream(req: ChatRequest):
+    """Sentence-level SSE streaming variant of POST /chat.
+
+    Uses a sync generator — Starlette's ``StreamingResponse`` wraps it in a threadpool
+    via ``iterate_in_threadpool``, so blocking calls (``Queue.get``, httpx, LangGraph invoke)
+    never stall the event loop. The client receives ``progress``, ``sentence`` and ``done``
+    SSE events.
+    """
+    q: Queue = Queue()
+    set_output_queue(q)
+
+    def generate():
+        table_id = req.table_id
+        table_int = normalise_table_id(table_id)
+        text = req.text.strip()
+
+        _orchestrator.post_voice_event(
+            {"type": "voice.heard", "table_id": table_int, "text": text}
+        )
+
+        yield f"data: {json.dumps({'event': 'progress', 'text': 'processing'})}\n\n"
+        _orchestrator.post_voice_event(
+            {"type": "voice.progress", "table_id": table_int, "status": "đang xử lý..."}
+        )
+
+        executor = ThreadPoolExecutor(max_workers=1)
+        future = executor.submit(_agent.chat, text, table_id)
+
+        while True:
+            try:
+                msg = q.get(timeout=0.1)
+                event_type, payload = msg
+                if event_type == "sentence":
+                    yield f"data: {json.dumps({'event': 'sentence', 'text': payload})}\n\n"
+            except Empty:
+                if future.done():
+                    while True:
+                        try:
+                            msg = q.get_nowait()
+                            if msg[0] == "sentence":
+                                payload = json.dumps(
+                                    {"event": "sentence", "text": msg[1]}
+                                )
+                                yield f"data: {payload}\n\n"
+                        except Empty:
+                            break
+                    break
+
+        set_output_queue(None)
+        result = future.result()
+        executor.shutdown(wait=False)
+
+        response = result["response"]
+        action = result.get("action")
+        stage = result.get("final_stage", "IDLE")
+        session_id = result.get("session_id")
+        cart = result.get("cart")
+        confirmed = result.get("order_confirmed", False)
+
+        _orchestrator.post_voice_event({
+            "type": "voice.reply", "table_id": table_int,
+            "text": response, "action": action,
+            "stage": stage, "cart": cart, "confirmed": confirmed,
+        })
+
+        log_turn(
+            table_id=table_id, session_id=session_id,
+            user_text=text, response=response,
+            stage=stage, action=action,
+        )
+
+        done_data = json.dumps({
+            "event": "done",
+            "action": action, "stage": stage,
+            "session_id": session_id,
+        })
+        yield f"data: {done_data}\n\n"
+
+    return StreamingResponse(generate(), media_type="text/event-stream")

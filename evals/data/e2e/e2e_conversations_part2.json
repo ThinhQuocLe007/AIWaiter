@@ -156,7 +156,7 @@
           "role": "user",
           "content": "Chào em, quán hôm nay đông ghê ha",
           "assert": {
-            "tool_must_NOT_call": "sync_cart",
+            "tool_must_NOT_call": "add_cart",
             "response_should_contain_one_of": [
               "dạ",
               "chào",

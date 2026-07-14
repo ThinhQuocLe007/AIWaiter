@@ -75,3 +75,11 @@ class OrchestratorClient:
             self._post("/voice/event", event)
         except httpx.HTTPError as e:  # backend unreachable / no tablet — degrade silently
             logger.warning(f"voice event not delivered to tablet: {e}")
+
+    def post_progress_event(self, table_id: str, status_text: str) -> None:
+        """POST /voice/event with type=voice.progress to update tablet status."""
+        self.post_voice_event({
+            "type": "voice.progress",
+            "table_id": normalise_table_id(table_id),
+            "status": status_text,
+        })

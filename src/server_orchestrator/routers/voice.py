@@ -24,19 +24,17 @@ class VoiceEvent(BaseModel):
 
     * ``voice.heard`` — what the guest just said (user bubble + "thinking").
     * ``voice.reply`` — the agent's spoken reply, plus any UI action to follow.
+    * ``voice.progress`` — processing status update for monitor UI (e.g. "đang xử lý...").
     """
 
     type: str
     table_id: int
     text: str | None = None
-    # {"type": "ui", "action": "open_menu" | "open_payment"} or None when nothing should move.
     action: dict | None = None
     stage: str | None = None
-    # The agent's live cart draft ([{name, quantity, note}]) so the tablet can mirror the
-    # voice-ordered items into its own cart UI. None when the turn didn't touch the cart.
     cart: list | None = None
-    # True only on the turn the order was sent to the kitchen (confirm_order ran).
     confirmed: bool | None = None
+    status: str | None = None
 
 
 @router.post("/event")

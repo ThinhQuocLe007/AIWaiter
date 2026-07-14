@@ -1,30 +1,53 @@
-import re
-import io
-import queue
-import threading
-import logging
 import asyncio
+import io
+import logging
+import re
+import subprocess
+import threading
+import time
+from pathlib import Path
+
 import numpy as np
 import sounddevice as sd
 import soundfile as sf
-import edge_tts
 
 logger = logging.getLogger(__name__)
 
+# ── Engine selection ─────────────────────────────────────────────────────────
+try:
+    from piper import PiperVoice
+
+    _HAS_PIPER = True
+except ImportError:
+    _HAS_PIPER = False
+
+_PIPER_VOICE: "PiperVoice | None" = None
+
+# ── Model paths ──────────────────────────────────────────────────────────────
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+_MODEL_DIR = _REPO_ROOT / "storage" / "tts"
+_PIPER_MODEL_NAME = "vi_VN-vais1000-medium"
+_PIPER_ONNX = _MODEL_DIR / f"{_PIPER_MODEL_NAME}.onnx"
+_PIPER_JSON = _MODEL_DIR / f"{_PIPER_MODEL_NAME}.onnx.json"
+_PIPER_MODEL_URL = (
+    "https://huggingface.co/rhasspy/piper-voices/resolve/main"
+    "/vi/vi_VN/vais1000/medium"
+)
+
+# ── Fallback cloud TTS (edge-tts) ────────────────────────────────────────────
 VOICE = "vi-VN-HoaiMyNeural"
-SAMPLE_RATE = 24000
+SAMPLE_RATE = 22050  # matches Piper vais1000-medium; edge-tts output is resampled
 CHUNK_SIZE = 4096
 
 TTS_CONFIG = {
-    "IDLE":                 {"rate": "+0%",  "pitch": "+0Hz"},
-    "DRAFTING":             {"rate": "+10%", "pitch": "+0Hz"},
-    "AWAITING_CONFIRMATION": {"rate": "-5%",  "pitch": "+0Hz"},
-    "CONFIRMED":            {"rate": "+0%",  "pitch": "+2Hz"},
+    "IDLE": {"rate": "+0%", "pitch": "+0Hz"},
+    "DRAFTING": {"rate": "+10%", "pitch": "+0Hz"},
+    "AWAITING_CONFIRMATION": {"rate": "-5%", "pitch": "+0Hz"},
+    "CONFIRMED": {"rate": "+0%", "pitch": "+2Hz"},
 }
 
 SENTENCE_BOUNDARY = re.compile(
-    r"(?<=[.!?])\s+|"
-    r"(?<=ạ)\s+|(?<=nhé)\s+|(?<=nha)\s+"
+    r"(?<=[.!?])\s+|" r"(?<=ạ)\s+|(?<=nhé)\s+|(?<=nha)\s+"
 )
 
 
@@ -33,7 +56,42 @@ def split_vietnamese_sentences(text: str) -> list:
     return [p.strip() for p in parts if p.strip()]
 
 
-async def synthesize(text: str, stage: str = "IDLE") -> np.ndarray:
+# ── Piper backend ────────────────────────────────────────────────────────────
+
+
+def _download_piper_model():
+    _MODEL_DIR.mkdir(parents=True, exist_ok=True)
+    for filename in [f"{_PIPER_MODEL_NAME}.onnx", f"{_PIPER_MODEL_NAME}.onnx.json"]:
+        path = _MODEL_DIR / filename
+        if path.exists():
+            logger.info("piper model cached: %s", path)
+            continue
+        url = f"{_PIPER_MODEL_URL}/{filename}"
+        logger.info("downloading piper model: %s", url)
+        subprocess.run(
+            ["curl", "-fSL", "--max-time", "120", "-o", str(path), url],
+            check=True,
+        )
+
+
+def _synthesize_piper(text: str) -> np.ndarray:
+    global _PIPER_VOICE
+    if _PIPER_VOICE is None:
+        _PIPER_VOICE = PiperVoice.load(str(_PIPER_ONNX), config_path=str(_PIPER_JSON))
+    chunks = []
+    for chunk in _PIPER_VOICE.synthesize(text):
+        if chunk.audio_int16_bytes:
+            chunks.append(chunk.audio_int16_bytes)
+    pcm = b"".join(chunks)
+    return np.frombuffer(pcm, dtype=np.int16)
+
+
+# ── edge-tts (cloud fallback) ────────────────────────────────────────────────
+
+
+async def _synthesize_edge_tts(text: str, stage: str = "IDLE") -> np.ndarray:
+    import edge_tts
+
     config = TTS_CONFIG.get(stage, TTS_CONFIG["IDLE"])
     communicate = edge_tts.Communicate(
         text, VOICE, rate=config["rate"], pitch=config["pitch"]
@@ -47,45 +105,42 @@ async def synthesize(text: str, stage: str = "IDLE") -> np.ndarray:
     return (samples * 32767).astype(np.int16)
 
 
+# ── Public API ───────────────────────────────────────────────────────────────
+
+
+def synthesize(text: str, stage: str = "IDLE") -> np.ndarray:
+    if _HAS_PIPER and _PIPER_VOICE is not None:
+        return _synthesize_piper(text)
+    return asyncio.run(_synthesize_edge_tts(text, stage))
+
+
+# ── Streaming player ─────────────────────────────────────────────────────────
+
+
 class StreamingPlayer:
     def __init__(self, vad=None):
         self._vad = vad
-        self._queue = queue.Queue()
         self._stop = threading.Event()
-        self._stream = sd.OutputStream(
-            samplerate=SAMPLE_RATE,
-            channels=1,
-            dtype="int16",
-            callback=self._callback,
-        )
-
-    def _callback(self, outdata, frames, time_info, status):
-        if self._stop.is_set():
-            outdata.fill(0)
-            raise sd.CallbackStop()
-        try:
-            chunk = self._queue.get_nowait()
-            n = min(len(chunk), len(outdata))
-            outdata[:n, 0] = chunk[:n]
-            outdata[n:, 0] = 0
-        except queue.Empty:
-            outdata.fill(0)
 
     def play_sentence(self, audio: np.ndarray):
-        self._stream.start()
-        for i in range(0, len(audio), CHUNK_SIZE):
+        if self._stop.is_set():
+            return
+        sd.play(audio, samplerate=SAMPLE_RATE, blocking=False)
+        while sd.get_stream() is not None and sd.get_stream().active:
             if self._stop.is_set():
+                sd.stop()
                 break
             if self._vad and self._vad.is_speaking():
-                self.interrupt()
+                sd.stop()
                 break
-            self._queue.put(audio[i:i + CHUNK_SIZE])
-        self._stream.stop()
+            time.sleep(0.05)
 
     def interrupt(self):
         self._stop.set()
-        while not self._queue.empty():
-            self._queue.get_nowait()
+        try:
+            sd.stop()
+        except Exception:
+            pass
 
     def is_stopped(self) -> bool:
         return self._stop.is_set()
@@ -94,25 +149,40 @@ class StreamingPlayer:
         self._stop.clear()
 
 
-async def speak_streaming(text: str, stage: str, player: StreamingPlayer):
+# ── Speech functions ─────────────────────────────────────────────────────────
+
+
+def speak_streaming(text: str, stage: str, player: StreamingPlayer):
     sentences = split_vietnamese_sentences(text)
     if not sentences:
         return
 
-    config = TTS_CONFIG.get(stage, TTS_CONFIG["IDLE"])
-
-    audio = await synthesize(sentences[0], stage)
+    audio = synthesize(sentences[0], stage)
     player.play_sentence(audio)
 
     if len(sentences) > 1 and not player.is_stopped():
         for sent in sentences[1:]:
             if player.is_stopped():
                 break
-            audio = await synthesize(sent, stage)
+            audio = synthesize(sent, stage)
             if not player.is_stopped():
                 player.play_sentence(audio)
 
 
-async def warmup():
-    await synthesize(".", "IDLE")
-    logger.info("TTS warmup complete")
+def speak_sentence(text: str, player: StreamingPlayer) -> None:
+    """Play a single pre-split sentence through TTS immediately (streaming path)."""
+    if not text.strip():
+        return
+    audio = synthesize(text)
+    if not player.is_stopped():
+        player.play_sentence(audio)
+
+
+def warmup() -> None:
+    if _HAS_PIPER:
+        _download_piper_model()
+        _synthesize_piper(".")
+        logger.info("TTS warmup complete (piper)")
+    else:
+        asyncio.run(_synthesize_edge_tts(".", "IDLE"))
+        logger.info("TTS warmup complete (edge-tts fallback)")

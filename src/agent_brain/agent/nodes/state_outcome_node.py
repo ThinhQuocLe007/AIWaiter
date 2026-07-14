@@ -75,7 +75,7 @@ def _build_remove_cart(artifact, state, total_vnd, stage, ui, tool_args) -> Orde
     )
 
 
-def _build_clear_cart(artifact, state, ui) -> OrderResponseContext:
+def _build_clear_cart(artifact, state, _total_vnd, _stage, ui, _tool_args) -> OrderResponseContext:
     status, error_msg = _status_and_error(artifact)
     return OrderResponseContext(
         tool="clear_cart", status=status, cart=[], total_vnd="0",
@@ -84,7 +84,7 @@ def _build_clear_cart(artifact, state, ui) -> OrderResponseContext:
     )
 
 
-def _build_confirm_order(artifact, state, total_vnd, ui, tool_args) -> OrderResponseContext:
+def _build_confirm_order(artifact, state, total_vnd, _stage, ui, tool_args) -> OrderResponseContext:
     status, error_msg = _status_and_error(artifact)
     cart = state.get("active_cart")
     stage = "CONFIRMED" if status == "success" else state.get("order_stage", "IDLE")
@@ -96,7 +96,7 @@ def _build_confirm_order(artifact, state, total_vnd, ui, tool_args) -> OrderResp
     )
 
 
-def _build_search(artifact, state, ui, tool_args) -> SearchResponseContext:
+def _build_search(artifact, state, _total_vnd, _stage, ui, tool_args) -> SearchResponseContext:
     status, error_msg = _status_and_error(artifact)
     return SearchResponseContext(
         tool="search", status=status, query=tool_args.get("query", ""),
@@ -105,7 +105,7 @@ def _build_search(artifact, state, ui, tool_args) -> SearchResponseContext:
     )
 
 
-def _build_request_payment(artifact, state, ui, tool_args) -> PaymentResponseContext:
+def _build_request_payment(artifact, state, _total_vnd, _stage, ui, tool_args) -> PaymentResponseContext:
     status, error_msg = _status_and_error(artifact)
     amount = getattr(artifact, "amount", None) if artifact else None
     return PaymentResponseContext(
@@ -117,7 +117,7 @@ def _build_request_payment(artifact, state, ui, tool_args) -> PaymentResponseCon
     )
 
 
-def _build_verify_payment(artifact, state, ui, tool_args) -> PaymentResponseContext:
+def _build_verify_payment(artifact, state, _total_vnd, _stage, ui, _tool_args) -> PaymentResponseContext:
     status, error_msg = _status_and_error(artifact)
     return PaymentResponseContext(
         tool="verify_payment", status=status, table_id=state.get("table_id", "T1"),

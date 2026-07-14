@@ -18,7 +18,7 @@
           "content": "Chào em, tụi anh mới tới lần đầu, quán mình có món gì ngon nhất vậy em?",
           "assert": {
             "tool_called": "search",
-            "tool_must_NOT_call": "sync_cart",
+            "tool_must_NOT_call": "add_cart",
             "response_should_contain_one_of": [
               "ngon",
               "bán chạy",
@@ -121,7 +121,7 @@
           "content": "Chào em, anh bị dị ứng hải sản. Quán mình có món nào không có hải sản không em?",
           "assert": {
             "tool_called": "search",
-            "tool_must_NOT_call": "sync_cart"
+            "tool_must_NOT_call": "add_cart"
           }
         },
         {
@@ -305,7 +305,7 @@
           "content": "Chào em, anh là khách du lịch. Ốc Quậy là quán ốc hả? Có món gì đặc sắc không em?",
           "assert": {
             "tool_called": "search",
-            "tool_must_NOT_call": "sync_cart"
+            "tool_must_NOT_call": "add_cart"
           }
         },
         {
@@ -322,7 +322,7 @@
           "content": "Món Hàu Nướng Phô Mai bao nhiêu 1 con vậy em? Có cay không?",
           "assert": {
             "tool_called": "search",
-            "tool_must_NOT_call": "sync_cart"
+            "tool_must_NOT_call": "add_cart"
           }
         },
         {

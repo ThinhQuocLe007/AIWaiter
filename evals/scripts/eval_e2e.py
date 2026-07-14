@@ -91,7 +91,7 @@ def format_tool_call(tc: Dict) -> str:
     """Format a tool call for logging."""
     name = tc.get("name", "unknown")
     args = tc.get("args", {})
-    if name in ("add_cart", "sync_cart"):
+    if name == "add_cart":
         items = args.get("items", [])
         item_strs = [f"{{name: {i.get('name')}, qty: {i.get('quantity')}}}" for i in items]
         return f"{name}(items=[{', '.join(item_strs)}])"

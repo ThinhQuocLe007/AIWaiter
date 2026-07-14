@@ -37,6 +37,7 @@ dependencies = [
     "torchvision==0.26.0 ; platform_machine == 'aarch64'",
     # torchaudio không có trên index Jetson (max 2.10.0) -> lấy từ PyPI như trước.
     "torchaudio>=2.11.0 ; platform_machine == 'aarch64'",
+    "piper-tts[voice]>=1.2",
 ]
 
 [project.optional-dependencies]
@@ -71,7 +72,8 @@ voice = [
     "faster-whisper>=1.2.1 ; platform_machine == 'x86_64'",  # STT (CTranslate2 backend)
     "pyaudio>=0.2.14",                   # mic capture (cần system portaudio)
     "scipy>=1.15",                       # polyphase mic resampling (native rate -> 16k) trong vad_silero
-    "edge-tts>=7.0",                     # TTS (cloud; Piper offline là TODO sau)
+    "edge-tts>=7.0",                     # TTS (cloud fallback for Jetson/offline)
+    "piper-tts>=1.2 ; platform_machine == 'x86_64'",  # TTS local (Piper, Vietnamese voice)
     "sounddevice>=0.5",                  # phát audio TTS (cần system portaudio)
     "soundfile>=0.12",                   # decode audio TTS (cần system libsndfile)
     # silero-VAD nạp lúc runtime qua torch.hub — torch tới từ base (aarch64) hoặc cu12/cu13 (x86).

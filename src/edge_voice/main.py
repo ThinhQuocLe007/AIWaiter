@@ -24,23 +24,23 @@ import os
 import signal
 import sys
 
-import httpx
-import websockets
-from dotenv import load_dotenv
-
 # Make the repo root importable so `from src.agent_brain...` resolves when this file is
 # invoked as `python src/edge_voice/main.py` (uvicorn's `:` form sets sys.path automatically,
 # but a plain script run puts the *script's* directory on sys.path[0] which hides the `src/`
 # package from absolute imports). `parents[2]` from this file = repo root.
-import sys
 from pathlib import Path
+
+import httpx
+import websockets
+from dotenv import load_dotenv
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from src.agent_brain.config import settings
-from src.edge_voice.perception import SileroVAD, PhoWhisperSTT
-from src.edge_voice.perception.queues import get_transcript, shutdown_all
-from src.edge_voice.output.tts_engine import StreamingPlayer, speak_streaming
 from src.agent_brain.utils import flush_traces, log_struct
+from src.edge_voice.output.tts_engine import StreamingPlayer, speak_sentence, speak_streaming
+from src.edge_voice.perception import PhoWhisperSTT, SileroVAD
+from src.edge_voice.perception.queues import get_transcript, shutdown_all
 
 load_dotenv()
 logger = logging.getLogger("src.edge_voice")
@@ -105,7 +105,53 @@ def _capture_and_send(vad: SileroVAD, agent_client: httpx.Client, table_id: int,
 
     if response and not player.is_stopped():
         player.reset()
-        asyncio.run(speak_streaming(response, stage, player))
+        speak_streaming(response, stage, player)
+
+
+def _capture_and_send_streaming(vad: SileroVAD, agent_client: httpx.Client,
+                                 table_id: int, player: StreamingPlayer) -> None:
+    """Streaming variant: consumes SSE from POST /chat/stream, plays sentences incrementally."""
+    while get_transcript(timeout=0.0) is not None:
+        pass
+
+    vad.begin_listen()
+    print("[LISTENING] mời anh/chị nói...")
+    if not vad.wait_for_utterance(UTTERANCE_TIMEOUT):
+        print("[TIMEOUT] không nghe thấy gì, quay lại chờ.")
+        return
+
+    transcript = get_transcript(timeout=TRANSCRIPT_TIMEOUT)
+    if transcript is None or not transcript.text.strip():
+        print("[EMPTY] không nhận ra lời nói.")
+        return
+
+    text = transcript.text
+    print(f"[HEARD @ {transcript.timestamp:.1f}s | bàn {table_id}]: {text}")
+
+    try:
+        player.reset()
+        with agent_client.stream("POST", "/chat/stream", json={
+            "table_id": f"T{table_id}", "text": text
+        }) as resp:
+            resp.raise_for_status()
+            for line in resp.iter_lines():
+                if not line or not line.startswith("data: "):
+                    continue
+                data = json.loads(line[6:])
+                ev = data.get("event")
+
+                if ev == "progress":
+                    print(f"[WAITER progress]: {data.get('text', '...')}")
+                elif ev == "sentence":
+                    sentence = data["text"]
+                    print(f"[WAITER]: {sentence}")
+                    if sentence and not player.is_stopped():
+                        speak_sentence(sentence, player)
+                elif ev == "done":
+                    print(f"[WAITER done] stage={data.get('stage')}")
+                    break
+    except httpx.HTTPError as e:
+        print(f"Agent stream request failed: {e}")
 
 
 async def voice_device_loop(vad: SileroVAD, agent_client: httpx.Client, player: StreamingPlayer) -> None:
@@ -129,7 +175,9 @@ async def voice_device_loop(vad: SileroVAD, agent_client: httpx.Client, player: 
                         if table_id is None:
                             print("[WARN] start_listening thiếu table_id, bỏ qua.")
                             continue
-                        await asyncio.to_thread(_capture_and_send, vad, agent_client, table_id, player)
+                        await asyncio.to_thread(
+                            _capture_and_send_streaming, vad, agent_client, table_id, player
+                        )
         except (OSError, websockets.WebSocketException) as e:
             delay = min(2 ** retry, WS_RETRY_MAX)
             retry += 1
@@ -156,7 +204,7 @@ def main():
     # first customer turn doesn't pay the cold-start latency. VAD barge-in allows
     # the customer to interrupt the robot mid-speech by talking.
     player = StreamingPlayer(vad=vad)
-    asyncio.run(speak_streaming(".", "IDLE", player))
+    speak_streaming(".", "IDLE", player)
 
     print("=" * 50)
     print(f" AI Waiter voice device — Robot {ROBOT_ID}")

@@ -1,7 +1,7 @@
 """Real-life scenario runner — traces the full agent pipeline per turn.
 
 Runs realistic restaurant conversations through the AI Waiter agent graph
-directly (no HTTP server needed for sync_cart/search). Produces a detailed
+directly (no HTTP server needed for add_cart/search). Produces a detailed
 per-node trace for every turn including:
   - Router decisions (semantic vs SLM, confidences)
   - Worker outputs (tool calls)
@@ -212,7 +212,7 @@ def run_scenario(app, scenario: dict) -> dict:
             for tc in tool_calls:
                 name = tc.get("name", "?")
                 args = tc.get("args", {})
-                if name in ("add_cart", "sync_cart"):
+                if name == "add_cart":
                     items = args.get("items", [])
                     item_strs = [
                         f"  {i.get('name', '?')} ×{i.get('quantity', 1)}"

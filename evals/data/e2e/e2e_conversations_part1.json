@@ -177,7 +177,7 @@
           "content": "Quán mình có những món lẩu nào vậy?",
           "assert": {
             "tool_called": "search",
-            "tool_must_NOT_call": "sync_cart",
+            "tool_must_NOT_call": "add_cart",
             "response_should_contain_one_of": [
               "Lẩu",
               "lẩu"

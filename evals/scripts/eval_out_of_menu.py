@@ -83,7 +83,7 @@ def run_scenario(app, scenario: Dict[str, Any]) -> Dict[str, Any]:
         expected_tool = expected_assertions.get('tool_called')
         if expected_tool:
             if expected_tool == "verify_and_prepare_order":
-                check_tool = "sync_cart"
+                check_tool = "add_cart"
             elif expected_tool == "search_menu":
                 check_tool = "search"
             else:
@@ -99,7 +99,7 @@ def run_scenario(app, scenario: Dict[str, Any]) -> Dict[str, Any]:
         not_expected_tool = expected_assertions.get('tool_must_NOT_call')
         if not_expected_tool:
             if not_expected_tool == "verify_and_prepare_order":
-                check_not_tool = "sync_cart"
+                check_not_tool = "add_cart"
             elif not_expected_tool == "search_menu":
                 check_not_tool = "search"
             else:

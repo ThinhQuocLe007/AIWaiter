@@ -15,10 +15,12 @@ UTTERANCES_PATH = settings.resources_dir / "few_shots" / "utterances.json"
 CENTROIDS_PATH = settings.resources_dir / "centroids" / "centroids.npz"
 
 # Softmax + Gap routing defaults (calibrated via scripts/calibrate_temperature.py)
+# Lowered thresholds for the 768-dim bkai/vietnamese-bi-encoder model —
+# cosine similarities are naturally lower than with the previous 1024-dim model.
 SOFTMAX_TEMPERATURE = 0.20
-PROB_THRESHOLD = 0.30
-GAP_THRESHOLD = 0.20
-MIN_SIM_THRESHOLD = 0.55
+PROB_THRESHOLD = 0.25
+GAP_THRESHOLD = 0.15
+MIN_SIM_THRESHOLD = 0.35
 
 
 def softmax_routing(

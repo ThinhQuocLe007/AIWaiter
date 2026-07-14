@@ -3,46 +3,86 @@
 Reads ``state["response_context"]``, produces a Vietnamese AIMessage reply.
 Dispatches by context type to templates (imported from ``response_template``)
 or LLM paraphrasing (for search results, off-menu suggestions, free-form chat).
+
+Streaming: when ``set_output_queue()`` is called before graph invocation, LLM-based
+rewriters stream sentences through ``_stream.emit()``; template-based rewriters push
+their full text as a single sentence.
 """
 
 import logging
-import httpx
-from typing import Dict, Any, List
+import re
+from queue import Queue
+from typing import Any
 
-from langchain_core.messages import AIMessage, SystemMessage, HumanMessage
+import httpx
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_ollama import ChatOllama
 
+from src.agent_brain.agent.nodes.response_template import (
+    _FALLBACK_REPLY,
+    _format_ambiguity,
+    _format_cart_echo,
+    _format_clear_reply,
+    _format_confirm_reply,
+    _format_greeting,
+    _format_off_menu,
+    _format_order_error,
+    _format_remove_reply,
+    _format_thanks,
+    _is_greeting,
+    _is_thanks,
+    _normalize,
+    _vnd,
+)
 from src.agent_brain.agent.state import AgentState
 from src.agent_brain.config import settings
 from src.agent_brain.schemas import (
-    ResponseContext,
-    OrderResponseContext,
-    SearchResponseContext,
-    PaymentResponseContext,
     ChatResponseContext,
+    OrderResponseContext,
+    PaymentResponseContext,
+    ResponseContext,
     RetryResponseContext,
+    SearchResponseContext,
 )
 from src.agent_brain.utils import trace_latency
 from src.agent_brain.utils.prompt_utils import load_prompt
-from src.agent_brain.agent.nodes.response_template import (
-    _FALLBACK_REPLY,
-    _vnd,
-    _normalize,
-    _is_greeting,
-    _is_thanks,
-    _format_cart_lines,
-    _format_ambiguity,
-    _format_off_menu,
-    _format_order_error,
-    _format_cart_echo,
-    _format_confirm_reply,
-    _format_remove_reply,
-    _format_clear_reply,
-    _format_greeting,
-    _format_thanks,
-)
 
 logger = logging.getLogger(__name__)
+
+# ── Stream context (bridge between sync graph → async SSE generator) ─────────
+_SENTENCE_BOUNDARY = re.compile(r"[.!?]\s")
+
+
+class _StreamContext:
+    """Per-request stream state. Module-level singleton; safe for v1 single-concurrent-request."""
+
+    def __init__(self):
+        self.queue: Queue | None = None
+        self._streamed = False
+
+    def set_queue(self, q: Queue | None) -> None:
+        self.queue = q
+        self._streamed = False
+
+    def emit(self, text: str) -> None:
+        if self.queue is not None:
+            self.queue.put(("sentence", text))
+            self._streamed = True
+
+    @property
+    def active(self) -> bool:
+        return self.queue is not None
+
+    @property
+    def was_streamed(self) -> bool:
+        return self._streamed
+
+
+_stream = _StreamContext()
+
+
+def set_output_queue(q: Queue | None) -> None:
+    _stream.set_queue(q)
 
 # ── LLM client + static prompts (loaded once at module level) ───────────────
 _response_llm = ChatOllama(
@@ -57,7 +97,7 @@ _WAITER_PROMPT = load_prompt("response_rewriter.md")
 _CHAT_PROMPT = load_prompt("chat_rewriter.md")
 
 
-# ── Shared LLM call helper ──────────────────────────────────────────────────
+# ── Shared LLM call helpers ──────────────────────────────────────────────────
 def _llm_invoke(system_prompt: str, context_text: str, fallback: str) -> str:
     try:
         response = _response_llm.invoke([
@@ -67,6 +107,44 @@ def _llm_invoke(system_prompt: str, context_text: str, fallback: str) -> str:
         return response.content
     except (httpx.HTTPError, ConnectionError) as e:
         logger.error("LLM call failed: %s", e)
+        return fallback
+
+
+def _llm_stream(system_prompt: str, context_text: str, fallback: str) -> str:
+    """Stream LLM output, emitting complete sentences (punctuation + whitespace)."""
+    full_text: list[str] = []
+    buffer = ""
+    try:
+        for chunk in _response_llm.stream([
+            SystemMessage(content=system_prompt),
+            SystemMessage(content=f"CONTEXT:\n{context_text}"),
+        ]):
+            token = (
+                chunk.content if hasattr(chunk, "content")
+                else str(chunk) if isinstance(chunk, str)
+                else ""
+            )
+            if not token:
+                continue
+            full_text.append(token)
+            buffer += token
+            while True:
+                match = _SENTENCE_BOUNDARY.search(buffer)
+                if not match:
+                    break
+                end = match.end()
+                sentence = buffer[:end].strip()
+                if sentence:
+                    _stream.emit(sentence)
+                buffer = buffer[end:]
+        remaining = buffer.strip()
+        if remaining:
+            _stream.emit(remaining)
+        return "".join(full_text)
+    except (httpx.HTTPError, ConnectionError) as e:
+        logger.error("LLM stream failed: %s", e)
+        if fallback:
+            _stream.emit(fallback)
         return fallback
 
 
@@ -133,52 +211,84 @@ def _format_chat_for_llm(ctx: ChatResponseContext) -> str:
 # ── Per-context-type rewriters ──────────────────────────────────────────────
 def _rewrite_order(ctx: OrderResponseContext) -> str:
     if ctx.ambiguous:
-        return _format_ambiguity(ctx)
+        reply = _format_ambiguity(ctx)
+        _stream.emit(reply)
+        return reply
     if ctx.off_menu:
         if any(o.suggestion for o in ctx.off_menu):
-            return _llm_invoke(_WAITER_PROMPT, _format_off_menu_for_llm(ctx), _format_off_menu(ctx))
-        return _format_off_menu(ctx)
+            return _llm_stream(_WAITER_PROMPT, _format_off_menu_for_llm(ctx), _format_off_menu(ctx))
+        reply = _format_off_menu(ctx)
+        _stream.emit(reply)
+        return reply
     if ctx.status == "error":
-        return _format_order_error(ctx)
+        reply = _format_order_error(ctx)
+        _stream.emit(reply)
+        return reply
     if ctx.tool == "confirm_order" and ctx.status == "success":
-        return _format_confirm_reply(ctx.order_id)
+        reply = _format_confirm_reply(ctx.order_id)
+        _stream.emit(reply)
+        return reply
     if ctx.tool == "remove_cart" and ctx.status == "success":
-        return _format_remove_reply(ctx)
+        reply = _format_remove_reply(ctx)
+        _stream.emit(reply)
+        return reply
     if ctx.tool == "clear_cart" and ctx.status == "success":
-        return _format_clear_reply()
-    return _format_cart_echo(ctx)
+        reply = _format_clear_reply()
+        _stream.emit(reply)
+        return reply
+    reply = _format_cart_echo(ctx)
+    _stream.emit(reply)
+    return reply
 
 
 def _rewrite_search(ctx: SearchResponseContext) -> str:
     if ctx.status == "error":
-        return "Dạ, em chưa tìm thấy món phù hợp ạ. Anh/chị thử từ khóa khác nhé ạ."
+        reply = "Dạ, em chưa tìm thấy món phù hợp ạ. Anh/chị thử từ khóa khác nhé ạ."
+        _stream.emit(reply)
+        return reply
     if not ctx.results:
         query_text = f"'{ctx.query}'" if ctx.query else "món này"
-        return f"Dạ, {query_text} không có trong thực đơn của quán mình ạ. Anh/chị muốn em gợi ý món khác không ạ?"
-    return _llm_invoke(_WAITER_PROMPT, _format_search_for_llm(ctx), _FALLBACK_REPLY)
+        reply = f"Dạ, {query_text} không có trong thực đơn của quán mình ạ. Anh/chị muốn em gợi ý món khác không ạ?"
+        _stream.emit(reply)
+        return reply
+    return _llm_stream(_WAITER_PROMPT, _format_search_for_llm(ctx), _FALLBACK_REPLY)
 
 
 def _rewrite_payment(ctx: PaymentResponseContext) -> str:
     if ctx.tool == "request_payment":
         if ctx.status == "error" or not ctx.amount_vnd:
-            return "Dạ, hiện chưa có đơn hàng nào trong phiên này ạ."
-        return f"Dạ, tổng hóa đơn của anh/chị là {ctx.amount_vnd}₫ ạ. Anh/chị vui lòng quét mã QR để thanh toán nhé."
+            reply = "Dạ, hiện chưa có đơn hàng nào trong phiên này ạ."
+            _stream.emit(reply)
+            return reply
+        reply = f"Dạ, tổng hóa đơn của anh/chị là {ctx.amount_vnd}₫ ạ. Anh/chị vui lòng quét mã QR để thanh toán nhé."
+        _stream.emit(reply)
+        return reply
     if ctx.status == "success":
-        return "Dạ, em đã xác nhận thanh toán thành công. Cảm ơn anh/chị đã dùng bữa tại Ốc Quậy ạ!"
-    return f"Dạ, chưa xác nhận được thanh toán. {ctx.error_message or 'Anh/chị thử lại giúp em nhé ạ.'}"
+        reply = "Dạ, em đã xác nhận thanh toán thành công. Cảm ơn anh/chị đã dùng bữa tại Ốc Quậy ạ!"
+        _stream.emit(reply)
+        return reply
+    reply = f"Dạ, chưa xác nhận được thanh toán. {ctx.error_message or 'Anh/chị thử lại giúp em nhé ạ.'}"
+    _stream.emit(reply)
+    return reply
 
 
 def _rewrite_chat(ctx: ChatResponseContext) -> str:
     msg = _normalize(ctx.user_message)
     if _is_greeting(msg):
-        return _format_greeting()
+        reply = _format_greeting()
+        _stream.emit(reply)
+        return reply
     if _is_thanks(msg):
-        return _format_thanks()
-    return _llm_invoke(_CHAT_PROMPT, _format_chat_for_llm(ctx), _FALLBACK_REPLY)
+        reply = _format_thanks()
+        _stream.emit(reply)
+        return reply
+    return _llm_stream(_CHAT_PROMPT, _format_chat_for_llm(ctx), _FALLBACK_REPLY)
 
 
 def _rewrite_retry(ctx: RetryResponseContext) -> str:
-    return f"Dạ, em xin lỗi anh/chị, {ctx.feedback} Anh/chị kiểm tra lại giúp em nhé ạ."
+    reply = f"Dạ, em xin lỗi anh/chị, {ctx.feedback} Anh/chị kiểm tra lại giúp em nhé ạ."
+    _stream.emit(reply)
+    return reply
 
 
 # ── Top-level dispatcher ────────────────────────────────────────────────────
@@ -198,9 +308,13 @@ def _rewrite(ctx: ResponseContext) -> str:
 
 # ── Public node entry point ─────────────────────────────────────────────────
 @trace_latency("Response Node", run_type="chain")
-def response_node(state: AgentState) -> Dict[str, Any]:
+def response_node(state: AgentState) -> dict[str, Any]:
     ctx = state.get("response_context")
     if ctx is None:
+        if not _stream.was_streamed:
+            _stream.emit(_FALLBACK_REPLY)
         return {"messages": [AIMessage(content=_FALLBACK_REPLY)], "response_context": None}
     reply = _rewrite(ctx)
+    if not _stream.was_streamed:
+        _stream.emit(reply)
     return {"messages": [AIMessage(content=reply)], "response_context": None}
