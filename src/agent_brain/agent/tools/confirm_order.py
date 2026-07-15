@@ -1,7 +1,8 @@
+
 import httpx
-from typing import List
 from langchain_core.tools import tool
-from src.agent_brain.schemas.order import OrderItem, ConfirmOrderResponse
+
+from src.agent_brain.schemas.order import ConfirmOrderResponse, OrderItem
 from src.agent_brain.services.orchestrator_client import OrchestratorClient
 from src.agent_brain.utils import MenuManager, trace_latency
 
@@ -11,7 +12,7 @@ menu_manager = MenuManager()
 
 @tool(response_format="content_and_artifact")
 @trace_latency("Order Confirmation Tool", run_type="tool")
-def confirm_order(table_id: str, items: List[OrderItem]) -> ConfirmOrderResponse:
+def confirm_order(table_id: str, items: list[OrderItem]) -> ConfirmOrderResponse:
     """
     Finalizes and saves the order to the database under the active session.
     ONLY call this after the user has explicitly agreed to the final summary.

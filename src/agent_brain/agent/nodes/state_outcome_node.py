@@ -5,29 +5,30 @@ no LLM call, no side effects. Returns a dict for LangGraph state update includin
 per-turn resets so fields don't leak to the next turn.
 """
 
-from typing import Dict, Any
-from langchain_core.messages import ToolMessage, HumanMessage, AIMessage
+from typing import Any
+
+from langchain_core.messages import AIMessage, ToolMessage
 
 from src.agent_brain.agent.state import AgentState
-from src.agent_brain.utils import last_user_text
 from src.agent_brain.schemas import (
-    ResponseContext,
-    OrderResponseContext,
-    SearchResponseContext,
-    PaymentResponseContext,
-    ChatResponseContext,
-    RetryResponseContext,
-    OffMenuItem,
     AmbiguousItem,
+    ChatResponseContext,
+    OffMenuItem,
+    OrderResponseContext,
+    PaymentResponseContext,
+    ResponseContext,
+    RetryResponseContext,
+    SearchResponseContext,
 )
 from src.agent_brain.schemas.order import Cart
+from src.agent_brain.utils import last_user_text
 
 
 def _vnd(amount) -> str:
     return f"{int(amount):,}".replace(",", ".")
 
 
-def _last_tool_call_args(state: AgentState) -> Dict[str, Any]:
+def _last_tool_call_args(state: AgentState) -> dict[str, Any]:
     if len(state["messages"]) < 2:
         return {}
     prev = state["messages"][-2]
@@ -171,7 +172,7 @@ def _build_retry_context(state: AgentState) -> RetryResponseContext:
 
 
 # ── Finalize + public entry point ───────────────────────────────────────────
-def _finalize(ctx: ResponseContext) -> Dict[str, Any]:
+def _finalize(ctx: ResponseContext) -> dict[str, Any]:
     """Attach the new context + reset per-turn state to prevent context leakage."""
     updates = {
         "response_context": ctx,
@@ -179,13 +180,14 @@ def _finalize(ctx: ResponseContext) -> Dict[str, Any]:
         "ambiguous_items": None,
         "feedback": None,
         "last_tool": None,
+        "delegate_reason": None,
     }
     if getattr(ctx, "kind", None) == "PAYMENT":
         updates["search_context"] = None
     return updates
 
 
-def state_outcome_node(state: AgentState) -> Dict[str, Any]:
+def state_outcome_node(state: AgentState) -> dict[str, Any]:
     # CHAT path: chat_worker already set the context — just finalize.
     existing = state.get("response_context")
     if existing is not None:

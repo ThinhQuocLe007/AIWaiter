@@ -1,10 +1,10 @@
 import json
+from typing import Any
+
 import numpy as np
-from pathlib import Path
-from typing import Dict, Any
+from langchain_core.messages import HumanMessage
 from sklearn.metrics.pairwise import cosine_similarity
 
-from langchain_core.messages import HumanMessage
 from src.agent_brain.agent.state import AgentState
 from src.agent_brain.config import settings
 from src.agent_brain.services.retriever.indices.embeddings import encode_queries
@@ -24,12 +24,12 @@ MIN_SIM_THRESHOLD = 0.35
 
 
 def softmax_routing(
-    all_similarities: Dict[str, float],
+    all_similarities: dict[str, float],
     T: float = SOFTMAX_TEMPERATURE,
     prob_threshold: float = PROB_THRESHOLD,
     gap_threshold: float = GAP_THRESHOLD,
     min_sim_threshold: float = MIN_SIM_THRESHOLD,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Convert cosine similarities to a softmax probability distribution,
     then gate on top probability P1 and gap (P1 - P2).
@@ -56,7 +56,7 @@ def softmax_routing(
     best_label = labels[sorted_indices[0]]
     gap = P1 - P2
 
-    if P1 >= prob_threshold and gap >= gap_threshold:
+    if prob_threshold <= P1 and gap >= gap_threshold:
         return {
             "intent": best_label,
             "confidence": P1,
@@ -91,14 +91,14 @@ class SemanticRouterNode:
             log_struct("Centroids not found, falling back to utterance encoding",
                        path=str(CENTROIDS_PATH))
             path = UTTERANCES_PATH
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 routes = json.load(f)
             log_struct("Encoding semantic router utterances", route_count=len(routes))
             for route_name, utterances in routes.items():
                 embeddings = encode_queries(utterances)
                 self.route_centroids[route_name] = np.mean(embeddings, axis=0)
 
-    def route(self, query: str) -> Dict[str, Any]:
+    def route(self, query: str) -> dict[str, Any]:
         query_vec = encode_queries([query])[0]
         similarities: dict[str, float] = {}
         best_route = None
@@ -124,7 +124,7 @@ _router_instance = None
 
 
 @trace_latency("Semantic Router Node", run_type="chain")
-def semantic_router_node(state: AgentState) -> Dict[str, Any]:
+def semantic_router_node(state: AgentState) -> dict[str, Any]:
     """
     LangGraph node that performs centroid-based vector intent classification
     with softmax + gap gating for confident fast-track decisions.

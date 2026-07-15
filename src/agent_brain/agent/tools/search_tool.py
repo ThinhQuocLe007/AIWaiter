@@ -1,5 +1,6 @@
+
 from langchain_core.tools import tool
-from typing import Optional
+
 from src.agent_brain.schemas.search import SearchInput, SearchResponse
 from src.agent_brain.services.retriever.builder import IndexBuilder
 from src.agent_brain.services.retriever.hybrid_retriever import RetrieverManager
@@ -16,10 +17,10 @@ retriever = RetrieverManager(
 @tool(response_format="content_and_artifact", args_schema=SearchInput)
 @trace_latency("Search Tool", run_type="tool")
 def search(query: str,
-           max_price: Optional[float] = None,
-           min_price: Optional[float] = None,
-           diet_type: Optional[str] = None,
-           category: Optional[str] = None) -> SearchResponse:
+           max_price: float | None = None,
+           min_price: float | None = None,
+           diet_type: str | None = None,
+           category: str | None = None) -> SearchResponse:
     """
     Search the restaurant menu for food, drinks, prices, and ingredients.
     Use this for discovery and general questions about what we serve.

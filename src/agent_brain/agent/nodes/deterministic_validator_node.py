@@ -1,17 +1,14 @@
 import logging
 import re
-from typing import Dict, Any, List
+from typing import Any
+
 from langchain_core.messages import ToolMessage
+
 from src.agent_brain.agent.state import AgentState
-from src.agent_brain.utils import resolve_menu_name, find_nearest_menu_name, last_user_text
+from src.agent_brain.utils import find_nearest_menu_name, last_user_text, resolve_menu_name
 
 logger = logging.getLogger(__name__)
 
-# Deterministic protection for the cart on ADDITIVE turns ("thêm 1 trà ổi"): small local
-# models routinely violate the "pass the ENTIRE cart" contract and send only the new item,
-# which would wipe everything ordered so far. When the guest's wording is clearly additive
-# (and not destructive) and the LLM's list contains NONE of the existing cart items, we
-# re-inject the existing items instead of trusting the LLM's amnesia.
 _ADDITIVE_MARKERS = ("thêm", "nữa", "lấy thêm", "gọi thêm", "cho thêm")
 _DESTRUCTIVE_MARKERS = (
     "bỏ", "hủy", "huỷ", "xóa", "xoá", "đổi", "thay", "bớt", "giảm",
@@ -19,18 +16,71 @@ _DESTRUCTIVE_MARKERS = (
 )
 
 _MODIFIER_PATTERNS = [
-    re.compile(r"\((.+?)\)\s*$"),          # "Gỏi Xoài Ốc Giác (không cay)"
-    re.compile(r",\s*(.+?)\s*$"),          # "Gỏi Xoài Ốc Giác, không cay"
-    re.compile(r"-\s*(.+?)\s*$"),          # "Gỏi Xoài Ốc Giác - không cay"
+    re.compile(r"\((.+?)\)\s*$"),
+    re.compile(r",\s*(.+?)\s*$"),
+    re.compile(r"-\s*(.+?)\s*$"),
 ]
 
 
-def _restore_cart_if_additive(state: AgentState, valid_items: List[dict]) -> List[dict]:
-    """If this is an additive turn but the LLM forgot every existing cart item, prepend them.
+def _is_item_mentioned(name: str, user_text: str) -> bool:
+    text_lower = user_text.lower()
+    name_lower = name.lower()
+    if name_lower in text_lower:
+        return True
+    words = name_lower.split()
+    return len(words) >= 2 and all(w in text_lower for w in words)
 
-    Conservative on purpose: if the LLM included ANY existing item in its list, we assume it
-    did the merge deliberately (it may also be removing something) and leave it alone.
-    """
+
+def _deduplicate_against_cart(
+    state: AgentState, valid_items: list[dict], is_additive: bool
+) -> list[dict]:
+    if not is_additive:
+        return valid_items
+    cart = state.get("active_cart")
+    if not cart or not cart.items:
+        return valid_items
+    user_text = last_user_text(state)
+
+    existing_names = {it.name.lower(): it for it in cart.items}
+    delta: list[dict] = []
+    stripped: list[str] = []
+    for item in valid_items:
+        name_lower = item.get("name", "").lower()
+        if name_lower in existing_names:
+            if _is_item_mentioned(item["name"], user_text):
+                delta.append(item)
+            else:
+                stripped.append(item["name"])
+        else:
+            delta.append(item)
+
+    if stripped:
+        logger.warning(
+            "[validator] stripped %d existing item(s) from add_cart "
+            "(context copy, not mentioned by customer): %s",
+            len(stripped), stripped,
+        )
+    return delta
+
+
+def _resolve_remove_name(raw: str, cart) -> str | None:
+    raw_lower = raw.lower().strip()
+    for item in cart.items:
+        if item.name.lower() == raw_lower:
+            return item.name
+    for item in cart.items:
+        if raw_lower in item.name.lower() or item.name.lower() in raw_lower:
+            return item.name
+    resolution = resolve_menu_name(raw)
+    if resolution["kind"] in ("exact", "single"):
+        resolved_name = resolution["resolved"]
+        for item in cart.items:
+            if item.name.lower() == resolved_name.lower():
+                return item.name
+    return None
+
+
+def _restore_cart_if_additive(state: AgentState, valid_items: list[dict]) -> list[dict]:
     prev_cart = state.get("active_cart")
     if not prev_cart or not prev_cart.items:
         return valid_items
@@ -43,22 +93,24 @@ def _restore_cart_if_additive(state: AgentState, valid_items: List[dict]) -> Lis
 
     new_names = {i.get("name", "").lower() for i in valid_items}
     if any(it.name.lower() in new_names for it in prev_cart.items):
-        return valid_items  # LLM kept (some of) the cart — trust its list
+        result = valid_items
+    else:
+        restored = [
+            {
+                "name": it.name,
+                "quantity": it.quantity,
+                "special_requests": it.special_requests,
+                "is_valid": True,
+            }
+            for it in prev_cart.items
+        ]
+        logger.warning(
+            "[validator] additive turn but the LLM dropped the existing cart — restored %d item(s): %s",
+            len(restored), [r["name"] for r in restored],
+        )
+        result = restored + valid_items
 
-    restored = [
-        {
-            "name": it.name,
-            "quantity": it.quantity,
-            "special_requests": it.special_requests,
-            "is_valid": True,
-        }
-        for it in prev_cart.items
-    ]
-    logger.warning(
-        "[validator] additive turn but the LLM dropped the existing cart — restored %d item(s): %s",
-        len(restored), [r["name"] for r in restored],
-    )
-    return restored + valid_items
+    return _deduplicate_against_cart(state, result, additive)
 
 
 def _extract_modifier(name: str) -> tuple[str, str | None]:
@@ -75,7 +127,6 @@ def _extract_modifier(name: str) -> tuple[str, str | None]:
 def _validate_menu_items(
     items: list, errors: list, unavailable: list, ambiguous: list
 ) -> list:
-    """Validate a list of item dicts against the menu. Returns valid_items only."""
     valid_items = []
     for item in items:
         name = item.get("name")
@@ -138,42 +189,46 @@ def _validate_menu_items(
     return valid_items
 
 
-def deterministic_validator_node(state: AgentState) -> Dict[str, Any]:
-    """Pure Python guardrail node for all tool calls."""
+def deterministic_validator_node(state: AgentState) -> dict[str, Any]:
     last_message = state["messages"][-1]
 
     if not hasattr(last_message, "tool_calls") or not last_message.tool_calls:
         return {"is_valid": True, "feedback": None}
 
-    errors = []
-    unavailable_items: List[Dict[str, Any]] = []
-    ambiguous_items: List[Dict[str, Any]] = []
+    errors: list[str] = []
+    unavailable_items: list[dict[str, Any]] = []
+    ambiguous_items: list[dict[str, Any]] = []
 
-    # When the LLM emits confirm_order + add_cart together, drop add_cart —
-    # confirm_order already reads cart items from state, so add_cart is
-    # redundant and would double quantities / override the CONFIRMED stage.
     tool_names = {tc.get("name") for tc in last_message.tool_calls}
     if "confirm_order" in tool_names and "add_cart" in tool_names:
+        add_cart_items = []
+        for tc in last_message.tool_calls:
+            if tc.get("name") == "add_cart":
+                add_cart_items.extend(tc.get("args", {}).get("items", []))
+        if add_cart_items:
+            item_names = [i.get("name", "?") for i in add_cart_items]
+            errors.append(
+                f"Không thể vừa thêm món vừa xác nhận đơn trong cùng lượt. "
+                f"Các món chưa được thêm: {', '.join(item_names)}. "
+                f"Hãy gọi add_cart riêng, sau đó mới confirm_order."
+            )
         last_message.tool_calls = [
             tc for tc in last_message.tool_calls
             if tc.get("name") == "confirm_order"
         ]
         logger.info(
-            "[validator] stripped add_cart from confirm_order turn "
-            "(items injected from state)"
+            "[validator] stripped add_cart from confirm_order turn, added error feedback"
         )
 
     for tool_call in last_message.tool_calls:
         tool_name = tool_call.get("name")
         args = tool_call.get("args", {})
 
-        # --- table_id injection for session-scoped tools ---
         if tool_name in ("confirm_order", "request_payment", "verify_payment"):
             session_table_id = state.get("table_id")
             if session_table_id:
                 args["table_id"] = session_table_id
 
-        # --- add_cart: validate ONLY the delta items ---
         if tool_name == "add_cart":
             items = args.get("items", [])
             valid_items = _validate_menu_items(
@@ -181,23 +236,30 @@ def deterministic_validator_node(state: AgentState) -> Dict[str, Any]:
             )
             args["items"] = _restore_cart_if_additive(state, valid_items)
 
-        # --- remove_cart: check item exists in cart ---
         elif tool_name == "remove_cart":
             name = args.get("name")
             if not name or not isinstance(name, str):
                 errors.append("Thiếu tên món cần xóa (name).")
             else:
                 cart = state.get("active_cart")
-                if not cart or not any(i.name == name for i in cart.items):
-                    errors.append(f"Món '{name}' không có trong giỏ hàng hiện tại.")
+                if not cart or not cart.items:
+                    errors.append("Giỏ hàng trống, không thể xóa món.")
+                else:
+                    resolved = _resolve_remove_name(name, cart)
+                    if resolved:
+                        args["name"] = resolved
+                    else:
+                        cart_names = ", ".join(i.name for i in cart.items)
+                        errors.append(
+                            f"Món '{name}' không có trong giỏ hàng hiện tại. "
+                            f"Giỏ hàng đang có: {cart_names}."
+                        )
 
-        # --- clear_cart: check cart isn't already empty ---
         elif tool_name == "clear_cart":
             cart = state.get("active_cart")
             if not cart or not cart.items:
                 errors.append("Giỏ hàng đã trống, không cần xóa thêm.")
 
-        # --- confirm_order: inject items from state, validate stage ---
         elif tool_name == "confirm_order":
             if state.get("order_stage") != "AWAITING_CONFIRMATION":
                 errors.append(
@@ -208,7 +270,6 @@ def deterministic_validator_node(state: AgentState) -> Dict[str, Any]:
             if not cart or not cart.items:
                 errors.append("Giỏ hàng trống, không thể xác nhận đơn.")
             else:
-                # Inject items from state — LLM never passes them, zero hallucination
                 args["items"] = [
                     {
                         "name": i.name,
@@ -219,7 +280,6 @@ def deterministic_validator_node(state: AgentState) -> Dict[str, Any]:
                     for i in cart.items
                 ]
 
-        # --- payment tools ---
         elif tool_name == "request_payment":
             if not args.get("table_id"):
                 errors.append("Thiếu tham số 'table_id' cho yêu cầu thanh toán.")
@@ -228,19 +288,24 @@ def deterministic_validator_node(state: AgentState) -> Dict[str, Any]:
             if not args.get("table_id"):
                 errors.append("Thiếu tham số 'table_id' cho xác nhận thanh toán.")
 
-    # --- Process validation result ---
     if errors:
         loop_count = state.get("loop_count", 0) + 1
-        error_feedback = "[Lỗi Xác Thực]:\n" + "\n".join(f"- {err}" for err in errors)
 
-        tool_messages = []
-        tool_names = []
+        tool_messages: list[ToolMessage] = []
+        tool_names: list[str] = []
         for tool_call in last_message.tool_calls:
             tool_call_id = tool_call.get("id") or "dummy_id"
             t_name = tool_call.get("name")
             tool_names.append(t_name)
+            tool_errors = [e for e in errors if t_name in e or "add_cart" in e]
+            if not tool_errors:
+                tool_errors = errors
+            per_tool_feedback = (
+                "[Lỗi Xác Thực cho " + t_name + "]:\n"
+                + "\n".join(f"- {err}" for err in tool_errors)
+            )
             tool_messages.append(
-                ToolMessage(content=error_feedback, name=t_name, tool_call_id=tool_call_id)
+                ToolMessage(content=per_tool_feedback, name=t_name, tool_call_id=tool_call_id)
             )
 
         last_tool = tool_names[0] if tool_names else None
@@ -258,7 +323,9 @@ def deterministic_validator_node(state: AgentState) -> Dict[str, Any]:
 
         return {
             "is_valid": False,
-            "feedback": error_feedback,
+            "feedback": "\n".join(
+                f"- {e}" for e in errors
+            ),
             "messages": tool_messages,
             "loop_count": loop_count,
             "last_tool": last_tool,

@@ -1,6 +1,40 @@
 [
   {
     "role": "user",
+    "content": "Cho anh xem lại order đang có những gì vậy em?"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "delegate",
+        "args": {
+          "reason": "khách hỏi xem lại giỏ hàng, không phải yêu cầu tìm kiếm"
+        },
+        "id": "call_delegate_1"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "Chào em, hôm nay em thế nào?"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "delegate",
+        "args": {
+          "reason": "khách chào hỏi, không phải yêu cầu tìm kiếm"
+        },
+        "id": "call_delegate_2"
+      }
+    ]
+  },
+  {
+    "role": "user",
     "content": "Hôm nay trời lạnh quá, tôi muốn món nào ấm bụng"
   },
   {

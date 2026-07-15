@@ -1,8 +1,9 @@
 import logging
-from typing import Dict, Any, Callable
+from collections.abc import Callable
+from typing import Any
 
-from src.agent_brain.agent.state import AgentState
 from src.agent_brain.agent.actions import ui_action_for_tool
+from src.agent_brain.agent.state import AgentState
 from src.agent_brain.schemas.order import Cart
 from src.agent_brain.utils import MenuManager
 
@@ -24,7 +25,7 @@ def _recalc_cart(cart: Cart) -> Cart:
     return cart
 
 
-def _handle_add_cart_result(state: AgentState, tool_result) -> Dict[str, Any]:
+def _handle_add_cart_result(state: AgentState, tool_result) -> dict[str, Any]:
     """Merge new items into existing cart (ADD semantics)."""
     existing = state.get("active_cart")
     if existing is None or not existing.items:
@@ -47,7 +48,7 @@ def _handle_add_cart_result(state: AgentState, tool_result) -> Dict[str, Any]:
     }
 
 
-def _handle_remove_cart_result(state: AgentState, tool_result) -> Dict[str, Any]:
+def _handle_remove_cart_result(state: AgentState, tool_result) -> dict[str, Any]:
     """Remove item by name from existing cart."""
     existing = state.get("active_cart")
     if existing is None:
@@ -65,19 +66,19 @@ def _handle_remove_cart_result(state: AgentState, tool_result) -> Dict[str, Any]
     }
 
 
-def _handle_clear_cart_result(state: AgentState, tool_result) -> Dict[str, Any]:
+def _handle_clear_cart_result(state: AgentState, tool_result) -> dict[str, Any]:
     return {"active_cart": Cart(), "order_stage": "IDLE"}
 
 
-def _handle_confirm_order_result(state: AgentState, tool_result) -> Dict[str, Any]:
+def _handle_confirm_order_result(state: AgentState, tool_result) -> dict[str, Any]:
     return {"order_stage": "CONFIRMED"}
 
 
-def _handle_search_result(state: AgentState, tool_result) -> Dict[str, Any]:
+def _handle_search_result(state: AgentState, tool_result) -> dict[str, Any]:
     return {"search_context": tool_result.results}
 
 
-TOOL_STATE_HANDLERS: Dict[str, Callable] = {
+TOOL_STATE_HANDLERS: dict[str, Callable] = {
     "add_cart": _handle_add_cart_result,
     "remove_cart": _handle_remove_cart_result,
     "clear_cart": _handle_clear_cart_result,
@@ -86,7 +87,7 @@ TOOL_STATE_HANDLERS: Dict[str, Callable] = {
 }
 
 
-def update_state_node(state: AgentState) -> Dict[str, Any]:
+def update_state_node(state: AgentState) -> dict[str, Any]:
     """
     Extracts tool results and updates AgentState, manages intent queue.
 

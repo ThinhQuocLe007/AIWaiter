@@ -1,6 +1,40 @@
 [
   {
     "role": "user",
+    "content": "Cho anh xem lại order đang có những gì vậy em?"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "delegate",
+        "args": {
+          "reason": "khách hỏi xem lại giỏ hàng, không có yêu cầu CRUD"
+        },
+        "id": "call_delegate_1"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "Ốc Hương Xốt Trứng Muối có cay không em?"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "delegate",
+        "args": {
+          "reason": "khách hỏi về món ăn, không phải yêu cầu đặt món"
+        },
+        "id": "call_delegate_2"
+      }
+    ]
+  },
+  {
+    "role": "user",
     "content": "Cho em 2 phần Ốc Hương Xốt Trứng Muối"
   },
   {

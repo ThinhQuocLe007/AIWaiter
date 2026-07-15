@@ -1,15 +1,21 @@
 import logging
-import httpx
-from typing import Dict, Any, Optional
+from typing import Any
 
-from langchain_ollama import ChatOllama
+import httpx
 from langchain_core.messages import AIMessage
+from langchain_ollama import ChatOllama
 
 from src.agent_brain.agent.state import AgentState
 from src.agent_brain.config import settings
 from src.agent_brain.utils import trace_latency
-from src.agent_brain.utils.prompt_utils import build_system_prompt, build_few_shot_examples, build_dynamic_suffix, last_n_turns
-from ..tools import search
+from src.agent_brain.utils.prompt_utils import (
+    build_dynamic_suffix,
+    build_few_shot_examples,
+    build_system_prompt,
+    last_n_turns,
+)
+
+from ..tools import delegate, search
 
 logger = logging.getLogger(__name__)
 
@@ -21,29 +27,57 @@ _search_model = ChatOllama(
     num_ctx=settings.LLM_NUM_CTX,
     keep_alive=settings.llm_keep_alive,
     metadata={"ls_model_name": settings.WORKER_MODEL, "ls_provider": "ollama"}
-).bind_tools([search], tool_choice="any")
+).bind_tools([delegate, search], tool_choice="any")
 
 
-def _build_search_dynamic_context(state: AgentState) -> Optional[str]:
+def _build_search_dynamic_context(state: AgentState) -> str:
+    """Build context block: already-known topics + feedback on retry.
+
+    Merges names from search_context (prior RAG results) and active_cart
+    (ordered items) into a single ĐÃ BIẾT list. The LLM uses this to decide:
+    - Name in list → delegate (already covered)
+    - Name not in list → search (new topic)
     """
-    Build the dynamic context block for the search worker.
+    blocks: list[str] = []
+    known: set[str] = set()
 
-    Surfaces validator feedback on retry so the LLM sees why its previous
-    tool call was rejected (e.g., missing required arg, wrong type).
-    Without this, the LLM has no signal to correct its mistake and the
-    retry loop is blind.
-    """
+    search_context = state.get("search_context")
+    if search_context:
+        for r in search_context:
+            name = r.document.metadata.get("name", "").strip()
+            if name:
+                known.add(name)
+
+    cart = state.get("active_cart")
+    if cart and cart.items:
+        for it in cart.items:
+            known.add(it.name)
+
+    if known:
+        blocks.append("### ĐÃ BIẾT (already discussed/ordered — use to optimize query):")
+        blocks.extend(f"  - {name}" for name in sorted(known))
+    else:
+        blocks.append("### ĐÃ BIẾT: (chưa có gì — phải search)")
+
     if state.get("feedback"):
-        return (
-            "### SYSTEM FEEDBACK (MANDATORY FIX):\n"
-            f"{state['feedback']}\n"
-            "Fix the tool call arguments and retry immediately."
-        )
+        blocks.append("")
+        blocks.append("### SYSTEM FEEDBACK (MANDATORY FIX):")
+        blocks.append(state["feedback"])
+        blocks.append("Fix the tool call arguments and retry immediately.")
+
+    return "\n".join(blocks)
+
+
+def _extract_delegate_reason(ai_msg) -> str | None:
+    if ai_msg.tool_calls:
+        for tc in ai_msg.tool_calls:
+            if tc.get("name") == "delegate":
+                return tc.get("args", {}).get("reason", "")
     return None
 
 
 @trace_latency("Search Worker Node", run_type="chain")
-def search_worker_node(state: AgentState) -> Dict[str, Any]:
+def search_worker_node(state: AgentState) -> dict[str, Any]:
     """
     Decoupled LangGraph node that manages database searches, restaurant info,
     and RAG queries.
@@ -65,7 +99,7 @@ def search_worker_node(state: AgentState) -> Dict[str, Any]:
         [static_system_message]
         + static_few_shot_messages
         + [dynamic_suffix_message]
-        + last_n_turns(state["messages"], n=1)
+        + last_n_turns(state["messages"], n=2)
     )
 
     try:
@@ -81,6 +115,11 @@ def search_worker_node(state: AgentState) -> Dict[str, Any]:
             "feedback": None,
             "loop_count": state.get("loop_count", 0) + 1,
         }
+
+    delegate_reason = _extract_delegate_reason(response)
+    if delegate_reason:
+        logger.info("Search worker delegating: %s", delegate_reason)
+        return {"messages": [response], "delegate_reason": delegate_reason}
 
     return {
         "messages": [response],

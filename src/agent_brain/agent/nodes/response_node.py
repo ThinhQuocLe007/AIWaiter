@@ -273,6 +273,23 @@ def _rewrite_payment(ctx: PaymentResponseContext) -> str:
 
 
 def _rewrite_chat(ctx: ChatResponseContext) -> str:
+    reason = ctx.delegate_reason
+    if reason and "xem lại" in reason:
+        cart = ctx.active_cart
+        if cart and cart.items:
+            reply = _format_cart_echo(OrderResponseContext(
+                tool="add_cart", status="success", cart=cart.items,
+                total_vnd=_vnd(cart.total_price), stage=ctx.order_stage,
+            ))
+            _stream.emit(reply)
+            return reply
+        reply = "Dạ, hiện tại giỏ hàng của anh/chị đang trống ạ."
+        _stream.emit(reply)
+        return reply
+    if reason and "không rõ" in reason:
+        reply = "Dạ em chưa rõ ý anh/chị lắm, anh/chị có thể nói lại được không ạ?"
+        _stream.emit(reply)
+        return reply
     msg = _normalize(ctx.user_message)
     if _is_greeting(msg):
         reply = _format_greeting()

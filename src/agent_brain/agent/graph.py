@@ -1,24 +1,32 @@
 import logging
+from typing import Any, Literal
+
 import httpx
-from typing import Dict, Any, Literal
-from langgraph.graph import StateGraph, START, END
+from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
 
-from src.agent_brain.agent.state import AgentState
 from src.agent_brain.agent.actions import build_action, emit_action
-from src.agent_brain.agent.memory.checkpointer import get_checkpointer, create_thread_config
-from src.agent_brain.agent.tools import search, add_cart, remove_cart, clear_cart, confirm_order, request_payment, verify_payment
-from src.agent_brain.services.orchestrator_client import OrchestratorClient
+from src.agent_brain.agent.memory.checkpointer import create_thread_config, get_checkpointer
+from src.agent_brain.agent.nodes.chat_worker_node import chat_worker_node
+from src.agent_brain.agent.nodes.deterministic_validator_node import deterministic_validator_node
 from src.agent_brain.agent.nodes.hybrid_router_node import hybrid_router_node
 from src.agent_brain.agent.nodes.order_worker_node import order_worker_node
-from src.agent_brain.agent.nodes.search_worker_node import search_worker_node
 from src.agent_brain.agent.nodes.payment_dispatch_node import payment_dispatch_node
-from src.agent_brain.agent.nodes.deterministic_validator_node import deterministic_validator_node
-from src.agent_brain.agent.nodes.update_state_node import update_state_node
 from src.agent_brain.agent.nodes.response_node import response_node
-from src.agent_brain.agent.nodes.chat_worker_node import chat_worker_node, _to_curated_memory
+from src.agent_brain.agent.nodes.search_worker_node import search_worker_node
 from src.agent_brain.agent.nodes.state_outcome_node import state_outcome_node
-from src.agent_brain.utils import last_user_text
+from src.agent_brain.agent.nodes.update_state_node import update_state_node
+from src.agent_brain.agent.state import AgentState
+from src.agent_brain.agent.tools import (
+    add_cart,
+    clear_cart,
+    confirm_order,
+    remove_cart,
+    request_payment,
+    search,
+    verify_payment,
+)
+from src.agent_brain.services.orchestrator_client import OrchestratorClient
 
 logger = logging.getLogger(__name__)
 
@@ -47,61 +55,7 @@ def _get_next_worker(state: AgentState) -> str:
 
 def _route_by_intent(state: AgentState) -> str:
     """Routes to the correct worker based on the first unprocessed intent."""
-    worker = _get_next_worker(state)
-    if worker == "search_worker" and _should_shortcut_search(state):
-        intents = state.get("current_intents") or []
-        if len(intents) == 1:
-            logger.info(
-                "SEARCH intent rerouted to CHAT — question references known dishes"
-            )
-            return "chat_worker"
-        else:
-            logger.info(
-                "SEARCH intent kept (multi-intent %s) — SEARCH may produce "
-                "new context needed by downstream intents", intents
-            )
-    return worker
-
-
-CART_REVIEW_PATTERNS = (
-    "giỏ hàng", "xem giỏ", "kiểm tra giỏ",
-    "đơn hàng", "đã đặt", "đã gọi", "đang có những gì",
-    "đã chọn",
-)
-
-
-def _should_shortcut_search(state: AgentState) -> bool:
-    """Return True if the SEARCH intent should be rerouted to CHAT.
-
-    When the customer asks a follow-up question about a dish that is
-    already in the cart or in the curated memory from a previous
-    SEARCH turn, routing to CHAT gives the LLM access to cart state,
-    taste_profile, tags, and conversation history — it can answer
-    "có cay không?" directly without hitting the RAG pipeline.
-
-    Only overrides SEARCH; ORDER, PAYMENT, CHAT pass through unchanged.
-    """
-    user_msg = last_user_text(state).lower().casefold().strip()
-    if not user_msg:
-        return False
-
-    cart = state.get("active_cart")
-    cart_has_items = bool(cart and cart.items)
-
-    if cart_has_items and any(p in user_msg for p in CART_REVIEW_PATTERNS):
-        return True
-
-    known_names: set = set()
-
-    if cart_has_items:
-        for item in cart.items:
-            known_names.add(item.name.lower().casefold())
-
-    curated = _to_curated_memory(state.get("search_context"))
-    for dish in curated:
-        known_names.add(dish.name.lower().casefold())
-
-    return any(name in user_msg.casefold() for name in known_names)
+    return _get_next_worker(state)
 
 
 def _route_if_tool_call(state: AgentState) -> Literal["tools", "chat_worker", "response_node"]:
@@ -118,7 +72,20 @@ def _route_if_tool_call(state: AgentState) -> Literal["tools", "chat_worker", "r
     """
     last_msg = state["messages"][-1]
     if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
-        return "tools"
+        non_delegate = [tc for tc in last_msg.tool_calls if tc.get("name") != "delegate"]
+        if non_delegate:
+            if len(non_delegate) < len(last_msg.tool_calls):
+                logger.info(
+                    "Stripped %d delegate call(s) — %d CRUD call(s) remain",
+                    len(last_msg.tool_calls) - len(non_delegate), len(non_delegate),
+                )
+                last_msg.tool_calls = non_delegate
+            return "tools"
+        logger.info(
+            "Worker called only delegate — routing to chat_worker "
+            "(question / review / unclear intent)"
+        )
+        return "chat_worker"
     intents = state.get("current_intents") or []
     if intents and intents[0] in ("ORDER", "ORDER_CONFIRM"):
         logger.info(
@@ -260,7 +227,7 @@ class AIWaiterGraph:
 
         return workflow
 
-    def chat(self, query: str, table_id: str = "T1", session_id: str = None) -> Dict[str, Any]:
+    def chat(self, query: str, table_id: str = "T1", session_id: str = None) -> dict[str, Any]:
         # Resolve the table's CURRENT backend session so the LangGraph thread tracks it. Callers
         # should pass session_id=None every turn: within a visit this returns the same id (memory
         # persists); after payment closes the session it returns None until the next seating opens

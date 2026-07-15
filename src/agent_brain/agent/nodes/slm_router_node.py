@@ -1,20 +1,20 @@
 import json
 import logging
-import httpx
-from typing import Dict, Any
+from typing import Any
 
-from langchain_ollama import ChatOllama
-from langchain_core.messages import HumanMessage, AIMessage
+import httpx
+from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.prompts import (
     ChatPromptTemplate,
     FewShotChatMessagePromptTemplate,
 )
+from langchain_ollama import ChatOllama
 
-from src.agent_brain.schemas.routing import IntentPrediction
-from src.agent_brain.config import settings
 from src.agent_brain.agent.state import AgentState
+from src.agent_brain.config import settings
+from src.agent_brain.schemas.routing import IntentPrediction
 from src.agent_brain.utils import trace_latency
-from src.agent_brain.utils.prompt_utils import load_prompt, load_json_data
+from src.agent_brain.utils.prompt_utils import load_json_data, load_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +99,7 @@ _router_chain = _router_prompt | _llm
 # ------------------------------------------------------------
 
 @trace_latency("SLM Router Node", run_type="chain")
-def slm_router_node(state: AgentState) -> Dict[str, Any]:
+def slm_router_node(state: AgentState) -> dict[str, Any]:
     """
     Classify the latest user message and return the predicted intents.
     """

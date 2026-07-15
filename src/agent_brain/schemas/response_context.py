@@ -94,6 +94,7 @@ class ChatResponseContext(BaseModel):
     curated_memory: List[CuratedDish] = Field(default_factory=list)
     ui_action: None = None
     error_message: None = None
+    delegate_reason: Optional[str] = None
 
 
 class RetryResponseContext(BaseModel):

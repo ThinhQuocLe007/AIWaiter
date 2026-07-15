@@ -19,16 +19,16 @@ becomes uniform and the router's job stays simple (decide intent →
 route to the right worker).
 """
 
-from typing import Dict, Any, List
+from typing import Any
 
 from src.agent_brain.agent.state import AgentState
 from src.agent_brain.schemas import ChatResponseContext
-from src.agent_brain.schemas.response_context import CuratedDish
 from src.agent_brain.schemas.order import Cart
+from src.agent_brain.schemas.response_context import CuratedDish
 from src.agent_brain.utils import last_user_text
 
 
-def _to_curated_memory(search_results, max_items: int = 5) -> List[CuratedDish]:
+def _to_curated_memory(search_results, max_items: int = 5) -> list[CuratedDish]:
     """Convert AgentState.search_context (List[SearchResult]) to curated memory.
 
     Only includes menu-type documents; skips restaurant info, bestseller,
@@ -53,7 +53,7 @@ def _to_curated_memory(search_results, max_items: int = 5) -> List[CuratedDish]:
     return dishes[:max_items]
 
 
-def chat_worker_node(state: AgentState) -> Dict[str, Any]:
+def chat_worker_node(state: AgentState) -> dict[str, Any]:
     """Build a ChatResponseContext for the CHAT path.
 
     The graph calls this when the router classifies the user turn as
@@ -87,9 +87,8 @@ def chat_worker_node(state: AgentState) -> Dict[str, Any]:
             user_message=last_user_text(state),
             active_cart=state.get("active_cart") or Cart(),
             order_stage=state.get("order_stage", "IDLE"),
-            # Shallow copy so later mutations to the state's message list
-            # don't retroactively change what the rewriter sees.
             chat_history=list(messages),
             curated_memory=_to_curated_memory(search_results),
+            delegate_reason=state.get("delegate_reason"),
         ),
     }

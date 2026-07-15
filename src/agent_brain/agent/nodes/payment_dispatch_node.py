@@ -11,7 +11,7 @@ flow, not by the agent on a customer turn.
 """
 
 import logging
-from typing import Dict, Any
+from typing import Any
 
 from langchain_core.messages import AIMessage
 
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 @trace_latency("Payment Dispatch Node", run_type="chain")
-def payment_dispatch_node(state: AgentState) -> Dict[str, Any]:
+def payment_dispatch_node(state: AgentState) -> dict[str, Any]:
     """Always emit a ``request_payment`` tool call. The router decided
     PAYMENT intent — no further LLM decision needed.
     """

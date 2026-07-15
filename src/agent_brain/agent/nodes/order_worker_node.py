@@ -1,16 +1,21 @@
 import logging
-from typing import Dict, Any
+from typing import Any
 
 import httpx
-from langchain_ollama import ChatOllama
 from langchain_core.messages import AIMessage, SystemMessage
+from langchain_ollama import ChatOllama
 
 from src.agent_brain.agent.state import AgentState
 from src.agent_brain.config import settings
 from src.agent_brain.utils import trace_latency
-from src.agent_brain.utils.prompt_utils import build_system_prompt, build_few_shot_examples, build_dynamic_suffix, last_n_turns
+from src.agent_brain.utils.prompt_utils import (
+    build_dynamic_suffix,
+    build_few_shot_examples,
+    build_system_prompt,
+    last_n_turns,
+)
 
-from ..tools import add_cart, remove_cart, clear_cart, confirm_order
+from ..tools import add_cart, clear_cart, confirm_order, delegate, remove_cart
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +25,7 @@ _llm = ChatOllama(
     num_ctx=settings.LLM_NUM_CTX,
     keep_alive=settings.llm_keep_alive,
     metadata={"ls_model_name": settings.WORKER_MODEL, "ls_provider": "ollama"},
-).bind_tools([add_cart, remove_cart, clear_cart, confirm_order], tool_choice="any")
+).bind_tools([delegate, add_cart, remove_cart, clear_cart, confirm_order], tool_choice="any")
 
 
 def _build_dynamic_context_block(state: AgentState, order_stage: str) -> str:
@@ -51,8 +56,16 @@ def _build_dynamic_context_block(state: AgentState, order_stage: str) -> str:
     return "\n".join(blocks)
 
 
+def _extract_delegate_reason(ai_msg) -> str | None:
+    if ai_msg.tool_calls:
+        for tc in ai_msg.tool_calls:
+            if tc.get("name") == "delegate":
+                return tc.get("args", {}).get("reason", "")
+    return None
+
+
 @trace_latency("Order Worker Node", run_type="chain")
-def order_worker_node(state: AgentState) -> Dict[str, Any]:
+def order_worker_node(state: AgentState) -> dict[str, Any]:
     """LangGraph node: maps customer utterance to exactly ONE cart CRUD tool call."""
     table_id = state.get("table_id", "T1")
     order_stage = state.get("order_stage", "IDLE")
@@ -79,7 +92,7 @@ def order_worker_node(state: AgentState) -> Dict[str, Any]:
         logger.warning("ORDER worker produced no tool_calls on first attempt — retrying with forced instruction")
         retry_prompt = SystemMessage(
             content=(
-                "⚠ CRITICAL: Bạn PHẢI gọi một tool call (add_cart, remove_cart, "
+                "⚠ CRITICAL: Bạn PHẢI gọi một tool call (delegate, add_cart, remove_cart, "
                 "clear_cart, hoặc confirm_order). KHÔNG được trả lời bằng text. "
                 "Chỉ trả về tool call. Nhìn câu cuối cùng của khách và gọi tool "
                 "phù hợp NGAY BÂY GIỜ."
@@ -90,5 +103,10 @@ def order_worker_node(state: AgentState) -> Dict[str, Any]:
         except (httpx.HTTPError, ConnectionError) as e:
             logger.error("Order Worker retry failed: %s", e)
             ai_msg = AIMessage(content="Xin lỗi, em xử lý thông tin bị lỗi. Anh/chị có thể nhắc lại được không ạ?")
+
+    delegate_reason = _extract_delegate_reason(ai_msg)
+    if delegate_reason:
+        logger.info("Order worker delegating: %s", delegate_reason)
+        return {"messages": [ai_msg], "delegate_reason": delegate_reason}
 
     return {"messages": [ai_msg], "feedback": None}

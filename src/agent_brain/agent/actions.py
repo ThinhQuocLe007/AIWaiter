@@ -14,7 +14,6 @@ is unit-testable today without a robot, a websocket, or the web backend running.
 """
 
 import logging
-from typing import Optional
 
 log = logging.getLogger(__name__)
 
@@ -32,12 +31,12 @@ _TOOL_TO_UI_ACTION = {
 }
 
 
-def ui_action_for_tool(tool_name: str) -> Optional[str]:
+def ui_action_for_tool(tool_name: str) -> str | None:
     """Return the UI action a successful tool call should trigger on the tablet, or None."""
     return _TOOL_TO_UI_ACTION.get(tool_name)
 
 
-def build_action(ui_action: Optional[str]) -> Optional[dict]:
+def build_action(ui_action: str | None) -> dict | None:
     """Wrap a bare UI action ("open_menu") into the wire command, or None if there is nothing."""
     return {"type": "ui", "action": ui_action} if ui_action else None
 

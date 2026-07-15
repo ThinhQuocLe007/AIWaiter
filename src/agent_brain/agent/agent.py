@@ -1,5 +1,6 @@
 from src.agent_brain.agent.graph import AIWaiterGraph
 
+
 def get_agent_app():
     """
     Helper function to get the compiled LangGraph application from AIWaiterGraph.

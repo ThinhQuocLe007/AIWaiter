@@ -1,5 +1,6 @@
-from typing import List
+
 from langchain_core.tools import tool
+
 from src.agent_brain.schemas.order import CartAddItem, CartAddResponse, OrderItem
 from src.agent_brain.utils import MenuManager, trace_latency
 
@@ -8,7 +9,7 @@ menu_manager = MenuManager()
 
 @tool(response_format="content_and_artifact")
 @trace_latency("Add Cart Tool", run_type="tool")
-def add_cart(items: List[CartAddItem]) -> CartAddResponse:
+def add_cart(items: list[CartAddItem]) -> CartAddResponse:
     """
     Add items to the cart. Only pass the NEW items being added — the system
     merges them with whatever is already in the cart. Use this for:

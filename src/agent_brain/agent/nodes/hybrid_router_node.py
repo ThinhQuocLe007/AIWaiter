@@ -1,17 +1,17 @@
 import logging
 import time
-from typing import Dict, Any
+from typing import Any
 
-from src.agent_brain.agent.state import AgentState
 from src.agent_brain.agent.nodes.semantic_router_node import semantic_router_node
 from src.agent_brain.agent.nodes.slm_router_node import slm_router_node
+from src.agent_brain.agent.state import AgentState
 from src.agent_brain.utils import trace_latency
 
 logger = logging.getLogger(__name__)
 
 
 @trace_latency("Hybrid Router Node", run_type="chain")
-def hybrid_router_node(state: AgentState) -> Dict[str, Any]:
+def hybrid_router_node(state: AgentState) -> dict[str, Any]:
     """
     Two-tier hybrid routing. Fast-track via semantic router when confident,
     fall back to SLM when uncertain.
