@@ -2,7 +2,7 @@ import logging
 from typing import Any
 
 import httpx
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, SystemMessage
 from langchain_ollama import ChatOllama
 
 from src.agent_brain.agent.state import AgentState
@@ -115,6 +115,32 @@ def search_worker_node(state: AgentState) -> dict[str, Any]:
             "feedback": None,
             "loop_count": state.get("loop_count", 0) + 1,
         }
+
+    if not response.tool_calls:
+        logger.warning(
+            "SEARCH worker produced no tool_calls on first attempt — retrying with forced instruction"
+        )
+        retry_prompt = SystemMessage(
+            content=(
+                "⚠ CRITICAL: Bạn PHẢI gọi một tool call (search hoặc delegate). "
+                "KHÔNG được trả lời bằng text. Nếu không chắc chắn, hãy gọi "
+                "search() với tên món ăn hoặc từ khóa chính. "
+                "Chỉ trả về tool call NGAY BÂY GIỜ."
+            )
+        )
+        try:
+            response = _search_model.invoke([retry_prompt] + list(input_messages))
+        except (httpx.HTTPError, ConnectionError) as e:
+            logger.error("Search Worker retry failed: %s", e)
+            return {
+                "messages": [
+                    AIMessage(
+                        content="Xin lỗi, em xử lý thông tin bị lỗi. Anh/chị có thể nhắc lại được không ạ?"
+                    )
+                ],
+                "feedback": None,
+                "loop_count": state.get("loop_count", 0) + 1,
+            }
 
     delegate_reason = _extract_delegate_reason(response)
     if delegate_reason:
