@@ -53,20 +53,60 @@ DESTINATIONS = {
 DOCK_APPROACH = ([0.0, 0.0], TurtleBot4Directions.NORTH)
 
 DETECT_MAX_AGE = 1.0               
-SEARCH_ANGULAR_SPEED = 0.45        
-SEARCH_TIMEOUT = 2 * math.pi / SEARCH_ANGULAR_SPEED + 6.0
+SEARCH_ANGULAR_SPEED = -0.25  # Negative value for counter-clockwise rotation
+# Bounded search: sweep -90° → current → +90° instead of a full 360.
+SEARCH_SWEEP_RAD = math.pi / 2
+# Brief check only — standing still almost never decodes oblique markers in FOV.
+# Real detection needs continuous yaw (search_marker_360); skip long wait/wiggle.
+QUICK_DETECT_TIMEOUT = 0.5
+# Short settle after face-on Nav2 before starting visual_align.
+POST_NAV_SETTLE_TIMEOUT = 1.5
 
-ALIGN_KP_ANG = 1.3                 
+ALIGN_KP_ANG = 1.3
+ALIGN_KP_YAW = 1.2
 ALIGN_MAX_ANG = 0.5                
 ALIGN_FWD_SPEED = 0.10             
-ALIGN_CENTER_TOL = 0.06            
+ALIGN_CENTER_TOL = 0.06
+ALIGN_YAW_TOL = 0.25
 ALIGN_FWD_GATE = 0.20              
-ALIGN_STOP_WIDTH = 0.34            
+ALIGN_STOP_WIDTH = 0.2
+# Accept width in [ALIGN_STOP_WIDTH - tol, +∞) — not a hard separate 0.12 cutoff.
+ALIGN_WIDTH_TOL = 0.03
 ALIGN_TIMEOUT = 30.0
-ALIGN_LOST_TIMEOUT = 3.5           
+ALIGN_LOST_TIMEOUT = 3.5
+ALIGN_LOG_PERIOD = 1.0
+
+# Pose-correction gates (reject bad / false-ID snaps like tables→dock).
+CORRECTION_MAX_YAW = 0.40         # ~23° — PnP unreliable when too oblique
+CORRECTION_MAX_JUMP = 2.5         # metres; refuse teleporting AMCL across the map
+CORRECTION_RANGE_TOL = 1.2        # |map_dist_to_marker - cam_range| must be within this
+
+# Back-off after alignment: reverse (camera still on marker) until blocked/stalled.
+BACKUP_SPEED = 0.10              # m/s backward
+BACKUP_KP_ANG = 1.0             # keep marker centered while reversing
+BACKUP_MAX_ANG = 0.4
+BACKUP_STALL_DIST = 0.02        # min movement per window to count as "still moving"
+BACKUP_STALL_WINDOW = 1.0       # s window for stall check
+BACKUP_STALL_WINDOWS_REQUIRED = 2  # consecutive stalled windows before declaring blocked
+BACKUP_WARMUP = 1.0             # s to accelerate before judging stalls
+BACKUP_DIR_RANGE_EPS = 0.05     # m range change to confirm/flip travel direction
+BACKUP_TIMEOUT = 20.0           # safety cap
 
 # Distance (m) in front of the marker the robot should stand for face-on alignment
 APPROACH_DIST = 0.80
+
+
+def width_ok(width: float) -> bool:
+    """True if marker image width is within -ALIGN_WIDTH_TOL of the stop target (or larger)."""
+    return width >= (ALIGN_STOP_WIDTH - ALIGN_WIDTH_TOL)
+
+
+def marker_yaw_from_rvec(rvec) -> float:
+    """Yaw of marker normal in camera frame (0 = absolute face-on)."""
+    rmat, _ = cv2.Rodrigues(rvec)
+    # Marker +Z (normal) expressed in camera frame; face-on ⇒ mostly -Z_cam.
+    nx, nz = float(rmat[0, 2]), float(rmat[2, 2])
+    return math.atan2(nx, -nz)
 
 def invert_tf(T):
     R = T[:3, :3]
@@ -168,6 +208,16 @@ class ArucoTracker(Node):
 
         self.aruco_dict = cv2.aruco.getPredefinedDictionary(ARUCO_DICT_TYPE)
         self.aruco_params = cv2.aruco.DetectorParameters_create()
+        # Loosen defaults so small / oblique markers (post-Nav2 approach) still decode.
+        self.aruco_params.adaptiveThreshWinSizeMin = 3
+        self.aruco_params.adaptiveThreshWinSizeMax = 23
+        self.aruco_params.adaptiveThreshWinSizeStep = 10
+        self.aruco_params.minMarkerPerimeterRate = 0.02
+        self.aruco_params.maxMarkerPerimeterRate = 4.0
+        self.aruco_params.polygonalApproxAccuracyRate = 0.05
+        self.aruco_params.minCornerDistanceRate = 0.02
+        self.aruco_params.minDistanceToBorder = 1
+        self.aruco_params.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
 
         self.obj_pts = np.array([
             [-MARKER_SIZE/2,  MARKER_SIZE/2, 0],
@@ -228,15 +278,16 @@ class ArucoTracker(Node):
                 # 3D Pose Estimation
                 success, rvec, tvec = cv2.solvePnP(self.obj_pts, c, self.camera_matrix, self.dist_coeffs)
                 if success:
-                    # Draw Axes
+                    # Draw Axes + ID so RViz debug image shows what OpenCV decoded
                     cv2.drawFrameAxes(frame, self.camera_matrix, self.dist_coeffs, rvec, tvec, MARKER_SIZE)
-                    
-                    # Store 2D info for visual alignment
                     xs, ys = c[:, 0], c[:, 1]
                     cx, cy = float(xs.mean()), float(ys.mean())
                     bbox_w = float(xs.max() - xs.min())
                     bbox_h = float(ys.max() - ys.min())
                     h, w = gray.shape[:2]
+                    cv2.putText(frame, f'id={marker_id}',
+                                (int(xs.min()), max(20, int(ys.min()) - 8)),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2, cv2.LINE_AA)
 
                     # TF Broadcast
                     rmat, _ = cv2.Rodrigues(rvec)
@@ -256,22 +307,9 @@ class ArucoTracker(Node):
 
                     with self._lock:
                         self._markers[marker_id] = (cx, cy, bbox_w, bbox_h, w, h, now, rvec, tvec, msg.header.frame_id)
-                        
-                    # Opportunistic continuous localization to fix drift.
-                    # Rules:
-                    #  - Only the correction-target marker may fire (when target is locked).
-                    #  - When locked, only ONE correction is allowed per delivery session
-                    #    (_correction_done blocks all repeats after the first fires).
-                    target_ok = (self._correction_target is None or
-                                 marker_id == self._correction_target)
-                    already_done = (self._correction_target is not None
-                                    and self._correction_done)
-                    if target_ok and not already_done and now - self.last_correction_time > 3.0:
-                        if bbox_w / w > 0.05:  # Marker is large enough to trust
-                            self.trigger_pose_correction(marker_id)
-                            self.last_correction_time = now
-                            if self._correction_target is not None:
-                                self._correction_done = True  # block further auto-corrections
+
+                    # NOTE: no /initialpose teleport here — we navigate to the marker
+                    # with Nav2 instead of snapping AMCL.
 
         # Publish debug image
         try:
@@ -293,31 +331,58 @@ class ArucoTracker(Node):
             'err_x': (cx - iw / 2.0) / (iw / 2.0),
             'width_ratio': bw / iw,
             'cx': cx, 'cy': cy,
-            'rvec': rvec, 'tvec': tvec, 'frame_id': frame_id
+            'rvec': rvec, 'tvec': tvec, 'frame_id': frame_id,
+            'marker_yaw': marker_yaw_from_rvec(rvec),
         }
 
-    def trigger_pose_correction(self, marker_id):
+    def list_recent_ids(self, max_age: float = DETECT_MAX_AGE):
+        """Return sorted marker IDs seen within max_age (wall-clock)."""
+        now = time.time()
+        with self._lock:
+            return sorted(
+                mid for mid, data in self._markers.items()
+                if now - data[6] <= max_age
+            )
+
+    def trigger_pose_correction(self, marker_id) -> bool:
+        """Publish /initialpose from marker PnP. Returns False if gated/rejected."""
         m = self.get_marker(marker_id)
         if m is None:
             self.get_logger().warn(f'Cannot correct pose: Marker {marker_id} not recently seen.')
-            return
+            return False
 
         T_map_marker = get_marker_global_tf(marker_id)
         if T_map_marker is None:
             self.get_logger().warn(f'No global pose known for marker {marker_id}')
-            return
+            return False
+
+        width = m['width_ratio']
+        marker_yaw = m['marker_yaw']
+        tvec = m['tvec'].flatten()
+        cam_range = float(np.linalg.norm(tvec))
+
+        if not width_ok(width):
+            self.get_logger().warn(
+                f'[Correct] Reject id={marker_id}: width={width:.2f} '
+                f'(need >= {ALIGN_STOP_WIDTH - ALIGN_WIDTH_TOL:.2f} = '
+                f'{ALIGN_STOP_WIDTH:.2f}±{ALIGN_WIDTH_TOL:.2f})')
+            return False
+        if abs(marker_yaw) > CORRECTION_MAX_YAW:
+            self.get_logger().warn(
+                f'[Correct] Reject id={marker_id}: yaw={marker_yaw:+.2f} too oblique '
+                f'(max {CORRECTION_MAX_YAW})')
+            return False
 
         rmat, _ = cv2.Rodrigues(m['rvec'])
         T_cam_marker = np.eye(4)
         T_cam_marker[:3, :3] = rmat
-        T_cam_marker[:3, 3] = m['tvec'].flatten()
+        T_cam_marker[:3, 3] = tvec
 
         try:
-            tf_cam_base = self.tf_buffer.lookup_transform(m['frame_id'], 'base_link', rclpy.time.Time())
+            tf_cam_base = self.tf_buffer.lookup_transform(
+                m['frame_id'], 'base_link', rclpy.time.Time())
             t = tf_cam_base.transform.translation
             q = tf_cam_base.transform.rotation
-            from scipy.spatial.transform import Rotation # if available, else manual
-            # To keep it standard, let's just use manual matrix
             x, y, z, w = q.x, q.y, q.z, q.w
             R_cam_base = np.array([
                 [1 - 2*(y**2 + z**2), 2*(x*y - z*w), 2*(x*z + y*w)],
@@ -329,41 +394,65 @@ class ArucoTracker(Node):
             T_cam_base[:3, 3] = [t.x, t.y, t.z]
         except Exception as e:
             self.get_logger().warn(f'TF lookup failed: {e}')
-            return
+            return False
 
         # T_map_base = T_map_marker * T_cam_marker^-1 * T_cam_base
         T_map_base = T_map_marker @ invert_tf(T_cam_marker) @ T_cam_base
+        new_x, new_y = float(T_map_base[0, 3]), float(T_map_base[1, 3])
+        mx, my = float(T_map_marker[0, 3]), float(T_map_marker[1, 3])
 
-        # Log current pose
+        curr_x = curr_y = None
         try:
-            tf_map_base = self.tf_buffer.lookup_transform('map', 'base_link', rclpy.time.Time())
-            curr_t = tf_map_base.transform.translation
-            self.get_logger().info(f'---> BEFORE CORRECTION: Robot at x={curr_t.x:.3f}, y={curr_t.y:.3f}')
-        except:
+            tf_map_base = self.tf_buffer.lookup_transform(
+                'map', 'base_link', rclpy.time.Time())
+            curr_x = float(tf_map_base.transform.translation.x)
+            curr_y = float(tf_map_base.transform.translation.y)
+            self.get_logger().info(
+                f'---> BEFORE CORRECTION: Robot at x={curr_x:.3f}, y={curr_y:.3f}')
+        except Exception:
             pass
+
+        if curr_x is not None:
+            jump = math.hypot(new_x - curr_x, new_y - curr_y)
+            map_dist = math.hypot(mx - curr_x, my - curr_y)
+            if jump > CORRECTION_MAX_JUMP:
+                self.get_logger().warn(
+                    f'[Correct] Reject id={marker_id}: jump {jump:.2f}m > '
+                    f'{CORRECTION_MAX_JUMP}m '
+                    f'(would snap to x={new_x:.3f}, y={new_y:.3f}). '
+                    f'Likely wrong ID or AMCL already lost — not applying.')
+                return False
+            if abs(map_dist - cam_range) > CORRECTION_RANGE_TOL:
+                self.get_logger().warn(
+                    f'[Correct] Reject id={marker_id}: range mismatch '
+                    f'map_dist_to_marker={map_dist:.2f}m vs cam_range={cam_range:.2f}m '
+                    f'(tol {CORRECTION_RANGE_TOL}m). Wrong marker ID?')
+                return False
 
         # Publish initialpose
         pose_msg = PoseWithCovarianceStamped()
         pose_msg.header.frame_id = 'map'
         pose_msg.header.stamp = self.get_clock().now().to_msg()
-        pose_msg.pose.pose.position.x = T_map_base[0, 3]
-        pose_msg.pose.pose.position.y = T_map_base[1, 3]
-        pose_msg.pose.pose.position.z = T_map_base[2, 3]
-        
+        pose_msg.pose.pose.position.x = new_x
+        pose_msg.pose.pose.position.y = new_y
+        pose_msg.pose.pose.position.z = float(T_map_base[2, 3])
+
         quat = rot_to_quat(T_map_base[:3, :3])
         pose_msg.pose.pose.orientation.x = quat[0]
         pose_msg.pose.pose.orientation.y = quat[1]
         pose_msg.pose.pose.orientation.z = quat[2]
         pose_msg.pose.pose.orientation.w = quat[3]
 
-        # Small covariance to force AMCL update
         cov = np.zeros((6, 6))
         np.fill_diagonal(cov, 0.01)
         pose_msg.pose.covariance = cov.flatten().tolist()
 
         self.initialpose_pub.publish(pose_msg)
-        self.get_logger().info(f'---> AFTER CORRECTION: Published new pose x={T_map_base[0, 3]:.3f}, y={T_map_base[1, 3]:.3f}')
-
+        self.get_logger().info(
+            f'---> AFTER CORRECTION: Published new pose x={new_x:.3f}, y={new_y:.3f} '
+            f'(id={marker_id}, width={width:.2f}, yaw={marker_yaw:+.2f}, '
+            f'cam_range={cam_range:.2f}m)')
+        return True
 
 def _stop(cmd_pub):
     cmd_pub.publish(Twist())
@@ -372,33 +461,83 @@ def _run_nav_primitive(nav: TurtleBot4Navigator):
     while not nav.isTaskComplete():
         time.sleep(0.1)
 
-def search_marker_360(nav, tracker, cmd_pub, marker_id) -> bool:
-    nav.info(f'[Search] Marker {marker_id} not visible — rotating once to search...')
-    twist = Twist()
-    twist.angular.z = SEARCH_ANGULAR_SPEED
+def _wait_for_marker(tracker, marker_id, timeout_sec: float, nav=None, label: str = '') -> bool:
+    """Poll the tracker on wall-clock time until marker_id is seen or timeout."""
     t0 = time.time()
-    while rclpy.ok() and (time.time() - t0) < SEARCH_TIMEOUT:
+    last_log = 0.0
+    while rclpy.ok() and (time.time() - t0) < timeout_sec:
+        rclpy.spin_once(tracker, timeout_sec=0.05)
+        if tracker.get_marker(marker_id) is not None:
+            return True
+        now = time.time()
+        if nav is not None and now - last_log >= 1.0:
+            seen = tracker.list_recent_ids()
+            nav.info(f'[{label}] waiting for id={marker_id}, seen_ids={seen or "[]"}')
+            last_log = now
+        time.sleep(0.03)
+    return tracker.get_marker(marker_id) is not None
+
+def _rotate_for(nav, tracker, cmd_pub, marker_id, signed_speed, duration) -> bool:
+    """Rotate in place at signed_speed for duration seconds; True as soon as marker is decoded.
+
+    We only need to confirm the marker exists: the face-on goal comes from the fixed
+    map pose (compute_face_on_goal), and visual_align refines afterwards. So accept any
+    decode — don't require a large / square view here.
+    """
+    twist = Twist()
+    twist.angular.z = signed_speed
+    t0 = time.time()
+    while rclpy.ok() and (time.time() - t0) < duration:
         cmd_pub.publish(twist)
         rclpy.spin_once(tracker, timeout_sec=0.02)
-        if tracker.get_marker(marker_id) is not None:
+        m = tracker.get_marker(marker_id)
+        if m is not None:
             _stop(cmd_pub)
-            nav.info(f'[Search] Found marker {marker_id}.')
+            nav.info(
+                f'[Search] Found marker {marker_id} '
+                f'(width={m["width_ratio"]:.2f}, yaw={m["marker_yaw"]:+.2f}).')
             return True
         time.sleep(0.03)
     _stop(cmd_pub)
-    nav.warn(f'[Search] Completed one turn but still did not find marker {marker_id}.')
+    return False
+
+def search_marker_360(nav, tracker, cmd_pub, marker_id) -> bool:
+    """Bounded sweep -90° → current → +90° (not a full turn) to find a usable marker view."""
+    nav.info(f'[Search] Sweeping ±{math.degrees(SEARCH_SWEEP_RAD):.0f}° for marker {marker_id} '
+             f'(FOV≠decoded — need better viewing angle)...')
+    speed = abs(SEARCH_ANGULAR_SPEED)
+    t90 = SEARCH_SWEEP_RAD / speed
+
+    # current → -90 (CW), then -90 → +90 (CCW, 180°), then +90 → current (CW)
+    if _rotate_for(nav, tracker, cmd_pub, marker_id, -speed, t90):
+        return True
+    if _rotate_for(nav, tracker, cmd_pub, marker_id, +speed, 2 * t90):
+        return True
+    if _rotate_for(nav, tracker, cmd_pub, marker_id, -speed, t90):
+        return True
+
+    _stop(cmd_pub)
+    nav.warn(f'[Search] Swept ±{math.degrees(SEARCH_SWEEP_RAD):.0f}° but did not find '
+             f'marker {marker_id}.')
     return False
 
 def visual_align(nav, tracker, cmd_pub, marker_id, approach=True) -> bool:
-    nav.info(f'[Align] Aligning with marker {marker_id}...')
+    """Phase 2 — fine visual servo AFTER the robot is already in front (Nav2).
+
+    Order: bearing (look at marker) → yaw (square to plane) → width (creep in).
+    """
+    nav.info(f'[Align/Visual] Phase 2 — bearing → yaw → width '
+             f'(marker {marker_id}, approach={"on" if approach else "off"})...')
     t0 = time.time()
     last_seen = time.time()
     last_err = 0.0
+    last_log = 0.0
+    phase = 'bearing'
 
     while rclpy.ok():
         if time.time() - t0 > ALIGN_TIMEOUT:
             _stop(cmd_pub)
-            nav.warn('[Align] Timed out.')
+            nav.warn('[Align/Visual] Timed out.')
             return False
 
         rclpy.spin_once(tracker, timeout_sec=0.02)
@@ -408,13 +547,13 @@ def visual_align(nav, tracker, cmd_pub, marker_id, approach=True) -> bool:
         if m is None:
             if time.time() - last_seen > ALIGN_LOST_TIMEOUT:
                 _stop(cmd_pub)
-                nav.warn(f'[Align] Marker {marker_id} lost. Falling back to 360 sweep...')
+                nav.warn(f'[Align/Visual] Marker {marker_id} lost. Falling back to 360...')
                 if search_marker_360(nav, tracker, cmd_pub, marker_id):
                     last_seen = time.time()
                     last_err = 0.0
                     continue
                 else:
-                    nav.error(f'[Align] Failed to recover marker {marker_id}.')
+                    nav.error(f'[Align/Visual] Failed to recover marker {marker_id}.')
                     return False
             twist.angular.z = math.copysign(0.25, -last_err) if abs(last_err) > 1e-3 else 0.25
             cmd_pub.publish(twist)
@@ -423,20 +562,50 @@ def visual_align(nav, tracker, cmd_pub, marker_id, approach=True) -> bool:
 
         last_seen = time.time()
         err = m['err_x']
-        last_err = err
         width = m['width_ratio']
+        marker_yaw = m.get('marker_yaw', 0.0)
 
-        centered = abs(err) < ALIGN_CENTER_TOL
-        close_enough = width >= ALIGN_STOP_WIDTH
+        bearing = err
+        tvec = m.get('tvec')
+        if tvec is not None:
+            tx, _, tz = tvec.flatten()
+            if abs(tz) > 1e-4:
+                bearing = math.atan2(float(tx), float(tz))
+        last_err = bearing
 
-        if centered and (not approach or close_enough):
+        centered = abs(bearing) < ALIGN_CENTER_TOL
+        face_on = abs(marker_yaw) < ALIGN_YAW_TOL
+        close_enough = width_ok(width)
+
+        if not centered:
+            phase = 'bearing'
+        elif not face_on:
+            phase = 'yaw'
+        elif approach and not close_enough:
+            phase = 'width'
+        else:
+            phase = 'done'
+
+        now = time.time()
+        if now - last_log >= ALIGN_LOG_PERIOD:
+            nav.info(f'[Align/Visual] [{phase}] bearing={bearing:+.3f}, '
+                     f'yaw={marker_yaw:+.3f}, width={width:.2f}')
+            last_log = now
+
+        if centered and face_on and (not approach or close_enough):
             _stop(cmd_pub)
-            nav.info(f'[Align] Done: err={err:+.3f}, width={width:.2f}.')
-            tracker.trigger_pose_correction(marker_id)
+            nav.info(f'[Align/Visual] Done: bearing={bearing:+.3f}, '
+                     f'yaw={marker_yaw:+.3f}, width={width:.2f}.')
             return True
 
-        twist.angular.z = max(-ALIGN_MAX_ANG, min(ALIGN_MAX_ANG, -ALIGN_KP_ANG * err))
-        if approach and abs(err) < ALIGN_FWD_GATE and not close_enough:
+        # 1) bearing  2) yaw  3) width — never mix
+        if not centered:
+            ang = -ALIGN_KP_ANG * bearing
+            twist.angular.z = max(-ALIGN_MAX_ANG, min(ALIGN_MAX_ANG, ang))
+        elif not face_on:
+            ang = -ALIGN_KP_YAW * marker_yaw
+            twist.angular.z = max(-ALIGN_MAX_ANG, min(ALIGN_MAX_ANG, ang))
+        elif approach and not close_enough:
             twist.linear.x = ALIGN_FWD_SPEED
 
         cmd_pub.publish(twist)
@@ -444,6 +613,153 @@ def visual_align(nav, tracker, cmd_pub, marker_id, approach=True) -> bool:
 
     _stop(cmd_pub)
     return False
+
+
+def back_off_until_blocked(nav, tracker, cmd_pub, marker_id, label) -> bool:
+    """Reverse (camera still facing the marker) until the robot stops moving (blocked).
+
+    Stall detection: monitor odom->base_link displacement over a time window; if the
+    robot barely moved while commanded backward, it's against something → stop.
+    odom is used (not map) because AMCL's map pose updates in laggy, discrete jumps
+    that can look like a stall even while the robot is cruising.
+    """
+    nav.info(f'[{label}] Backing off — reversing until blocked (camera on marker {marker_id})...')
+
+    def get_xy():
+        # Prefer odom (continuous, wheel-driven); fall back to map if odom missing.
+        for parent in ('odom', 'map'):
+            try:
+                tf = tracker.tf_buffer.lookup_transform(parent, 'base_link', rclpy.time.Time())
+                return float(tf.transform.translation.x), float(tf.transform.translation.y)
+            except Exception:
+                continue
+        return None
+
+    def get_range(marker):
+        # Distance camera→marker (metres) from PnP; bigger = farther away.
+        if marker is None:
+            return None
+        tvec = marker.get('tvec')
+        if tvec is not None:
+            tx, ty, tz = tvec.flatten()
+            return math.sqrt(float(tx) ** 2 + float(ty) ** 2 + float(tz) ** 2)
+        return None
+
+    t0 = time.time()
+    last_check = t0
+    win_start_xy = get_xy()
+    stalled_windows = 0
+
+    # Auto-direction: we want to move AWAY from the marker (range increasing).
+    # Start with the ROS convention (-x = backward), then verify against the
+    # marker range and flip once if we're actually getting closer.
+    direction = -1.0
+    dir_locked = False
+    range_ref = None
+
+    while rclpy.ok():
+        if time.time() - t0 > BACKUP_TIMEOUT:
+            _stop(cmd_pub)
+            nav.warn(f'[{label}] Back-off timed out.')
+            return False
+
+        rclpy.spin_once(tracker, timeout_sec=0.02)
+        twist = Twist()
+        twist.linear.x = direction * BACKUP_SPEED
+
+        # Keep the marker centered so the camera keeps looking at it while reversing.
+        m = tracker.get_marker(marker_id)
+        if m is not None:
+            bearing = m['err_x']
+            tvec = m.get('tvec')
+            if tvec is not None:
+                tx, _, tz = tvec.flatten()
+                if abs(tz) > 1e-4:
+                    bearing = math.atan2(float(tx), float(tz))
+            ang = BACKUP_KP_ANG * bearing
+            twist.angular.z = max(-BACKUP_MAX_ANG, min(BACKUP_MAX_ANG, ang))
+
+        cmd_pub.publish(twist)
+
+        now = time.time()
+
+        # Warm-up: let the robot accelerate before we start judging stalls.
+        if now - t0 < BACKUP_WARMUP:
+            win_start_xy = get_xy()
+            last_check = now
+            if range_ref is None:
+                range_ref = get_range(m)
+            time.sleep(0.03)
+            continue
+
+        # After warm-up, verify direction once: if range shrank, we're going the
+        # wrong way (toward the marker) — flip.
+        if not dir_locked:
+            r_now = get_range(m)
+            if r_now is not None and range_ref is not None:
+                delta = r_now - range_ref
+                if delta < -BACKUP_DIR_RANGE_EPS:
+                    direction = -direction
+                    nav.warn(f'[{label}] Wrong way (range {range_ref:.2f}→{r_now:.2f}m). '
+                             f'Flipping backward direction.')
+                    dir_locked = True
+                    range_ref = r_now
+                    win_start_xy = get_xy()
+                    last_check = now
+                    stalled_windows = 0
+                    time.sleep(0.03)
+                    continue
+                elif delta > BACKUP_DIR_RANGE_EPS:
+                    nav.info(f'[{label}] Direction OK (range {range_ref:.2f}→{r_now:.2f}m, moving away).')
+                    dir_locked = True
+            # If range unknown/unchanged, keep current direction and keep checking.
+
+        if now - last_check >= BACKUP_STALL_WINDOW:
+            xy = get_xy()
+            if xy is not None and win_start_xy is not None:
+                moved = math.hypot(xy[0] - win_start_xy[0], xy[1] - win_start_xy[1])
+                nav.info(f'[{label}] Back-off moved {moved:.3f}m in last '
+                         f'{BACKUP_STALL_WINDOW:.1f}s (stalled_windows={stalled_windows}).')
+                if moved < BACKUP_STALL_DIST:
+                    stalled_windows += 1
+                    # Require consecutive stalled windows to avoid a single bad TF sample.
+                    if stalled_windows >= BACKUP_STALL_WINDOWS_REQUIRED:
+                        _stop(cmd_pub)
+                        nav.info(f'[{label}] Blocked — cannot move backward anymore. Stopped.')
+                        return True
+                else:
+                    stalled_windows = 0
+            win_start_xy = xy
+            last_check = now
+
+        time.sleep(0.03)
+
+    _stop(cmd_pub)
+    return False
+
+
+def goto_face_on_position(nav, tracker, marker_id, label) -> bool:
+    """Phase 1 — Nav2 to the standoff pose directly in front of the marker."""
+    goal = compute_face_on_goal(marker_id)
+    if goal is None:
+        nav.warn(f'[{label}] Phase 1 (position): no face-on goal for marker {marker_id}.')
+        return False
+
+    gx, gy, gyaw = goal
+    nav.info(f'[{label}] Phase 1 (position) — Nav2 in front of marker {marker_id} '
+             f'at ({gx:.3f}, {gy:.3f}) yaw={gyaw:.0f}°...')
+    nav.clearAllCostmaps()
+    time.sleep(0.3)
+    pose = nav.getPoseStamped([gx, gy], gyaw)
+    nav.startToPose(pose)
+    while not nav.isTaskComplete():
+        rclpy.spin_once(tracker, timeout_sec=0.05)
+        time.sleep(0.05)
+
+    nav.info(f'[{label}] Phase 1 done — settling {POST_NAV_SETTLE_TIMEOUT:.1f}s...')
+    _wait_for_marker(tracker, marker_id, POST_NAV_SETTLE_TIMEOUT, nav=nav, label=label)
+    return True
+
 
 def goto_approach(nav, position, heading):
     nav.clearAllCostmaps()
@@ -506,48 +822,38 @@ def compute_face_on_goal(marker_id, approach_dist=APPROACH_DIST):
 
 def _search_then_align(nav, tracker, cmd_pub, marker_id, label):
     """
-    1. Lock the correction target so only the delivery marker can update AMCL.
-    2. Spin frames so tracker has fresh images after robot stops.
-    3. Do a 360° search if marker not immediately visible.
-    4. Once the marker is found, trigger AMCL pose correction.
-    5. Navigate to the exact face-on standoff position in front of the marker.
-    6. Do final fine visual alignment.
-    7. Clear the correction target when done.
+    1. Find marker (quick check / 360).
+    2. AMCL pose correction (gated).
+    3. Phase 1 — POSITION: Nav2 to standoff directly in front of the marker.
+    4. Phase 2 — VISUAL: bearing → yaw → width.
     """
     tracker.set_correction_target(marker_id)
     try:
-        # Let the tracker process fresh frames after navigation stops
-        for _ in range(15):
-            rclpy.spin_once(tracker, timeout_sec=0.05)
-
-        # 360° search if marker not immediately visible
-        found = tracker.get_marker(marker_id) is not None
-        if not found:
-            nav.info(f'[{label}] Marker {marker_id} not visible on arrival — searching...')
+        nav.info(f'[{label}] Quick detect check ({QUICK_DETECT_TIMEOUT:.1f}s) for '
+                 f'marker {marker_id}...')
+        found = _wait_for_marker(
+            tracker, marker_id, QUICK_DETECT_TIMEOUT, nav=nav, label=label)
+        if found:
+            nav.info(f'[{label}] Marker {marker_id} already decoded — skip rotation.')
+        else:
+            nav.info(f'[{label}] Not decoded (seen_ids={tracker.list_recent_ids() or "[]"}) '
+                     f'— starting 360 rotation search...')
             found = search_marker_360(nav, tracker, cmd_pub, marker_id)
 
-        if found:
-            # Fix AMCL drift: use the detected marker to update the robot pose
-            nav.info(f'[{label}] Marker found. Correcting AMCL pose...')
-            tracker.trigger_pose_correction(marker_id)
-            time.sleep(1.2)   # wait for AMCL to digest the correction
+        if not found:
+            nav.warn(f'[{label}] Marker {marker_id} never found — skip position+visual align.')
+            return
 
-            # Navigate to the exact face-on standoff position
-            goal = compute_face_on_goal(marker_id)
-            if goal is not None:
-                gx, gy, gyaw = goal
-                nav.info(f'[{label}] Navigating face-on to marker {marker_id} '
-                         f'at ({gx:.3f}, {gy:.3f}) yaw={gyaw:.0f}°...')
-                nav.clearAllCostmaps()
-                pose = nav.getPoseStamped([gx, gy], gyaw)
-                nav.startToPose(pose)
-                # Spin tracker during navigation so fresh frames accumulate
-                while not nav.isTaskComplete():
-                    rclpy.spin_once(tracker, timeout_sec=0.05)
-                    time.sleep(0.05)
+        # --- Phase 1: Nav2 to the standoff pose in front of the marker (no teleport) ---
+        if not goto_face_on_position(nav, tracker, marker_id, label):
+            nav.warn(f'[{label}] Phase 1 failed — skipping visual align.')
+            return
 
-        # Final fine visual alignment
-        visual_align(nav, tracker, cmd_pub, marker_id, approach=False)
+        # --- Phase 2: bearing → yaw → width only ---
+        visual_align(nav, tracker, cmd_pub, marker_id, approach=True)
+
+        # --- Phase 3: reverse (camera still on marker) until blocked ---
+        back_off_until_blocked(nav, tracker, cmd_pub, marker_id, label)
 
     finally:
         tracker.clear_correction_target()
