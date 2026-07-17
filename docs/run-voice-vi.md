@@ -1,5 +1,9 @@
 # Chạy hệ thống Voice + LLM + Web UI
 
+> 👉 **Muốn chạy full pipeline (web + robot sim + voice) theo từng máy?** Xem
+> [run-guide-vi.md §8](run-guide-vi.md#8-full-pipeline-web--robot-sim-gazebo--voice--chạy-thật-không-mock)
+> — bản gọn, đúng lệnh cho PC-server + laptop-sim. File này giữ phần **giải thích sâu** luồng voice.
+
 > Hướng dẫn chạy luồng **voice → LLM → web UI** sau khi tách kiến trúc (2026-06):
 > **bộ não (LLM) ở SERVER**, **thân xác (mic/STT/TTS) ở JETSON/laptop**. Web UI chỉ *mirror*
 > hội thoại, không thu mic. Tài liệu kiến trúc: [code-architecture.md](code-architecture.md) §6.
