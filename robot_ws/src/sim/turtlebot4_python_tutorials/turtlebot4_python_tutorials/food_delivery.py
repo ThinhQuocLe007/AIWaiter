@@ -40,19 +40,23 @@ CMD_VEL_TOPIC = '/cmd_vel'
 DOCK_MARKER_ID = 0
 MARKER_SIZE = 0.18
 
+# Heading (deg about map Z) = direction from the approach point straight at the
+# marker, so the camera (front) faces the ArUco and the robot's rear faces the
+# table. Computed from each marker's map pose (get_marker_global_tf); the old
+# coarse cardinal value is kept in a comment for reference.
 DESTINATIONS = {
-    'Table 1': {'id': 1, 'approach': ([8.730,  1.301], TurtleBot4Directions.SOUTH)},
-    'Table 2': {'id': 2, 'approach': ([7.233,  0.314], TurtleBot4Directions.NORTH)},
-    'Table 3': {'id': 3, 'approach': ([8.741, -0.694], TurtleBot4Directions.SOUTH)},
-    'Table 4': {'id': 4, 'approach': ([8.700, -3.152], TurtleBot4Directions.SOUTH)},
-    'Table 5': {'id': 5, 'approach': ([7.257, -4.309], TurtleBot4Directions.NORTH)},
-    'Table 6': {'id': 6, 'approach': ([8.679, -5.178], TurtleBot4Directions.SOUTH)},
+    'Table 1': {'id': 1, 'approach': ([8.730,  1.301],  178.5)},  # was SOUTH (180)
+    'Table 2': {'id': 2, 'approach': ([7.233,  0.314],    1.2)},  # was NORTH (0)
+    'Table 3': {'id': 3, 'approach': ([8.741, -0.694],  178.5)},  # was SOUTH (180)
+    'Table 4': {'id': 4, 'approach': ([8.700, -3.152], -176.5)},  # was SOUTH (180)
+    'Table 5': {'id': 5, 'approach': ([7.257, -4.309],    2.1)},  # was NORTH (0)
+    'Table 6': {'id': 6, 'approach': ([8.679, -5.178], -177.4)},  # was SOUTH (180)
 }
 
 DOCK_APPROACH = ([0.0, 0.0], TurtleBot4Directions.NORTH)
 
 DETECT_MAX_AGE = 1.0               
-SEARCH_ANGULAR_SPEED = -0.25  # Negative value for counter-clockwise rotation
+SEARCH_ANGULAR_SPEED = -0.10 # rad/s (~7°/s). Negative = counter-clockwise. Lower = slower marker search sweep.
 # Bounded search: sweep -90° → current → +90° instead of a full 360.
 SEARCH_SWEEP_RAD = math.pi / 2
 # Brief check only — standing still almost never decodes oblique markers in FOV.
@@ -65,7 +69,7 @@ ALIGN_KP_ANG = 1.3
 ALIGN_KP_YAW = 1.2
 ALIGN_MAX_ANG = 0.5                
 ALIGN_FWD_SPEED = 0.10             
-ALIGN_CENTER_TOL = 0.06
+ALIGN_CENTER_TOL = 0.01
 ALIGN_YAW_TOL = 0.25
 ALIGN_FWD_GATE = 0.20              
 ALIGN_STOP_WIDTH = 0.2
@@ -74,6 +78,13 @@ ALIGN_WIDTH_TOL = 0.03
 ALIGN_TIMEOUT = 30.0
 ALIGN_LOST_TIMEOUT = 3.5
 ALIGN_LOG_PERIOD = 1.0
+
+# Ablation switch. True  = full pipeline (heading + yaw_tolerance + visual_align).
+#                  False = test ONLY the precise heading + Nav2 yaw_tolerance;
+#                          visual_align/search are skipped so you can read the
+#                          raw arrival error ([Arrival] err_x) and decide whether
+#                          align actually earns its keep.
+ENABLE_VISUAL_ALIGN = True
 
 # Pose-correction gates (reject bad / false-ID snaps like tables→dock).
 CORRECTION_MAX_YAW = 0.40         # ~14° — PnP unreliable when too oblique
@@ -535,6 +546,122 @@ def startup_sequence(nav, tracker, cmd_pub):
     nav.waitUntilNav2Active()
     nav.info('Nav2 ACTIVE. [STARTUP] Complete.')
 
+def search_marker(nav, tracker, cmd_pub, marker_id):
+    """Bounded ±SEARCH_SWEEP_RAD sweep to bring marker_id into view.
+
+    Only a fallback for when the marker is not already in the camera FOV on
+    arrival (e.g. AMCL drifted). Returns True as soon as it is detected.
+    """
+    if tracker.get_marker(marker_id) is not None:
+        return True
+    nav.info(f'[Search] Marker {marker_id} not visible — sweeping '
+             f'±{math.degrees(SEARCH_SWEEP_RAD):.0f}°.')
+    speed = abs(SEARCH_ANGULAR_SPEED)
+    twist = Twist()
+    # Sweep +SEARCH_SWEEP_RAD one way, then back across to -SEARCH_SWEEP_RAD.
+    for direction, span in ((+1.0, SEARCH_SWEEP_RAD), (-1.0, 2 * SEARCH_SWEEP_RAD)):
+        swept = 0.0
+        last = time.time()
+        while swept < span and rclpy.ok():
+            if tracker.get_marker(marker_id) is not None:
+                cmd_pub.publish(Twist())
+                nav.info(f'[Search] Found marker {marker_id}.')
+                return True
+            now = time.time()
+            swept += speed * (now - last)
+            last = now
+            twist.angular.z = direction * speed
+            cmd_pub.publish(twist)
+            time.sleep(0.05)
+        cmd_pub.publish(Twist())
+    found = tracker.get_marker(marker_id) is not None
+    if not found:
+        nav.warn(f'[Search] Marker {marker_id} not found after sweep.')
+    return found
+
+def visual_align(nav, tracker, cmd_pub, marker_id):
+    """Rotate in place until marker_id is horizontally centered in the camera.
+
+    Centering err_x -> 0 means the robot's heading points straight at the marker,
+    which is exactly the 'heading not straight to the ArUco' problem. Rotation
+    only: marker_yaw (viewing obliqueness) needs translation and is left to the
+    approach pose, so it is logged for diagnostics but not driven here.
+    """
+    nav.info(f'[Align] Centering on marker {marker_id}.')
+    twist = Twist()
+    start = time.time()
+    last_seen = start
+    last_log = 0.0
+    while rclpy.ok():
+        now = time.time()
+        if now - start > ALIGN_TIMEOUT:
+            nav.warn(f'[Align] Timeout ({ALIGN_TIMEOUT}s) — stopping.')
+            break
+
+        m = tracker.get_marker(marker_id)
+        if m is None:
+            if now - last_seen > ALIGN_LOST_TIMEOUT:
+                nav.warn('[Align] Marker lost — aborting align.')
+                break
+            cmd_pub.publish(Twist())  # hold still and wait to re-acquire
+            time.sleep(0.05)
+            continue
+
+        last_seen = now
+        err_x = m['err_x']       # >0: marker is right of image centre
+        yaw = m['marker_yaw']    # obliqueness, logged only
+
+        if abs(err_x) < ALIGN_CENTER_TOL:
+            cmd_pub.publish(Twist())
+            nav.info(f'[Align] Locked: err_x={err_x:+.3f} (yaw={yaw:+.2f}).')
+            break
+
+        # Marker right of centre (err_x>0) -> rotate clockwise (angular.z<0).
+        ang = -ALIGN_KP_ANG * err_x
+        ang = max(-ALIGN_MAX_ANG, min(ALIGN_MAX_ANG, ang))
+        twist.angular.z = ang
+        twist.linear.x = 0.0
+        cmd_pub.publish(twist)
+
+        if now - last_log > ALIGN_LOG_PERIOD:
+            nav.info(f'[Align] err_x={err_x:+.3f}, yaw={yaw:+.2f}, ang={ang:+.2f}')
+            last_log = now
+        time.sleep(0.05)
+
+    cmd_pub.publish(Twist())  # ensure fully stopped
+
+def _acquire_and_align(nav, tracker, cmd_pub, marker_id, label):
+    """After Nav2 arrival: brief settle, log the raw arrival error, then
+    (optionally) search + visual-align. Set ENABLE_VISUAL_ALIGN=False to measure
+    the heading + yaw_tolerance changes on their own."""
+    settle = time.time()
+    while time.time() - settle < POST_NAV_SETTLE_TIMEOUT:
+        if tracker.get_marker(marker_id) is not None:
+            break
+        time.sleep(0.05)
+
+    # Objective arrival metric — pure Nav2 heading, before any search/align.
+    # |err_x| ~ 0 means the robot is already pointing straight at the marker.
+    m = tracker.get_marker(marker_id)
+    if m is not None:
+        nav.info(f'[Arrival] err_x={m["err_x"]:+.3f}, marker_yaw={m["marker_yaw"]:+.2f} '
+                 f'(marker {marker_id}, before search/align)')
+    else:
+        nav.warn(f'[Arrival] Marker {marker_id} NOT visible on arrival '
+                 f'(heading too far off, or occluded).')
+
+    if not ENABLE_VISUAL_ALIGN:
+        nav.info('[Align] DISABLED (ablation test) — heading left as Nav2 arrival.')
+        return
+
+    if tracker.get_marker(marker_id) is None:
+        search_marker(nav, tracker, cmd_pub, marker_id)
+
+    if tracker.get_marker(marker_id) is not None:
+        visual_align(nav, tracker, cmd_pub, marker_id)
+    else:
+        nav.warn(f'[{label}] Could not acquire marker {marker_id} — skipping align.')
+
 def deliver_to(nav, name, tracker, cmd_pub):
     dest = DESTINATIONS[name]
     marker_id = dest['id']
@@ -544,6 +671,8 @@ def deliver_to(nav, name, tracker, cmd_pub):
     tracker.set_correction_target(marker_id)
     goto_approach(nav, position, heading)
     _run_nav_primitive(nav)
+    nav.info(f'[{name}] Reached approach pose — acquiring marker.')
+    _acquire_and_align(nav, tracker, cmd_pub, marker_id, name)
     nav.info(f'[{name}] Delivery complete.')
     tracker.clear_correction_target()
 
@@ -553,6 +682,8 @@ def return_to_dock(nav, tracker, cmd_pub):
     tracker.set_correction_target(DOCK_MARKER_ID)
     goto_approach(nav, position, heading)
     _run_nav_primitive(nav)
+    nav.info('[Dock] Reached approach pose — acquiring marker.')
+    _acquire_and_align(nav, tracker, cmd_pub, DOCK_MARKER_ID, 'Dock')
     nav.info('[Dock] Returned to Dock.')
     tracker.clear_correction_target()
 
