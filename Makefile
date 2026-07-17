@@ -124,6 +124,16 @@ ID ?= robo-1
 mockrobot:
 	@uv run python scripts/mock_robot.py --id $(ID) $(ARGS)
 
+# Sim robot bridge — drives the Gazebo TurtleBot4 as a REAL dispatcher robot: task.assign →
+# Nav2/ArUco delivery → arrived/task_done + map-frame heartbeats (battery fixed 100%).
+# Needs Gazebo + Nav2 already up (see docs/run-guide-vi.md) and the workspace built
+# (cd robot_ws && colcon build). Point at a remote backend: make simbridge SERVER_HOST=100.x:8000
+SERVER_HOST ?= 127.0.0.1:8000
+simbridge:
+	@cd robot_ws && . /opt/ros/humble/setup.sh && . install/setup.sh && \
+	ros2 run ai_sim_bridge task_bridge --ros-args \
+		-p server_host:=$(SERVER_HOST) -p robot_id:=$(ID)
+
 # Reset all live demo data (orders, seatings, tables → free, robots → seed) via the running
 # backend. Panels reload instantly (WS 'reset' event); kiosk reflects on its next table poll.
 # Offline alternative (backend stopped): rm storage/db/orchestrator.db — reseeds on next start.

@@ -46,8 +46,9 @@ def seed_tables() -> int:
 # `activity` is a human-readable "what is it doing" (the dispatcher will set this for real
 # robots later). Replace with live heartbeats from the robot Brain (same `robots` table).
 SEED_ROBOTS = [
-    # id, name, status, battery, activity
-    ("robo-1", "Robot 1", "idle", 92.0, "Đang ở dock"),
+    # id, name, status, battery, activity — battery 100: the sim robot reports a fixed 100%
+    # (no battery model in Gazebo), so the seed matches what the first heartbeat will say.
+    ("robo-1", "Robot 1", "idle", 100.0, "Đang ở dock"),
 ]
 
 

@@ -38,12 +38,12 @@ ACTION_SECONDS = 3.0  # fake time doing the action at the table
 # Approach waypoints per table and the dock — in the saved SLAM map frame, mirroring the server's
 # dispatcher (src/server_orchestrator/services/dispatcher.py), which copies them from the sim's food_delivery.py.
 TABLE_POS = {
-    1: (7.99985, 1.36319),
-    2: (8.05419, 0.33537),
-    3: (7.97830, -0.64879),
-    4: (7.92656, -3.28752),
-    5: (7.98864, -4.28860),
-    6: (8.00802, -5.27848),
+    1: (8.730, 1.301),
+    2: (7.233, 0.314),
+    3: (8.741, -0.694),
+    4: (8.700, -3.152),
+    5: (7.257, -4.309),
+    6: (8.679, -5.178),
 }
 DOCK_POS = (0.0, 0.0)
 

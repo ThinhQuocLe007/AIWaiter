@@ -16,6 +16,11 @@ class AgentState(TypedDict):
     # Use to load context
     table_id: str
 
+    # "Bàn 3 · 2 khách" — resolved by graph.chat() from the table's ACTIVE session (the kiosk
+    # seating records which table the party took and how many people came). Lets the agent
+    # answer/behave with the visit in mind; None before any seating.
+    table_context: str | None
+
     # Intent to work with
     current_intents: list[Literal["ORDER", "ORDER_CONFIRM", "SEARCH", "PAYMENT", "CHAT"]]
 

@@ -177,6 +177,32 @@ Ráp nốt UI cho dispatcher (backend đã phát event từ 2.9, chỉ thiếu m
 
 > *Còn lại của Mốc C:* nút bàn **phần cứng** thật (ESP32/WiFi → `/tables/{id}/call`) — hiện demo bằng **nút trên Panel** (đủ cho demo) hoặc `curl`.
 
+### 2.11 Sim ↔ web ↔ agent: full pipeline (2026-07-17)
+Robot Gazebo trở thành **robot thật của dispatcher** — gộp mô phỏng vào pipeline web + agent.
+
+- **`ai_sim_bridge/task_bridge.py`** (mới, thay `pose_bridge`): WS client `role=robot` đủ contract
+  (`task.assign` → accept → **Nav2 + ArUco** tới bàn (tái dùng `deliver_to`/`return_to_dock` của
+  `food_delivery.py`) → `arrived` → chờ `task.release` với `go_to_table`/`call` (khách đặt món /
+  thanh toán) hoặc tự xong với `deliver` → `task_done` → về dock; task tới trong lúc đang về dock
+  được xếp hàng chạy tiếp). Heartbeat 5 Hz: pose theo **map frame** (TF `map→base_link`, dùng lại
+  tf_buffer của ArucoTracker) + **pin cố định 100%** (sim không có pin). Chạy: `make simbridge`
+  (`SERVER_HOST=...` khi backend ở máy khác).
+- **Đồng bộ toạ độ:** `dispatcher.TABLE_POS` cập nhật theo approach mới của `food_delivery.py`
+  (commit "simulation doe"); thêm `TABLE_MARKER_POS` (vị trí marker ArUco trong map frame — chính là
+  chỗ bàn thật) → `/layout` vẽ icon bàn ở đó, minimap panel khớp cả bàn lẫn robot. `mock_robot.py`
+  + seed robot (pin 100) cập nhật theo.
+- **Robot tới bàn → tablet tự chuyển màn:** `dispatcher.on_arrived` broadcast
+  `robot.arrived {table_id, kind}` tới `role=customer`; customer_ui (voice store) điều hướng:
+  `go_to_table` → `/menu` (khách mới vô chọn món), `call` → `/service` (đặt thêm / thanh toán).
+- **Agent nhớ bàn + số khách:** `graph.chat()` đọc phiên ACTIVE (kiosk ghi `party_size` khi seating)
+  → state `table_context` ("Bàn 3 · 2 khách") → `ChatResponseContext.table_context` → dòng
+  "Đang phục vụ: …" trong CONTEXT của chat rewriter.
+- **Đã test E2E** (backend thật + robot client giả lập đúng contract task_bridge): seating →
+  `go_to_table` → arrived (customer nhận `robot.arrived`, session trả `party_size=2`, `/robots`
+  pin 100 + pose live) → đặt món → `task.release` → done/idle → bếp `XONG` → `deliver` → nút gọi →
+  `call` → thanh toán → release + bàn `DA_THANH_TOAN`. `/layout` icon bàn tại marker. 3 web
+  `vite build` pass; `colcon build ai_sim_bridge` pass. Runbook: run-guide-vi.md §8.
+
 ---
 
 ## 3. Còn lại — việc tiếp theo (theo thứ tự ưu tiên)

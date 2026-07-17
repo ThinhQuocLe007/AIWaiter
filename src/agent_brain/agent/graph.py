@@ -232,10 +232,17 @@ class AIWaiterGraph:
         # should pass session_id=None every turn: within a visit this returns the same id (memory
         # persists); after payment closes the session it returns None until the next seating opens
         # a new one → a fresh thread → no context bleed between guests.
+        table_context = None
         if session_id is None:
             try:
                 sess = self.orchestrator.get_active_session(table_id)
                 session_id = sess["id"] if sess else None
+                # Remember WHO we're serving: the kiosk seating recorded the table + party size
+                # on the session. Surfaced to the LLM as one context line ("Bàn 3 · 2 khách").
+                if sess:
+                    table_no = sess.get("table_id", table_id)
+                    party = sess.get("party_size")
+                    table_context = f"Bàn {table_no}" + (f" · {party} khách" if party else "")
             except httpx.HTTPError as e:
                 logger.warning("Backend unreachable — falling back to table-scoped thread: %s", e)
         config = create_thread_config(table_id, session_id)
@@ -245,6 +252,7 @@ class AIWaiterGraph:
         inputs = {
             "messages": [("user", query)],
             "table_id": table_id,
+            "table_context": table_context,
             "loop_count": 0,
             "is_valid": True,
             "order_stage": existing_stage,

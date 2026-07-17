@@ -156,6 +156,7 @@ def _build_from_tool_message(last: ToolMessage, state: AgentState) -> ResponseCo
         active_cart=state.get("active_cart") or Cart(),
         order_stage=state.get("order_stage", "IDLE"),
         chat_history=list(state.get("messages") or []),
+        table_context=state.get("table_context"),
     )
 
 
@@ -207,4 +208,5 @@ def state_outcome_node(state: AgentState) -> dict[str, Any]:
         active_cart=state.get("active_cart") or Cart(),
         order_stage=state.get("order_stage", "IDLE"),
         chat_history=list(state.get("messages") or []),
+        table_context=state.get("table_context"),
     ))

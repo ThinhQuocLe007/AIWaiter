@@ -180,6 +180,9 @@ def _format_history_for_llm(messages) -> str:
 def _format_chat_for_llm(ctx: ChatResponseContext) -> str:
     blocks = []
 
+    if ctx.table_context:
+        blocks.append(f"Đang phục vụ: {ctx.table_context}")
+
     cart = ctx.active_cart
     cart_text = "trống"
     if cart and cart.items:

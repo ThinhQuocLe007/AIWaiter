@@ -49,14 +49,27 @@ SNAPSHOT_EVERY = 15.0  # seconds
 # The robot's heartbeat pose is published in this same map frame, so these line up with it (and
 # with restaurant.pgm). Used to score "which idle robot is nearest"; the robot navigates itself.
 TABLE_POS: dict[int, tuple[float, float]] = {
-    1: (7.99985, 1.36319),
-    2: (8.05419, 0.33537),
-    3: (7.97830, -0.64879),
-    4: (7.92656, -3.28752),
-    5: (7.98864, -4.28860),
-    6: (8.00802, -5.27848),
+    1: (8.730, 1.301),
+    2: (7.233, 0.314),
+    3: (8.741, -0.694),
+    4: (8.700, -3.152),
+    5: (7.257, -4.309),
+    6: (8.679, -5.178),
 }
 DOCK_POS = (0.0, 0.0)  # spawn/dock in the map frame; an idle robot's default position
+
+# ArUco marker positions per table in the map frame — the marker hangs at the table itself
+# (computed from food_delivery.get_marker_global_tf's world poses through the world→map
+# transform). This is where the physical table actually is, so the panel minimap draws the
+# table icons here; TABLE_POS above is only the robot's *approach* waypoint in front of it.
+TABLE_MARKER_POS: dict[int, tuple[float, float]] = {
+    1: (7.110, 1.343),
+    2: (8.890, 0.350),
+    3: (7.110, -0.650),
+    4: (7.110, -3.250),
+    5: (8.890, -4.250),
+    6: (7.110, -5.250),
+}
 
 # Approach heading per table, as a unit vector in the map frame (NORTH=+X, SOUTH=-X,
 # WEST=+Y, EAST=-Y), copied from food_delivery.py DESTINATIONS. The ArUco marker sits in
@@ -331,6 +344,12 @@ async def on_arrived(robot_id: str, task_id: int | None) -> None:
     # drops (on disconnect). For go_to_table/call the robot now WAITS here until the guest orders
     # or pays — the orders/payments routers then call release_robot_at_table to send it home.
     manager.bind_table_robot(task.table_id, robot_id)
+    # Wake the table's customer_ui: the robot is standing there now, so the tablet should switch
+    # to the right screen on its own (menu for a first visit, order-more/pay chooser for a call).
+    await manager.broadcast(
+        "customer",
+        {"type": "robot.arrived", "table_id": task.table_id, "kind": task.kind},
+    )
     log.info("task %s arrived (table %s) — voice bound to %s", task_id, task.table_id, robot_id)
 
 

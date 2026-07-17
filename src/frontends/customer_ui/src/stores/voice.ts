@@ -68,6 +68,17 @@ export const useVoiceStore = defineStore('voice', () => {
     } else if (e.type === 'voice.reply') {
       if (e.table_id !== getStoredTableId()) return
       onReply(e.text, e.action, e.stage, e.cart, e.confirmed ?? false)
+    } else if (e.type === 'robot.arrived') {
+      // The robot is standing at this table now: bring the tablet to the screen matching the
+      // visit step, so the guest never has to navigate by hand. go_to_table = fresh party →
+      // straight to the menu; call = mid-meal service → the "order more / pay" chooser.
+      // deliver needs no screen change (the guest just takes the food).
+      if (e.table_id !== getStoredTableId()) return
+      if (e.kind === 'go_to_table' && router.currentRoute.value.name !== 'menu') {
+        router.push({ name: 'menu' })
+      } else if (e.kind === 'call' && router.currentRoute.value.name !== 'service') {
+        router.push({ name: 'service' })
+      }
     } else if (e.type === 'table.updated') {
       // Session lifecycle for THIS table: paid (DA_THANH_TOAN) or ended from the panel (TRONG)
       // means the visit is over — the dishes must leave the cart card, no matter where the

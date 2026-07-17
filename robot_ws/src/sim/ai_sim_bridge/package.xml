@@ -10,6 +10,9 @@
   <depend>rclpy</depend>
   <depend>tf2_ros</depend>
   <depend>geometry_msgs</depend>
+  <!-- task_bridge reuses the Nav2 + ArUco delivery pipeline from the tutorials package -->
+  <exec_depend>turtlebot4_python_tutorials</exec_depend>
+  <exec_depend>turtlebot4_navigation</exec_depend>
   <!-- websocket-client (python). rosdep key python3-websocket; if unavailable, pip install websocket-client -->
   <exec_depend>python3-websocket</exec_depend>
 
