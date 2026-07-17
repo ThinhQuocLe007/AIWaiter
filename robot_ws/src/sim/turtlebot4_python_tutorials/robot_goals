@@ -1,0 +1,8 @@
+Table 1: [pose_aruco_debug-43] [INFO] [1784136322.137406730] [pose_aruco_debug]: Robot Pose (map -> base_link): x=8.730, y=1.301, yaw=-3.126
+Table 2: [pose_aruco_debug-43] [INFO] [1784136450.140030885] [pose_aruco_debug]: Robot Pose (map -> base_link): x=7.233, y=0.314, yaw=0.073
+Table 3: [pose_aruco_debug-43] [INFO] [1784136871.137158127] [pose_aruco_debug]: Robot Pose (map -> base_link): x=8.741, y=-0.694, yaw=3.121
+Table 4: [pose_aruco_debug-43] [INFO] [1784137032.137416584] [pose_aruco_debug]: Robot Pose (map -> base_link): x=8.700, y=-3.152, yaw=3.095
+Table 5: [pose_aruco_debug-43] [INFO] [1784137140.137070164] [pose_aruco_debug]: Robot Pose (map -> base_link): x=7.257, y=-4.309, yaw=0.005
+Table 6: [pose_aruco_debug-43] [INFO] [1784137286.136883295] [pose_aruco_debug]: Robot Pose (map -> base_link): x=8.679, y=-5.178, yaw=3.000
+Dock: [pose_aruco_debug-43] [INFO] [1784137415.137249210] [pose_aruco_debug]: Robot Pose (map -> base_link): x=0.00, y=0.00, yaw=0.00
+
