@@ -38,7 +38,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from src.agent_brain.config import settings
 from src.agent_brain.utils import flush_traces, log_struct
-from src.edge_voice.output.tts_engine import StreamingPlayer, speak_sentence, speak_streaming
+from src.edge_voice.output.tts_engine import StreamingPlayer, speak_sentence, speak_streaming, warmup as tts_warmup
 from src.edge_voice.perception import PhoWhisperSTT, SileroVAD
 from src.edge_voice.perception.queues import get_transcript, shutdown_all
 
@@ -204,7 +204,8 @@ def main():
     # first customer turn doesn't pay the cold-start latency. VAD barge-in allows
     # the customer to interrupt the robot mid-speech by talking.
     player = StreamingPlayer(vad=vad)
-    speak_streaming(".", "IDLE", player)
+    tts_warmup()
+    speak_streaming("Xin chào", "IDLE", player)
 
     print("=" * 50)
     print(f" AI Waiter voice device — Robot {ROBOT_ID}")

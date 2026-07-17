@@ -126,7 +126,19 @@ Agent (LLM) @ http://100.x.x.x:8100
 Speak in Vietnamese to order...
 ```
 
-> **TTS dùng `edge-tts` (cloud)** → laptop cần internet để phát tiếng ra loa.
+### Chọn engine TTS (Piper offline vs edge-tts cloud)
+
+Mặc định TTS dùng **Piper** (offline, giọng `vi_VN-vais1000-medium`, tự tải model về
+`storage/tts/` lần đầu) → **không cần internet** để phát tiếng.
+
+Muốn ép dùng **cloud (`edge-tts`, giọng `vi-VN-HoaiMyNeural`)** thì đặt biến env
+`TTS_BACKEND=cloud` (nhận cả `edge` / `edge-tts`):
+```bash
+TTS_BACKEND=cloud make voice
+# hoặc: TTS_BACKEND=cloud uv run python src/edge_voice/main.py
+```
+> **edge-tts gọi API online của Microsoft** → máy voice cần internet. Nếu package `piper`
+> không cài được thì code cũng tự rơi về edge-tts. Công tắc ở `src/edge_voice/output/tts_engine.py`.
 
 ---
 
@@ -180,7 +192,7 @@ uv run python -c "import torch; print(torch.__version__, torch.cuda.is_available
 | Agent log: lỗi gọi Ollama / model not found | Chưa `ollama serve` hoặc chưa `ollama pull <model>` đúng tên trong `.env` |
 | Browser vào `:5173` báo *"host not allowed"* | Thêm `allowedHosts: true` vào khối `server` trong `customer_ui/vite.config.ts` |
 | Web không hiện hội thoại khi nói | Kiểm tra bàn web = bàn 1 (khớp `TABLE_ID=T1`); xem Network tab có WS `/ws?role=customer` connected không |
-| Voice không nghe / không ra tiếng | mic USB chưa nhận (laptop), hoặc TTS `edge-tts` thiếu internet |
+| Voice không nghe / không ra tiếng | mic USB chưa nhận (laptop); nếu chạy `TTS_BACKEND=cloud` thì edge-tts thiếu internet — bỏ biến để về Piper offline |
 | FAISS index lỗi đọc | Chạy `make reindex` (hoặc `make agent`) để build lại |
 
 ## 8. Cổng dùng

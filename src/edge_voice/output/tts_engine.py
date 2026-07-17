@@ -1,6 +1,7 @@
 import asyncio
 import io
 import logging
+import os
 import re
 import subprocess
 import threading
@@ -14,10 +15,14 @@ import soundfile as sf
 logger = logging.getLogger(__name__)
 
 # ── Engine selection ─────────────────────────────────────────────────────────
+# Force the cloud engine (edge-tts) regardless of whether piper is installed:
+#   TTS_BACKEND=cloud make voice
+_FORCE_CLOUD = os.getenv("TTS_BACKEND", "").lower() in ("cloud", "edge", "edge-tts")
+
 try:
     from piper import PiperVoice
 
-    _HAS_PIPER = True
+    _HAS_PIPER = not _FORCE_CLOUD
 except ImportError:
     _HAS_PIPER = False
 
