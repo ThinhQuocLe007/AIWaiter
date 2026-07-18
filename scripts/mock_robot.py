@@ -128,7 +128,10 @@ async def run_task(ws, task: dict, state: dict) -> None:
     await ws.send(json.dumps({"type": "task_done", "task_id": task_id}))
 
     # Head back to the dock so the next task starts from a realistic spot (and the dot returns home).
-    await drive_to(ws, state, DOCK_POS)
+    if await drive_to(ws, state, DOCK_POS):
+        # Parked — server flips "Đang về dock" → "Đang ở dock" (ignored if we got a new task).
+        await ws.send(json.dumps({"type": "at_dock"}))
+        print(f"[{state['id']}] về tới dock")
 
 
 async def main(args) -> None:

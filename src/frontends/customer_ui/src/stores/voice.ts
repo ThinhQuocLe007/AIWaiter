@@ -4,7 +4,13 @@ import type { FoodItem } from '@/types'
 import { useCartStore } from '@/stores/cart'
 import { useMenuStore } from '@/stores/menu'
 import { getStoredTableId } from '@/data/tableSession'
-import { startVoiceListen, cancelVoiceListen, createPayment } from '@/data/api'
+import {
+  startVoiceListen,
+  cancelVoiceListen,
+  setVoiceMuted,
+  newVoiceChat,
+  createPayment,
+} from '@/data/api'
 import router from '@/router'
 import { connectEvents, type WsHandle } from '@shared/ws'
 import type { UiAction, VoiceCartItem, WsEvent } from '@shared/types'
@@ -219,8 +225,12 @@ export const useVoiceStore = defineStore('voice', () => {
     recommendedItem.value = null
   }
 
+  // Speaker toggle — not just a local flag: it mutes the robot's actual TTS output (the audio
+  // plays on the robot's Jetson, not this tablet). Muting cuts the sentence currently playing;
+  // best-effort when no robot is at the table (the flag still drives the next turn's state).
   function toggleSound() {
     isSoundEnabled.value = !isSoundEnabled.value
+    setVoiceMuted(getStoredTableId(), !isSoundEnabled.value).catch(() => {})
   }
 
   // The "talk to AI" / "Nói tiếp" button. The mic lives on the table's voice device (Jetson/laptop),
@@ -232,6 +242,9 @@ export const useVoiceStore = defineStore('voice', () => {
     connect()
     suppressTurn = false // a new deliberate turn always shows its own transcript + reply
     aiState.value = 'listening'
+    // Re-sync the speaker preference first: the device may have (re)connected after the guest
+    // toggled it, and its own mute flag lives in device RAM.
+    setVoiceMuted(getStoredTableId(), !isSoundEnabled.value).catch(() => {})
     try {
       const res = await startVoiceListen(getStoredTableId())
       if (res.status === 'no_device') {
@@ -244,12 +257,13 @@ export const useVoiceStore = defineStore('voice', () => {
     }
   }
 
-  // The "Hủy"/"Dừng" button. What it does depends on where the turn is:
-  // - listening: tell the voice device to abort the capture → the utterance is never sent to
-  //   the LLM. Suppress the turn's events too, in case the device had already posted it.
+  // The "Hủy"/"Dừng" button. The device-side cancel is sent in EVERY phase — it kills whatever
+  // part of the turn is alive there: an armed capture, the agent reply stream being consumed,
+  // and the TTS sentence coming out of the robot's speaker. On top of that:
+  // - listening: the utterance is never sent to the LLM; suppress its events in case it slipped.
   // - thinking: the utterance is (probably) already at the LLM — we can't unsend it, but we
-  //   suppress its reply so the guest never sees an answer to the cancelled sentence.
-  // - speaking / idle: just settle the view back to idle.
+  //   suppress its reply so the guest never sees (nor hears) an answer to the cancelled sentence.
+  // - speaking: the reply already arrived; just cut the audio, keep the text on screen.
   function stop() {
     const phase = aiState.value
     clearTimeout(speakingTimer)
@@ -257,8 +271,30 @@ export const useVoiceStore = defineStore('voice', () => {
     aiState.value = 'idle'
     if (phase === 'listening' || phase === 'thinking') {
       suppressTurn = true
-      // Best-effort device-side abort; harmless if the utterance already left the device.
-      cancelVoiceListen(getStoredTableId()).catch(() => {})
+    }
+    cancelVoiceListen(getStoredTableId()).catch(() => {})
+  }
+
+  // The "cuộc trò chuyện mới" button: wipe the agent's memory for this table (fresh LLM thread)
+  // and clear the visible chat. The visit/bill continues — orders already sent to the kitchen
+  // stay; only the conversation (and the agent's draft cart) starts over.
+  async function newConversation() {
+    clearTimeout(speakingTimer)
+    suppressTurn = false
+    messages.value = []
+    recommendedItem.value = null
+    speechText.value = ''
+    aiResponse.value = ''
+    aiState.value = 'idle'
+    try {
+      const res = await newVoiceChat(getStoredTableId()) // also stops any in-flight turn/speech
+      if (res.status === 'ok') {
+        pushMessage('ai', 'Dạ, mình bắt đầu cuộc trò chuyện mới nhé ạ!')
+      } else {
+        pushMessage('ai', 'Trợ lý chưa sẵn sàng làm mới ạ, anh/chị thử lại sau nhé.')
+      }
+    } catch {
+      pushMessage('ai', 'Chưa làm mới được cuộc trò chuyện ạ, anh/chị thử lại nhé.')
     }
   }
 
@@ -283,6 +319,7 @@ export const useVoiceStore = defineStore('voice', () => {
     openPanel,
     closePanel,
     resetConversation,
+    newConversation,
     toggleSound,
     startListening,
     stop,

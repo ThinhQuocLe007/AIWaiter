@@ -106,6 +106,19 @@ def health() -> dict:
     return {"status": "ok", "agent_loaded": _agent is not None}
 
 
+class ResetRequest(BaseModel):
+    table_id: str = "T1"
+
+
+@app.post("/reset")
+def reset_conversation(req: ResetRequest) -> dict:
+    """"Cuộc trò chuyện mới": drop the table's current conversation thread (messages, stage, cart
+    draft). Forwarded here by the orchestrator's POST /voice/new-chat — the guest's next utterance
+    starts a fresh conversation on the same visit/bill."""
+    thread_id = _agent.reset_thread(req.table_id)
+    return {"status": "ok", "thread_id": thread_id}
+
+
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest) -> ChatResponse:
     """Process one recognised utterance: run the agent, mirror it to the tablet, return the reply.

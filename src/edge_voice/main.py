@@ -23,6 +23,7 @@ import logging
 import os
 import signal
 import sys
+import threading
 
 # Make the repo root importable so `from src.agent_brain...` resolves when this file is
 # invoked as `python src/edge_voice/main.py` (uvicorn's `:` form sets sys.path automatically,
@@ -64,10 +65,12 @@ def _backend_ws_url() -> str:
     return f"{base}/ws?role=voice-device&robot_id={ROBOT_ID}"
 
 
-def _capture_and_send(vad: SileroVAD, agent_client: httpx.Client, table_id: int, player: StreamingPlayer) -> None:
+def _capture_and_send(vad: SileroVAD, agent_client: httpx.Client, table_id: int,
+                      player: StreamingPlayer, cancel: threading.Event) -> None:
     """Blocking: arm one utterance, wait for it, transcribe, POST to the agent for `table_id` (the
-    table the server says this robot is serving). Runs off the WS loop via asyncio.to_thread so the
-    socket stays responsive."""
+    table the server says this robot is serving). Runs off the WS loop in a worker thread so the
+    socket stays responsive; `cancel` is set by a cancel_listening frame and aborts the turn at
+    every stage boundary."""
     # Drop any stale transcript so we POST only what the guest says now.
     while get_transcript(timeout=0.0) is not None:
         pass
@@ -77,10 +80,16 @@ def _capture_and_send(vad: SileroVAD, agent_client: httpx.Client, table_id: int,
     if not vad.wait_for_utterance(UTTERANCE_TIMEOUT):
         print("[TIMEOUT] không nghe thấy gì, quay lại chờ.")
         return
+    if cancel.is_set():
+        print("[CANCELLED] khách hủy khi đang nghe.")
+        return
 
     transcript = get_transcript(timeout=TRANSCRIPT_TIMEOUT)
     if transcript is None or not transcript.text.strip():
         print("[EMPTY] không nhận ra lời nói.")
+        return
+    if cancel.is_set():
+        print("[CANCELLED] khách hủy — không gửi cho agent.")
         return
 
     text = transcript.text
@@ -103,14 +112,19 @@ def _capture_and_send(vad: SileroVAD, agent_client: httpx.Client, table_id: int,
 
     print(f"[WAITER]: {response}")
 
-    if response and not player.is_stopped():
-        player.reset()
+    if response and not cancel.is_set() and not player.is_stopped():
         speak_streaming(response, stage, player)
 
 
-def _capture_and_send_streaming(vad: SileroVAD, agent_client: httpx.Client,
-                                 table_id: int, player: StreamingPlayer) -> None:
-    """Streaming variant: consumes SSE from POST /chat/stream, plays sentences incrementally."""
+def _capture_and_send_streaming(vad: SileroVAD, agent_client: httpx.Client, table_id: int,
+                                 player: StreamingPlayer, cancel: threading.Event) -> None:
+    """Streaming variant: consumes SSE from POST /chat/stream, plays sentences incrementally.
+
+    `cancel` (set by the tablet's Hủy/Dừng button via a cancel_listening frame) aborts the turn
+    wherever it is: an armed capture is dropped, an in-flight agent stream is closed (we stop
+    consuming — the LLM may finish server-side but the tablet suppresses that reply), and TTS
+    playback is cut by player.interrupt() done on the WS side.
+    """
     while get_transcript(timeout=0.0) is not None:
         pass
 
@@ -119,22 +133,30 @@ def _capture_and_send_streaming(vad: SileroVAD, agent_client: httpx.Client,
     if not vad.wait_for_utterance(UTTERANCE_TIMEOUT):
         print("[TIMEOUT] không nghe thấy gì, quay lại chờ.")
         return
+    if cancel.is_set():  # cancel_listen() releases the wait above immediately
+        print("[CANCELLED] khách hủy khi đang nghe.")
+        return
 
     transcript = get_transcript(timeout=TRANSCRIPT_TIMEOUT)
     if transcript is None or not transcript.text.strip():
         print("[EMPTY] không nhận ra lời nói.")
+        return
+    if cancel.is_set():
+        print("[CANCELLED] khách hủy — không gửi cho agent.")
         return
 
     text = transcript.text
     print(f"[HEARD @ {transcript.timestamp:.1f}s | bàn {table_id}]: {text}")
 
     try:
-        player.reset()
         with agent_client.stream("POST", "/chat/stream", json={
             "table_id": f"T{table_id}", "text": text
         }) as resp:
             resp.raise_for_status()
             for line in resp.iter_lines():
+                if cancel.is_set():
+                    print("[CANCELLED] dừng nhận trả lời từ agent.")
+                    break
                 if not line or not line.startswith("data: "):
                     continue
                 data = json.loads(line[6:])
@@ -145,7 +167,7 @@ def _capture_and_send_streaming(vad: SileroVAD, agent_client: httpx.Client,
                 elif ev == "sentence":
                     sentence = data["text"]
                     print(f"[WAITER]: {sentence}")
-                    if sentence and not player.is_stopped():
+                    if sentence and not cancel.is_set() and not player.is_stopped():
                         speak_sentence(sentence, player)
                 elif ev == "done":
                     print(f"[WAITER done] stage={data.get('stage')}")
@@ -155,9 +177,16 @@ def _capture_and_send_streaming(vad: SileroVAD, agent_client: httpx.Client,
 
 
 async def voice_device_loop(vad: SileroVAD, agent_client: httpx.Client, player: StreamingPlayer) -> None:
-    """Connect to the backend WS hub and react to start_listening commands. Reconnects with backoff."""
+    """Connect to the backend WS hub and react to server commands. Reconnects with backoff.
+
+    The turn itself (capture → STT → agent → TTS) runs as a BACKGROUND task, never awaited inline:
+    the receive loop must stay free to process cancel_listening / set_muted arriving mid-turn —
+    that's the whole point of the tablet's Dừng and tắt-loa buttons working in realtime.
+    """
     url = _backend_ws_url()
     retry = 0
+    turn_task: asyncio.Task | None = None
+    cancel = threading.Event()  # per-turn abort flag, shared with the capture worker thread
     while True:
         try:
             async with websockets.connect(url) as ws:
@@ -169,15 +198,32 @@ async def voice_device_loop(vad: SileroVAD, agent_client: httpx.Client, player: 
                         msg = json.loads(raw)
                     except json.JSONDecodeError:
                         continue
-                    if msg.get("type") == "start_listening":
+                    mtype = msg.get("type")
+                    if mtype == "start_listening":
                         # The server tags the command with the table this robot is currently serving.
                         table_id = msg.get("table_id")
                         if table_id is None:
                             print("[WARN] start_listening thiếu table_id, bỏ qua.")
                             continue
-                        await asyncio.to_thread(
-                            _capture_and_send_streaming, vad, agent_client, table_id, player
-                        )
+                        if turn_task is not None and not turn_task.done():
+                            print("[BUSY] một lượt đang chạy — bỏ qua start_listening.")
+                            continue
+                        cancel.clear()
+                        player.reset()  # clear a leftover interrupt; mute (if on) persists
+                        turn_task = asyncio.create_task(asyncio.to_thread(
+                            _capture_and_send_streaming, vad, agent_client, table_id, player, cancel
+                        ))
+                    elif mtype == "cancel_listening":
+                        # Tablet's Hủy/Dừng: kill the whole in-flight turn — armed mic, agent
+                        # stream consumption AND the sentence currently coming out of the speaker.
+                        print("[CANCEL] khách bấm dừng — hủy lượt hiện tại.")
+                        cancel.set()
+                        vad.cancel_listen()
+                        player.interrupt()
+                    elif mtype == "set_muted":
+                        muted = bool(msg.get("muted"))
+                        player.set_muted(muted)
+                        print(f"[MUTE] {'tắt' if muted else 'bật'} loa trả lời.")
         except (OSError, websockets.WebSocketException) as e:
             delay = min(2 ** retry, WS_RETRY_MAX)
             retry += 1

@@ -4,7 +4,7 @@ This supersedes ``pose_bridge`` (telemetry-only) by speaking the complete robot 
 backend dispatcher expects (the same one ``scripts/mock_robot.py`` fakes):
 
     server → robot : task.assign {task_id, kind, table_id}   ·  task.release {table_id}
-    robot → server : task_accepted / arrived / task_done {task_id}
+    robot → server : task_accepted / arrived / task_done {task_id}   ·  at_dock (parked home)
                      heartbeat {battery, x, y}   (map frame, battery fixed 100% in sim)
 
 The physical execution reuses the tuned delivery pipeline from
@@ -228,10 +228,13 @@ class TaskBridge:
 
         self._send({"type": "task_done", "task_id": task_id})
 
-        # Head home unless the dispatcher already queued our next job (we're idle server-side
-        # from task_done on, so a new task can land while we'd be driving back).
+        # Head home unless the dispatcher already queued our next job (we're assignable
+        # server-side from task_done on, so a new task can land while we'd be driving back).
         if self._tasks.empty():
             return_to_dock(self._nav, self._tracker, self._cmd_pub)
+            # Physically parked now — the server flips "Đang về dock" → "Đang ở dock". If a task
+            # was assigned while we drove home, the server ignores this (we're busy again).
+            self._send({"type": "at_dock"})
 
 
 def main(args=None) -> None:

@@ -46,9 +46,11 @@ def seed_tables() -> int:
 # `activity` is a human-readable "what is it doing" (the dispatcher will set this for real
 # robots later). Replace with live heartbeats from the robot Brain (same `robots` table).
 SEED_ROBOTS = [
-    # id, name, status, battery, activity — battery 100: the sim robot reports a fixed 100%
-    # (no battery model in Gazebo), so the seed matches what the first heartbeat will say.
-    ("robo-1", "Robot 1", "idle", 100.0, "Đang ở dock"),
+    # id, name, status, battery, activity — a robot starts UNACTIVATED: its bridge (make
+    # simbridge / mockrobot) hasn't connected, so there is no battery/pose to show. It flips to
+    # idle + "Đang ở dock" the moment its WS connects (dispatcher.on_robot_connect) and the panel
+    # fills pin/vị trí from the first heartbeats.
+    ("robo-1", "Robot 1", "offline", None, "Chưa kích hoạt"),
 ]
 
 

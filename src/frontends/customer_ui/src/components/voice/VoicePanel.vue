@@ -9,7 +9,10 @@
           <span class="vp-state">{{ stateLabel }}</span>
         </div>
         <div class="vp-actions">
-          <button class="vp-icon-btn" type="button" :aria-label="voice.isSoundEnabled ? 'Tắt tiếng' : 'Bật tiếng'" @click="voice.toggleSound()">
+          <button class="vp-icon-btn" type="button" aria-label="Cuộc trò chuyện mới" title="Cuộc trò chuyện mới" @click="voice.newConversation()">
+            <i class="ti ti-message-plus" aria-hidden="true"></i>
+          </button>
+          <button class="vp-icon-btn" type="button" :class="{ muted: !voice.isSoundEnabled }" :aria-label="voice.isSoundEnabled ? 'Tắt loa' : 'Bật loa'" :title="voice.isSoundEnabled ? 'Tắt loa' : 'Bật loa'" @click="voice.toggleSound()">
             <i class="ti" :class="voice.isSoundEnabled ? 'ti-volume' : 'ti-volume-off'" aria-hidden="true"></i>
           </button>
           <button class="vp-icon-btn" type="button" aria-label="Đóng" @click="voice.closePanel()">
@@ -219,6 +222,12 @@ watch(
 
 .vp-icon-btn:active {
   background: #443F37;
+}
+
+/* Speaker muted: tint the toggle so the "robot sẽ không nói" state is visible at a glance. */
+.vp-icon-btn.muted {
+  background: rgba(155, 58, 53, 0.22);
+  color: #C97A74;
 }
 
 /* Chat */

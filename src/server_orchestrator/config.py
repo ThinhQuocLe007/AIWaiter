@@ -40,6 +40,12 @@ class Settings(BaseSettings):
         "http://127.0.0.1:4173",
     ]
 
+    # The LLM agent service (src.agent_brain.server, port 8100). The orchestrator still never
+    # IMPORTS the agent — this is only the HTTP address used to forward the tablet's
+    # "cuộc trò chuyện mới" reset (POST {agent_url}/reset). Same-host default; override with
+    # ORCH_AGENT_URL when the agent runs elsewhere.
+    agent_url: str = "http://127.0.0.1:8100"
+
     # Robot liveness. A robot pings a heartbeat on a fixed interval (independent of how fast it
     # drives). If the server sees no heartbeat for `heartbeat_timeout_s`, it treats the robot as
     # hung — even though its TCP socket may still look open — and requeues its task. Generous by

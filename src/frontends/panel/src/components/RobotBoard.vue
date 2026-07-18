@@ -8,7 +8,10 @@
       </div>
       <div class="r-activity">{{ r.activity ?? '—' }}</div>
       <div class="r-meta">
-        <span class="r-battery" :class="{ low: (r.battery ?? 100) < 25 }">
+        <!-- Pin/vị trí chỉ có nghĩa khi robot đang gửi dữ liệu realtime; một robot chưa kích
+             hoạt (bridge chưa chạy) không được phép khoe pin từ snapshot cũ. -->
+        <span v-if="r.status === 'offline'" class="r-battery">🔌 Chờ dữ liệu realtime…</span>
+        <span v-else class="r-battery" :class="{ low: (r.battery ?? 100) < 25 }">
           🔋 {{ r.battery != null ? Math.round(r.battery) + '%' : '—' }}
         </span>
       </div>
@@ -24,8 +27,9 @@ defineProps<{ robots: Robot[] }>()
 const labels: Record<string, string> = {
   idle: 'Rảnh',
   busy: 'Bận',
+  returning: 'Đang về dock',
   charging: 'Đang sạc',
-  offline: 'Ngoại tuyến',
+  offline: 'Chưa kết nối',
 }
 function statusLabel(s: string): string {
   return labels[s] ?? s

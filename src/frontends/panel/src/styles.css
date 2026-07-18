@@ -475,6 +475,9 @@ body {
 .r-card.busy {
   border-left-color: var(--cooking);
 }
+.r-card.returning {
+  border-left-color: var(--wait);
+}
 .r-card.offline {
   border-left-color: var(--danger);
   opacity: 0.7;
@@ -505,6 +508,10 @@ body {
 .r-badge.busy {
   background: rgba(176, 106, 79, 0.18);
   color: var(--cooking);
+}
+.r-badge.returning {
+  background: rgba(194, 151, 47, 0.18);
+  color: var(--wait);
 }
 
 .r-activity {
@@ -796,6 +803,13 @@ body {
 }
 .robot.busy .robot-halo {
   fill: var(--cooking);
+  animation: haloPulse 1.2s ease-in-out infinite;
+}
+.robot.returning .robot-dot {
+  fill: var(--wait);
+}
+.robot.returning .robot-halo {
+  fill: var(--wait);
   animation: haloPulse 1.2s ease-in-out infinite;
 }
 .robot.offline .robot-dot {
