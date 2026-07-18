@@ -150,10 +150,10 @@ def _llm_stream(system_prompt: str, context_text: str, fallback: str) -> str:
 
 # ── Context formatters (text passed to the LLM as CONTEXT) ──────────────────
 def _format_search_for_llm(ctx: SearchResponseContext) -> str:
-    lines = [
-        f"- {r.document.metadata.get('name', 'Unknown')} — {_vnd(r.document.metadata.get('price', 0))}"
-        for r in ctx.results
-    ]
+    # No prices in the CONTEXT on purpose: the reply is read aloud by TTS, and the tablet
+    # renders each mentioned dish as a card (image + price + add button) under the bubble.
+    # Keeping prices out of the LLM's sight guarantees they can't leak into speech.
+    lines = [f"- {r.document.metadata.get('name', 'Unknown')}" for r in ctx.results]
     return f"Khách tìm: \"{ctx.query}\"\nKết quả ({len(ctx.results)} món):\n" + "\n".join(lines)
 
 
@@ -195,12 +195,14 @@ def _format_chat_for_llm(ctx: ChatResponseContext) -> str:
     blocks.append(f"Trạng thái đơn: {ctx.order_stage}")
 
     if ctx.curated_memory:
+        # No per-dish prices here (same reason as _format_search_for_llm): suggestions are
+        # spoken by TTS while the tablet shows price cards. Cart lines above DO keep prices —
+        # "tổng bao nhiêu?" must still be answerable out loud.
         mem_lines = []
         for d in ctx.curated_memory:
-            price_part = f"{_vnd(d.price)}/phần" if d.price else "?₫/phần"
             tags_part = ", ".join(d.tags) if d.tags else ""
             taste_part = d.taste_profile or ""
-            parts = [p for p in [d.name, price_part, tags_part, taste_part] if p]
+            parts = [p for p in [d.name, tags_part, taste_part] if p]
             mem_lines.append(f"  - {' | '.join(parts)}")
         blocks.append("Món đã thảo luận (từ các lần tìm kiếm trước):\n" + "\n".join(mem_lines))
 
