@@ -245,7 +245,7 @@ ros2 launch turtlebot4_ignition_bringup turtlebot4_ignition.launch.py \
   nav2:=true slam:=false localization:=true rviz:=true
 
 # Terminal 2 — cầu nối robot sim ↔ dispatcher (thay pose_bridge + mock_robot)
-make simbridge SERVER_HOST=<PC_netbird_ip>:8000 ID=robo-1
+make simbridge SERVER_HOST=100.66.165.221:8000 ID=robo-1
 
 # Terminal 3 — voice device (mic + loa ngay trên laptop này)
 make voice

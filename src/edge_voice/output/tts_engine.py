@@ -189,5 +189,7 @@ def warmup() -> None:
         _synthesize_piper(".")
         logger.info("TTS warmup complete (piper)")
     else:
-        asyncio.run(_synthesize_edge_tts(".", "IDLE"))
+        # edge-tts returns NoAudioReceived for punctuation-only text (e.g. ".");
+        # warm up with a real speakable word instead.
+        asyncio.run(_synthesize_edge_tts("Xin chào", "IDLE"))
         logger.info("TTS warmup complete (edge-tts fallback)")
