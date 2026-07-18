@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { FoodItem } from '@/types'
 import { useCartStore } from '@/stores/cart'
 import { useMenuStore } from '@/stores/menu'
 import { getStoredTableId } from '@/data/tableSession'
@@ -38,7 +37,6 @@ export const useVoiceStore = defineStore('voice', () => {
   const aiState = ref<AiState>('idle')
   const speechText = ref('')
   const aiResponse = ref('')
-  const recommendedItem = ref<FoodItem | null>(null)
   const isSoundEnabled = ref(true)
   const messages = ref<ChatMessage[]>([])
 
@@ -127,7 +125,6 @@ export const useVoiceStore = defineStore('voice', () => {
     isAiOpen.value = true
     aiState.value = 'thinking'
     speechText.value = text
-    recommendedItem.value = null
     if (text.trim()) pushMessage('user', text)
   }
 
@@ -222,7 +219,6 @@ export const useVoiceStore = defineStore('voice', () => {
     aiState.value = 'idle'
     speechText.value = ''
     aiResponse.value = ''
-    recommendedItem.value = null
   }
 
   // Speaker toggle — not just a local flag: it mutes the robot's actual TTS output (the audio
@@ -282,7 +278,6 @@ export const useVoiceStore = defineStore('voice', () => {
     clearTimeout(speakingTimer)
     suppressTurn = false
     messages.value = []
-    recommendedItem.value = null
     speechText.value = ''
     aiResponse.value = ''
     aiState.value = 'idle'
@@ -298,20 +293,11 @@ export const useVoiceStore = defineStore('voice', () => {
     }
   }
 
-  // Adds the recommended dish to the real cart (the "add to cart" intent).
-  function confirmRecommendation() {
-    if (!recommendedItem.value) return
-    const cart = useCartStore()
-    cart.addItem(recommendedItem.value)
-    pushMessage('ai', `Đã thêm "${recommendedItem.value.name}" vào giỏ hàng của bạn rồi nhé! 🛒`)
-  }
-
   return {
     isAiOpen,
     aiState,
     speechText,
     aiResponse,
-    recommendedItem,
     isSoundEnabled,
     messages,
     connect,
@@ -323,6 +309,5 @@ export const useVoiceStore = defineStore('voice', () => {
     toggleSound,
     startListening,
     stop,
-    confirmRecommendation,
   }
 })

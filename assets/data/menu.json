@@ -7,7 +7,8 @@
     "taste_profile": "Giòn ngọt, đậm đà, nhiều kiểu xốt béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu, best seller",
     "group": "Ốc Hương",
-    "featured_name": "Ốc Hương Trứng Muối"
+    "featured_name": "Ốc Hương Trứng Muối",
+    "image": "/dishes/oc-huong.jpg"
   },
   {
     "name": "Ốc Hương Xốt Phô Mai",
@@ -16,7 +17,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Giòn ngọt, đậm đà, nhiều kiểu xốt béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Hương"
+    "group": "Ốc Hương",
+    "image": "/dishes/oc-huong.jpg"
   },
   {
     "name": "Ốc Hương Xốt Me",
@@ -25,7 +27,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Giòn ngọt, đậm đà, nhiều kiểu xốt béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Hương"
+    "group": "Ốc Hương",
+    "image": "/dishes/oc-huong.jpg"
   },
   {
     "name": "Ốc Hương Xốt Muối Tắc",
@@ -34,7 +37,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Giòn ngọt, đậm đà, nhiều kiểu xốt béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Hương"
+    "group": "Ốc Hương",
+    "image": "/dishes/oc-huong.jpg"
   },
   {
     "name": "Ốc Hương Xốt Bơ Cay",
@@ -43,7 +47,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Giòn ngọt, đậm đà, nhiều kiểu xốt béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Hương"
+    "group": "Ốc Hương",
+    "image": "/dishes/oc-huong.jpg"
   },
   {
     "name": "Ốc Hương Xốt Bơ Tỏi Cay",
@@ -52,7 +57,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Giòn ngọt, đậm đà, nhiều kiểu xốt béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Hương"
+    "group": "Ốc Hương",
+    "image": "/dishes/oc-huong.jpg"
   },
   {
     "name": "Ốc Hương Xốt Thái Siêu Cay",
@@ -61,7 +67,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Giòn ngọt, đậm đà, nhiều kiểu xốt béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Hương"
+    "group": "Ốc Hương",
+    "image": "/dishes/oc-huong.jpg"
   },
   {
     "name": "Ốc Hương Xốt Sa Tế",
@@ -70,7 +77,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Giòn ngọt, đậm đà, nhiều kiểu xốt béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Hương"
+    "group": "Ốc Hương",
+    "image": "/dishes/oc-huong.jpg"
   },
   {
     "name": "Ốc Hương Rang Muối",
@@ -79,7 +87,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Giòn ngọt, đậm đà, nhiều kiểu xốt béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Hương"
+    "group": "Ốc Hương",
+    "image": "/dishes/oc-huong.jpg"
   },
   {
     "name": "Ốc Hương Cháy Tỏi",
@@ -88,7 +97,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Giòn ngọt, đậm đà, nhiều kiểu xốt béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Hương"
+    "group": "Ốc Hương",
+    "image": "/dishes/oc-huong.jpg"
   },
   {
     "name": "Ốc Hương Hấp Sả",
@@ -97,7 +107,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Giòn ngọt, đậm đà, nhiều kiểu xốt béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Hương"
+    "group": "Ốc Hương",
+    "image": "/dishes/oc-huong.jpg"
   },
   {
     "name": "Ốc Cà Na Xốt Trứng Muối",
@@ -106,7 +117,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Giòn dai, đậm đà, béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Cà Na"
+    "group": "Ốc Cà Na",
+    "image": "/dishes/oc-ca-na.jpg"
   },
   {
     "name": "Ốc Cà Na Xốt Phô Mai",
@@ -115,7 +127,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Giòn dai, đậm đà, béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Cà Na"
+    "group": "Ốc Cà Na",
+    "image": "/dishes/oc-ca-na.jpg"
   },
   {
     "name": "Ốc Cà Na Xốt Me",
@@ -124,7 +137,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Giòn dai, đậm đà, béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Cà Na"
+    "group": "Ốc Cà Na",
+    "image": "/dishes/oc-ca-na.jpg"
   },
   {
     "name": "Ốc Cà Na Xốt Bơ Cay",
@@ -133,7 +147,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Giòn dai, đậm đà, béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Cà Na"
+    "group": "Ốc Cà Na",
+    "image": "/dishes/oc-ca-na.jpg"
   },
   {
     "name": "Ốc Cà Na Xốt Bơ Tỏi Cay",
@@ -142,7 +157,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Giòn dai, đậm đà, béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Cà Na"
+    "group": "Ốc Cà Na",
+    "image": "/dishes/oc-ca-na.jpg"
   },
   {
     "name": "Ốc Cà Na Xốt Thái Siêu Cay",
@@ -151,7 +167,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Giòn dai, đậm đà, béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Cà Na"
+    "group": "Ốc Cà Na",
+    "image": "/dishes/oc-ca-na.jpg"
   },
   {
     "name": "Ốc Cà Na Xốt Sa Tế",
@@ -160,7 +177,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Giòn dai, đậm đà, béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Cà Na"
+    "group": "Ốc Cà Na",
+    "image": "/dishes/oc-ca-na.jpg"
   },
   {
     "name": "Ốc Cà Na Rang Muối",
@@ -169,7 +187,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Giòn dai, đậm đà, béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Cà Na"
+    "group": "Ốc Cà Na",
+    "image": "/dishes/oc-ca-na.jpg"
   },
   {
     "name": "Ốc Cà Na Cháy Tỏi",
@@ -178,7 +197,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Giòn dai, đậm đà, béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Cà Na"
+    "group": "Ốc Cà Na",
+    "image": "/dishes/oc-ca-na.jpg"
   },
   {
     "name": "Ốc Bulot Xốt Trứng Muối",
@@ -187,7 +207,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Thịt to giòn, đậm đà, béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Bulot"
+    "group": "Ốc Bulot",
+    "image": "/dishes/oc-bulot.jpg"
   },
   {
     "name": "Ốc Bulot Xốt Phô Mai",
@@ -196,7 +217,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Thịt to giòn, đậm đà, béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Bulot"
+    "group": "Ốc Bulot",
+    "image": "/dishes/oc-bulot.jpg"
   },
   {
     "name": "Ốc Bulot Xốt Me",
@@ -205,7 +227,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Thịt to giòn, đậm đà, béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Bulot"
+    "group": "Ốc Bulot",
+    "image": "/dishes/oc-bulot.jpg"
   },
   {
     "name": "Ốc Bulot Xốt Muối Tắc",
@@ -214,7 +237,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Thịt to giòn, đậm đà, béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Bulot"
+    "group": "Ốc Bulot",
+    "image": "/dishes/oc-bulot.jpg"
   },
   {
     "name": "Ốc Bulot Xốt Bơ Cay",
@@ -223,7 +247,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Thịt to giòn, đậm đà, béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Bulot"
+    "group": "Ốc Bulot",
+    "image": "/dishes/oc-bulot.jpg"
   },
   {
     "name": "Ốc Bulot Xốt Bơ Tỏi Cay",
@@ -232,7 +257,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Thịt to giòn, đậm đà, béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Bulot"
+    "group": "Ốc Bulot",
+    "image": "/dishes/oc-bulot.jpg"
   },
   {
     "name": "Ốc Bulot Xốt Thái Siêu Cay",
@@ -241,7 +267,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Thịt to giòn, đậm đà, béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Bulot"
+    "group": "Ốc Bulot",
+    "image": "/dishes/oc-bulot.jpg"
   },
   {
     "name": "Ốc Bulot Xốt Sa Tế",
@@ -250,7 +277,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Thịt to giòn, đậm đà, béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Bulot"
+    "group": "Ốc Bulot",
+    "image": "/dishes/oc-bulot.jpg"
   },
   {
     "name": "Ốc Bulot Rang Muối",
@@ -259,7 +287,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Thịt to giòn, đậm đà, béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Bulot"
+    "group": "Ốc Bulot",
+    "image": "/dishes/oc-bulot.jpg"
   },
   {
     "name": "Ốc Bulot Cháy Tỏi",
@@ -268,7 +297,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Thịt to giòn, đậm đà, béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Bulot"
+    "group": "Ốc Bulot",
+    "image": "/dishes/oc-bulot.jpg"
   },
   {
     "name": "Ốc Bulot Hấp Sả",
@@ -277,7 +307,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Thịt to giòn, đậm đà, béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Bulot"
+    "group": "Ốc Bulot",
+    "image": "/dishes/oc-bulot.jpg"
   },
   {
     "name": "Ốc Bulot Nướng Tiêu Xanh",
@@ -286,7 +317,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Thịt to giòn, đậm đà, béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Bulot"
+    "group": "Ốc Bulot",
+    "image": "/dishes/oc-bulot.jpg"
   },
   {
     "name": "Ốc Bulot Nướng Mỡ Hành",
@@ -295,7 +327,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Thịt to giòn, đậm đà, béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Bulot"
+    "group": "Ốc Bulot",
+    "image": "/dishes/oc-bulot.jpg"
   },
   {
     "name": "Ốc Bulot Nướng Mắm Ớt",
@@ -304,7 +337,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Thịt to giòn, đậm đà, béo cay",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Bulot"
+    "group": "Ốc Bulot",
+    "image": "/dishes/oc-bulot.jpg"
   },
   {
     "name": "Ốc Mỡ Xốt Trứng Muối",
@@ -313,7 +347,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Béo mềm, đậm đà, cay nhẹ",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Mỡ"
+    "group": "Ốc Mỡ",
+    "image": "/dishes/oc-mo.jpg"
   },
   {
     "name": "Ốc Mỡ Xốt Phô Mai",
@@ -322,7 +357,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Béo mềm, đậm đà, cay nhẹ",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Mỡ"
+    "group": "Ốc Mỡ",
+    "image": "/dishes/oc-mo.jpg"
   },
   {
     "name": "Ốc Mỡ Xốt Me",
@@ -331,7 +367,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Béo mềm, đậm đà, cay nhẹ",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Mỡ"
+    "group": "Ốc Mỡ",
+    "image": "/dishes/oc-mo.jpg"
   },
   {
     "name": "Ốc Mỡ Xốt Bơ Cay",
@@ -340,7 +377,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Béo mềm, đậm đà, cay nhẹ",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Mỡ"
+    "group": "Ốc Mỡ",
+    "image": "/dishes/oc-mo.jpg"
   },
   {
     "name": "Ốc Mỡ Xốt Bơ Tỏi Cay",
@@ -349,7 +387,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Béo mềm, đậm đà, cay nhẹ",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Mỡ"
+    "group": "Ốc Mỡ",
+    "image": "/dishes/oc-mo.jpg"
   },
   {
     "name": "Ốc Mỡ Xốt Thái Siêu Cay",
@@ -358,7 +397,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Béo mềm, đậm đà, cay nhẹ",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Mỡ"
+    "group": "Ốc Mỡ",
+    "image": "/dishes/oc-mo.jpg"
   },
   {
     "name": "Ốc Mỡ Xốt Sa Tế",
@@ -367,7 +407,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Béo mềm, đậm đà, cay nhẹ",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Mỡ"
+    "group": "Ốc Mỡ",
+    "image": "/dishes/oc-mo.jpg"
   },
   {
     "name": "Ốc Mỡ Rang Muối",
@@ -376,7 +417,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Béo mềm, đậm đà, cay nhẹ",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Mỡ"
+    "group": "Ốc Mỡ",
+    "image": "/dishes/oc-mo.jpg"
   },
   {
     "name": "Ốc Mỡ Cháy Tỏi",
@@ -385,7 +427,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Béo mềm, đậm đà, cay nhẹ",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Mỡ"
+    "group": "Ốc Mỡ",
+    "image": "/dishes/oc-mo.jpg"
   },
   {
     "name": "Ốc Móng Tay Xào Me",
@@ -394,7 +437,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Ngọt thịt, thơm sả, đậm đà",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Móng Tay"
+    "group": "Ốc Móng Tay",
+    "image": "/dishes/oc-mong-tay.jpg"
   },
   {
     "name": "Ốc Móng Tay Xào Tỏi",
@@ -403,7 +447,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Ngọt thịt, thơm sả, đậm đà",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Móng Tay"
+    "group": "Ốc Móng Tay",
+    "image": "/dishes/oc-mong-tay.jpg"
   },
   {
     "name": "Ốc Móng Tay Xào Sa Tế",
@@ -412,7 +457,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Ngọt thịt, thơm sả, đậm đà",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Móng Tay"
+    "group": "Ốc Móng Tay",
+    "image": "/dishes/oc-mong-tay.jpg"
   },
   {
     "name": "Ốc Móng Tay Hấp Sả",
@@ -421,7 +467,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Ngọt thịt, thơm sả, đậm đà",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Móng Tay"
+    "group": "Ốc Móng Tay",
+    "image": "/dishes/oc-mong-tay.jpg"
   },
   {
     "name": "Ốc Móng Tay Hấp Sả Quế",
@@ -430,7 +477,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Ngọt thịt, thơm sả, đậm đà",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Móng Tay"
+    "group": "Ốc Móng Tay",
+    "image": "/dishes/oc-mong-tay.jpg"
   },
   {
     "name": "Ốc Móng Tay Xốt Thái Siêu Cay",
@@ -439,7 +487,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Ngọt thịt, thơm sả, đậm đà",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Móng Tay"
+    "group": "Ốc Móng Tay",
+    "image": "/dishes/oc-mong-tay.jpg"
   },
   {
     "name": "Ốc Móng Tay Cháy Tỏi",
@@ -448,7 +497,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Ngọt thịt, thơm sả, đậm đà",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Móng Tay"
+    "group": "Ốc Móng Tay",
+    "image": "/dishes/oc-mong-tay.jpg"
   },
   {
     "name": "Ốc Bươu Hấp Sả",
@@ -457,7 +507,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Thịt dai giòn, thơm sả tiêu, đậm đà",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Bươu"
+    "group": "Ốc Bươu",
+    "image": "/dishes/oc-buou.jpg"
   },
   {
     "name": "Ốc Bươu Hấp Thái",
@@ -466,7 +517,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Thịt dai giòn, thơm sả tiêu, đậm đà",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Bươu"
+    "group": "Ốc Bươu",
+    "image": "/dishes/oc-buou.jpg"
   },
   {
     "name": "Ốc Bươu Nướng Tiêu Xanh",
@@ -475,7 +527,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Thịt dai giòn, thơm sả tiêu, đậm đà",
     "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Bươu"
+    "group": "Ốc Bươu",
+    "image": "/dishes/oc-buou.jpg"
   },
   {
     "name": "Ốc Bươu Nhồi Thịt",
@@ -484,7 +537,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Thịt dai giòn, thơm sả tiêu, đậm đà",
     "tags": "món mặn, ốc, hải sản, nhậu, best seller",
-    "group": "Ốc Bươu"
+    "group": "Ốc Bươu",
+    "image": "/dishes/oc-buou.jpg"
   },
   {
     "name": "Ốc Muỗng Nướng Tiêu Xanh",
@@ -493,7 +547,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Thịt giòn, thơm nướng, béo cay",
     "tags": "món mặn, ốc, hải sản, nướng, nhậu",
-    "group": "Ốc Muỗng"
+    "group": "Ốc Muỗng",
+    "image": "/dishes/oc-muong.jpg"
   },
   {
     "name": "Ốc Muỗng Nướng Mỡ Hành",
@@ -502,7 +557,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Thịt giòn, thơm nướng, béo cay",
     "tags": "món mặn, ốc, hải sản, nướng, nhậu",
-    "group": "Ốc Muỗng"
+    "group": "Ốc Muỗng",
+    "image": "/dishes/oc-muong.jpg"
   },
   {
     "name": "Ốc Muỗng Nướng Mắm Ớt",
@@ -511,7 +567,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Thịt giòn, thơm nướng, béo cay",
     "tags": "món mặn, ốc, hải sản, nướng, nhậu",
-    "group": "Ốc Muỗng"
+    "group": "Ốc Muỗng",
+    "image": "/dishes/oc-muong.jpg"
   },
   {
     "name": "Ốc Muỗng Nướng Bơ Tỏi",
@@ -520,7 +577,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Thịt giòn, thơm nướng, béo cay",
     "tags": "món mặn, ốc, hải sản, nướng, nhậu",
-    "group": "Ốc Muỗng"
+    "group": "Ốc Muỗng",
+    "image": "/dishes/oc-muong.jpg"
   },
   {
     "name": "Răng Mực Xốt Trứng Muối",
@@ -529,7 +587,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Giòn sần sật, đậm đà, béo cay",
     "tags": "món mặn, hải sản, mực, nhậu",
-    "group": "Răng Mực"
+    "group": "Răng Mực",
+    "image": "/dishes/rang-muc.jpg"
   },
   {
     "name": "Răng Mực Xốt Bơ Tỏi Cay",
@@ -539,7 +598,8 @@
     "taste_profile": "Giòn sần sật, đậm đà, béo cay",
     "tags": "món mặn, hải sản, mực, nhậu, best seller",
     "group": "Răng Mực",
-    "featured_name": "Răng Mực Bơ Tỏi Cay"
+    "featured_name": "Răng Mực Bơ Tỏi Cay",
+    "image": "/dishes/rang-muc.jpg"
   },
   {
     "name": "Răng Mực Xốt Thái Siêu Cay",
@@ -548,7 +608,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Giòn sần sật, đậm đà, béo cay",
     "tags": "món mặn, hải sản, mực, nhậu",
-    "group": "Răng Mực"
+    "group": "Răng Mực",
+    "image": "/dishes/rang-muc.jpg"
   },
   {
     "name": "Răng Mực Xốt Sa Tế",
@@ -557,7 +618,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Giòn sần sật, đậm đà, béo cay",
     "tags": "món mặn, hải sản, mực, nhậu",
-    "group": "Răng Mực"
+    "group": "Răng Mực",
+    "image": "/dishes/rang-muc.jpg"
   },
   {
     "name": "Răng Mực Cháy Tỏi",
@@ -566,7 +628,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Giòn sần sật, đậm đà, béo cay",
     "tags": "món mặn, hải sản, mực, nhậu",
-    "group": "Răng Mực"
+    "group": "Răng Mực",
+    "image": "/dishes/rang-muc.jpg"
   },
   {
     "name": "Nghêu Hấp Thái",
@@ -575,7 +638,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Ngọt nước, thơm sả, chua cay nhẹ",
     "tags": "món mặn, hải sản, nghêu, nhậu",
-    "group": "Nghêu"
+    "group": "Nghêu",
+    "image": "/dishes/ngheu.jpg"
   },
   {
     "name": "Nghêu Hấp Sả",
@@ -584,7 +648,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Ngọt nước, thơm sả, chua cay nhẹ",
     "tags": "món mặn, hải sản, nghêu, nhậu",
-    "group": "Nghêu"
+    "group": "Nghêu",
+    "image": "/dishes/ngheu.jpg"
   },
   {
     "name": "Nghêu Hấp Sả Tắc",
@@ -593,7 +658,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Ngọt nước, thơm sả, chua cay nhẹ",
     "tags": "món mặn, hải sản, nghêu, nhậu",
-    "group": "Nghêu"
+    "group": "Nghêu",
+    "image": "/dishes/ngheu.jpg"
   },
   {
     "name": "Nghêu Hấp Sả Ớt Cay",
@@ -602,7 +668,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Ngọt nước, thơm sả, chua cay nhẹ",
     "tags": "món mặn, hải sản, nghêu, nhậu",
-    "group": "Nghêu"
+    "group": "Nghêu",
+    "image": "/dishes/ngheu.jpg"
   },
   {
     "name": "Nghêu Xào Me",
@@ -611,7 +678,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Ngọt nước, thơm sả, chua cay nhẹ",
     "tags": "món mặn, hải sản, nghêu, nhậu",
-    "group": "Nghêu"
+    "group": "Nghêu",
+    "image": "/dishes/ngheu.jpg"
   },
   {
     "name": "Nghêu Cháy Tỏi",
@@ -620,7 +688,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Ngọt nước, thơm sả, chua cay nhẹ",
     "tags": "món mặn, hải sản, nghêu, nhậu",
-    "group": "Nghêu"
+    "group": "Nghêu",
+    "image": "/dishes/ngheu.jpg"
   },
   {
     "name": "Sò Huyết Rang Me",
@@ -629,7 +698,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Ngọt béo, đậm đà, chua cay",
     "tags": "món mặn, hải sản, sò, nhậu",
-    "group": "Sò Huyết"
+    "group": "Sò Huyết",
+    "image": "/dishes/so-huyet.jpg"
   },
   {
     "name": "Sò Huyết Cháy Tỏi",
@@ -638,7 +708,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Ngọt béo, đậm đà, chua cay",
     "tags": "món mặn, hải sản, sò, nhậu",
-    "group": "Sò Huyết"
+    "group": "Sò Huyết",
+    "image": "/dishes/so-huyet.jpg"
   },
   {
     "name": "Sò Huyết Xào Me",
@@ -647,7 +718,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Ngọt béo, đậm đà, chua cay",
     "tags": "món mặn, hải sản, sò, nhậu",
-    "group": "Sò Huyết"
+    "group": "Sò Huyết",
+    "image": "/dishes/so-huyet.jpg"
   },
   {
     "name": "Sò Huyết Xào Tỏi",
@@ -656,7 +728,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Ngọt béo, đậm đà, chua cay",
     "tags": "món mặn, hải sản, sò, nhậu",
-    "group": "Sò Huyết"
+    "group": "Sò Huyết",
+    "image": "/dishes/so-huyet.jpg"
   },
   {
     "name": "Sò Huyết Xốt Me",
@@ -665,7 +738,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Ngọt béo, đậm đà, chua cay",
     "tags": "món mặn, hải sản, sò, nhậu",
-    "group": "Sò Huyết"
+    "group": "Sò Huyết",
+    "image": "/dishes/so-huyet.jpg"
   },
   {
     "name": "Sò Huyết Xốt Bơ Tỏi Cay",
@@ -674,7 +748,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Ngọt béo, đậm đà, chua cay",
     "tags": "món mặn, hải sản, sò, nhậu",
-    "group": "Sò Huyết"
+    "group": "Sò Huyết",
+    "image": "/dishes/so-huyet.jpg"
   },
   {
     "name": "Sò Huyết Xốt Sa Tế",
@@ -683,7 +758,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Ngọt béo, đậm đà, chua cay",
     "tags": "món mặn, hải sản, sò, nhậu",
-    "group": "Sò Huyết"
+    "group": "Sò Huyết",
+    "image": "/dishes/so-huyet.jpg"
   },
   {
     "name": "Sò Huyết Hấp Sả",
@@ -692,7 +768,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Ngọt béo, đậm đà, chua cay",
     "tags": "món mặn, hải sản, sò, nhậu",
-    "group": "Sò Huyết"
+    "group": "Sò Huyết",
+    "image": "/dishes/so-huyet.jpg"
   },
   {
     "name": "Sò Lông Nướng Mỡ Hành",
@@ -701,7 +778,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Ngọt thịt, thơm mỡ hành",
     "tags": "món mặn, hải sản, sò, nhậu",
-    "group": "Sò Lông"
+    "group": "Sò Lông",
+    "image": "/dishes/so-long.jpg"
   },
   {
     "name": "Sò Lông Hấp Sả",
@@ -710,7 +788,8 @@
     "category": "Ốc & Sò",
     "taste_profile": "Ngọt thịt, thơm mỡ hành",
     "tags": "món mặn, hải sản, sò, nhậu",
-    "group": "Sò Lông"
+    "group": "Sò Lông",
+    "image": "/dishes/so-long.jpg"
   },
   {
     "name": "Sò Dương Hấp Sả",
@@ -727,7 +806,8 @@
     "category": "Tôm",
     "taste_profile": "Ngọt thịt, béo đậm, cay nhẹ",
     "tags": "món mặn, hải sản, tôm, nhậu",
-    "group": "Tôm Thẻ"
+    "group": "Tôm Thẻ",
+    "image": "/dishes/tom-the.jpg"
   },
   {
     "name": "Tôm Thẻ Xốt Phô Mai",
@@ -736,7 +816,8 @@
     "category": "Tôm",
     "taste_profile": "Ngọt thịt, béo đậm, cay nhẹ",
     "tags": "món mặn, hải sản, tôm, nhậu",
-    "group": "Tôm Thẻ"
+    "group": "Tôm Thẻ",
+    "image": "/dishes/tom-the.jpg"
   },
   {
     "name": "Tôm Thẻ Xốt Me",
@@ -745,7 +826,8 @@
     "category": "Tôm",
     "taste_profile": "Ngọt thịt, béo đậm, cay nhẹ",
     "tags": "món mặn, hải sản, tôm, nhậu",
-    "group": "Tôm Thẻ"
+    "group": "Tôm Thẻ",
+    "image": "/dishes/tom-the.jpg"
   },
   {
     "name": "Tôm Thẻ Xốt Bơ Cay",
@@ -754,7 +836,8 @@
     "category": "Tôm",
     "taste_profile": "Ngọt thịt, béo đậm, cay nhẹ",
     "tags": "món mặn, hải sản, tôm, nhậu",
-    "group": "Tôm Thẻ"
+    "group": "Tôm Thẻ",
+    "image": "/dishes/tom-the.jpg"
   },
   {
     "name": "Tôm Thẻ Xốt Bơ Tỏi Cay",
@@ -763,7 +846,8 @@
     "category": "Tôm",
     "taste_profile": "Ngọt thịt, béo đậm, cay nhẹ",
     "tags": "món mặn, hải sản, tôm, nhậu",
-    "group": "Tôm Thẻ"
+    "group": "Tôm Thẻ",
+    "image": "/dishes/tom-the.jpg"
   },
   {
     "name": "Tôm Thẻ Xốt Thái Siêu Cay",
@@ -772,7 +856,8 @@
     "category": "Tôm",
     "taste_profile": "Ngọt thịt, béo đậm, cay nhẹ",
     "tags": "món mặn, hải sản, tôm, nhậu",
-    "group": "Tôm Thẻ"
+    "group": "Tôm Thẻ",
+    "image": "/dishes/tom-the.jpg"
   },
   {
     "name": "Tôm Thẻ Xốt Sa Tế",
@@ -781,7 +866,8 @@
     "category": "Tôm",
     "taste_profile": "Ngọt thịt, béo đậm, cay nhẹ",
     "tags": "món mặn, hải sản, tôm, nhậu",
-    "group": "Tôm Thẻ"
+    "group": "Tôm Thẻ",
+    "image": "/dishes/tom-the.jpg"
   },
   {
     "name": "Tôm Thẻ Rang Muối",
@@ -790,7 +876,8 @@
     "category": "Tôm",
     "taste_profile": "Ngọt thịt, béo đậm, cay nhẹ",
     "tags": "món mặn, hải sản, tôm, nhậu",
-    "group": "Tôm Thẻ"
+    "group": "Tôm Thẻ",
+    "image": "/dishes/tom-the.jpg"
   },
   {
     "name": "Tôm Thẻ Cháy Tỏi",
@@ -799,7 +886,8 @@
     "category": "Tôm",
     "taste_profile": "Ngọt thịt, béo đậm, cay nhẹ",
     "tags": "món mặn, hải sản, tôm, nhậu",
-    "group": "Tôm Thẻ"
+    "group": "Tôm Thẻ",
+    "image": "/dishes/tom-the.jpg"
   },
   {
     "name": "Sò Mai Nướng Mỡ Hành Trứng Cút",
@@ -807,7 +895,8 @@
     "diet_type": "mặn",
     "category": "Món Nướng",
     "taste_profile": "Ngọt béo, thơm mỡ hành",
-    "tags": "món mặn, hải sản, sò, nướng, best seller"
+    "tags": "món mặn, hải sản, sò, nướng, best seller",
+    "image": "/dishes/so-mai-nuong-mo-hanh-trung-cut.jpg"
   },
   {
     "name": "Sò Điệp Nướng Phô Mai",
@@ -816,7 +905,8 @@
     "category": "Món Nướng",
     "taste_profile": "Ngọt thịt, béo phô mai, thơm nướng",
     "tags": "món mặn, hải sản, sò điệp, nướng, best seller",
-    "group": "Sò Điệp"
+    "group": "Sò Điệp",
+    "image": "/dishes/so-diep.jpg"
   },
   {
     "name": "Sò Điệp Nướng Mỡ Hành",
@@ -825,7 +915,8 @@
     "category": "Món Nướng",
     "taste_profile": "Ngọt thịt, béo phô mai, thơm nướng",
     "tags": "món mặn, hải sản, sò điệp, nướng",
-    "group": "Sò Điệp"
+    "group": "Sò Điệp",
+    "image": "/dishes/so-diep.jpg"
   },
   {
     "name": "Sò Điệp Xốt Trứng Muối",
@@ -834,7 +925,8 @@
     "category": "Món Nướng",
     "taste_profile": "Ngọt thịt, béo phô mai, thơm nướng",
     "tags": "món mặn, hải sản, sò điệp, nướng",
-    "group": "Sò Điệp"
+    "group": "Sò Điệp",
+    "image": "/dishes/so-diep.jpg"
   },
   {
     "name": "Sò Điệp Xốt Sa Tế",
@@ -843,7 +935,8 @@
     "category": "Món Nướng",
     "taste_profile": "Ngọt thịt, béo phô mai, thơm nướng",
     "tags": "món mặn, hải sản, sò điệp, nướng",
-    "group": "Sò Điệp"
+    "group": "Sò Điệp",
+    "image": "/dishes/so-diep.jpg"
   },
   {
     "name": "Vẹm New Zealand Hấp Sả",
@@ -852,7 +945,8 @@
     "category": "Món Nướng",
     "taste_profile": "Thịt to ngọt, béo, thơm nướng",
     "tags": "món mặn, hải sản, vẹm, nướng",
-    "group": "Vẹm New Zealand"
+    "group": "Vẹm New Zealand",
+    "image": "/dishes/vem-new-zealand.jpg"
   },
   {
     "name": "Vẹm New Zealand Hấp Thái",
@@ -861,7 +955,8 @@
     "category": "Món Nướng",
     "taste_profile": "Thịt to ngọt, béo, thơm nướng",
     "tags": "món mặn, hải sản, vẹm, nướng",
-    "group": "Vẹm New Zealand"
+    "group": "Vẹm New Zealand",
+    "image": "/dishes/vem-new-zealand.jpg"
   },
   {
     "name": "Vẹm New Zealand Nướng Mỡ Hành",
@@ -870,7 +965,8 @@
     "category": "Món Nướng",
     "taste_profile": "Thịt to ngọt, béo, thơm nướng",
     "tags": "món mặn, hải sản, vẹm, nướng",
-    "group": "Vẹm New Zealand"
+    "group": "Vẹm New Zealand",
+    "image": "/dishes/vem-new-zealand.jpg"
   },
   {
     "name": "Vẹm New Zealand Nướng Phô Mai",
@@ -879,7 +975,8 @@
     "category": "Món Nướng",
     "taste_profile": "Thịt to ngọt, béo, thơm nướng",
     "tags": "món mặn, hải sản, vẹm, nướng",
-    "group": "Vẹm New Zealand"
+    "group": "Vẹm New Zealand",
+    "image": "/dishes/vem-new-zealand.jpg"
   },
   {
     "name": "Vẹm New Zealand Xào Lá Quế",
@@ -888,7 +985,8 @@
     "category": "Món Nướng",
     "taste_profile": "Thịt to ngọt, béo, thơm nướng",
     "tags": "món mặn, hải sản, vẹm, nướng",
-    "group": "Vẹm New Zealand"
+    "group": "Vẹm New Zealand",
+    "image": "/dishes/vem-new-zealand.jpg"
   },
   {
     "name": "Bạch Tuộc Nướng Sa Tế",
@@ -897,7 +995,8 @@
     "category": "Món Nướng",
     "taste_profile": "Giòn dai, cay nồng, thơm nướng",
     "tags": "món mặn, hải sản, bạch tuộc, nướng",
-    "group": "Bạch Tuộc"
+    "group": "Bạch Tuộc",
+    "image": "/dishes/bach-tuoc.jpg"
   },
   {
     "name": "Bạch Tuộc Xốt Thái Siêu Cay",
@@ -906,7 +1005,8 @@
     "category": "Món Nướng",
     "taste_profile": "Giòn dai, cay nồng, thơm nướng",
     "tags": "món mặn, hải sản, bạch tuộc, nướng",
-    "group": "Bạch Tuộc"
+    "group": "Bạch Tuộc",
+    "image": "/dishes/bach-tuoc.jpg"
   },
   {
     "name": "Bạch Tuộc Hấp Sả",
@@ -915,7 +1015,8 @@
     "category": "Món Nướng",
     "taste_profile": "Giòn dai, cay nồng, thơm nướng",
     "tags": "món mặn, hải sản, bạch tuộc, nướng",
-    "group": "Bạch Tuộc"
+    "group": "Bạch Tuộc",
+    "image": "/dishes/bach-tuoc.jpg"
   },
   {
     "name": "Hàu Nướng Phô Mai",
@@ -925,7 +1026,8 @@
     "taste_profile": "Béo ngậy, thơm nướng",
     "tags": "món mặn, hải sản, hàu, nướng, best seller",
     "group": "Hàu Nướng",
-    "featured_name": "Hàu Nướng Phô Mai"
+    "featured_name": "Hàu Nướng Phô Mai",
+    "image": "/dishes/hau-nuong.jpg"
   },
   {
     "name": "Hàu Nướng Mỡ Hành",
@@ -934,7 +1036,8 @@
     "category": "Món Nướng",
     "taste_profile": "Béo ngậy, thơm nướng",
     "tags": "món mặn, hải sản, hàu, nướng",
-    "group": "Hàu Nướng"
+    "group": "Hàu Nướng",
+    "image": "/dishes/hau-nuong.jpg"
   },
   {
     "name": "Hàu Nướng Tiêu Xanh",
@@ -943,7 +1046,8 @@
     "category": "Món Nướng",
     "taste_profile": "Béo ngậy, thơm nướng",
     "tags": "món mặn, hải sản, hàu, nướng",
-    "group": "Hàu Nướng"
+    "group": "Hàu Nướng",
+    "image": "/dishes/hau-nuong.jpg"
   },
   {
     "name": "Bào Ngư Nướng Mỡ Hành",
@@ -952,7 +1056,8 @@
     "category": "Món Nướng",
     "taste_profile": "Dai giòn, ngọt đậm, thơm bơ tỏi",
     "tags": "món mặn, hải sản, bào ngư, nướng, cao cấp",
-    "group": "Bào Ngư Nướng"
+    "group": "Bào Ngư Nướng",
+    "image": "/dishes/bao-ngu-nuong.jpg"
   },
   {
     "name": "Bào Ngư Nướng Tiêu Xanh",
@@ -961,7 +1066,8 @@
     "category": "Món Nướng",
     "taste_profile": "Dai giòn, ngọt đậm, thơm bơ tỏi",
     "tags": "món mặn, hải sản, bào ngư, nướng, cao cấp",
-    "group": "Bào Ngư Nướng"
+    "group": "Bào Ngư Nướng",
+    "image": "/dishes/bao-ngu-nuong.jpg"
   },
   {
     "name": "Bào Ngư Nướng Bơ Tỏi",
@@ -970,7 +1076,8 @@
     "category": "Món Nướng",
     "taste_profile": "Dai giòn, ngọt đậm, thơm bơ tỏi",
     "tags": "món mặn, hải sản, bào ngư, nướng, cao cấp",
-    "group": "Bào Ngư Nướng"
+    "group": "Bào Ngư Nướng",
+    "image": "/dishes/bao-ngu-nuong.jpg"
   },
   {
     "name": "Ốc Tỏi Nướng Tiêu Xanh",
@@ -979,7 +1086,8 @@
     "category": "Món Nướng",
     "taste_profile": "Giòn ngọt, thơm nướng, béo cay",
     "tags": "món mặn, ốc, hải sản, nướng",
-    "group": "Ốc Tỏi Nướng"
+    "group": "Ốc Tỏi Nướng",
+    "image": "/dishes/oc-toi-nuong.jpg"
   },
   {
     "name": "Ốc Tỏi Nướng Mỡ Hành",
@@ -988,7 +1096,8 @@
     "category": "Món Nướng",
     "taste_profile": "Giòn ngọt, thơm nướng, béo cay",
     "tags": "món mặn, ốc, hải sản, nướng",
-    "group": "Ốc Tỏi Nướng"
+    "group": "Ốc Tỏi Nướng",
+    "image": "/dishes/oc-toi-nuong.jpg"
   },
   {
     "name": "Ốc Tỏi Nướng Mắm Ớt",
@@ -997,7 +1106,8 @@
     "category": "Món Nướng",
     "taste_profile": "Giòn ngọt, thơm nướng, béo cay",
     "tags": "món mặn, ốc, hải sản, nướng",
-    "group": "Ốc Tỏi Nướng"
+    "group": "Ốc Tỏi Nướng",
+    "image": "/dishes/oc-toi-nuong.jpg"
   },
   {
     "name": "Ốc Tỏi Nướng Bơ Tỏi",
@@ -1006,7 +1116,8 @@
     "category": "Món Nướng",
     "taste_profile": "Giòn ngọt, thơm nướng, béo cay",
     "tags": "món mặn, ốc, hải sản, nướng",
-    "group": "Ốc Tỏi Nướng"
+    "group": "Ốc Tỏi Nướng",
+    "image": "/dishes/oc-toi-nuong.jpg"
   },
   {
     "name": "Tôm Thẻ Nướng Muối Ớt",
@@ -1014,7 +1125,8 @@
     "diet_type": "mặn",
     "category": "Món Nướng",
     "taste_profile": "Mặn cay, ngọt thịt, thơm nướng",
-    "tags": "món mặn, hải sản, tôm, nướng, món cay"
+    "tags": "món mặn, hải sản, tôm, nướng, món cay",
+    "image": "/dishes/tom-the-nuong-muoi-ot.jpg"
   },
   {
     "name": "Tôm Càng Xanh Xốt Trứng Muối",
@@ -1023,7 +1135,8 @@
     "category": "Món Nướng",
     "taste_profile": "Thịt chắc ngọt, gạch béo, thơm nướng",
     "tags": "món mặn, hải sản, tôm, nướng, cao cấp",
-    "group": "Tôm Càng Xanh"
+    "group": "Tôm Càng Xanh",
+    "image": "/dishes/tom-cang-xanh.jpg"
   },
   {
     "name": "Tôm Càng Xanh Xốt Phô Mai",
@@ -1032,7 +1145,8 @@
     "category": "Món Nướng",
     "taste_profile": "Thịt chắc ngọt, gạch béo, thơm nướng",
     "tags": "món mặn, hải sản, tôm, nướng, cao cấp",
-    "group": "Tôm Càng Xanh"
+    "group": "Tôm Càng Xanh",
+    "image": "/dishes/tom-cang-xanh.jpg"
   },
   {
     "name": "Tôm Càng Xanh Nướng Mỡ Hành",
@@ -1041,7 +1155,8 @@
     "category": "Món Nướng",
     "taste_profile": "Thịt chắc ngọt, gạch béo, thơm nướng",
     "tags": "món mặn, hải sản, tôm, nướng, cao cấp",
-    "group": "Tôm Càng Xanh"
+    "group": "Tôm Càng Xanh",
+    "image": "/dishes/tom-cang-xanh.jpg"
   },
   {
     "name": "Tôm Càng Xanh Xốt Muối Tắc",
@@ -1050,7 +1165,8 @@
     "category": "Món Nướng",
     "taste_profile": "Thịt chắc ngọt, gạch béo, thơm nướng",
     "tags": "món mặn, hải sản, tôm, nướng, cao cấp",
-    "group": "Tôm Càng Xanh"
+    "group": "Tôm Càng Xanh",
+    "image": "/dishes/tom-cang-xanh.jpg"
   },
   {
     "name": "Tôm Càng Xanh Xốt Me",
@@ -1059,7 +1175,8 @@
     "category": "Món Nướng",
     "taste_profile": "Thịt chắc ngọt, gạch béo, thơm nướng",
     "tags": "món mặn, hải sản, tôm, nướng, cao cấp",
-    "group": "Tôm Càng Xanh"
+    "group": "Tôm Càng Xanh",
+    "image": "/dishes/tom-cang-xanh.jpg"
   },
   {
     "name": "Tôm Càng Xanh Xốt Bơ Tỏi Cay",
@@ -1068,7 +1185,8 @@
     "category": "Món Nướng",
     "taste_profile": "Thịt chắc ngọt, gạch béo, thơm nướng",
     "tags": "món mặn, hải sản, tôm, nướng, cao cấp",
-    "group": "Tôm Càng Xanh"
+    "group": "Tôm Càng Xanh",
+    "image": "/dishes/tom-cang-xanh.jpg"
   },
   {
     "name": "Tôm Càng Xanh Xốt Sa Tế",
@@ -1077,7 +1195,8 @@
     "category": "Món Nướng",
     "taste_profile": "Thịt chắc ngọt, gạch béo, thơm nướng",
     "tags": "món mặn, hải sản, tôm, nướng, cao cấp",
-    "group": "Tôm Càng Xanh"
+    "group": "Tôm Càng Xanh",
+    "image": "/dishes/tom-cang-xanh.jpg"
   },
   {
     "name": "Tôm Càng Xanh Cháy Tỏi",
@@ -1086,7 +1205,8 @@
     "category": "Món Nướng",
     "taste_profile": "Thịt chắc ngọt, gạch béo, thơm nướng",
     "tags": "món mặn, hải sản, tôm, nướng, cao cấp",
-    "group": "Tôm Càng Xanh"
+    "group": "Tôm Càng Xanh",
+    "image": "/dishes/tom-cang-xanh.jpg"
   },
   {
     "name": "Tôm Càng Xanh Nướng Phô Mai",
@@ -1095,7 +1215,8 @@
     "category": "Món Nướng",
     "taste_profile": "Thịt chắc ngọt, gạch béo, thơm nướng",
     "tags": "món mặn, hải sản, tôm, nướng, cao cấp, best seller",
-    "group": "Tôm Càng Xanh"
+    "group": "Tôm Càng Xanh",
+    "image": "/dishes/tom-cang-xanh.jpg"
   },
   {
     "name": "Tôm Càng Hấp Sả",
@@ -1111,7 +1232,8 @@
     "diet_type": "mặn",
     "category": "Món Nướng",
     "taste_profile": "Cay nồng, thịt chắc ngọt, thơm nướng",
-    "tags": "món mặn, cá, nướng, món cay, best seller, chia sẻ"
+    "tags": "món mặn, cá, nướng, món cay, best seller, chia sẻ",
+    "image": "/dishes/ca-chim-nuong-sa-te.jpg"
   },
   {
     "name": "Cá Tầm Nướng Sa Tế",
@@ -1119,7 +1241,8 @@
     "diet_type": "mặn",
     "category": "Món Nướng",
     "taste_profile": "Béo dai, cay nồng, thơm nướng",
-    "tags": "món mặn, cá, nướng, món cay, chia sẻ"
+    "tags": "món mặn, cá, nướng, món cay, chia sẻ",
+    "image": "/dishes/ca-tam-nuong-sa-te.jpg"
   },
   {
     "name": "Mực Cháy Tỏi",
@@ -1128,7 +1251,8 @@
     "category": "Món Chính",
     "taste_profile": "Giòn ngọt, đậm đà, cay thơm",
     "tags": "món mặn, hải sản, mực",
-    "group": "Mực"
+    "group": "Mực",
+    "image": "/dishes/muc.jpg"
   },
   {
     "name": "Mực Chiên Sả",
@@ -1137,7 +1261,8 @@
     "category": "Món Chính",
     "taste_profile": "Giòn ngọt, đậm đà, cay thơm",
     "tags": "món mặn, hải sản, mực",
-    "group": "Mực"
+    "group": "Mực",
+    "image": "/dishes/muc.jpg"
   },
   {
     "name": "Mực Hấp Gừng",
@@ -1146,7 +1271,8 @@
     "category": "Món Chính",
     "taste_profile": "Giòn ngọt, đậm đà, cay thơm",
     "tags": "món mặn, hải sản, mực",
-    "group": "Mực"
+    "group": "Mực",
+    "image": "/dishes/muc.jpg"
   },
   {
     "name": "Mực Xốt Muối Ớt",
@@ -1155,7 +1281,8 @@
     "category": "Món Chính",
     "taste_profile": "Giòn ngọt, đậm đà, cay thơm",
     "tags": "món mặn, hải sản, mực",
-    "group": "Mực"
+    "group": "Mực",
+    "image": "/dishes/muc.jpg"
   },
   {
     "name": "Mực Xốt Thái",
@@ -1164,7 +1291,8 @@
     "category": "Món Chính",
     "taste_profile": "Giòn ngọt, đậm đà, cay thơm",
     "tags": "món mặn, hải sản, mực",
-    "group": "Mực"
+    "group": "Mực",
+    "image": "/dishes/muc.jpg"
   },
   {
     "name": "Mực Chiên Nước Mắm",
@@ -1173,7 +1301,8 @@
     "category": "Món Chính",
     "taste_profile": "Giòn ngọt, đậm đà, cay thơm",
     "tags": "món mặn, hải sản, mực",
-    "group": "Mực"
+    "group": "Mực",
+    "image": "/dishes/muc.jpg"
   },
   {
     "name": "Mực Nướng Xốt Ớt Xiêm",
@@ -1182,7 +1311,8 @@
     "category": "Món Chính",
     "taste_profile": "Giòn ngọt, đậm đà, cay thơm",
     "tags": "món mặn, hải sản, mực, best seller",
-    "group": "Mực"
+    "group": "Mực",
+    "image": "/dishes/muc.jpg"
   },
   {
     "name": "Càng Ghẹ Cháy Tỏi",
@@ -1191,7 +1321,8 @@
     "category": "Món Chính",
     "taste_profile": "Ngọt chắc, đậm đà, béo cay",
     "tags": "món mặn, hải sản, ghẹ",
-    "group": "Càng Ghẹ"
+    "group": "Càng Ghẹ",
+    "image": "/dishes/cang-ghe.jpg"
   },
   {
     "name": "Càng Ghẹ Rang Me",
@@ -1200,7 +1331,8 @@
     "category": "Món Chính",
     "taste_profile": "Ngọt chắc, đậm đà, béo cay",
     "tags": "món mặn, hải sản, ghẹ",
-    "group": "Càng Ghẹ"
+    "group": "Càng Ghẹ",
+    "image": "/dishes/cang-ghe.jpg"
   },
   {
     "name": "Càng Ghẹ Xào Me",
@@ -1209,7 +1341,8 @@
     "category": "Món Chính",
     "taste_profile": "Ngọt chắc, đậm đà, béo cay",
     "tags": "món mặn, hải sản, ghẹ",
-    "group": "Càng Ghẹ"
+    "group": "Càng Ghẹ",
+    "image": "/dishes/cang-ghe.jpg"
   },
   {
     "name": "Càng Ghẹ Xốt Bơ Tỏi Cay",
@@ -1218,7 +1351,8 @@
     "category": "Món Chính",
     "taste_profile": "Ngọt chắc, đậm đà, béo cay",
     "tags": "món mặn, hải sản, ghẹ",
-    "group": "Càng Ghẹ"
+    "group": "Càng Ghẹ",
+    "image": "/dishes/cang-ghe.jpg"
   },
   {
     "name": "Càng Ghẹ Xốt Sa Tế",
@@ -1227,7 +1361,8 @@
     "category": "Món Chính",
     "taste_profile": "Ngọt chắc, đậm đà, béo cay",
     "tags": "món mặn, hải sản, ghẹ",
-    "group": "Càng Ghẹ"
+    "group": "Càng Ghẹ",
+    "image": "/dishes/cang-ghe.jpg"
   },
   {
     "name": "Chân Gà Xốt Thái",
@@ -1236,7 +1371,8 @@
     "category": "Món Chính",
     "taste_profile": "Giòn sần sật, chua cay, đậm đà",
     "tags": "món mặn, chân gà, nhậu",
-    "group": "Chân Gà"
+    "group": "Chân Gà",
+    "image": "/dishes/chan-ga.jpg"
   },
   {
     "name": "Chân Gà Nướng",
@@ -1245,7 +1381,8 @@
     "category": "Món Chính",
     "taste_profile": "Giòn sần sật, chua cay, đậm đà",
     "tags": "món mặn, chân gà, nhậu",
-    "group": "Chân Gà"
+    "group": "Chân Gà",
+    "image": "/dishes/chan-ga.jpg"
   },
   {
     "name": "Chân Gà Hấp Hành",
@@ -1254,7 +1391,8 @@
     "category": "Món Chính",
     "taste_profile": "Giòn sần sật, chua cay, đậm đà",
     "tags": "món mặn, chân gà, nhậu",
-    "group": "Chân Gà"
+    "group": "Chân Gà",
+    "image": "/dishes/chan-ga.jpg"
   },
   {
     "name": "Chân Gà Rang Muối Hồng Kông",
@@ -1263,7 +1401,8 @@
     "category": "Món Chính",
     "taste_profile": "Giòn sần sật, chua cay, đậm đà",
     "tags": "món mặn, chân gà, nhậu",
-    "group": "Chân Gà"
+    "group": "Chân Gà",
+    "image": "/dishes/chan-ga.jpg"
   },
   {
     "name": "Ốc Bươu Hấp Sả",
@@ -1287,7 +1426,8 @@
     "diet_type": "mặn",
     "category": "Ốc Hấp",
     "taste_profile": "Đậm đà, thơm sả, nhân thịt béo",
-    "tags": "món mặn, ốc, nhồi thịt, hấp sả"
+    "tags": "món mặn, ốc, nhồi thịt, hấp sả",
+    "image": "/dishes/oc-buou-nhoi-thit-hap-sa.jpg"
   },
   {
     "name": "Ốc Bulot Hấp Sả",
@@ -1343,7 +1483,8 @@
     "diet_type": "mặn",
     "category": "Lặt Vặt Ăn Chơi",
     "taste_profile": "Béo bùi, đậm đà",
-    "tags": "món mặn, trứng cút lộn, ăn vặt, nhậu"
+    "tags": "món mặn, trứng cút lộn, ăn vặt, nhậu",
+    "image": "/dishes/trung-cut-lon.jpg"
   },
   {
     "name": "Bạch Tuộc Hấp Sả",
@@ -1376,7 +1517,8 @@
     "category": "Gỏi & Trộn",
     "taste_profile": "Chua ngọt, giòn, đậm đà",
     "tags": "món mặn, gỏi, hải sản, khai vị, nhậu",
-    "group": "Gỏi Xoài"
+    "group": "Gỏi Xoài",
+    "image": "/dishes/goi-xoai.jpg"
   },
   {
     "name": "Gỏi Xoài Bạch Tuộc",
@@ -1385,7 +1527,8 @@
     "category": "Gỏi & Trộn",
     "taste_profile": "Chua cay, giòn dai",
     "tags": "món mặn, gỏi, hải sản, bạch tuộc, khai vị",
-    "group": "Gỏi Xoài"
+    "group": "Gỏi Xoài",
+    "image": "/dishes/goi-xoai.jpg"
   },
   {
     "name": "Gỏi Hải Sản",
@@ -1401,7 +1544,8 @@
     "diet_type": "mặn",
     "category": "Gỏi & Trộn",
     "taste_profile": "Chua ngọt, giòn bùi, đậm đà",
-    "tags": "món mặn, gỏi, thịt bò, khai vị, best seller"
+    "tags": "món mặn, gỏi, thịt bò, khai vị, best seller",
+    "image": "/dishes/goi-bo-khoai-mon.jpg"
   },
   {
     "name": "Chả Giò Hải Sản",
@@ -1410,7 +1554,8 @@
     "category": "Chiên & Khai Vị",
     "taste_profile": "Giòn rụm, đậm đà vị hải sản",
     "tags": "món mặn, khai vị, chả giò, chiên, hải sản",
-    "group": "Chả Giò"
+    "group": "Chả Giò",
+    "image": "/dishes/cha-gio.jpg"
   },
   {
     "name": "Chả Giò Ốc Quậy",
@@ -1419,7 +1564,8 @@
     "category": "Chiên & Khai Vị",
     "taste_profile": "Giòn rụm, đậm đà",
     "tags": "món mặn, khai vị, chả giò, chiên, đặc trưng",
-    "group": "Chả Giò"
+    "group": "Chả Giò",
+    "image": "/dishes/cha-gio.jpg"
   },
   {
     "name": "Chả Cá Thác Lác Chiên Giòn",
@@ -1427,7 +1573,8 @@
     "diet_type": "mặn",
     "category": "Chiên & Khai Vị",
     "taste_profile": "Dai giòn, thơm, đậm đà",
-    "tags": "món mặn, cá, chiên, khai vị, nhậu"
+    "tags": "món mặn, cá, chiên, khai vị, nhậu",
+    "image": "/dishes/cha-ca-thac-lac-chien-gion.jpg"
   },
   {
     "name": "Nem Chua Rán",
@@ -1435,7 +1582,8 @@
     "diet_type": "mặn",
     "category": "Chiên & Khai Vị",
     "taste_profile": "Giòn ngoài, chua nhẹ, đậm đà",
-    "tags": "món mặn, chiên, khai vị, nhậu"
+    "tags": "món mặn, chiên, khai vị, nhậu",
+    "image": "/dishes/nem-chua-ran.jpg"
   },
   {
     "name": "Tôm Chiên Xù",
@@ -1443,7 +1591,8 @@
     "diet_type": "mặn",
     "category": "Chiên & Khai Vị",
     "taste_profile": "Giòn rụm, ngọt thịt",
-    "tags": "món mặn, hải sản, tôm, chiên, khai vị"
+    "tags": "món mặn, hải sản, tôm, chiên, khai vị",
+    "image": "/dishes/tom-chien-xu.jpg"
   },
   {
     "name": "Mực Chiên Xù",
@@ -1475,7 +1624,8 @@
     "diet_type": "mặn",
     "category": "Chiên & Khai Vị",
     "taste_profile": "Giòn da, thơm bơ, ngọt thịt",
-    "tags": "món mặn, chim cút, chiên, nhậu"
+    "tags": "món mặn, chim cút, chiên, nhậu",
+    "image": "/dishes/chim-cut-chien-bo.jpg"
   },
   {
     "name": "Khoai Tây Lắc Phô Mai",
@@ -1483,7 +1633,8 @@
     "diet_type": "chay",
     "category": "Lặt Vặt Ăn Chơi",
     "taste_profile": "Giòn, béo phô mai",
-    "tags": "món chay, ăn vặt, chiên, phô mai"
+    "tags": "món chay, ăn vặt, chiên, phô mai",
+    "image": "/dishes/khoai-tay-lac-pho-mai.jpg"
   },
   {
     "name": "Bánh Mì Bơ Tỏi",
@@ -1491,7 +1642,8 @@
     "diet_type": "chay",
     "category": "Lặt Vặt Ăn Chơi",
     "taste_profile": "Giòn, thơm bơ tỏi",
-    "tags": "món chay, ăn vặt, ăn kèm"
+    "tags": "món chay, ăn vặt, ăn kèm",
+    "image": "/dishes/banh-mi-bo-toi.jpg"
   },
   {
     "name": "Bắp Xào",
@@ -1507,7 +1659,8 @@
     "diet_type": "mặn",
     "category": "Lặt Vặt Ăn Chơi",
     "taste_profile": "Đắng nhẹ, béo mặn",
-    "tags": "món mặn, ăn vặt, khai vị"
+    "tags": "món mặn, ăn vặt, khai vị",
+    "image": "/dishes/kho-qua-cha-bong.jpg"
   },
   {
     "name": "Đậu Hũ Mắm Hành",
@@ -1516,7 +1669,8 @@
     "category": "Lặt Vặt Ăn Chơi",
     "taste_profile": "Giòn ngoài mềm trong, mặn đậm",
     "tags": "ăn vặt, đậu hũ, chiên, nhậu",
-    "group": "Đậu Hũ"
+    "group": "Đậu Hũ",
+    "image": "/dishes/dau-hu.jpg"
   },
   {
     "name": "Đậu Hũ Mắm Tôm",
@@ -1525,7 +1679,8 @@
     "category": "Lặt Vặt Ăn Chơi",
     "taste_profile": "Giòn, đậm đà đặc trưng",
     "tags": "món mặn, đậu hũ, chiên, ăn vặt, nhậu",
-    "group": "Đậu Hũ"
+    "group": "Đậu Hũ",
+    "image": "/dishes/dau-hu.jpg"
   },
   {
     "name": "Đậu Hũ Non Trứng Bắc Thảo",
@@ -1534,7 +1689,8 @@
     "category": "Lặt Vặt Ăn Chơi",
     "taste_profile": "Mềm béo, đậm đà",
     "tags": "món mặn, đậu hũ, trứng bắc thảo, ăn vặt",
-    "group": "Đậu Hũ"
+    "group": "Đậu Hũ",
+    "image": "/dishes/dau-hu.jpg"
   },
   {
     "name": "Trứng Lòng Đào Me Cay",
@@ -1542,7 +1698,8 @@
     "diet_type": "mặn",
     "category": "Lặt Vặt Ăn Chơi",
     "taste_profile": "Chua cay, béo bùi",
-    "tags": "ăn vặt, trứng, món cay, nhậu"
+    "tags": "ăn vặt, trứng, món cay, nhậu",
+    "image": "/dishes/trung-long-dao-me-cay.jpg"
   },
   {
     "name": "Hến Xúc Bánh Tráng",
@@ -1550,7 +1707,8 @@
     "diet_type": "mặn",
     "category": "Lặt Vặt Ăn Chơi",
     "taste_profile": "Đậm đà, giòn, thơm",
-    "tags": "món mặn, hến, ăn vặt, nhậu"
+    "tags": "món mặn, hến, ăn vặt, nhậu",
+    "image": "/dishes/hen-xuc-banh-trang.jpg"
   },
   {
     "name": "Khô Bò Lá Bông",
@@ -1567,7 +1725,8 @@
     "category": "Khô Lai Rai",
     "taste_profile": "Dai ngọt, thơm nướng",
     "tags": "món mặn, khô mực, nướng, lai rai, nhậu",
-    "group": "Khô Mực"
+    "group": "Khô Mực",
+    "image": "/dishes/kho-muc.jpg"
   },
   {
     "name": "Khô Mực Khoai Môn Chiên Nước Mắm",
@@ -1576,7 +1735,8 @@
     "category": "Khô Lai Rai",
     "taste_profile": "Giòn, mặn ngọt đậm đà",
     "tags": "món mặn, khô mực, chiên, nước mắm, nhậu",
-    "group": "Khô Mực"
+    "group": "Khô Mực",
+    "image": "/dishes/kho-muc.jpg"
   },
   {
     "name": "Ốc Len Xào Dừa",
@@ -1584,7 +1744,8 @@
     "diet_type": "mặn",
     "category": "Ốc & Sò",
     "taste_profile": "Béo ngậy, cay nhẹ, đậm đà",
-    "tags": "món mặn, ốc, xào dừa, best seller, nhậu"
+    "tags": "món mặn, ốc, xào dừa, best seller, nhậu",
+    "image": "/dishes/oc-len-xao-dua.jpg"
   },
   {
     "name": "Mì Xào Rau",
@@ -1593,7 +1754,8 @@
     "category": "Mì - Cháo - Cơm",
     "taste_profile": "Thanh đạm, vừa miệng",
     "tags": "món chay, mì xào, no bụng",
-    "group": "Mì Xào"
+    "group": "Mì Xào",
+    "image": "/dishes/mi-xao.jpg"
   },
   {
     "name": "Mì Xào Ốc Móng Tay",
@@ -1602,7 +1764,8 @@
     "category": "Mì - Cháo - Cơm",
     "taste_profile": "Đậm đà, ngọt hải sản",
     "tags": "món mặn, mì xào, hải sản, no bụng",
-    "group": "Mì Xào"
+    "group": "Mì Xào",
+    "image": "/dishes/mi-xao.jpg"
   },
   {
     "name": "Mì Xào Sò",
@@ -1611,7 +1774,8 @@
     "category": "Mì - Cháo - Cơm",
     "taste_profile": "Đậm đà, ngọt hải sản",
     "tags": "món mặn, mì xào, hải sản, no bụng",
-    "group": "Mì Xào"
+    "group": "Mì Xào",
+    "image": "/dishes/mi-xao.jpg"
   },
   {
     "name": "Mì Xào Ốc Giác",
@@ -1620,7 +1784,8 @@
     "category": "Mì - Cháo - Cơm",
     "taste_profile": "Đậm đà, giòn dai",
     "tags": "món mặn, mì xào, hải sản, no bụng",
-    "group": "Mì Xào"
+    "group": "Mì Xào",
+    "image": "/dishes/mi-xao.jpg"
   },
   {
     "name": "Mì Xào Hải Sản",
@@ -1629,7 +1794,8 @@
     "category": "Mì - Cháo - Cơm",
     "taste_profile": "Đậm đà, ngọt hải sản",
     "tags": "món mặn, mì xào, hải sản, no bụng",
-    "group": "Mì Xào"
+    "group": "Mì Xào",
+    "image": "/dishes/mi-xao.jpg"
   },
   {
     "name": "Mì Xào Bò",
@@ -1638,7 +1804,8 @@
     "category": "Mì - Cháo - Cơm",
     "taste_profile": "Đậm đà, thịt bò mềm",
     "tags": "món mặn, mì xào, thịt bò, no bụng",
-    "group": "Mì Xào"
+    "group": "Mì Xào",
+    "image": "/dishes/mi-xao.jpg"
   },
   {
     "name": "Cháo Hàu",
@@ -1647,7 +1814,8 @@
     "category": "Mì - Cháo - Cơm",
     "taste_profile": "Béo thơm, ngọt thanh",
     "tags": "món mặn, cháo, hải sản, hàu, no bụng",
-    "group": "Cháo"
+    "group": "Cháo",
+    "image": "/dishes/chao.jpg"
   },
   {
     "name": "Cháo Hến",
@@ -1656,7 +1824,8 @@
     "category": "Mì - Cháo - Cơm",
     "taste_profile": "Thanh ngọt, thơm",
     "tags": "món mặn, cháo, hến, no bụng",
-    "group": "Cháo"
+    "group": "Cháo",
+    "image": "/dishes/chao.jpg"
   },
   {
     "name": "Cháo Sò Huyết",
@@ -1665,7 +1834,8 @@
     "category": "Mì - Cháo - Cơm",
     "taste_profile": "Mềm béo, đậm đà",
     "tags": "món mặn, cháo, no bụng",
-    "group": "Cháo"
+    "group": "Cháo",
+    "image": "/dishes/chao.jpg"
   },
   {
     "name": "Cháo Hải Sản",
@@ -1674,7 +1844,8 @@
     "category": "Mì - Cháo - Cơm",
     "taste_profile": "Ngọt đậm, béo thơm",
     "tags": "món mặn, cháo, hải sản, no bụng",
-    "group": "Cháo"
+    "group": "Cháo",
+    "image": "/dishes/chao.jpg"
   },
   {
     "name": "Cơm Chiên Tỏi",
@@ -1683,7 +1854,8 @@
     "category": "Mì - Cháo - Cơm",
     "taste_profile": "Thơm tỏi, vừa miệng",
     "tags": "món mặn, cơm chiên, no bụng",
-    "group": "Cơm Chiên"
+    "group": "Cơm Chiên",
+    "image": "/dishes/com-chien.jpg"
   },
   {
     "name": "Cơm Chiên Hải Sản",
@@ -1692,7 +1864,8 @@
     "category": "Mì - Cháo - Cơm",
     "taste_profile": "Đậm đà, ngọt hải sản",
     "tags": "món mặn, cơm chiên, hải sản, no bụng",
-    "group": "Cơm Chiên"
+    "group": "Cơm Chiên",
+    "image": "/dishes/com-chien.jpg"
   },
   {
     "name": "Cơm Chiên Dương Châu",
@@ -1701,7 +1874,8 @@
     "category": "Mì - Cháo - Cơm",
     "taste_profile": "Đậm đà, nhiều vị",
     "tags": "món mặn, cơm chiên, no bụng",
-    "group": "Cơm Chiên"
+    "group": "Cơm Chiên",
+    "image": "/dishes/com-chien.jpg"
   },
   {
     "name": "Cơm Phủ Trứng Cút",
@@ -1737,7 +1911,8 @@
     "category": "Món Lẩu",
     "taste_profile": "Thanh ngọt, đắng nhẹ",
     "tags": "món mặn, lẩu, chia sẻ, cá",
-    "group": "Lẩu"
+    "group": "Lẩu",
+    "image": "/dishes/lau.jpg"
   },
   {
     "name": "Lẩu Cá Tầm Măng Chua",
@@ -1746,7 +1921,8 @@
     "category": "Món Lẩu",
     "taste_profile": "Chua thanh, đậm đà, cá béo",
     "tags": "món mặn, lẩu, cá, chia sẻ",
-    "group": "Lẩu"
+    "group": "Lẩu",
+    "image": "/dishes/lau.jpg"
   },
   {
     "name": "Lẩu Thái",
@@ -1755,7 +1931,8 @@
     "category": "Món Lẩu",
     "taste_profile": "Chua cay, thơm sả, đậm đà",
     "tags": "món mặn, lẩu, món cay, hải sản, chia sẻ, món thái",
-    "group": "Lẩu"
+    "group": "Lẩu",
+    "image": "/dishes/lau.jpg"
   },
   {
     "name": "Nước Suối",
@@ -1866,7 +2043,8 @@
     "diet_type": "mặn",
     "category": "Gỏi & Trộn",
     "taste_profile": "Giòn sần sật, chua cay, đậm đà",
-    "tags": "món mặn, hải sản, gỏi, mắm nhĩ, best seller"
+    "tags": "món mặn, hải sản, gỏi, mắm nhĩ, best seller",
+    "image": "/dishes/sua-mam-nhi-cai-xanh.jpg"
   },
   {
     "name": "Bạch Tuộc Mắm Nhĩ + Cải Xanh",
@@ -1874,7 +2052,8 @@
     "diet_type": "mặn",
     "category": "Gỏi & Trộn",
     "taste_profile": "Giòn dai, chua cay, đậm đà",
-    "tags": "món mặn, hải sản, bạch tuộc, gỏi, mắm nhĩ, best seller"
+    "tags": "món mặn, hải sản, bạch tuộc, gỏi, mắm nhĩ, best seller",
+    "image": "/dishes/bach-tuoc-mam-nhi-cai-xanh.jpg"
   },
   {
     "name": "Tôm Mắm Nhĩ + Cải Xanh",
@@ -1882,7 +2061,8 @@
     "diet_type": "mặn",
     "category": "Gỏi & Trộn",
     "taste_profile": "Ngọt thịt, chua cay, đậm đà",
-    "tags": "món mặn, hải sản, tôm, gỏi, mắm nhĩ, best seller"
+    "tags": "món mặn, hải sản, tôm, gỏi, mắm nhĩ, best seller",
+    "image": "/dishes/tom-mam-nhi-cai-xanh.jpg"
   },
   {
     "name": "Tôm Xốt Thái Mù Tạt",
@@ -1890,7 +2070,8 @@
     "diet_type": "mặn",
     "category": "Gỏi & Trộn",
     "taste_profile": "Chua cay, the mù tạt, ngọt thịt",
-    "tags": "món mặn, hải sản, tôm, xốt thái, best seller"
+    "tags": "món mặn, hải sản, tôm, xốt thái, best seller",
+    "image": "/dishes/tom-xot-thai-mu-tat.jpg"
   },
   {
     "name": "Soup Tomyum Thố Lớn",
@@ -1900,7 +2081,8 @@
     "taste_profile": "Chua cay, thơm sả, đậm đà",
     "tags": "món mặn, hải sản, soup, lẩu, best seller",
     "group": "Soup Tomyum",
-    "featured_name": "Soup Tomyum"
+    "featured_name": "Soup Tomyum",
+    "image": "/dishes/soup-tomyum.jpg"
   },
   {
     "name": "Soup Tomyum Thố Nhỏ",
@@ -1909,6 +2091,7 @@
     "category": "Món Lẩu",
     "taste_profile": "Chua cay, thơm sả, đậm đà",
     "tags": "món mặn, hải sản, soup, lẩu",
-    "group": "Soup Tomyum"
+    "group": "Soup Tomyum",
+    "image": "/dishes/soup-tomyum.jpg"
   }
 ]

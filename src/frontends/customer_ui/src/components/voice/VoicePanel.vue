@@ -34,28 +34,14 @@
             <div class="ai-avatar"><i class="ti ti-robot" aria-hidden="true"></i></div>
             <div class="bubble bubble-ai">{{ msg.text }}</div>
           </div>
-        </template>
 
-        <!-- Recommended dish card (slides out under the AI bubble) -->
-        <Transition name="reco">
-          <div v-if="voice.recommendedItem" class="reco-card">
-            <img
-              v-if="voice.recommendedItem.image"
-              :src="voice.recommendedItem.image"
-              :alt="voice.recommendedItem.name"
-              class="reco-img"
-            />
-            <div v-else class="reco-img reco-img-placeholder" aria-hidden="true">🍽️</div>
-            <div class="reco-info">
-              <span class="reco-name">{{ voice.recommendedItem.name }}</span>
-              <span class="reco-price">{{ formatPrice(voice.recommendedItem.price) }}</span>
-            </div>
-            <button class="reco-add" type="button" @click="voice.confirmRecommendation()">
-              <i class="ti ti-plus" aria-hidden="true"></i>
-              Thêm nhanh
-            </button>
+          <!-- Dishes the AI just mentioned: tappable cards (image + price + add) under the
+               bubble. The reply text carries no prices — the robot speaks words only, the
+               guest reads the numbers here and can order with a tap instead of by voice. -->
+          <div v-if="msg.role === 'ai' && dishesFor(msg).length" class="dish-cards">
+            <VoiceDishCard v-for="d in dishesFor(msg)" :key="d.id" :item="d" />
           </div>
-        </Transition>
+        </template>
 
         <!-- Thinking dots -->
         <div v-if="voice.aiState === 'thinking'" class="ai-row">
@@ -118,11 +104,41 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
-import { useVoiceStore } from '@/stores/voice'
-import { formatPrice } from '@/utils/format'
+import { useVoiceStore, type ChatMessage } from '@/stores/voice'
+import { useMenuStore } from '@/stores/menu'
+import { buildDishIndex, matchDishes } from '@/utils/matchDishes'
+import VoiceDishCard from './VoiceDishCard.vue'
+import type { FoodItem } from '@/types'
 
 const voice = useVoiceStore()
+const menu = useMenuStore()
 const chatEl = ref<HTMLElement | null>(null)
+
+// The dish index needs the menu; the panel can open (robot heard the guest) before the
+// guest ever visited the menu screen, so fetch it here if it's still empty.
+watch(
+  () => voice.isAiOpen,
+  (open) => {
+    if (open && menu.foodItems.length === 0 && !menu.isLoading) menu.loadMenu()
+  },
+  { immediate: true },
+)
+
+const dishIndex = computed(() => buildDishIndex(menu.foodItems, menu.groupsByCategory))
+
+// Cache per message id — messages are immutable once pushed.
+const dishCache = new Map<number, FoodItem[]>()
+watch(dishIndex, () => dishCache.clear()) // menu (re)loaded: stale matches out
+
+function dishesFor(msg: ChatMessage): FoodItem[] {
+  if (dishIndex.value.length === 0) return []
+  let dishes = dishCache.get(msg.id)
+  if (!dishes) {
+    dishes = matchDishes(msg.text, dishIndex.value)
+    dishCache.set(msg.id, dishes)
+  }
+  return dishes
+}
 
 const stateLabel = computed(() => {
   switch (voice.aiState) {
@@ -139,7 +155,7 @@ const stateLabel = computed(() => {
 
 // Keep the chat scrolled to the latest message.
 watch(
-  () => [voice.messages.length, voice.aiState, voice.recommendedItem],
+  () => [voice.messages.length, voice.aiState],
   async () => {
     await nextTick()
     if (chatEl.value) chatEl.value.scrollTop = chatEl.value.scrollHeight
@@ -155,7 +171,9 @@ watch(
   z-index: 50;
   display: flex;
   flex-direction: column;
-  max-height: 460px;
+  /* Near-fullscreen on the 1024x600 stage: the guest reads the whole exchange without
+     scrolling back and forth. */
+  max-height: 552px;
   background: #1F1B16;
   border-top: 1px solid var(--color-accent-dark);
   border-radius: 16px 16px 0 0;
@@ -241,11 +259,11 @@ watch(
 }
 
 .bubble {
-  max-width: 78%;
-  padding: 0.6rem 0.85rem;
-  font-size: 0.8125rem;
+  max-width: 80%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.72rem;
   line-height: 1.45;
-  border-radius: 16px;
+  border-radius: 14px;
 }
 
 .bubble-user {
@@ -306,81 +324,19 @@ watch(
   animation-delay: 0.4s;
 }
 
-/* Recommended card */
-.reco-card {
+/* Dish cards under an AI bubble (dishes the reply mentioned) */
+.dish-cards {
   align-self: flex-start;
   margin-left: 38px;
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  background: #2A2620;
-  border: 1px solid #3A352D;
-  border-radius: var(--radius-md);
-  padding: 0.55rem;
-  max-width: 88%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+  width: min(88%, 560px);
 }
 
-.reco-img {
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
-  object-fit: cover;
-  flex: 0 0 auto;
-}
-
-.reco-img-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  color: var(--color-accent);
-  background: #34302A;
-}
-
-.reco-info {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.reco-name {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: #F5F1E8;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 150px;
-}
-
-.reco-price {
-  font-size: 0.85rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: #F5F1E8;
-}
-
-.reco-add {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  margin-left: auto;
-  background: var(--color-accent);
-  color: #1F1B16;
-  border: none;
-  font-family: inherit;
-  font-weight: 600;
-  font-size: 0.75rem;
-  min-height: 0;
-  min-width: 0;
-  padding: 0.45rem 0.8rem;
-  border-radius: var(--radius-sm);
-  white-space: nowrap;
-}
-
-.reco-add:active {
-  background: var(--color-accent-dark);
-  transform: scale(0.95);
+.dish-cards:has(> :only-child) {
+  grid-template-columns: minmax(0, 1fr);
+  width: min(60%, 300px);
 }
 
 /* Footer */
@@ -582,11 +538,4 @@ watch(
   transform: translateY(100%);
 }
 
-.reco-enter-active {
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-.reco-enter-from {
-  opacity: 0;
-  transform: translateY(8px);
-}
 </style>
