@@ -11,7 +11,8 @@ def by_menu_metadata(
 ) -> List[Tuple[Document, float]]:
     filtered = []
     for doc, score in results:
-        if doc.metadata.get("type") == "menu":
+        doc_type = doc.metadata.get("type", "")
+        if doc_type == "menu":
             doc_price = doc.metadata.get("price", 0.0)
             doc_diet = doc.metadata.get("diet_type", "")
             doc_cat = doc.metadata.get("category", "")
@@ -24,5 +25,8 @@ def by_menu_metadata(
                 continue
             if category is not None and category.lower() not in doc_cat.lower():
                 continue
-        filtered.append((doc, score))
+            filtered.append((doc, score))
+        elif doc_type == "info":
+            filtered.append((doc, score))
+        # drop customer, best_seller, promo — not searchable content
     return filtered

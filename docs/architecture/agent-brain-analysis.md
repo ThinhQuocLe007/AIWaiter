@@ -561,7 +561,7 @@ python evals/scripts/eval_out_of_menu.py
 # Expected: rejection rate, suggestion quality
 ```
 
-Create a baseline document at `docs/eval-baseline-2026-07.md` with:
+Create a baseline document at `docs/evaluation/eval-baseline-2026-07.md` with:
 - Current scores for each eval
 - Current model and prompt versions
 - Known failures and their root causes

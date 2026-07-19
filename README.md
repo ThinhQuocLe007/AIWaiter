@@ -1,7 +1,7 @@
 # AI Waiter - Capstone Project
 
-> 📦 **Cài đặt + Chạy web:** xem **[docs/run-guide-vi.md](docs/run-guide-vi.md)** (clone → `make install` → chạy 3 web + backend).
-> 🏗️ **Kiến trúc:** xem **[docs/code-architecture.md](docs/code-architecture.md)**.
+> 📦 **Cài đặt + Chạy web:** xem **[docs/guides/run-guide-vi.md](docs/guides/run-guide-vi.md)** (clone → `make install` → chạy 3 web + backend).
+> 🏗️ **Kiến trúc:** xem **[docs/architecture/code-architecture.md](docs/architecture/code-architecture.md)**.
 > (Phần *System Architecture* + *Setup* bên dưới mô tả pipeline **bản cũ (all-in-one)** — đã được pivot 2026-06 thay thế.)
 >
 > 🧭 **Layout 2026-06 (sau refactor):** `src/agent_brain/` (LLM brain) · `src/edge_voice/` (Jetson voice device) · `src/server_orchestrator/` (FastAPI backend) · `src/_shared/` (cross-role paths + types) · `src/frontends/` (3 Vite/Vue apps). Xem [tasks_on_section.md](tasks_on_section.md) để biết chi tiết từng phase.

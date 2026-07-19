@@ -1,0 +1,182 @@
+{
+  "dataset": "ambiguity_eval",
+  "version": "1.0",
+  "description": "Evaluates the validator's ambiguity detection — whether generic dish names that match multiple menu items are correctly flagged.",
+  "cases": [
+    {
+      "id": "AMB-001",
+      "input": "Ốc Hương",
+      "should_be_ambiguous": true,
+      "expected_min_candidates": 11,
+      "note": "Matches 11 variants: Xốt Trứng Muối, Xốt Phô Mai, Xốt Me, Hấp Sả, etc."
+    },
+    {
+      "id": "AMB-002",
+      "input": "Ốc Cà Na",
+      "should_be_ambiguous": true,
+      "expected_min_candidates": 9,
+      "note": "Matches ~9 sauce/cooking variants"
+    },
+    {
+      "id": "AMB-003",
+      "input": "Ốc Bulot",
+      "should_be_ambiguous": true,
+      "expected_min_candidates": 12,
+      "note": "Matches ~12 variants"
+    },
+    {
+      "id": "AMB-004",
+      "input": "Ốc Mỡ",
+      "should_be_ambiguous": true,
+      "expected_min_candidates": 8,
+      "note": "Matches ~8 variants"
+    },
+    {
+      "id": "AMB-005",
+      "input": "Ốc Móng Tay",
+      "should_be_ambiguous": true,
+      "expected_min_candidates": 7,
+      "note": "Matches ~7 variants"
+    },
+    {
+      "id": "AMB-006",
+      "input": "Tôm Thẻ",
+      "should_be_ambiguous": true,
+      "expected_min_candidates": 9,
+      "note": "Matches ~9 variants"
+    },
+    {
+      "id": "AMB-007",
+      "input": "Tôm Càng Xanh",
+      "should_be_ambiguous": true,
+      "expected_min_candidates": 8,
+      "note": "Matches ~8 variants"
+    },
+    {
+      "id": "AMB-008",
+      "input": "Sò Huyết",
+      "should_be_ambiguous": true,
+      "expected_min_candidates": 8,
+      "note": "Matches ~8 variants"
+    },
+    {
+      "id": "AMB-009",
+      "input": "Sò Điệp",
+      "should_be_ambiguous": true,
+      "expected_min_candidates": 4,
+      "note": "Matches ~4 variants"
+    },
+    {
+      "id": "AMB-010",
+      "input": "Mực",
+      "should_be_ambiguous": true,
+      "expected_min_candidates": 7,
+      "note": "Matches ~7 variants across multiple dishes"
+    },
+    {
+      "id": "AMB-011",
+      "input": "Càng Ghẹ",
+      "should_be_ambiguous": true,
+      "expected_min_candidates": 4,
+      "note": "Matches ~4 variants"
+    },
+    {
+      "id": "AMB-012",
+      "input": "Cơm Chiên",
+      "should_be_ambiguous": true,
+      "expected_min_candidates": 3,
+      "note": "Matches 3 variants"
+    },
+    {
+      "id": "AMB-013",
+      "input": "Mì Xào",
+      "should_be_ambiguous": true,
+      "expected_min_candidates": 5,
+      "note": "Matches 5 variants"
+    },
+    {
+      "id": "AMB-014",
+      "input": "Bia",
+      "should_be_ambiguous": true,
+      "expected_min_candidates": 7,
+      "note": "Matches 7 variants"
+    },
+    {
+      "id": "AMB-015",
+      "input": "Khô Mực",
+      "should_be_ambiguous": true,
+      "expected_min_candidates": 2,
+      "note": "Matches 2 variants — should still be considered ambiguous"
+    },
+    {
+      "id": "AMB-016",
+      "input": "Ốc Hương Xốt Trứng Muối",
+      "should_be_ambiguous": false,
+      "expected_min_candidates": 1,
+      "note": "Specific full dish name, should resolve to exact match"
+    },
+    {
+      "id": "AMB-017",
+      "input": "Cơm Chiên Dương Châu",
+      "should_be_ambiguous": false,
+      "expected_min_candidates": 1,
+      "note": "Specific full dish name"
+    },
+    {
+      "id": "AMB-018",
+      "input": "Lẩu Thái",
+      "should_be_ambiguous": false,
+      "expected_min_candidates": 1,
+      "note": "Specific single item"
+    },
+    {
+      "id": "AMB-019",
+      "input": "Khoai Tây Lắc Phô Mai",
+      "should_be_ambiguous": false,
+      "expected_min_candidates": 1,
+      "note": "Specific full name"
+    },
+    {
+      "id": "AMB-020",
+      "input": "Gỏi Hải Sản",
+      "should_be_ambiguous": false,
+      "expected_min_candidates": 1,
+      "note": "Specific single item"
+    },
+    {
+      "id": "AMB-021",
+      "input": "Trứng Cút Lộn",
+      "should_be_ambiguous": false,
+      "expected_min_candidates": 1,
+      "note": "Specific single item"
+    },
+    {
+      "id": "AMB-022",
+      "input": "Bánh Mì Bơ Tỏi",
+      "should_be_ambiguous": false,
+      "expected_min_candidates": 1,
+      "note": "Specific single item"
+    },
+    {
+      "id": "AMB-023",
+      "input": "Nước Suối",
+      "should_be_ambiguous": false,
+      "expected_min_candidates": 1,
+      "note": "Short but unique — only one item on the menu"
+    },
+    {
+      "id": "AMB-024",
+      "input": "Trà Tắc",
+      "should_be_ambiguous": false,
+      "expected_min_candidates": 1,
+      "note": "Specific single item"
+    },
+    {
+      "id": "AMB-025",
+      "input": "Hàu Nướng Phô Mai",
+      "should_be_ambiguous": false,
+      "expected_min_candidates": 1,
+      "note": "Full name with sauce, not ambiguous"
+    }
+  ]
+}

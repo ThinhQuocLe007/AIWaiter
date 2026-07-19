@@ -26,7 +26,18 @@ def _recalc_cart(cart: Cart) -> Cart:
 
 
 def _handle_add_cart_result(state: AgentState, tool_result) -> dict[str, Any]:
-    """Merge new items into existing cart (ADD semantics)."""
+    """Merge new items into existing cart.
+
+    - Item NOT in cart → append.
+    - Item in cart + user said "thêm"/"nữa" → additive merge.
+    - Item in cart + no additive markers → replace quantity (re-specification).
+    """
+    from src.agent_brain.utils.state_helpers import last_user_text
+
+    _ADDITIVE = ("thêm", "nữa", "lấy thêm", "gọi thêm", "cho thêm")
+    user_text = last_user_text(state).lower()
+    additive = any(m in user_text for m in _ADDITIVE)
+
     existing = state.get("active_cart")
     if existing is None or not existing.items:
         cart = Cart(items=list(tool_result.items), total_price=tool_result.total_price)
@@ -35,7 +46,10 @@ def _handle_add_cart_result(state: AgentState, tool_result) -> dict[str, Any]:
         for new_item in tool_result.items:
             match = next((i for i in cart.items if i.name == new_item.name), None)
             if match:
-                match.quantity += new_item.quantity
+                if additive:
+                    match.quantity += new_item.quantity
+                else:
+                    match.quantity = new_item.quantity
                 if new_item.special_requests:
                     match.special_requests = new_item.special_requests
             else:
@@ -67,7 +81,7 @@ def _handle_remove_cart_result(state: AgentState, tool_result) -> dict[str, Any]
 
 
 def _handle_clear_cart_result(state: AgentState, tool_result) -> dict[str, Any]:
-    return {"active_cart": Cart(), "order_stage": "IDLE"}
+    return {"active_cart": Cart(), "order_stage": "IDLE", "shown_dishes": None}
 
 
 def _handle_confirm_order_result(state: AgentState, tool_result) -> dict[str, Any]:
@@ -75,7 +89,16 @@ def _handle_confirm_order_result(state: AgentState, tool_result) -> dict[str, An
 
 
 def _handle_search_result(state: AgentState, tool_result) -> dict[str, Any]:
-    return {"search_context": tool_result.results}
+    existing = state.get("shown_dishes") or []
+    new_names = [
+        r.document.metadata.get("name")
+        for r in tool_result.results
+        if r.document.metadata.get("name")
+    ]
+    return {
+        "search_context": tool_result.results,
+        "shown_dishes": list(dict.fromkeys(existing + new_names)),
+    }
 
 
 TOOL_STATE_HANDLERS: dict[str, Callable] = {

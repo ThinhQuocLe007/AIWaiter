@@ -2,7 +2,7 @@ import logging
 from typing import Any
 
 import httpx
-from langchain_core.messages import AIMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_ollama import ChatOllama
 
 from src.agent_brain.agent.state import AgentState
@@ -14,6 +14,7 @@ from src.agent_brain.utils.prompt_utils import (
     build_system_prompt,
     last_n_turns,
 )
+from src.agent_brain.utils.state_helpers import get_worker_query
 
 from ..tools import add_cart, clear_cart, confirm_order, delegate, remove_cart
 
@@ -75,11 +76,18 @@ def order_worker_node(state: AgentState) -> dict[str, Any]:
     static_few_shot_messages = build_few_shot_examples("order_worker.json")
     dynamic_suffix_message = build_dynamic_suffix(table_id=table_id, dynamic_context=context_block)
 
+    worker_query = get_worker_query(state, "ORDER")
+    history = last_n_turns(state["messages"], n=3)
+    for i in range(len(history) - 1, -1, -1):
+        if isinstance(history[i], HumanMessage):
+            history[i] = HumanMessage(content=worker_query)
+            break
+
     input_messages = (
         [static_system_message]
         + static_few_shot_messages
         + [dynamic_suffix_message]
-        + last_n_turns(state["messages"], n=3)
+        + history
     )
 
     try:

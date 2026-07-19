@@ -67,6 +67,29 @@ def _format_off_menu(ctx: OrderResponseContext) -> str:
     return f"Dạ, món {names} hiện không có trong thực đơn ạ. Anh/chị muốn chọn món khác không ạ?"
 
 
+def _format_off_menu_with_suggestions(ctx: OrderResponseContext) -> str:
+    """Off-menu items WITH suggestions — deterministic template with alternatives."""
+    parts: list[str] = []
+    no_suggest: list[str] = []
+    suggest_lines: list[str] = []
+
+    for o in ctx.off_menu:
+        if o.suggestion:
+            suggest_lines.append(f"  - {o.suggestion} (thay cho {o.name})")
+        elif o.name:
+            no_suggest.append(o.name)
+
+    if no_suggest:
+        names = ", ".join(no_suggest)
+        parts.append(f"Dạ, món {names} hiện không có trong thực đơn ạ.")
+
+    if suggest_lines:
+        parts.append("Anh/chị có thể tham khảo các món tương tự:\n" + "\n".join(suggest_lines))
+
+    parts.append("Anh/chị có muốn đổi sang món nào trong số này không ạ?")
+    return "\n\n".join(parts)
+
+
 def _format_order_error(ctx: OrderResponseContext) -> str:
     msg = ctx.error_message or "Anh/chị thử lại giúp em nhé ạ."
     return f"Dạ, xin lỗi anh/chị, có lỗi khi xử lý đơn. {msg}"

@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { FoodItem } from '@/types'
 import { useCartStore } from '@/stores/cart'
 import { useMenuStore } from '@/stores/menu'
 import { getStoredTableId } from '@/data/tableSession'
@@ -32,7 +31,6 @@ export const useVoiceStore = defineStore('voice', () => {
   const aiState = ref<AiState>('idle')
   const speechText = ref('')
   const aiResponse = ref('')
-  const recommendedItem = ref<FoodItem | null>(null)
   const isSoundEnabled = ref(true)
   const messages = ref<ChatMessage[]>([])
 
@@ -68,6 +66,9 @@ export const useVoiceStore = defineStore('voice', () => {
     } else if (e.type === 'voice.reply') {
       if (e.table_id !== getStoredTableId()) return
       onReply(e.text, e.action, e.stage, e.cart, e.confirmed ?? false)
+    } else if (e.type === 'voice.progress') {
+      if (e.table_id !== getStoredTableId()) return
+      aiState.value = 'thinking'
     } else if (e.type === 'table.updated') {
       // Session lifecycle for THIS table: paid (DA_THANH_TOAN) or ended from the panel (TRONG)
       // means the visit is over — the dishes must leave the cart card, no matter where the
@@ -110,7 +111,6 @@ export const useVoiceStore = defineStore('voice', () => {
     isAiOpen.value = true
     aiState.value = 'thinking'
     speechText.value = text
-    recommendedItem.value = null
     if (text.trim()) pushMessage('user', text)
   }
 
@@ -205,7 +205,6 @@ export const useVoiceStore = defineStore('voice', () => {
     aiState.value = 'idle'
     speechText.value = ''
     aiResponse.value = ''
-    recommendedItem.value = null
   }
 
   function toggleSound() {
@@ -251,20 +250,11 @@ export const useVoiceStore = defineStore('voice', () => {
     }
   }
 
-  // Adds the recommended dish to the real cart (the "add to cart" intent).
-  function confirmRecommendation() {
-    if (!recommendedItem.value) return
-    const cart = useCartStore()
-    cart.addItem(recommendedItem.value)
-    pushMessage('ai', `Đã thêm "${recommendedItem.value.name}" vào giỏ hàng của bạn rồi nhé! 🛒`)
-  }
-
   return {
     isAiOpen,
     aiState,
     speechText,
     aiResponse,
-    recommendedItem,
     isSoundEnabled,
     messages,
     connect,
@@ -275,6 +265,5 @@ export const useVoiceStore = defineStore('voice', () => {
     toggleSound,
     startListening,
     stop,
-    confirmRecommendation,
   }
 })

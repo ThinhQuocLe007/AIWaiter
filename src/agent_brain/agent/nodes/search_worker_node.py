@@ -2,7 +2,7 @@ import logging
 from typing import Any
 
 import httpx
-from langchain_core.messages import AIMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_ollama import ChatOllama
 
 from src.agent_brain.agent.state import AgentState
@@ -14,6 +14,7 @@ from src.agent_brain.utils.prompt_utils import (
     build_system_prompt,
     last_n_turns,
 )
+from src.agent_brain.utils.state_helpers import get_worker_query
 
 from ..tools import delegate, search
 
@@ -47,11 +48,6 @@ def _build_search_dynamic_context(state: AgentState) -> str:
             name = r.document.metadata.get("name", "").strip()
             if name:
                 known.add(name)
-
-    cart = state.get("active_cart")
-    if cart and cart.items:
-        for it in cart.items:
-            known.add(it.name)
 
     if known:
         blocks.append("### ĐÃ BIẾT (already discussed/ordered — use to optimize query):")
@@ -95,11 +91,18 @@ def search_worker_node(state: AgentState) -> dict[str, Any]:
     )
 
     # 3. Assemble complete message array preserving prefix caching order
+    worker_query = get_worker_query(state, "SEARCH")
+    history = last_n_turns(state["messages"], n=2)
+    for i in range(len(history) - 1, -1, -1):
+        if isinstance(history[i], HumanMessage):
+            history[i] = HumanMessage(content=worker_query)
+            break
+
     input_messages = (
         [static_system_message]
         + static_few_shot_messages
         + [dynamic_suffix_message]
-        + last_n_turns(state["messages"], n=2)
+        + history
     )
 
     try:

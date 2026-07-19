@@ -26,8 +26,6 @@ class SearchInput(BaseModel):
     )
     max_price: Optional[float] = Field(None, description="Max price in VND if specified (e.g. 100000 for 'dưới 100k' or 'nhỏ hơn 100 ngàn').")
     min_price: Optional[float] = Field(None, description="Min price in VND if specified.")
-    diet_type: Optional[str] = Field(None, description="Diet type (e.g. 'chay' or 'mặn').")
-    category: Optional[str] = Field(None, description="Menu category name.")
 
 
 class SearchResponse(BaseModel):

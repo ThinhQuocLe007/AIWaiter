@@ -63,6 +63,7 @@ class SearchResponseContext(BaseModel):
     status: Literal["success", "error"] = "success"
     query: str
     results: List[SearchResult] = Field(default_factory=list)
+    shown_dishes: list[str] = Field(default_factory=list)
     ui_action: Optional[str] = None
     error_message: Optional[str] = None
 

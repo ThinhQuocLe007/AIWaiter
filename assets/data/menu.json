@@ -1596,6 +1596,24 @@
     "group": "Mì Xào"
   },
   {
+    "name": "Đậu Hũ Sốt Nấm",
+    "price": "65000",
+    "diet_type": "chay",
+    "category": "Món Chính",
+    "taste_profile": "Đậu hũ non mềm, nấm đông cô thơm, sốt đậm đà",
+    "tags": "món chay, đậu hũ, nấm, thanh đạm",
+    "group": "Món Chay"
+  },
+  {
+    "name": "Rau Muống Xào Tỏi",
+    "price": "45000",
+    "diet_type": "chay",
+    "category": "Món Chính",
+    "taste_profile": "Giòn xanh, thơm tỏi, thanh nhẹ",
+    "tags": "món chay, rau, rau muống, thanh đạm",
+    "group": "Món Chay"
+  },
+  {
     "name": "Mì Xào Ốc Móng Tay",
     "price": "75000",
     "diet_type": "mặn",
@@ -1760,7 +1778,6 @@
   {
     "name": "Nước Suối",
     "price": "10000",
-    "diet_type": "chay",
     "category": "Giải Khát",
     "taste_profile": "Tinh khiết",
     "tags": "thức uống, giải khát, nước suối"
@@ -1768,7 +1785,6 @@
   {
     "name": "Trà Tắc",
     "price": "15000",
-    "diet_type": "chay",
     "category": "Giải Khát",
     "taste_profile": "Chua ngọt, mát",
     "tags": "thức uống, giải khát, trà"
@@ -1776,7 +1792,6 @@
   {
     "name": "Trà Ổi",
     "price": "17000",
-    "diet_type": "chay",
     "category": "Giải Khát",
     "taste_profile": "Thơm ngọt, mát",
     "tags": "thức uống, giải khát, trà"
@@ -1784,7 +1799,6 @@
   {
     "name": "Nước Ngọt",
     "price": "15000",
-    "diet_type": "chay",
     "category": "Giải Khát",
     "taste_profile": "Ngọt, có ga",
     "tags": "thức uống, giải khát, nước ngọt"
@@ -1792,7 +1806,6 @@
   {
     "name": "Bò Húc",
     "price": "20000",
-    "diet_type": "chay",
     "category": "Giải Khát",
     "taste_profile": "Ngọt, tăng lực",
     "tags": "thức uống, giải khát, tăng lực"
@@ -1800,7 +1813,6 @@
   {
     "name": "Bia Sài Gòn",
     "price": "15000",
-    "diet_type": "chay",
     "category": "Giải Khát",
     "taste_profile": "Đắng nhẹ, mát",
     "tags": "thức uống, bia, nhậu",
@@ -1809,7 +1821,6 @@
   {
     "name": "Bia 333",
     "price": "20000",
-    "diet_type": "chay",
     "category": "Giải Khát",
     "taste_profile": "Đắng nhẹ, mát",
     "tags": "thức uống, bia, nhậu",
@@ -1818,7 +1829,6 @@
   {
     "name": "Bia Tiger Nâu",
     "price": "20000",
-    "diet_type": "chay",
     "category": "Giải Khát",
     "taste_profile": "Đắng, đậm",
     "tags": "thức uống, bia, nhậu",
@@ -1827,7 +1837,6 @@
   {
     "name": "Bia Tiger Bạc",
     "price": "22000",
-    "diet_type": "chay",
     "category": "Giải Khát",
     "taste_profile": "Đắng nhẹ, mát",
     "tags": "thức uống, bia, nhậu",
@@ -1836,7 +1845,6 @@
   {
     "name": "Bia Tiger Bạc Nhỏ",
     "price": "18000",
-    "diet_type": "chay",
     "category": "Giải Khát",
     "taste_profile": "Đắng nhẹ, mát",
     "tags": "thức uống, bia, nhậu",
@@ -1845,7 +1853,6 @@
   {
     "name": "Bia Heineken",
     "price": "25000",
-    "diet_type": "chay",
     "category": "Giải Khát",
     "taste_profile": "Đắng nhẹ, thơm",
     "tags": "thức uống, bia, nhậu",
@@ -1854,7 +1861,6 @@
   {
     "name": "Bia Heineken Nhỏ",
     "price": "22000",
-    "diet_type": "chay",
     "category": "Giải Khát",
     "taste_profile": "Đắng nhẹ, thơm",
     "tags": "thức uống, bia, nhậu",

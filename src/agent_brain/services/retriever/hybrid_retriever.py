@@ -27,7 +27,7 @@ class RetrieverManager:
         k = k or self.k
         threshold = threshold or self.score_threshold
 
-        bm25_raw, vector_raw = self._get_raw_scores(query, k=10)
+        bm25_raw, vector_raw = self._get_raw_scores(query, k=15)
 
         bm25_raw = by_menu_metadata(bm25_raw, max_price, min_price, diet_type, category)
         vector_raw = by_menu_metadata(vector_raw, max_price, min_price, diet_type, category)

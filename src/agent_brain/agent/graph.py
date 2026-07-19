@@ -12,6 +12,7 @@ from src.agent_brain.agent.nodes.deterministic_validator_node import determinist
 from src.agent_brain.agent.nodes.hybrid_router_node import hybrid_router_node
 from src.agent_brain.agent.nodes.order_worker_node import order_worker_node
 from src.agent_brain.agent.nodes.payment_dispatch_node import payment_dispatch_node
+from src.agent_brain.agent.nodes.planner_node import planner_node
 from src.agent_brain.agent.nodes.response_node import response_node
 from src.agent_brain.agent.nodes.search_worker_node import search_worker_node
 from src.agent_brain.agent.nodes.state_outcome_node import state_outcome_node
@@ -82,10 +83,10 @@ def _route_if_tool_call(state: AgentState) -> Literal["tools", "chat_worker", "r
                 last_msg.tool_calls = non_delegate
             return "tools"
         logger.info(
-            "Worker called only delegate — routing to chat_worker "
-            "(question / review / unclear intent)"
+            "Worker called only delegate — routing to state_updater "
+            "(pop intent from queue, then next worker or state_outcome)"
         )
-        return "chat_worker"
+        return "state_updater"
     intents = state.get("current_intents") or []
     if intents and intents[0] in ("ORDER", "ORDER_CONFIRM"):
         logger.info(
@@ -95,9 +96,9 @@ def _route_if_tool_call(state: AgentState) -> Literal["tools", "chat_worker", "r
         return "chat_worker"
     logger.warning(
         "Worker produced no tool_calls despite tool_choice='any'; "
-        "routing to response_node for verbalization."
+        "routing to state_updater to advance to next intent."
     )
-    return "response_node"
+    return "state_updater"
 
 
 def _route_after_validator(state: AgentState) -> str:
@@ -159,13 +160,17 @@ class AIWaiterGraph:
         workflow.add_node("state_updater", update_state_node)
         workflow.add_node("state_outcome", state_outcome_node)
         workflow.add_node("response_node", response_node)
+        workflow.add_node("planner", planner_node)
 
         # START → router
         workflow.add_edge(START, "router")
 
-        # Router → worker (sequential by first intent)
+        # Router → planner (splits multi-intent utterances into per-intent sub-queries)
+        workflow.add_edge("router", "planner")
+
+        # Planner → worker (sequential by first intent)
         workflow.add_conditional_edges(
-            "router",
+            "planner",
             _route_by_intent,
             {
                 "order_worker": "order_worker",
@@ -180,7 +185,8 @@ class AIWaiterGraph:
             workflow.add_conditional_edges(
                 worker,
                 _route_if_tool_call,
-                {"tools": "validator", "chat_worker": "chat_worker", "response_node": "response_node"},
+                {"tools": "validator", "chat_worker": "chat_worker",
+                 "response_node": "response_node", "state_updater": "state_updater"},
             )
 
         # Validator → tools (valid) | worker (invalid correction) | state_outcome (circuit breaker)

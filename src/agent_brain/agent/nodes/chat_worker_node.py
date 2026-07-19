@@ -25,7 +25,7 @@ from src.agent_brain.agent.state import AgentState
 from src.agent_brain.schemas import ChatResponseContext
 from src.agent_brain.schemas.order import Cart
 from src.agent_brain.schemas.response_context import CuratedDish
-from src.agent_brain.utils import last_user_text
+from src.agent_brain.utils.state_helpers import get_worker_query
 
 
 def _to_curated_memory(search_results, max_items: int = 5) -> list[CuratedDish]:
@@ -84,7 +84,7 @@ def chat_worker_node(state: AgentState) -> dict[str, Any]:
         "response_context": ChatResponseContext(
             kind="CHAT",
             intent="CHAT",
-            user_message=last_user_text(state),
+            user_message=get_worker_query(state, "CHAT"),
             active_cart=state.get("active_cart") or Cart(),
             order_stage=state.get("order_stage", "IDLE"),
             chat_history=list(messages),

@@ -68,5 +68,25 @@
     "query": "Đúng rồi, chốt đi em",
     "reasoning": "The user confirms the drafted cart to finalize it. This is part of the order confirmation flow and belongs to ORDER intent.",
     "intents": ["ORDER"]
+  },
+  {
+    "query": "Phở Bò Đặc Biệt giá bao nhiêu vậy?",
+    "reasoning": "The user asks for the price of a specific dish. Even though the dish name looks like an order, the presence of 'giá bao nhiêu' makes this a SEARCH intent — they are inquiring, not placing an order.",
+    "intents": ["SEARCH"]
+  },
+  {
+    "query": "Hôm nay quán có gì đặc biệt không?",
+    "reasoning": "The user is asking about today's specials or featured items. This is a SEARCH for menu information, not small talk or chat.",
+    "intents": ["SEARCH"]
+  },
+  {
+    "query": "Cho tôi 1 Phở Bò và tính tiền luôn",
+    "reasoning": "The user places an order (ORDER) and requests payment immediately after (PAYMENT). Two distinct intents in sequence.",
+    "intents": ["ORDER", "PAYMENT"]
+  },
+  {
+    "query": "Cho mình xem tổng hóa đơn, nếu dưới 200k thì gọi thêm Chè Khúc Bạch",
+    "reasoning": "The user wants to check the bill first (PAYMENT), then conditionally orders dessert based on the total. Sequential intents: check bill then possibly order.",
+    "intents": ["PAYMENT", "ORDER"]
   }
 ]

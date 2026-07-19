@@ -1,6 +1,6 @@
 # Tiến độ triển khai — AI Waiter
 
-> Nhật ký "đã làm gì / làm thế nào / còn gì". Đọc kèm [SYSTEM_ARCHITECTURE.md](SYSTEM_ARCHITECTURE.md)
+> Nhật ký "đã làm gì / làm thế nào / còn gì". Đọc kèm [system-design.md](../architecture/system-design.md)
 > (kiến trúc tổng thể) và lộ trình **Mốc A→D** ở mục 11 của tài liệu đó.
 > Cập nhật: 2026-06-20 · Nhánh: `feat/payment-tool`.
 
@@ -214,7 +214,7 @@ Ráp nốt UI cho dispatcher (backend đã phát event từ 2.9, chỉ thiếu m
 - **Serve frontend tĩnh từ FastAPI** (prod) — **đã CHỐT làm pipeline deploy (2026-06):** SERVER build
   customer_ui/Kiosk/Panel → FastAPI mount static cùng origin `:8000`; Jetson + laptop khác chỉ mở URL
   (`chromium --kiosk http://<SERVER_IP>:8000/`), **không Node/không build cục bộ**. Chi tiết:
-  [setup_test_guide.md §3.Web](setup_test_guide.md) + [SYSTEM_ARCHITECTURE.md §3](SYSTEM_ARCHITECTURE.md).
+  [system-design.md §4](../architecture/system-design.md) (frontend section)
 - **`menu.json` → DB**: dài hạn cho phép sửa menu qua Bảng ĐK (CRUD `dishes`) thay vì sửa file tay.
 - **WS cho customer_ui/robot**: hub `app/ws.py` đã fan-out theo `role`; mở thêm `role=robot`/`role=customer` khi cần (vd báo "đơn đã xong, robot đang giao" về tablet khách).
 - **Health/readiness cho demo 3 laptop**: trang panel hiện trạng thái kết nối robot (heartbeat) để biết robot "sống".

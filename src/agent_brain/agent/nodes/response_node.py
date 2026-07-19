@@ -26,6 +26,7 @@ from src.agent_brain.agent.nodes.response_template import (
     _format_confirm_reply,
     _format_greeting,
     _format_off_menu,
+    _format_off_menu_with_suggestions,
     _format_order_error,
     _format_remove_reply,
     _format_thanks,
@@ -153,18 +154,17 @@ def _format_search_for_llm(ctx: SearchResponseContext) -> str:
     lines = [
         f"- {r.document.metadata.get('name', 'Unknown')} — {_vnd(r.document.metadata.get('price', 0))}"
         for r in ctx.results
+        if r.document.metadata.get("type") == "menu"
+        and r.document.metadata.get("price", 0) > 0
+        and r.document.metadata.get("name", "").strip()
     ]
-    return f"Khách tìm: \"{ctx.query}\"\nKết quả ({len(ctx.results)} món):\n" + "\n".join(lines)
-
-
-def _format_off_menu_for_llm(ctx: OrderResponseContext) -> str:
-    lines = []
-    for o in ctx.off_menu:
-        if o.suggestion:
-            lines.append(f"  - {o.name} (không có trong thực đơn; món gần giống: {o.suggestion})")
-        else:
-            lines.append(f"  - {o.name} (không có trong thực đơn)")
-    return "Món khách yêu cầu nhưng không có trong thực đơn:\n" + "\n".join(lines)
+    blocks = [f"Khách tìm: \"{ctx.query}\"\nKết quả ({len(ctx.results)} món):\n" + "\n".join(lines)]
+    if ctx.shown_dishes:
+        blocks.append(
+            f"Món đã giới thiệu ở các lượt trước: {', '.join(ctx.shown_dishes)}. "
+            "Nếu món nằm trong danh sách này, hãy ưu tiên giới thiệu món KHÁC thay vì lặp lại."
+        )
+    return "\n\n".join(blocks)
 
 
 def _format_history_for_llm(messages) -> str:
@@ -215,9 +215,7 @@ def _rewrite_order(ctx: OrderResponseContext) -> str:
         _stream.emit(reply)
         return reply
     if ctx.off_menu:
-        if any(o.suggestion for o in ctx.off_menu):
-            return _llm_stream(_WAITER_PROMPT, _format_off_menu_for_llm(ctx), _format_off_menu(ctx))
-        reply = _format_off_menu(ctx)
+        reply = _format_off_menu_with_suggestions(ctx) if any(o.suggestion for o in ctx.off_menu) else _format_off_menu(ctx)
         _stream.emit(reply)
         return reply
     if ctx.status == "error":

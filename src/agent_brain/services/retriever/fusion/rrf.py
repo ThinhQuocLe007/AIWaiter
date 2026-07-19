@@ -92,5 +92,13 @@ class RRFFusion:
 
         return self._format_results(final_list, k)
 
-    def _format_results(self, results: list, k: int) -> List[SearchResult]:
-        return sorted(results, key=lambda x: x.score, reverse=True)[:k]
+    def _format_results(self, results: list, k: int) -> list[SearchResult]:
+        sorted_results = sorted(results, key=lambda x: x.score, reverse=True)
+        seen: set[str] = set()
+        deduped: list[SearchResult] = []
+        for r in sorted_results:
+            name = r.document.metadata.get("name", "")
+            if name and name not in seen:
+                seen.add(name)
+                deduped.append(r)
+        return deduped[:k]

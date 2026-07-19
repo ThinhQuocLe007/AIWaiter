@@ -25,7 +25,7 @@ make backend     # terminal 1: bật backend (cổng 8000)
 make frontend    # terminal 2: bật cả 3 web (5173, 5174, 5175)
 ```
 
-> Chọn `UV_EXTRAS` theo máy (xem [docs/setup-deploy.md](setup-deploy.md)):
+> Chọn `UV_EXTRAS` theo máy (xem [setup-deploy.md](setup-deploy.md)):
 > server CUDA 13 → `--extra server --extra cu13`; laptop CUDA 12 → `--extra server --extra voice --extra cu12`; Jetson → `--extra voice`.
 
 Mở trình duyệt: **http://localhost:5173** (menu) · **:5174** (kiosk) · **:5175** (panel).
@@ -90,7 +90,7 @@ Lệnh này sẽ:
 > | Laptop dev (CUDA 12, cả brain + voice) | `--extra server --extra voice --extra cu12` |
 > | Jetson robot (aarch64) | `--extra voice` |
 >
-> Chi tiết CUDA/role: [docs/setup-deploy.md](setup-deploy.md). Makefile dùng
+> Chi tiết CUDA/role: [setup-deploy.md](setup-deploy.md). Makefile dùng
 > `--inexact` nên chạy lại `make install` **không** xoá extra đã cài.
 
 ### Cấu hình `.env` (tuỳ chọn)

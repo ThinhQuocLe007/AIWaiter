@@ -103,6 +103,7 @@ export type WsEvent =
   | { type: 'reset' }
   // Voice mirror (role=customer): what the robot heard / replied for a given table. The tablet
   // filters by its own table_id and shows the live conversation + follows any UI action.
+  | { type: 'voice.progress'; table_id: number }
   | { type: 'voice.heard'; table_id: number; text: string }
   | {
       type: 'voice.reply'

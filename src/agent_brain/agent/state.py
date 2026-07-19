@@ -8,7 +8,6 @@ from src.agent_brain.schemas.response_context import ResponseContext
 from src.agent_brain.schemas.search import SearchResult
 
 
-
 class AgentState(TypedDict):
     # Save conversation history only ( user + ai conversations )
     messages: Annotated[list, add_messages]
@@ -86,3 +85,15 @@ class AgentState(TypedDict):
     # that chat_worker → ChatResponseContext → response_node can tailor the reply.
     # Cleared per-turn by state_outcome_node.
     delegate_reason: str | None
+
+    # Per-intent sub-queries extracted by the router for multi-intent turns.
+    # None or empty for single-intent turns (workers fall back to full user text).
+    # Example: {"SEARCH": "Ốc Hương có cay không?", "ORDER": "lấy 1 phần Ốc Hương"}
+    # Cleared per-turn by state_outcome_node.
+    intent_queries: dict[str, str] | None
+
+    # Deduplicated, order-preserving list of dish names ever introduced by a SEARCH turn.
+    # Fed to the response LLM as an anti-repetition constraint so the agent doesn't keep
+    # recommending the same dish (e.g. "Lẩu Thái") across consecutive turns.
+    # Cleared on clear_cart / session reset.
+    shown_dishes: list[str] | None

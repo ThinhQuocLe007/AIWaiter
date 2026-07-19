@@ -1,0 +1,638 @@
+{
+  "dataset": "name_resolution_eval",
+  "version": "1.0",
+  "description": "Evaluates the 5-stage menu name resolution pipeline: exact match, diacritic-insensitive, prefix, substring, token-Jaccard fallback (via find_nearest_menu_name), and misspelled rejection.",
+  "total_cases": 70,
+  "cases": [
+    {
+      "id": "NR-001",
+      "input": "Ốc Hương Xốt Trứng Muối",
+      "expected_kind": "exact",
+      "expected_resolution": "Ốc Hương Xốt Trứng Muối",
+      "expected_nearest": "Ốc Hương Xốt Trứng Muối",
+      "level": "exact_match",
+      "note": "Exact menu name"
+    },
+    {
+      "id": "NR-002",
+      "input": "Cơm Chiên Dương Châu",
+      "expected_kind": "exact",
+      "expected_resolution": "Cơm Chiên Dương Châu",
+      "expected_nearest": "Cơm Chiên Dương Châu",
+      "level": "exact_match",
+      "note": "Exact menu name"
+    },
+    {
+      "id": "NR-003",
+      "input": "Khoai Tây Lắc Phô Mai",
+      "expected_kind": "exact",
+      "expected_resolution": "Khoai Tây Lắc Phô Mai",
+      "expected_nearest": "Khoai Tây Lắc Phô Mai",
+      "level": "exact_match",
+      "note": "Exact menu name"
+    },
+    {
+      "id": "NR-004",
+      "input": "Bia Tiger Bạc",
+      "expected_kind": "exact",
+      "expected_resolution": "Bia Tiger Bạc",
+      "expected_nearest": "Bia Tiger Bạc",
+      "level": "exact_match",
+      "note": "Exact menu name"
+    },
+    {
+      "id": "NR-005",
+      "input": "Lẩu Thái",
+      "expected_kind": "exact",
+      "expected_resolution": "Lẩu Thái",
+      "expected_nearest": "Lẩu Thái",
+      "level": "exact_match",
+      "note": "Exact menu name"
+    },
+    {
+      "id": "NR-006",
+      "input": "Gỏi Hải Sản",
+      "expected_kind": "exact",
+      "expected_resolution": "Gỏi Hải Sản",
+      "expected_nearest": "Gỏi Hải Sản",
+      "level": "exact_match",
+      "note": "Exact menu name"
+    },
+    {
+      "id": "NR-007",
+      "input": "Mực Cháy Tỏi",
+      "expected_kind": "exact",
+      "expected_resolution": "Mực Cháy Tỏi",
+      "expected_nearest": "Mực Cháy Tỏi",
+      "level": "exact_match",
+      "note": "Exact menu name"
+    },
+    {
+      "id": "NR-008",
+      "input": "Chân Gà Nướng",
+      "expected_kind": "exact",
+      "expected_resolution": "Chân Gà Nướng",
+      "expected_nearest": "Chân Gà Nướng",
+      "level": "exact_match",
+      "note": "Exact menu name"
+    },
+    {
+      "id": "NR-009",
+      "input": "Trứng Cút Lộn",
+      "expected_kind": "exact",
+      "expected_resolution": "Trứng Cút Lộn",
+      "expected_nearest": "Trứng Cút Lộn",
+      "level": "exact_match",
+      "note": "Exact menu name"
+    },
+    {
+      "id": "NR-010",
+      "input": "Bánh Mì Bơ Tỏi",
+      "expected_kind": "exact",
+      "expected_resolution": "Bánh Mì Bơ Tỏi",
+      "expected_nearest": "Bánh Mì Bơ Tỏi",
+      "level": "exact_match",
+      "note": "Exact menu name"
+    },
+    {
+      "id": "NR-011",
+      "input": "Tôm Càng Xanh Cháy Tỏi",
+      "expected_kind": "exact",
+      "expected_resolution": "Tôm Càng Xanh Cháy Tỏi",
+      "expected_nearest": "Tôm Càng Xanh Cháy Tỏi",
+      "level": "exact_match",
+      "note": "Exact menu name"
+    },
+    {
+      "id": "NR-012",
+      "input": "Hàu Nướng Phô Mai",
+      "expected_kind": "exact",
+      "expected_resolution": "Hàu Nướng Phô Mai",
+      "expected_nearest": "Hàu Nướng Phô Mai",
+      "level": "exact_match",
+      "note": "Exact menu name"
+    },
+    {
+      "id": "NR-013",
+      "input": "Sò Huyết Rang Me",
+      "expected_kind": "exact",
+      "expected_resolution": "Sò Huyết Rang Me",
+      "expected_nearest": "Sò Huyết Rang Me",
+      "level": "exact_match",
+      "note": "Exact menu name"
+    },
+    {
+      "id": "NR-014",
+      "input": "Mực Chiên Nước Mắm",
+      "expected_kind": "exact",
+      "expected_resolution": "Mực Chiên Nước Mắm",
+      "expected_nearest": "Mực Chiên Nước Mắm",
+      "level": "exact_match",
+      "note": "Exact menu name"
+    },
+    {
+      "id": "NR-015",
+      "input": "Ngêu Hấp Thái",
+      "expected_kind": "none",
+      "expected_resolution": null,
+      "expected_nearest": "Nghêu Hấp Thái",
+      "level": "exact_match",
+      "note": "Case-insensitive exact match (g vs gh)"
+    },
+    {
+      "id": "NR-016",
+      "input": "Oc Huong Xot Trung Muoi",
+      "expected_kind": "exact",
+      "expected_resolution": "Ốc Hương Xốt Trứng Muối",
+      "expected_nearest": "Ốc Hương Xốt Trứng Muối",
+      "level": "diacritic_insensitive",
+      "note": "No diacritics, should resolve exactly"
+    },
+    {
+      "id": "NR-017",
+      "input": "Tom The Xot Me",
+      "expected_kind": "exact",
+      "expected_resolution": "Tôm Thẻ Xốt Me",
+      "expected_nearest": "Tôm Thẻ Xốt Me",
+      "level": "diacritic_insensitive",
+      "note": "No diacritics"
+    },
+    {
+      "id": "NR-018",
+      "input": "Lau Thai",
+      "expected_kind": "exact",
+      "expected_resolution": "Lẩu Thái",
+      "expected_nearest": "Lẩu Thái",
+      "level": "diacritic_insensitive",
+      "note": "No diacritics"
+    },
+    {
+      "id": "NR-019",
+      "input": "So Huyet Rang Me",
+      "expected_kind": "exact",
+      "expected_resolution": "Sò Huyết Rang Me",
+      "expected_nearest": "Sò Huyết Rang Me",
+      "level": "diacritic_insensitive",
+      "note": "No diacritics"
+    },
+    {
+      "id": "NR-020",
+      "input": "Bach Tuoc Nuong Sa Te",
+      "expected_kind": "exact",
+      "expected_resolution": "Bạch Tuộc Nướng Sa Tế",
+      "expected_nearest": "Bạch Tuộc Nướng Sa Tế",
+      "level": "diacritic_insensitive",
+      "note": "No diacritics"
+    },
+    {
+      "id": "NR-021",
+      "input": "Muc Chien Nuoc Mam",
+      "expected_kind": "exact",
+      "expected_resolution": "Mực Chiên Nước Mắm",
+      "expected_nearest": "Mực Chiên Nước Mắm",
+      "level": "diacritic_insensitive",
+      "note": "No diacritics"
+    },
+    {
+      "id": "NR-022",
+      "input": "Banh Mi Bo Toi",
+      "expected_kind": "exact",
+      "expected_resolution": "Bánh Mì Bơ Tỏi",
+      "expected_nearest": "Bánh Mì Bơ Tỏi",
+      "level": "diacritic_insensitive",
+      "note": "No diacritics"
+    },
+    {
+      "id": "NR-023",
+      "input": "Hau Nuong Pho Mai",
+      "expected_kind": "exact",
+      "expected_resolution": "Hàu Nướng Phô Mai",
+      "expected_nearest": "Hàu Nướng Phô Mai",
+      "level": "diacritic_insensitive",
+      "note": "No diacritics"
+    },
+    {
+      "id": "NR-024",
+      "input": "Trung Cut Lon",
+      "expected_kind": "exact",
+      "expected_resolution": "Trứng Cút Lộn",
+      "expected_nearest": "Trứng Cút Lộn",
+      "level": "diacritic_insensitive",
+      "note": "No diacritics"
+    },
+    {
+      "id": "NR-025",
+      "input": "Suon Man Nhi Cai Xanh",
+      "expected_kind": "none",
+      "expected_resolution": null,
+      "expected_nearest": "Sứa Mắm Nhĩ + Cải Xanh",
+      "level": "diacritic_insensitive",
+      "note": "No diacritics but wrong name (Sứa Mắm Nhĩ → Suon Man Nhi). Should still resolve via substring if any match. Actually 'Suon Man Nhi + Cai Xanh' normalizes differently. Expected NONE since nothing matches."
+    },
+    {
+      "id": "NR-026",
+      "input": "Tré Trộn",
+      "expected_kind": "single",
+      "expected_resolution": "Tré Trộn Thái",
+      "expected_nearest": "Tré Trộn Thái",
+      "level": "prefix_match",
+      "note": "Unique prefix, resolves to single item"
+    },
+    {
+      "id": "NR-027",
+      "input": "Khổ Qua",
+      "expected_kind": "single",
+      "expected_resolution": "Khổ Qua Chà Bông",
+      "expected_nearest": "Khổ Qua Chà Bông",
+      "level": "prefix_match",
+      "note": "Unique prefix"
+    },
+    {
+      "id": "NR-028",
+      "input": "Hến Xúc",
+      "expected_kind": "single",
+      "expected_resolution": "Hến Xúc Bánh Tráng",
+      "expected_nearest": "Hến Xúc Bánh Tráng",
+      "level": "prefix_match",
+      "note": "Unique prefix"
+    },
+    {
+      "id": "NR-029",
+      "input": "Nem Chua",
+      "expected_kind": "single",
+      "expected_resolution": "Nem Chua Rán",
+      "expected_nearest": "Nem Chua Rán",
+      "level": "prefix_match",
+      "note": "Unique prefix"
+    },
+    {
+      "id": "NR-030",
+      "input": "Chả Cá Thác Lác",
+      "expected_kind": "single",
+      "expected_resolution": "Chả Cá Thác Lác Chiên Giòn",
+      "expected_nearest": "Chả Cá Thác Lác Chiên Giòn",
+      "level": "prefix_match",
+      "note": "Unique prefix"
+    },
+    {
+      "id": "NR-031",
+      "input": "Bắp",
+      "expected_kind": "single",
+      "expected_resolution": "Bắp Xào",
+      "expected_nearest": "Bắp Xào",
+      "level": "prefix_match",
+      "note": "Unique prefix, short word"
+    },
+    {
+      "id": "NR-032",
+      "input": "Hàu Chiên",
+      "expected_kind": "single",
+      "expected_resolution": "Hàu Chiên Trứng",
+      "expected_nearest": "Hàu Chiên Trứng",
+      "level": "prefix_match",
+      "note": "Unique prefix"
+    },
+    {
+      "id": "NR-033",
+      "input": "Chim Cút Chiên",
+      "expected_kind": "single",
+      "expected_resolution": "Chim Cút Chiên Bơ",
+      "expected_nearest": "Chim Cút Chiên Bơ",
+      "level": "prefix_match",
+      "note": "Unique prefix"
+    },
+    {
+      "id": "NR-034",
+      "input": "Trứng Lòng Đào",
+      "expected_kind": "single",
+      "expected_resolution": "Trứng Lòng Đào Me Cay",
+      "expected_nearest": "Trứng Lòng Đào Me Cay",
+      "level": "prefix_match",
+      "note": "Unique prefix"
+    },
+    {
+      "id": "NR-035",
+      "input": "Khô Bò",
+      "expected_kind": "single",
+      "expected_resolution": "Khô Bò Lá Bông",
+      "expected_nearest": "Khô Bò Lá Bông",
+      "level": "prefix_match",
+      "note": "Unique prefix"
+    },
+    {
+      "id": "NR-036",
+      "input": "Dương Châu",
+      "expected_kind": "single",
+      "expected_resolution": "Cơm Chiên Dương Châu",
+      "expected_nearest": "Cơm Chiên Dương Châu",
+      "level": "substring_match",
+      "note": "Substring (not prefix) of unique item"
+    },
+    {
+      "id": "NR-037",
+      "input": "Xào Dừa",
+      "expected_kind": "single",
+      "expected_resolution": "Ốc Len Xào Dừa",
+      "expected_nearest": "Ốc Len Xào Dừa",
+      "level": "substring_match",
+      "note": "Substring match unique item"
+    },
+    {
+      "id": "NR-038",
+      "input": "Phủ Trứng Cút",
+      "expected_kind": "single",
+      "expected_resolution": "Cơm Phủ Trứng Cút",
+      "expected_nearest": "Cơm Phủ Trứng Cút",
+      "level": "substring_match",
+      "note": "Substring match, prefix fails"
+    },
+    {
+      "id": "NR-039",
+      "input": "Khoai Môn",
+      "expected_kind": "ambiguous",
+      "expected_resolution": null,
+      "expected_nearest": "Gỏi Bò Khoai Môn",
+      "level": "substring_match",
+      "note": "Substring not prefix"
+    },
+    {
+      "id": "NR-040",
+      "input": "Lắc Phô Mai",
+      "expected_kind": "single",
+      "expected_resolution": "Khoai Tây Lắc Phô Mai",
+      "expected_nearest": "Khoai Tây Lắc Phô Mai",
+      "level": "substring_match",
+      "note": "Substring match unique item"
+    },
+    {
+      "id": "NR-041",
+      "input": "Chà Bông",
+      "expected_kind": "single",
+      "expected_resolution": "Khổ Qua Chà Bông",
+      "expected_nearest": "Khổ Qua Chà Bông",
+      "level": "substring_match",
+      "note": "Substring match"
+    },
+    {
+      "id": "NR-042",
+      "input": "Nướng Xốt",
+      "expected_kind": "single",
+      "expected_resolution": "Mực Nướng Xốt Ớt Xiêm",
+      "expected_nearest": "Mực Nướng Xốt Ớt Xiêm",
+      "level": "substring_match",
+      "note": "Unique substring for this dish only"
+    },
+    {
+      "id": "NR-043",
+      "input": "Chiên Giòn",
+      "expected_kind": "ambiguous",
+      "expected_resolution": null,
+      "expected_nearest": "Trứng Cút Lộn Chiên Giòn",
+      "level": "substring_match",
+      "note": "Unique substring"
+    },
+    {
+      "id": "NR-044",
+      "input": "Trứng Bắc Thảo",
+      "expected_kind": "single",
+      "expected_resolution": "Đậu Hũ Non Trứng Bắc Thảo",
+      "expected_nearest": "Đậu Hũ Non Trứng Bắc Thảo",
+      "level": "substring_match",
+      "note": "Substring match unique item"
+    },
+    {
+      "id": "NR-045",
+      "input": "Me Cay",
+      "expected_kind": "single",
+      "expected_resolution": "Trứng Lòng Đào Me Cay",
+      "expected_nearest": "Trứng Lòng Đào Me Cay",
+      "level": "substring_match",
+      "note": "Substring match"
+    },
+    {
+      "id": "NR-046",
+      "input": "Bia Corona",
+      "expected_kind": "none",
+      "expected_resolution": null,
+      "expected_nearest": "Bia 333",
+      "level": "token_jaccard",
+      "note": "Off-menu, nearest via token-Jaccard (1/3 overlap)"
+    },
+    {
+      "id": "NR-047",
+      "input": "Lẩu Hải Sản",
+      "expected_kind": "none",
+      "expected_resolution": null,
+      "expected_nearest": "Gỏi Hải Sản",
+      "level": "token_jaccard",
+      "note": "Off-menu, nearest with 2 shared tokens (Jaccard 0.5)"
+    },
+    {
+      "id": "NR-048",
+      "input": "Bia Heine",
+      "expected_kind": "ambiguous",
+      "expected_resolution": null,
+      "expected_nearest": "Bia 333",
+      "level": "token_jaccard",
+      "note": "Near match via token overlap (Jaccard 0.33)"
+    },
+    {
+      "id": "NR-049",
+      "input": "Tôm Sú Me",
+      "expected_kind": "none",
+      "expected_resolution": null,
+      "expected_nearest": "Tôm Thẻ Xốt Me",
+      "level": "token_jaccard",
+      "note": "Token overlap: {tom, me} shared with {tom, the, xot, me} (Jaccard 0.4)"
+    },
+    {
+      "id": "NR-050",
+      "input": "Mực Chiên Muối",
+      "expected_kind": "none",
+      "expected_resolution": null,
+      "expected_nearest": "Mực Chiên Sả",
+      "level": "token_jaccard",
+      "note": "Token overlap: {muc, chien} with {muc, chien, nuoc, mam} (Jaccard 0.4)"
+    },
+    {
+      "id": "NR-051",
+      "input": "Pizza",
+      "expected_kind": "none",
+      "expected_resolution": null,
+      "expected_nearest": null,
+      "level": "token_jaccard_reject",
+      "note": "No Vietnamese token overlap → nearest = None"
+    },
+    {
+      "id": "NR-052",
+      "input": "Bún Bò Huế",
+      "expected_kind": "none",
+      "expected_resolution": null,
+      "expected_nearest": null,
+      "level": "token_jaccard_reject",
+      "note": "Jaccard < 0.3 with all menu items → nearest = None"
+    },
+    {
+      "id": "NR-053",
+      "input": "Cơm Tấm Sườn",
+      "expected_kind": "none",
+      "expected_resolution": null,
+      "expected_nearest": null,
+      "level": "token_jaccard_reject",
+      "note": "Only {com} token overlaps, Jaccard < 0.3 → None"
+    },
+    {
+      "id": "NR-054",
+      "input": "Sashimi Cá Hồi",
+      "expected_kind": "none",
+      "expected_resolution": null,
+      "expected_nearest": null,
+      "level": "token_jaccard_reject",
+      "note": "No meaningful token overlap → None"
+    },
+    {
+      "id": "NR-055",
+      "input": "Cơm Tấm",
+      "expected_kind": "none",
+      "expected_resolution": null,
+      "expected_nearest": null,
+      "level": "misspelled",
+      "note": "Not on menu, should NOT resolve"
+    },
+    {
+      "id": "NR-056",
+      "input": "Bún Bò",
+      "expected_kind": "none",
+      "expected_resolution": null,
+      "expected_nearest": "Bò Húc",
+      "level": "misspelled",
+      "note": "Not on menu"
+    },
+    {
+      "id": "NR-057",
+      "input": "Lẩu Thái Lan",
+      "expected_kind": "none",
+      "expected_resolution": null,
+      "expected_nearest": "Lẩu Thái",
+      "level": "misspelled",
+      "note": "Wrong name, 'Lẩu Thái' prefix matches single item"
+    },
+    {
+      "id": "NR-058",
+      "input": "Pizza Hải Sản",
+      "expected_kind": "none",
+      "expected_resolution": null,
+      "expected_nearest": "Gỏi Hải Sản",
+      "level": "misspelled",
+      "note": "Not on menu"
+    },
+    {
+      "id": "NR-059",
+      "input": "Cơm Gà Xối Mỡ",
+      "expected_kind": "none",
+      "expected_resolution": null,
+      "expected_nearest": null,
+      "level": "misspelled",
+      "note": "Not on menu"
+    },
+    {
+      "id": "NR-060",
+      "input": "Bia Tiger Xanh",
+      "expected_kind": "none",
+      "expected_resolution": null,
+      "expected_nearest": "Bia Tiger Nâu",
+      "level": "misspelled",
+      "note": "No 'Xanh' Tiger variant, nearest via token overlap"
+    },
+    {
+      "id": "NR-061",
+      "input": "Cháo Lươn",
+      "expected_kind": "none",
+      "expected_resolution": null,
+      "expected_nearest": "Cháo Hàu",
+      "level": "misspelled",
+      "note": "Not on menu"
+    },
+    {
+      "id": "NR-062",
+      "input": "Gỏi Cuốn",
+      "expected_kind": "none",
+      "expected_resolution": null,
+      "expected_nearest": null,
+      "level": "misspelled",
+      "note": "Not on menu"
+    },
+    {
+      "id": "NR-063",
+      "input": "Mì Quảng",
+      "expected_kind": "none",
+      "expected_resolution": null,
+      "expected_nearest": null,
+      "level": "misspelled",
+      "note": "Not on menu"
+    },
+    {
+      "id": "NR-064",
+      "input": "Bò Nướng Lá Lốt",
+      "expected_kind": "none",
+      "expected_resolution": null,
+      "expected_nearest": "Ốc Tỏi Nướng Bơ Tỏi",
+      "level": "misspelled",
+      "note": "Not on menu"
+    },
+    {
+      "id": "NR-065",
+      "input": "Nước Cam",
+      "expected_kind": "none",
+      "expected_resolution": null,
+      "expected_nearest": "Nước Suối",
+      "level": "misspelled",
+      "note": "Not on menu"
+    },
+    {
+      "id": "NR-066",
+      "input": "Trà Đào",
+      "expected_kind": "none",
+      "expected_resolution": null,
+      "expected_nearest": "Trà Tắc",
+      "level": "misspelled",
+      "note": "Not on menu"
+    },
+    {
+      "id": "NR-067",
+      "input": "Gỏi Đu Đủ",
+      "expected_kind": "none",
+      "expected_resolution": null,
+      "expected_nearest": null,
+      "level": "misspelled",
+      "note": "Not on menu"
+    },
+    {
+      "id": "NR-068",
+      "input": "Cá Hồi Nướng",
+      "expected_kind": "none",
+      "expected_resolution": null,
+      "expected_nearest": "Cá Chim Nướng Sa Tế",
+      "level": "misspelled",
+      "note": "Not on menu, {ca, hoi, nuong} vs menu items — 'Rau Muong Xao Toi' just has muong overlap. No strong matches → None"
+    },
+    {
+      "id": "NR-069",
+      "input": "Khoai Tây Chiên",
+      "expected_kind": "none",
+      "expected_resolution": null,
+      "expected_nearest": "Khoai Tây Lắc Phô Mai",
+      "level": "misspelled",
+      "note": "No fried potatoes on menu, nearest is Khoai Tây Lắc Phô Mai but Jaccard may be <0.3"
+    },
+    {
+      "id": "NR-070",
+      "input": "Ốc Hương Xốt Tiêu Đen",
+      "expected_kind": "none",
+      "expected_resolution": null,
+      "expected_nearest": "Ốc Hương Xốt Me",
+      "level": "misspelled",
+      "note": "No such sauce variant, nearest via token overlap"
+    }
+  ]
+}

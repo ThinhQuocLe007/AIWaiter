@@ -33,27 +33,6 @@
           </div>
         </template>
 
-        <!-- Recommended dish card (slides out under the AI bubble) -->
-        <Transition name="reco">
-          <div v-if="voice.recommendedItem" class="reco-card">
-            <img
-              v-if="voice.recommendedItem.image"
-              :src="voice.recommendedItem.image"
-              :alt="voice.recommendedItem.name"
-              class="reco-img"
-            />
-            <div v-else class="reco-img reco-img-placeholder" aria-hidden="true">🍽️</div>
-            <div class="reco-info">
-              <span class="reco-name">{{ voice.recommendedItem.name }}</span>
-              <span class="reco-price">{{ formatPrice(voice.recommendedItem.price) }}</span>
-            </div>
-            <button class="reco-add" type="button" @click="voice.confirmRecommendation()">
-              <i class="ti ti-plus" aria-hidden="true"></i>
-              Thêm nhanh
-            </button>
-          </div>
-        </Transition>
-
         <!-- Thinking dots -->
         <div v-if="voice.aiState === 'thinking'" class="ai-row">
           <div class="ai-avatar"><i class="ti ti-robot" aria-hidden="true"></i></div>
@@ -116,7 +95,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { useVoiceStore } from '@/stores/voice'
-import { formatPrice } from '@/utils/format'
 
 const voice = useVoiceStore()
 const chatEl = ref<HTMLElement | null>(null)
@@ -136,7 +114,7 @@ const stateLabel = computed(() => {
 
 // Keep the chat scrolled to the latest message.
 watch(
-  () => [voice.messages.length, voice.aiState, voice.recommendedItem],
+  () => [voice.messages.length, voice.aiState],
   async () => {
     await nextTick()
     if (chatEl.value) chatEl.value.scrollTop = chatEl.value.scrollHeight
@@ -295,83 +273,6 @@ watch(
 
 .dot:nth-child(3) {
   animation-delay: 0.4s;
-}
-
-/* Recommended card */
-.reco-card {
-  align-self: flex-start;
-  margin-left: 38px;
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  background: #2A2620;
-  border: 1px solid #3A352D;
-  border-radius: var(--radius-md);
-  padding: 0.55rem;
-  max-width: 88%;
-}
-
-.reco-img {
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
-  object-fit: cover;
-  flex: 0 0 auto;
-}
-
-.reco-img-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  color: var(--color-accent);
-  background: #34302A;
-}
-
-.reco-info {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.reco-name {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: #F5F1E8;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 150px;
-}
-
-.reco-price {
-  font-size: 0.85rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: #F5F1E8;
-}
-
-.reco-add {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  margin-left: auto;
-  background: var(--color-accent);
-  color: #1F1B16;
-  border: none;
-  font-family: inherit;
-  font-weight: 600;
-  font-size: 0.75rem;
-  min-height: 0;
-  min-width: 0;
-  padding: 0.45rem 0.8rem;
-  border-radius: var(--radius-sm);
-  white-space: nowrap;
-}
-
-.reco-add:active {
-  background: var(--color-accent-dark);
-  transform: scale(0.95);
 }
 
 /* Footer */
@@ -571,13 +472,5 @@ watch(
 .sheet-enter-from,
 .sheet-leave-to {
   transform: translateY(100%);
-}
-
-.reco-enter-active {
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-.reco-enter-from {
-  opacity: 0;
-  transform: translateY(8px);
 }
 </style>

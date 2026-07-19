@@ -7,7 +7,7 @@ per-turn resets so fields don't leak to the next turn.
 
 from typing import Any
 
-from langchain_core.messages import AIMessage, ToolMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
 from src.agent_brain.agent.state import AgentState
 from src.agent_brain.schemas import (
@@ -20,6 +20,7 @@ from src.agent_brain.schemas import (
     RetryResponseContext,
     SearchResponseContext,
 )
+from src.agent_brain.agent.nodes.chat_worker_node import _to_curated_memory
 from src.agent_brain.schemas.order import Cart
 from src.agent_brain.utils import last_user_text
 
@@ -101,7 +102,9 @@ def _build_search(artifact, state, _total_vnd, _stage, ui, tool_args) -> SearchR
     status, error_msg = _status_and_error(artifact)
     return SearchResponseContext(
         tool="search", status=status, query=tool_args.get("query", ""),
-        results=getattr(artifact, "results", []) or [], ui_action=ui,
+        results=getattr(artifact, "results", []) or [],
+        shown_dishes=state.get("shown_dishes") or [],
+        ui_action=ui,
         error_message=error_msg if status == "error" else None,
     )
 
@@ -139,6 +142,45 @@ _BUILDERS = {
 
 
 # ── Dispatcher ──────────────────────────────────────────────────────────────
+# Priority: cart-affecting tools come before informational ones so that
+# multi-intent turns (ORDER + SEARCH) echo the cart changes, not the search
+# results. Without this the LLM makes up the cart total from memory.
+_CART_TOOLS = {"add_cart", "remove_cart", "clear_cart", "confirm_order"}
+_PAYMENT_TOOLS = {"request_payment", "verify_payment"}
+
+
+def _pick_tool_message(state: AgentState):
+    """Return the highest-priority ToolMessage from the current turn.
+
+    Cart tools (add / remove / clear / confirm) take precedence over
+    payment tools, which take precedence over search.  When the turn
+    includes an order action AND a search (multi-intent), the cart
+    echo (template, deterministic) runs instead of the search rewriter
+    (LLM, can hallucinate totals).
+    """
+    messages = state["messages"]
+    tool_msgs: list = []
+    for m in reversed(messages):
+        if isinstance(m, HumanMessage):
+            break
+        if isinstance(m, ToolMessage):
+            tool_msgs.append(m)
+
+    if not tool_msgs:
+        return None
+
+    if len(tool_msgs) == 1:
+        return tool_msgs[0]
+
+    for m in tool_msgs:
+        if m.name in _CART_TOOLS:
+            return m
+    for m in tool_msgs:
+        if m.name in _PAYMENT_TOOLS:
+            return m
+    return tool_msgs[0]
+
+
 def _build_from_tool_message(last: ToolMessage, state: AgentState) -> ResponseContext:
     builder = _BUILDERS.get(last.name)
     if builder is not None:
@@ -181,6 +223,7 @@ def _finalize(ctx: ResponseContext) -> dict[str, Any]:
         "feedback": None,
         "last_tool": None,
         "delegate_reason": None,
+        "intent_queries": None,
     }
     if getattr(ctx, "kind", None) == "PAYMENT":
         updates["search_context"] = None
@@ -193,18 +236,24 @@ def state_outcome_node(state: AgentState) -> dict[str, Any]:
     if existing is not None:
         return _finalize(existing)
 
-    last = state["messages"][-1]
-
     if _is_retry_state(state):
         return _finalize(_build_retry_context(state))
 
-    if isinstance(last, ToolMessage):
-        return _finalize(_build_from_tool_message(last, state))
+    tool_msg = _pick_tool_message(state)
+    if tool_msg is not None:
+        return _finalize(_build_from_tool_message(tool_msg, state))
 
     # Defensive fallback — should be unreachable.
+    # Reached in practice when a worker calls delegate() and the graph
+    # routes through state_updater → state_outcome without executing
+    # any tool calls (no ToolMessages). The ChatResponseContext must
+    # carry delegate_reason so the rewriter can apply special handling
+    # (cart echo for "xem lại", clarification for "không rõ", etc.).
     return _finalize(ChatResponseContext(
         intent="CHAT", user_message=last_user_text(state),
         active_cart=state.get("active_cart") or Cart(),
         order_stage=state.get("order_stage", "IDLE"),
         chat_history=list(state.get("messages") or []),
+        curated_memory=_to_curated_memory(state.get("search_context")),
+        delegate_reason=state.get("delegate_reason"),
     ))

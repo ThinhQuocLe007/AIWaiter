@@ -23,12 +23,42 @@ _MODIFIER_PATTERNS = [
 
 
 def _is_item_mentioned(name: str, user_text: str) -> bool:
+    """Check if item was mentioned in an ORDERING context (not comparison/description).
+
+    Words like 'nghe nói', 'đỡ', 'hơn' signal a comparison clause.
+    Only the portion before the first such word counts as ordering context.
+
+    For multi-word names, requires the first word PLUS a contiguous n-gram
+    starting at word 0 to appear in the text. This prevents false positives
+    when two menu items share suffix words (e.g. "Hàu Nướng Phô Mai" and
+    "Sò Điệp Nướng Phô Mai" — the individual words scatter-match across
+    two different items the customer actually said).
+    """
     text_lower = user_text.lower()
     name_lower = name.lower()
-    if name_lower in text_lower:
+
+    _COMPARISON_SEPS = ("nghe nói", "mà", "nhưng", "đỡ ", "hơn ", "so với",
+                        "tuy nhiên", "còn ", "trong khi")
+    sep_pos = len(text_lower)
+    for sep in _COMPARISON_SEPS:
+        pos = text_lower.find(sep)
+        if 0 < pos < sep_pos:
+            sep_pos = pos
+    order_part = text_lower[:sep_pos]
+
+    if name_lower in order_part:
         return True
     words = name_lower.split()
-    return len(words) >= 2 and all(w in text_lower for w in words)
+    if len(words) < 2:
+        return False
+    first_word = words[0]
+    if first_word not in order_part:
+        return False
+    for n in range(2, len(words) + 1):
+        ngram = " ".join(words[:n])
+        if ngram in order_part:
+            return True
+    return False
 
 
 def _deduplicate_against_cart(
@@ -200,25 +230,32 @@ def deterministic_validator_node(state: AgentState) -> dict[str, Any]:
     ambiguous_items: list[dict[str, Any]] = []
 
     tool_names = {tc.get("name") for tc in last_message.tool_calls}
-    if "confirm_order" in tool_names and "add_cart" in tool_names:
-        add_cart_items = []
-        for tc in last_message.tool_calls:
-            if tc.get("name") == "add_cart":
-                add_cart_items.extend(tc.get("args", {}).get("items", []))
-        if add_cart_items:
-            item_names = [i.get("name", "?") for i in add_cart_items]
-            errors.append(
-                f"Không thể vừa thêm món vừa xác nhận đơn trong cùng lượt. "
-                f"Các món chưa được thêm: {', '.join(item_names)}. "
-                f"Hãy gọi add_cart riêng, sau đó mới confirm_order."
-            )
+    _CART_TOOLS = {"add_cart", "remove_cart", "clear_cart"}
+    _needs_confirm_revisit = False
+    if "confirm_order" in tool_names and _CART_TOOLS & tool_names:
+        cart_tools_present = _CART_TOOLS & tool_names
         last_message.tool_calls = [
             tc for tc in last_message.tool_calls
-            if tc.get("name") == "confirm_order"
+            if tc.get("name") != "confirm_order"
         ]
+        _needs_confirm_revisit = True
         logger.info(
-            "[validator] stripped add_cart from confirm_order turn, added error feedback"
+            "[validator] stripped confirm_order from mixed turn "
+            "(cart tools: %s) — ORDER_CONFIRM will re-invoke worker",
+            cart_tools_present,
         )
+
+    def _with_confirm_revisit(result: dict) -> dict:
+        if not _needs_confirm_revisit:
+            return result
+        queue = (state.get("current_intents") or [])[:]
+        if "ORDER_CONFIRM" not in queue:
+            queue.append("ORDER_CONFIRM")
+        result["current_intents"] = queue
+        queries = dict(state.get("intent_queries") or {})
+        queries["ORDER_CONFIRM"] = "Xác nhận đơn hàng"
+        result["intent_queries"] = queries
+        return result
 
     for tool_call in last_message.tool_calls:
         tool_name = tool_call.get("name")
@@ -311,7 +348,7 @@ def deterministic_validator_node(state: AgentState) -> dict[str, Any]:
         last_tool = tool_names[0] if tool_names else None
 
         if loop_count >= 3:
-            return {
+            return _with_confirm_revisit({
                 "is_valid": False,
                 "feedback": "Quá nhiều lần thử không hợp lệ. Hãy xin lỗi khách và đề nghị họ nói lại yêu cầu.",
                 "messages": tool_messages,
@@ -319,9 +356,9 @@ def deterministic_validator_node(state: AgentState) -> dict[str, Any]:
                 "last_tool": last_tool,
                 "unavailable_items": unavailable_items,
                 "ambiguous_items": ambiguous_items,
-            }
+            })
 
-        return {
+        return _with_confirm_revisit({
             "is_valid": False,
             "feedback": "\n".join(
                 f"- {e}" for e in errors
@@ -331,11 +368,11 @@ def deterministic_validator_node(state: AgentState) -> dict[str, Any]:
             "last_tool": last_tool,
             "unavailable_items": unavailable_items,
             "ambiguous_items": ambiguous_items,
-        }
+        })
 
-    return {
+    return _with_confirm_revisit({
         "is_valid": True,
         "feedback": None,
         "unavailable_items": unavailable_items,
         "ambiguous_items": ambiguous_items,
-    }
+    })

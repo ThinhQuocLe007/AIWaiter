@@ -1,0 +1,176 @@
+{
+  "dataset": "router_context_eval",
+  "version": "1.0",
+  "description": "Đánh giá khả năng routing dựa trên ngữ cảnh (order_stage). Cùng một utterance có thể route đến intent khác nhau tùy vào trạng thái hiện tại của đơn hàng. Các route hợp lệ: ORDER, ORDER_CONFIRM, SEARCH, PAYMENT, CHAT.",
+  "total_cases": 21,
+  "cases": [
+    {
+      "id": "CTX-001",
+      "input": "ok",
+      "expected_route": "CHAT",
+      "difficulty": "easy",
+      "order_stage": "IDLE",
+      "note": "Từ xác nhận đơn thuần ở IDLE → CHAT, không có đơn để xác nhận"
+    },
+    {
+      "id": "CTX-002",
+      "input": "ok",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "easy",
+      "order_stage": "AWAITING_CONFIRMATION",
+      "note": "Cùng từ 'ok' nhưng đang chờ xác nhận đơn → ORDER_CONFIRM"
+    },
+    {
+      "id": "CTX-003",
+      "input": "ừ",
+      "expected_route": "CHAT",
+      "difficulty": "easy",
+      "order_stage": "IDLE",
+      "note": "Gật gù đồng ý ở IDLE → CHAT, không có đơn cần xác nhận"
+    },
+    {
+      "id": "CTX-004",
+      "input": "ừ",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "easy",
+      "order_stage": "AWAITING_CONFIRMATION",
+      "note": "Cùng từ 'ừ' nhưng đang chờ xác nhận → ORDER_CONFIRM"
+    },
+    {
+      "id": "CTX-005",
+      "input": "đúng rồi",
+      "expected_route": "CHAT",
+      "difficulty": "medium",
+      "order_stage": "IDLE",
+      "note": "Câu khẳng định ở IDLE → CHAT, không có ngữ cảnh đơn hàng"
+    },
+    {
+      "id": "CTX-006",
+      "input": "đúng rồi",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "medium",
+      "order_stage": "AWAITING_CONFIRMATION",
+      "note": "Cùng câu 'đúng rồi' nhưng đang chờ xác nhận đơn → ORDER_CONFIRM"
+    },
+    {
+      "id": "CTX-007",
+      "input": "được",
+      "expected_route": "CHAT",
+      "difficulty": "easy",
+      "order_stage": "IDLE",
+      "note": "Từ 'được' đơn lẻ ở IDLE → CHAT"
+    },
+    {
+      "id": "CTX-008",
+      "input": "được",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "medium",
+      "order_stage": "AWAITING_CONFIRMATION",
+      "note": "Cùng từ 'được' nhưng đang chờ xác nhận → ORDER_CONFIRM"
+    },
+    {
+      "id": "CTX-009",
+      "input": "ok em",
+      "expected_route": "CHAT",
+      "difficulty": "medium",
+      "order_stage": "IDLE",
+      "note": "Không có đơn hàng trong ngữ cảnh → CHAT, dù từ 'ok' dễ hiểu nhầm"
+    },
+    {
+      "id": "CTX-010",
+      "input": "ok em",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "hard",
+      "order_stage": "AWAITING_CONFIRMATION",
+      "note": "Rất ngắn, dễ nhầm CHAT nếu không có order_stage → ORDER_CONFIRM"
+    },
+    {
+      "id": "CTX-011",
+      "input": "uh, đặt đi",
+      "expected_route": "CHAT",
+      "difficulty": "medium",
+      "order_stage": "IDLE",
+      "note": "Tưởng như xác nhận đặt món nhưng đang IDLE, không có đơn → CHAT"
+    },
+    {
+      "id": "CTX-012",
+      "input": "uh, đặt đi",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "hard",
+      "order_stage": "AWAITING_CONFIRMATION",
+      "note": "Đang chờ xác nhận, câu này là lệnh chốt đơn → ORDER_CONFIRM"
+    },
+    {
+      "id": "CTX-013",
+      "input": "thêm 1 phần nữa",
+      "expected_route": "CHAT",
+      "difficulty": "medium",
+      "order_stage": "IDLE",
+      "note": "Mơ hồ khi không có giỏ hàng, không rõ thêm món gì → CHAT"
+    },
+    {
+      "id": "CTX-014",
+      "input": "thêm 1 phần nữa",
+      "expected_route": "ORDER",
+      "difficulty": "medium",
+      "order_stage": "DRAFTING",
+      "note": "Đang có giỏ hàng đang soạn, thêm món → ORDER"
+    },
+    {
+      "id": "CTX-015",
+      "input": "tính tiền đi",
+      "expected_route": "PAYMENT",
+      "difficulty": "easy",
+      "order_stage": "IDLE",
+      "note": "Yêu cầu thanh toán rõ ràng, không cần ngữ cảnh đặc biệt → PAYMENT"
+    },
+    {
+      "id": "CTX-016",
+      "input": "cho mình xem menu",
+      "expected_route": "SEARCH",
+      "difficulty": "easy",
+      "order_stage": "IDLE",
+      "note": "Yêu cầu xem thực đơn → SEARCH"
+    },
+    {
+      "id": "CTX-017",
+      "input": "chưa muốn đâu",
+      "expected_route": "CHAT",
+      "difficulty": "hard",
+      "order_stage": "AWAITING_CONFIRMATION",
+      "note": "Đang chờ xác nhận nhưng từ chối → CHAT, KHÔNG phải ORDER_CONFIRM"
+    },
+    {
+      "id": "CTX-018",
+      "input": "có món gì ngon không?",
+      "expected_route": "CHAT",
+      "difficulty": "medium",
+      "order_stage": "IDLE",
+      "note": "Hỏi gợi ý chủ quan, không phải tìm kiếm món cụ thể → CHAT"
+    },
+    {
+      "id": "CTX-019",
+      "input": "nghêu",
+      "expected_route": "ORDER",
+      "difficulty": "medium",
+      "order_stage": "DRAFTING",
+      "note": "Chỉ nêu tên món, nhưng đang soạn đơn → ORDER (thêm vào giỏ)"
+    },
+    {
+      "id": "CTX-020",
+      "input": "cho Ốc Hương đi",
+      "expected_route": "ORDER",
+      "difficulty": "easy",
+      "order_stage": "IDLE",
+      "note": "Gọi món rõ ràng, dù đang IDLE vẫn là ORDER"
+    },
+    {
+      "id": "CTX-021",
+      "input": "có món nào cay cay không?",
+      "expected_route": "SEARCH",
+      "difficulty": "easy",
+      "order_stage": "IDLE",
+      "note": "Hỏi lọc món theo tính chất → SEARCH"
+    }
+  ]
+}

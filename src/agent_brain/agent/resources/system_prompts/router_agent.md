@@ -36,6 +36,9 @@ The CURRENT ORDER STAGE and recent chat history provide critical disambiguation:
 Scan for action keywords and classify the MAIN intent:
 
 - Order verbs present ("cho", "gọi", "lấy", "thêm", "bỏ", "đổi") → ORDER
+  - CRITICAL: If the utterance also ends with a price/availability question
+    ("giá bao nhiêu?", "có không?", "bao nhiêu tiền?"), the intent is SEARCH
+    not ORDER. The dish name is the subject of the question, not the order.
 - Confirmation verbs present ("xác nhận", "chốt đơn", "đặt đi") → ORDER_CONFIRM
 - Question words present ("có...không?", "mấy?", "bao nhiêu", "ở đâu") → SEARCH
 - Payment verbs present ("tính tiền", "thanh toán", "bill") → PAYMENT
