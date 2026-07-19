@@ -75,6 +75,12 @@ server = [
 # (xem docs/jetson-ctranslate2-build.md) nên faster-whisper chỉ khai báo cho x86; phần
 # còn lại (edge-tts/sounddevice/soundfile/pyaudio/scipy) cài trên cả hai kiến trúc.
 voice = [
+    # Mạng của voice device: httpx POST text lên agent /chat, websockets nghe lệnh
+    # start_listening từ backend. Trên x86 hai cái này từng tới ké qua
+    # faster-whisper -> huggingface-hub -> httpx; trên aarch64 faster-whisper build tay nên
+    # bị loại khỏi extra này -> chuỗi ké đứt, main.py chết ở `import httpx`. Khai báo thẳng.
+    "httpx>=0.27",
+    "websockets>=13.0",
     "faster-whisper>=1.2.1 ; platform_machine == 'x86_64'",  # STT (CTranslate2 backend)
     "pyaudio>=0.2.14",                   # mic capture (cần system portaudio)
     "scipy>=1.15",                       # polyphase mic resampling (native rate -> 16k) trong vad_silero

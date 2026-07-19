@@ -115,10 +115,13 @@ WORKER_MODEL=<model-ollama>
 RESPONSE_MODEL=<model-ollama>
 ```
 
-Chạy vòng lặp voice:
+Chạy vòng lặp voice (giống hệt nhau trên laptop-sim và Jetson):
 ```bash
-uv run python src/edge_voice/main.py    # hoặc: make voice
+make voice      # = .venv/bin/python src/edge_voice/main.py
 ```
+> Đừng chạy `uv run python src/edge_voice/main.py`: `uv run` sync env trước, và bản sync trần sẽ
+> hạ `.venv` xuống base deps (mất fastapi/torch trên laptop) hoặc gỡ `ctranslate2` build tay
+> trên Jetson. `make voice` gọi thẳng interpreter trong `.venv` nên không đụng tới env.
 In ra:
 ```
 AI Waiter ready — Table T1
@@ -135,7 +138,6 @@ Muốn ép dùng **cloud (`edge-tts`, giọng `vi-VN-HoaiMyNeural`)** thì đặ
 `TTS_BACKEND=cloud` (nhận cả `edge` / `edge-tts`):
 ```bash
 TTS_BACKEND=cloud make voice
-# hoặc: TTS_BACKEND=cloud uv run python src/edge_voice/main.py
 ```
 > **edge-tts gọi API online của Microsoft** → máy voice cần internet. Nếu package `piper`
 > không cài được thì code cũng tự rơi về edge-tts. Công tắc ở `src/edge_voice/output/tts_engine.py`.

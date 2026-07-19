@@ -81,5 +81,9 @@
     `rm storage/db/orchestrator.db` (xoá hẳn file, backend seed lại khi khởi động).
 - **Vòng lặp voice** — `make voice` (chạy từ repo root; khởi động `src/edge_voice/main.py`):
   ```bash
-  make voice    # hoặc: uv run python src/edge_voice/main.py
+  make voice    # = .venv/bin/python src/edge_voice/main.py — cố ý KHÔNG qua `uv run`
+  make probe    # chỉ mic -> VAD -> Whisper, in text ra màn hình (không cần server)
   ```
+  Hai target này là target **duy nhất** chạy được trên Jetson: chúng gọi thẳng interpreter
+  trong `.venv`, không sync env, nên không gỡ mất `ctranslate2`/`faster-whisper` build tay.
+  Các target còn lại (`backend`, `agent`, `install`…) vẫn dùng `uv run` → chỉ dành cho server.

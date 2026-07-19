@@ -24,6 +24,7 @@
 | [`guides/setup-deploy.md`](guides/setup-deploy.md) | Deployment configuration, CUDA extras, environment setup |
 | [`guides/makefile-reference.md`](guides/makefile-reference.md) | Complete Makefile target reference |
 | [`guides/jetson-ctranslate2-build.md`](guides/jetson-ctranslate2-build.md) | Building ctranslate2 on Jetson |
+| [`guides/jetson-nav-merge-vi.md`](guides/jetson-nav-merge-vi.md) | Còn thiếu gì để ghép Nav2/AMCL robot thật vào e2e: WS contract, toạ độ bàn, rclpy trong venv (Vietnamese) |
 
 ## Evaluation
 

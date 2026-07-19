@@ -1,7 +1,7 @@
 # Makefile - Convenience commands for AI Waiter project
 # Run 'make help' to see available commands
 
-.PHONY: help setup install update frontend menu kiosk panel backend reindex agent voice mockrobot build serve kill reset clean
+.PHONY: help setup install update frontend menu kiosk panel backend reindex agent voice probe mockrobot build serve kill reset clean
 
 # Role-specific Python extras for the backend env (see docs/setup-deploy.md). Each machine
 # picks ONLY its role: fastapi/uvicorn live in `--extra server`, STT/TTS in `--extra voice`,
@@ -10,6 +10,13 @@
 #   make install UV_EXTRAS="--extra server --extra cu13"                 # server (CUDA 13)
 #   make install UV_EXTRAS="--extra voice"                               # Jetson robot
 UV_EXTRAS ?=
+
+# The repo-root venv interpreter. Targets that must NOT trigger a `uv sync` (the Jetson voice
+# ones — see the `voice` target) call this instead of `uv run`. Fails loudly if setup never ran.
+VENV_PY := .venv/bin/python
+$(VENV_PY):
+	@echo "Chưa có $(VENV_PY) — chạy 'make setup' (hoặc 'make install UV_EXTRAS=\"--extra voice\"') trước."
+	@exit 1
 
 # Default target
 help:
@@ -28,6 +35,7 @@ help:
 	@echo "  make backend    - Start orchestrator backend (FastAPI, port 8000)"
 	@echo "  make agent      - Start LLM agent HTTP service (port 8100); auto-rebuilds the index first"
 	@echo "  make voice      - Start edge voice device (Jetson / any mic-capable machine)"
+	@echo "  make probe      - Mic -> VAD -> Whisper only: nói vào mic, in ra text (không cần server)"
 	@echo "  make mockrobot  - Start a mock robot WS client (ID=robo-1 ARGS=...) to test the dispatcher"
 	@echo "  make reindex    - Clean rebuild of FAISS + BM25 + centroid artifacts"
 	@echo "  make reset      - Wipe demo data: clear orders/seatings, free all tables (backend must be running)"
@@ -115,8 +123,17 @@ agent: reindex
 # Edge voice device — runs on the Jetson (or any machine with a mic + speaker). Idles for
 # /start_listening commands from the backend's WS hub. Preloads the VAD + STT models at boot
 # (slow first import). .env must point AGENT_URL + ORCHESTRATOR_URL at the server.
-voice:
-	@uv run python src/edge_voice/main.py
+#
+# Runs .venv/bin/python DIRECTLY, not `uv run`: on the Jetson `uv run` syncs the env first, and a
+# bare sync uninstalls the hand-built ctranslate2/faster-whisper (docs/guides/jetson-ctranslate2-build.md).
+# The venv is already the right one on both machines, so skipping uv costs nothing here.
+voice: $(VENV_PY)
+	@$(VENV_PY) src/edge_voice/main.py
+
+# Mic → VAD → Whisper only (no server, no TTS): nói vào mic, in ra text. Chạy sau mỗi lần reboot
+# hoặc đổi cổng USB để tách bạch lỗi audio khỏi lỗi mạng/agent trước khi chạy `make voice`.
+probe: $(VENV_PY)
+	@$(VENV_PY) scripts/probe_stt_live.py 2>/dev/null
 
 # Mock robot WS client — stands in for a real Jetson robot to test the dispatcher end-to-end.
 # Override id/position: make mockrobot ID=robo-2 ARGS="--x 2.3 --y 0.5".

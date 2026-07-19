@@ -31,6 +31,18 @@
             <div class="ai-avatar"><i class="ti ti-robot" aria-hidden="true"></i></div>
             <div class="bubble bubble-ai">{{ msg.text }}</div>
           </div>
+
+          <!-- Dishes the AI just mentioned: tappable cards (image + price + add) under the
+               bubble. The reply text carries no prices — the robot speaks words only, the
+               guest reads the numbers here and can order with a tap instead of by voice.
+               A family mention ("lẩu") renders as one group card: shared photo, every
+               option priced on its own row. -->
+          <div v-if="msg.role === 'ai' && dishesFor(msg).length" class="dish-cards">
+            <template v-for="m in dishesFor(msg)" :key="m.kind === 'group' ? `g-${m.group.id}` : m.item.id">
+              <VoiceGroupCard v-if="m.kind === 'group'" :group="m.group" />
+              <VoiceDishCard v-else :item="m.item" />
+            </template>
+          </div>
         </template>
 
         <!-- Thinking dots -->
@@ -94,10 +106,41 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
-import { useVoiceStore } from '@/stores/voice'
+import { useVoiceStore, type ChatMessage } from '@/stores/voice'
+import { useMenuStore } from '@/stores/menu'
+import { buildDishIndex, matchDishes, type DishMatch } from '@/utils/matchDishes'
+import VoiceDishCard from './VoiceDishCard.vue'
+import VoiceGroupCard from './VoiceGroupCard.vue'
 
 const voice = useVoiceStore()
+const menu = useMenuStore()
 const chatEl = ref<HTMLElement | null>(null)
+
+// The dish index needs the menu; the panel can open (robot heard the guest) before the
+// guest ever visited the menu screen, so fetch it here if it's still empty.
+watch(
+  () => voice.isAiOpen,
+  (open) => {
+    if (open && menu.foodItems.length === 0 && !menu.isLoading) menu.loadMenu()
+  },
+  { immediate: true },
+)
+
+const dishIndex = computed(() => buildDishIndex(menu.foodItems, menu.groupsByCategory))
+
+// Cache per message id — messages are immutable once pushed.
+const dishCache = new Map<number, DishMatch[]>()
+watch(dishIndex, () => dishCache.clear()) // menu (re)loaded: stale matches out
+
+function dishesFor(msg: ChatMessage): DishMatch[] {
+  if (dishIndex.value.length === 0) return []
+  let dishes = dishCache.get(msg.id)
+  if (!dishes) {
+    dishes = matchDishes(msg.text, dishIndex.value)
+    dishCache.set(msg.id, dishes)
+  }
+  return dishes
+}
 
 const stateLabel = computed(() => {
   switch (voice.aiState) {
@@ -273,6 +316,28 @@ watch(
 
 .dot:nth-child(3) {
   animation-delay: 0.4s;
+}
+
+/* Dish cards under an AI bubble */
+.dish-cards {
+  align-self: flex-start;
+  margin-left: 38px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+  width: min(88%, 560px);
+}
+
+/* A group card lists several priced options — give it the full row. */
+.dish-cards > .group-card {
+  grid-column: 1 / -1;
+}
+
+/* Shrink only when the sole card is a single dish; a lone group card keeps the width
+   its option rows need. */
+.dish-cards:has(> .dish-card:only-child) {
+  grid-template-columns: minmax(0, 1fr);
+  width: min(60%, 300px);
 }
 
 /* Footer */

@@ -19,7 +19,6 @@ Run on the device (point AGENT_URL / ORCHESTRATOR_URL at the server over the net
 
 import asyncio
 import json
-import logging
 import os
 import signal
 import sys
@@ -38,13 +37,12 @@ from dotenv import load_dotenv
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from src.agent_brain.config import settings
-from src.agent_brain.utils import flush_traces, log_struct
+from src.edge_voice.log import log_struct, logger
 from src.edge_voice.output.tts_engine import StreamingPlayer, speak_sentence, speak_streaming, warmup as tts_warmup
 from src.edge_voice.perception import PhoWhisperSTT, SileroVAD
 from src.edge_voice.perception.queues import get_transcript, shutdown_all
 
 load_dotenv()
-logger = logging.getLogger("src.edge_voice")
 
 # This device's robot identity — the SAME id the robot's motion client uses (mock_robot.py --id).
 # The mic is bound to a *table* dynamically by the server: when the dispatcher sends this robot to a
@@ -267,7 +265,6 @@ def main():
         vad.stop()
         stt.stop()
         agent_client.close()
-        flush_traces()
         sys.exit(0)
 
     signal.signal(signal.SIGTERM, shutdown)

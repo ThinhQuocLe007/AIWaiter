@@ -15,7 +15,8 @@ from src.edge_voice.perception.queues import AudioChunk, put_speech
 logger = logging.getLogger(__name__)
 
 SAMPLE_RATE = 16000
-CHUNK_SIZE = 512
+CHUNK_SIZE = 512  # samples, not bytes
+BYTES_PER_SAMPLE = 2  # int16 PCM — the mic path passes audio around as raw bytes
 CHUNK_DURATION = CHUNK_SIZE / SAMPLE_RATE
 SILENCE_TIMEOUT = 1.5
 SILENCE_FRAMES_NEEDED = int(SILENCE_TIMEOUT / CHUNK_DURATION)
@@ -261,7 +262,10 @@ class SileroVAD(threading.Thread):
                 if silence_frames >= SILENCE_FRAMES_NEEDED:
                     audio = b"".join(utterance)
                     timestamp = time.time()
-                    duration = len(audio) / SAMPLE_RATE
+                    # `audio` is int16 PCM bytes, so bytes -> samples -> seconds. Dividing the
+                    # byte count straight by SAMPLE_RATE reported every utterance at 2x its
+                    # real length.
+                    duration = len(audio) / BYTES_PER_SAMPLE / SAMPLE_RATE
                     put_speech(AudioChunk(samples=audio, timestamp=timestamp, duration_s=duration))
                     logger.info(f"Utterance flushed: {duration:.1f}s")
                     utterance.clear()

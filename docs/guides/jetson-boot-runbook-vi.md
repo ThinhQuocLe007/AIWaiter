@@ -4,28 +4,53 @@
 > robot trả lời. Bản **thao tác**; phần giải thích kiến trúc voice ở
 > [run-voice-vi.md](run-voice-vi.md), toàn hệ thống ở [run-guide-vi.md](run-guide-vi.md).
 
-## 0a. Quy ước: activate env, KHÔNG dùng `uv run`
+## 0a. Quy ước: KHÔNG dùng `uv run` trên Jetson
 
-Mọi lệnh Python dưới đây chạy sau khi activate env:
+Lý do: `uv run` **sync env trước mỗi lần chạy**, và trên Jetson `uv sync` trần sẽ gỡ mất bản
+`ctranslate2`/`faster-whisper` build tay ([jetson-ctranslate2-build.md](jetson-ctranslate2-build.md))
+— đang chạy ngon tự nhiên hỏng sau một lệnh vô hại.
+
+✅ **`make voice` và `make probe` dùng được trên Jetson, KHÔNG cần activate gì.** Hai target này
+gọi thẳng `.venv/bin/python`, mà Python chạy theo vị trí file thực thi (đọc `pyvenv.cfg` cạnh nó)
+chứ không theo biến môi trường — nên nó tự dùng đúng venv dù bạn chưa `source`. Các target khác
+(`make backend`, `make agent`, `make install`…) vẫn là `uv run` → chỉ chạy trên server.
+
+⚠️ Còn các lệnh `python ...` gõ tay trong runbook này (probe_vad, verify torch ở mục 2.2) thì
+**vẫn phải activate**, nếu không `python` trần sẽ trúng python hệ thống và báo thiếu module:
 
 ```bash
 cd ~/ptd_workspace/AIWaiter
 source .venv/bin/activate            # prompt đổi thành (ai-waiter)
 ```
 
-Lý do không dùng `uv run`: nó **sync env trước mỗi lần chạy**, và trên Jetson `uv sync` trần sẽ
-gỡ mất bản `ctranslate2`/`faster-whisper` build tay ([jetson-ctranslate2-build.md](jetson-ctranslate2-build.md))
-— đang chạy ngon tự nhiên hỏng sau một lệnh vô hại.
+> Cần cài thêm package trên Jetson thì luôn `uv sync --inexact`, **không bao giờ** `uv sync` trần.
 
-⚠️ **Kéo theo: đừng dùng `make` trên Jetson.** `make voice` = `uv run python src/edge_voice/main.py`
-([Makefile:119](../../Makefile#L119)), tức là dính đúng vấn đề trên. Trong repo này `make` là dành cho
-máy server. Runbook này luôn ghi lệnh `python` trực tiếp cho phần Jetson.
+## 0b. Làm MỘT LẦN sau khi pull bản 2026-07-19
+
+`httpx` + `websockets` trước đây không được khai báo trong extra `voice` (trên x86 chúng tới ké
+qua `faster-whisper → huggingface-hub`; trên aarch64 `faster-whisper` build tay nên chuỗi ké đó
+đứt). Env Jetson cài trước ngày này sẽ chết ở `import websockets` khi chạy `make voice`.
+
+```bash
+cd ~/ptd_workspace/AIWaiter
+git pull
+uv sync --inexact --extra voice      # --inexact: KHÔNG gỡ ctranslate2 build tay
+```
+
+Kiểm tra đủ chưa:
+```bash
+.venv/bin/python -c "import httpx, websockets, faster_whisper, piper, torch; print('đủ')"
+```
+
+Cùng bản này, `src/edge_voice/` đã cắt phụ thuộc vào `src/agent_brain/utils` (nó kéo theo
+`langsmith` + `langchain_core` — hai package chỉ có trong extra `server`, Jetson không cài).
+Log của voice device giờ nằm ở [`src/edge_voice/log.py`](../../src/edge_voice/log.py).
 
 ## 0. Điều quan trọng nhất: Jetson KHÔNG tự nói được một mình
 
 Từ bản `backend-server-integration`, voice device là **service chờ lệnh**, không phải vòng lặp
 always-on. Mic mở sẵn nhưng **bị khoá** (gate) cho tới khi nhận lệnh `start_listening` từ server
-([main.py:78](../../src/edge_voice/main.py#L78) → [vad_silero.py:245](../../src/edge_voice/perception/vad_silero.py#L245)).
+([main.py:78](../../src/edge_voice/main.py#L78) → [vad_silero.py:251](../../src/edge_voice/perception/vad_silero.py#L251)).
 
 Nên chuỗi phụ thuộc là:
 
@@ -127,7 +152,7 @@ python -c "import ctranslate2, faster_whisper; print('ct2 ok')"   # bản build 
 
 ```bash
 python scripts/probe_vad.py 2>/dev/null        # chỉ VAD: thấy speech/silence
-python scripts/probe_stt_live.py 2>/dev/null   # VAD + Whisper: nói → in text
+make probe                                     # VAD + Whisper: nói → in text
 ```
 Probe tự arm gate liên tục nên không cần server chạy.
 
@@ -138,8 +163,22 @@ màn hình **im lặng là đúng** — chỉ khi bạn nói mới có `Utteranc
 ### 2.4 Chạy voice device
 
 ```bash
-python src/edge_voice/main.py       # KHÔNG dùng `make voice` — xem mục 0a
+make voice                          # = .venv/bin/python src/edge_voice/main.py, không sync env
 ```
+
+`make voice` boot tuần tự 5 bước ([main.py:238-252](../../src/edge_voice/main.py#L238-L252)) —
+biết thứ tự này để đọc log lúc treo thì biết treo ở đâu:
+
+| # | Nạp gì | Ghi chú |
+|---|---|---|
+| 1 | Mic + Silero VAD | PyAudio tự dò thiết bị có chữ `usb` trong tên. Mic mở nhưng **gate đóng** — chưa thu gì |
+| 2 | faster-whisper `medium` | `device=DEVICE` (.env), `compute_type=float16` trên cuda; warmup bằng 0.5s im lặng |
+| 3 | Piper `vi_VN-vais1000-medium` | TTS **offline**. Lần đầu tải model về `storage/tts/` → **cần internet lần đầu** |
+| 4 | Phát "Xin chào" | Test loa thật, nghe được tiếng là tầng audio ra ổn |
+| 5 | Nối WS backend | In `[READY]` |
+
+> ⚠️ **Chạy thử một lần trước ngày demo** để Piper cache model. Đừng để tới lúc demo mới tải.
+> Muốn ép dùng TTS cloud (`edge-tts`, cần internet mọi lúc): `TTS_BACKEND=cloud make voice`.
 
 Boot xong (~30–60s, load VAD + Whisper medium + warm TTS, có phát "Xin chào"):
 ```
@@ -203,7 +242,7 @@ Nút **Hủy/Dừng** cắt cả mic đang thu lẫn câu đang phát; nút **lo
 | 3 | server | `make agent` | in `Agent ready.` |
 | 4 | server | `make menu` | :5173 lên |
 | 5 | jetson | `source .venv/bin/activate` + test `arecord` | nghe lại được `test.wav` |
-| 6 | jetson | `python src/edge_voice/main.py` | in `[READY] đã kết nối backend` |
+| 6 | jetson | `make voice` | in `[READY] đã kết nối backend` |
 | 7 | server/sim | `make mockrobot ID=robo-1` | robot online trên panel |
 | 8 | tablet | seat bàn + gọi robot | backend log `voice bound to robo-1` |
 | 9 | tablet | bấm "nói chuyện" | jetson in `[LISTENING]` |
@@ -219,7 +258,8 @@ Tắt hết: `make kill` (server) + `Ctrl-C` (jetson).
 | Nút "nói chuyện" trả `no_device` | Chưa có binding (robot chưa tới bàn), hoặc `VOICE_ROBOT_ID` ≠ id robot motion |
 | Jetson `[WS] mất kết nối backend` lặp lại | Backend chưa chạy, `ORCHESTRATOR_URL` sai IP, hoặc Netbird chưa mở 8000 |
 | `[READY]` rồi nhưng bấm nút không thấy `[LISTENING]` | Lệnh không tới được device → xem mục `no_device` ở trên |
-| `[LISTENING]` rồi nói mà `[TIMEOUT]` | Mic sai device → chạy `probe_stt_live.py`; hạ `VAD_THRESHOLD=0.3` |
+| `[LISTENING]` rồi nói mà `[TIMEOUT]` | Mic sai device → chạy `make probe`; hạ `VAD_THRESHOLD=0.3` |
+| `ModuleNotFoundError: websockets` / `httpx` lúc khởi động | Env cài trước 2026-07: hai package này mới được thêm vào extra `voice`. Chạy `uv sync --inexact --extra voice` |
 | `Could not open microphone` | USB mic chưa nhận (`arecord -l`), hoặc pin cứng `MIC_DEVICE_INDEX` sai sau reboot — **bỏ** biến này đi, code tự dò USB theo tên |
 | `Agent request failed` | Agent :8100 chưa chạy hoặc `AGENT_URL` sai |
 | STT ra "Hãy subscribe cho kênh..." | Whisper hallucinate trên đoạn quá ngắn — xem mục 7 |
@@ -233,5 +273,5 @@ Tắt hết: `make kill` (server) + `Ctrl-C` (jetson).
 
 Hiện `SILENCE_TIMEOUT=1.5s` cắt utterance, nhưng **không có sàn độ dài** — một tiếng động 0.1s
 vẫn được flush thẳng vào STT. Nếu thấy phiền khi demo, thêm ngưỡng bỏ qua utterance quá ngắn ở
-chỗ flush ([vad_silero.py:256-266](../../src/edge_voice/perception/vad_silero.py#L256-L266)).
+chỗ flush ([vad_silero.py:262-275](../../src/edge_voice/perception/vad_silero.py#L262-L275) — chi tiết cách làm ở [jetson-nav-merge-vi.md §5.1](jetson-nav-merge-vi.md#51-sàn-độ-dài-utterance--chống-whisper-bịa)).
 Trong luồng thật ít lộ hơn vì mic chỉ mở đúng một lượt sau khi khách bấm nút.

@@ -57,8 +57,14 @@ export function buildDishIndex(
 
 // Dishes and dish families mentioned in `text`, in order of appearance. Longer names win
 // overlapping spans; a matched group swallows its members' individual mentions (the group
-// card already lists every option); capped so the chat stays scannable.
-export function matchDishes(text: string, candidates: Candidate[], limit = 4): DishMatch[] {
+// card already lists every option). Every mention gets a card: when the agent reads back a
+// 5-dish cart, hiding the 5th would contradict the text right above it. Callers may still
+// pass a `limit` for tighter surfaces.
+export function matchDishes(
+  text: string,
+  candidates: Candidate[],
+  limit = Number.POSITIVE_INFINITY,
+): DishMatch[] {
   const haystack = normalize(text)
   const claimed: Span[] = []
   for (const c of candidates) {
