@@ -50,7 +50,12 @@ def main():
     # Surface the perception layer's info logs -- which mic got picked, which rate it opened
     # at, and each "Utterance flushed" -- otherwise the root logger's WARNING default hides
     # them and a silent mic looks identical to a broken STT.
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+    #
+    # stream=stdout on purpose: PortAudio/ALSA dump their device-scan noise straight to
+    # stderr from C, so `python probe_stt_live.py 2>/dev/null` is the normal way to run this.
+    # Logging to the default stderr would get swallowed by that same redirect.
+    logging.basicConfig(level=logging.INFO, stream=sys.stdout,
+                        format="%(levelname)s %(name)s: %(message)s")
 
     print(f"[cfg] DEVICE={settings.DEVICE}  (STT compute: "
           f"{'float16' if settings.DEVICE == 'cuda' else 'int8'})")

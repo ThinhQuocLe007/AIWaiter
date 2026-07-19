@@ -46,7 +46,12 @@ def main():
     # Without this the perception layer's logger.info() calls are swallowed (root defaults to
     # WARNING) -- and "Auto-selected USB capture device N" / "Mic opened: ... rate=..." are
     # exactly what you need to see when diagnosing a mic that opens but records silence.
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+    #
+    # stream=stdout on purpose: PortAudio/ALSA dump their device-scan noise straight to stderr
+    # from C, so `python probe_vad.py --mic 2>/dev/null` is the normal way to run this. Logging
+    # to the default stderr would get swallowed by that same redirect.
+    logging.basicConfig(level=logging.INFO, stream=sys.stdout,
+                        format="%(levelname)s %(name)s: %(message)s")
 
     base = rss_mb()
     report("startup", base)
