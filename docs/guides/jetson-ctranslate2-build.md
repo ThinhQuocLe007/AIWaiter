@@ -18,6 +18,13 @@ the Python binding against it.
 > Note: `pyproject.toml` deliberately declares `faster-whisper` only for
 > `platform_machine == 'x86_64'`. On Jetson (aarch64), `uv sync` does **not**
 > install faster-whisper / ctranslate2 — we install them by hand (steps below).
+>
+> Same idea for `torchaudio`: it is deliberately **absent** from the aarch64 deps. The
+> PyPI aarch64 wheel is a CUDA 13 build, so on JetPack's CUDA 12.6 it dies with
+> `OSError: libcudart.so.13: cannot open shared object file`, and the Jetson index only
+> goes to 2.10.0 (ABI mismatch against libtorch 2.11). Nothing in the repo imports it —
+> only silero-VAD does, at module level, and `vad_silero.py` stubs it out. If you see it
+> installed on the Jetson, you are on a stale lock: re-run `uv sync --extra voice`.
 
 ---
 
@@ -193,6 +200,7 @@ source .venv/bin/activate
 
 # reinstall the Python binding against the existing C++ lib (no C++ rebuild)
 cd ~/CTranslate2/python
+uv pip install -r install_requirements.txt          # pybind11, wheel — a fresh .venv has neither
 CTRANSLATE2_ROOT=/usr/local uv pip install . --no-build-isolation
 uv pip install faster-whisper --no-deps
 uv pip install tokenizers huggingface-hub av onnxruntime
@@ -200,6 +208,10 @@ uv pip install tokenizers huggingface-hub av onnxruntime
 # verify
 cd ~ && python -c "import ctranslate2; from faster_whisper import WhisperModel; print(ctranslate2.__version__,'OK')"
 ```
+
+> The `.venv` here is brand new, so `pybind11` is gone along with it — without the
+> `install_requirements.txt` line the `--no-build-isolation` build fails on a missing
+> pybind11. Step 3 has it; this scenario used to omit it.
 
 ### Scenario 2 — fresh Jetson, or `/usr/local/lib/libctranslate2.so.4` missing
 

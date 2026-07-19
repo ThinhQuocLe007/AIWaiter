@@ -15,9 +15,14 @@ Flow: VAD opens the mic, detects where each utterance starts/stops, hands the
 audio to STT via speech_queue; STT transcribes and puts text on text_queue, which
 this loop drains and prints.
 
-IMPORTANT: run on a NATIVE machine with a working local mic — NOT over SSH (SSH
-does not forward mic audio; you would capture the remote machine's empty jack).
-For the Jetson (SSH-only), record locally and use probe_stt.py --audio instead.
+IMPORTANT: the mic must be physically attached to the machine that RUNS this script.
+SSH itself is fine — it forwards the printed text, not audio. So with a USB mic plugged
+into the Jetson you can ssh in from a laptop, run this, speak at the Jetson, and watch
+the transcript scroll by in the laptop's terminal. What does NOT work is speaking into
+the *laptop's* mic while the script runs on the Jetson: it would capture the Jetson's
+own (possibly empty) input, not yours.
+
+If the Jetson has no mic of its own, record on the laptop and use probe_stt.py --audio.
 
 Run:
     uv run python scripts/probe_stt_live.py     # Ctrl-C to stop

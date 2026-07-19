@@ -31,12 +31,18 @@ dependencies = [
     # Cả hai máy x86 đều là (x86_64, linux) nên marker không tách được -> tách bằng extra
     # tường minh: máy x86 PHẢI chạy `uv sync --extra cu12` hoặc `--extra cu13`.
     #
-    # torch ở base (aarch64) vì CẢ HAI vai trò cần nó: voice (silero-VAD + whisper) và
-    # server (GPU embeddings của sentence-transformers). Trên x86 torch tới từ extra cu12/cu13.
+    # torch ở base (aarch64) vì CẢ HAI vai trò cần nó: voice (chỉ silero-VAD — faster-whisper
+    # chạy trên ctranslate2, KHÔNG cần torch) và server (GPU embeddings của
+    # sentence-transformers). Trên x86 torch tới từ extra cu12/cu13.
     "torch==2.11.0 ; platform_machine == 'aarch64'",
     "torchvision==0.26.0 ; platform_machine == 'aarch64'",
-    # torchaudio không có trên index Jetson (max 2.10.0) -> lấy từ PyPI như trước.
-    "torchaudio>=2.11.0 ; platform_machine == 'aarch64'",
+    # CỐ Ý KHÔNG khai báo torchaudio cho aarch64. Index Jetson chỉ có tới 2.10.0 (lệch ABI với
+    # libtorch 2.11), còn wheel aarch64 trên PyPI build bằng CUDA 13 nên import chết ngay:
+    #   OSError: libcudart.so.13: cannot open shared object file
+    # Không file nguồn nào trong repo import torchaudio; thứ duy nhất chạm tới nó là câu
+    # `import torchaudio` ở đầu utils_vad.py của silero-VAD (chỉ read_audio/save_audio dùng,
+    # ta đưa raw PCM nên không gọi tới) -> vad_silero.py đã stub sẵn. Không package nào khác
+    # require torchaudio, nên bỏ dòng này là nó biến mất hẳn khỏi Jetson.
     "piper-tts[voice]>=1.2",
 ]
 

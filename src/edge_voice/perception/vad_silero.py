@@ -2,6 +2,8 @@ import threading
 import time
 import logging
 import os
+import sys
+import types
 from math import gcd
 
 import numpy as np
@@ -42,7 +44,32 @@ class SileroVAD(threading.Thread):
         self._resample_poly = None  # callable when native_rate != SAMPLE_RATE
         self._resamp_buf = np.empty(0, dtype=np.float32)
 
+    def _stub_torchaudio_if_broken(self):
+        """silero-vad's utils_vad.py does `import torchaudio` at module level, but only
+        read_audio()/save_audio() (file I/O helpers) actually touch it -- we feed raw PCM
+        bytes to is_speech(), so the dependency is dead weight on this path.
+
+        On Jetson that import is fatal: torch/torchvision come from the jetson-ai-lab index
+        (CUDA 12.6) while torchaudio's aarch64 wheel on PyPI is built against CUDA 13, so
+        loading its native extension dies with
+            OSError: libcudart.so.13: cannot open shared object file
+        and the index has no 2.11 build to match (max 2.10.0, which would clash with the
+        libtorch 2.11 ABI).
+
+        Where the real torchaudio imports cleanly (x86 dev boxes) leave it untouched.
+        Otherwise register an empty stub: any genuine torchaudio attribute access still
+        fails loudly with AttributeError rather than silently misbehaving.
+        """
+        if "torchaudio" in sys.modules:
+            return
+        try:
+            import torchaudio  # noqa: F401
+        except (ImportError, OSError) as e:
+            logger.warning(f"torchaudio unusable ({e}) -- stubbing it; silero VAD does not need it")
+            sys.modules["torchaudio"] = types.ModuleType("torchaudio")
+
     def _load_model(self):
+        self._stub_torchaudio_if_broken()
         self._model, _ = torch.hub.load(
             repo_or_dir="snakers4/silero-vad",
             model="silero_vad",
