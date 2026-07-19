@@ -82,12 +82,32 @@ class SileroVAD(threading.Thread):
         )
 
     def _device_index(self):
-        """Capture device index, or None to use PortAudio's system default
-        (the original behavior). Set MIC_DEVICE_INDEX to force a specific device
-        -- e.g. a raw `hw:*` index to bypass a `default`/PipeWire route that is
-        unreachable from an SSH shell or a systemd service (PortAudio -9999)."""
+        """Capture device index, or None to use PortAudio's system default.
+
+        MIC_DEVICE_INDEX always wins -- e.g. a raw `hw:*` index to bypass a
+        `default`/PipeWire route unreachable from an SSH shell or a systemd service
+        (PortAudio -9999).
+
+        Unset, we prefer a USB capture device over the system default. On the Jetson
+        Orin the default is a poor choice: the board exposes 20 dummy `APE` XBAR-ADMAIF
+        endpoints that open without error but record pure silence, and PortAudio's
+        `default` can land on one of those (or on a pulse route that SSH cannot reach).
+        The USB mic is the thing physically plugged in, so match it by NAME -- its index
+        shifts across reboots and USB ports, which is exactly why pinning a number here
+        would be wrong.
+        """
         env = os.getenv("MIC_DEVICE_INDEX")
-        return int(env) if env not in (None, "") else None
+        if env not in (None, ""):
+            return int(env)
+        for i in range(self._p.get_device_count()):
+            try:
+                dev = self._p.get_device_info_by_index(i)
+            except Exception:  # noqa: BLE001 - skip devices PortAudio cannot describe
+                continue
+            if dev["maxInputChannels"] > 0 and "usb" in str(dev["name"]).lower():
+                logger.info(f"Auto-selected USB capture device {i}: {dev['name']}")
+                return i
+        return None
 
     def _setup_resampler(self, rate: int):
         """Configure a polyphase resampler from `rate` -> SAMPLE_RATE (16k)."""
