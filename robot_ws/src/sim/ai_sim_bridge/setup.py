@@ -21,6 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
             'pose_bridge = ai_sim_bridge.pose_bridge:main',
+            'task_bridge = ai_sim_bridge.task_bridge:main',
         ],
     },
 )

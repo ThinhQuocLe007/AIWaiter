@@ -222,7 +222,7 @@ def generate_launch_description():
             ]
         ),
 
-        # OAKD static transform
+        # D435 static transform
         # Required for pointcloud. See https://github.com/gazebosim/gz-sensors/issues/239
         Node(
             name='camera_stf',
@@ -232,8 +232,8 @@ def generate_launch_description():
             arguments=[
                 '0', '0', '0',
                 '1.5707', '-1.5707', '0',
-                'oakd_rgb_camera_optical_frame',
-                [robot_name, '/oakd_rgb_camera_frame/rgbd_camera']
+                'camera_color_optical_frame',
+                [robot_name, '/camera_color_frame/rgbd_camera']
             ],
             remappings=[
                 ('/tf', 'tf'),

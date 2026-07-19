@@ -13,13 +13,13 @@
       @pointercancel="onDragEnd"
     >
       <span>🗺 Bản đồ</span>
-      <span class="minimap-sub">{{ robots.length }} robot</span>
+      <span class="minimap-sub">{{ onlineRobots.length }}/{{ robots.length }} robot</span>
     </div>
     <p v-if="!layout" class="minimap-empty">Đang tải…</p>
     <svg
       v-else
       class="minimap-svg"
-      :viewBox="`0 0 ${layout.map.height} ${layout.map.width}`"
+      :viewBox="viewBox"
       preserveAspectRatio="xMidYMid meet"
     >
       <!-- Real SLAM map as the backdrop, rotated 90° counter-clockwise so the dock sits at
@@ -143,9 +143,48 @@ function tableClass(id: number): string {
   return 'occupied'
 }
 
+// The viewBox must frame the map image AND the overlays, not just the image: the SLAM scan stops
+// short of the far wall, so the tables against it (2 and 5, x≈9.2 m) project a few pixels past the
+// image edge and were clipped away entirely. Growing the box to cover them scales the whole map
+// down slightly instead of losing them. Robots are deliberately NOT included — a moving robot
+// would resize the box under itself; they drive well inside the walls anyway.
+const VIEW_PAD = 4 // svg units (~0.2 m) of breathing room around the outermost overlay
+
+const viewBox = computed(() => {
+  const m = props.layout?.map
+  if (!m) return '0 0 0 0'
+  // Start from the rotated map image rect (see the <image> transform), then grow to fit.
+  let minX = 0
+  let minY = 0
+  let maxX = m.height
+  let maxY = m.width
+  const half = tablePx.value / 2
+  for (const t of tablePts.value) {
+    minX = Math.min(minX, t.x - half)
+    maxX = Math.max(maxX, t.x + half)
+    minY = Math.min(minY, t.y - half)
+    maxY = Math.max(maxY, t.y + half)
+  }
+  // The dock is drawn as a fixed 14×10 rect centred on its point.
+  minX = Math.min(minX, dockPt.value.x - 7)
+  maxX = Math.max(maxX, dockPt.value.x + 7)
+  minY = Math.min(minY, dockPt.value.y - 5)
+  maxY = Math.max(maxY, dockPt.value.y + 5)
+  return [
+    minX - VIEW_PAD,
+    minY - VIEW_PAD,
+    maxX - minX + VIEW_PAD * 2,
+    maxY - minY + VIEW_PAD * 2,
+  ].join(' ')
+})
+
+// Only robots with a live bridge belong on the map — an unactivated/disconnected robot has no
+// real pose, and drawing it at the dock fallback would claim a position nobody is reporting.
+const onlineRobots = computed(() => props.robots.filter((r) => r.status !== 'offline'))
+
 // Resolve each robot's draw position; fall back to the dock until it sends its first pose.
 const robotPoses = computed(() =>
-  props.robots.map((r) => {
+  onlineRobots.value.map((r) => {
     const wx = r.x ?? props.layout?.dock.x ?? 0
     const wy = r.y ?? props.layout?.dock.y ?? 0
     const name = r.name ?? r.id

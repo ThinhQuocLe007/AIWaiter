@@ -11,9 +11,11 @@ this endpoint **delivers** it. The backend stays ignorant of the agent (no `src.
 import), keeping the standalone-orchestrator boundary intact — the bridge is plain JSON over HTTP.
 """
 
+import httpx
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from ..config import settings
 from ..realtime.connection_manager import manager
 
 router = APIRouter(prefix="/voice", tags=["voice"])
@@ -71,13 +73,56 @@ async def voice_listen(req: ListenRequest) -> dict:
 
 @router.post("/cancel")
 async def voice_cancel(req: ListenRequest) -> dict:
-    """The tablet's "Hủy" button: abort the in-flight capture on the table's voice device.
+    """The tablet's "Hủy"/"Dừng" button: kill the whole in-flight turn on the table's voice device.
 
-    The device disarms its mic / drops the captured utterance so nothing is sent to the LLM.
-    If the utterance already reached the agent, the tablet suppresses the reply on its side —
-    this endpoint only stops what hasn't been sent yet.
+    The device disarms its mic / drops the captured utterance, stops consuming the agent's reply
+    stream, and cuts TTS playback mid-sentence. If the utterance already reached the agent, the
+    LLM may still finish server-side — the tablet suppresses that reply on its side.
     """
     ok = await manager.send_to_voice_device(
         req.table_id, {"type": "cancel_listening", "table_id": req.table_id}
     )
     return {"status": "ok" if ok else "no_device"}
+
+
+class MuteRequest(BaseModel):
+    """The tablet's speaker toggle: silence (or re-enable) the robot's TTS voice for this table.
+
+    Muting also cuts the sentence currently playing. The conversation itself keeps flowing —
+    the guest still sees the agent's replies as text on the tablet.
+    """
+
+    table_id: int
+    muted: bool
+
+
+@router.post("/mute")
+async def voice_mute(req: MuteRequest) -> dict:
+    """Forward the mute state to the robot serving this table (its Jetson owns the speaker)."""
+    ok = await manager.send_to_voice_device(
+        req.table_id, {"type": "set_muted", "muted": req.muted, "table_id": req.table_id}
+    )
+    return {"status": "ok" if ok else "no_device"}
+
+
+@router.post("/new-chat")
+async def voice_new_chat(req: ListenRequest) -> dict:
+    """The tablet's "cuộc trò chuyện mới" button: wipe the agent's memory for this table's visit.
+
+    The conversation thread lives in the agent service (LangGraph checkpoints), not here — forward
+    the reset over plain HTTP (the orchestrator↔agent boundary stays import-free). Also cancel
+    whatever the robot is currently saying/capturing so the old conversation stops immediately.
+    """
+    await manager.send_to_voice_device(
+        req.table_id, {"type": "cancel_listening", "table_id": req.table_id}
+    )
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                f"{settings.agent_url.rstrip('/')}/reset",
+                json={"table_id": f"T{req.table_id}"},
+            )
+            resp.raise_for_status()
+    except httpx.HTTPError:
+        return {"status": "agent_unreachable"}
+    return {"status": "ok"}

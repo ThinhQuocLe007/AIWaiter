@@ -40,10 +40,27 @@ export function startVoiceListen(tableId: number): Promise<ListenResult> {
   return postJson<ListenResult>('/voice/listen', { table_id: tableId })
 }
 
-// POST /voice/cancel → abort the in-flight capture on this table's voice device (the "Hủy"
-// button). The device drops the utterance so nothing is sent to the LLM.
+// POST /voice/cancel → kill the whole in-flight voice turn on this table's device (the "Hủy"/
+// "Dừng" button): drops an armed capture, stops consuming the agent's reply stream and cuts the
+// robot's TTS mid-sentence.
 export function cancelVoiceListen(tableId: number): Promise<ListenResult> {
   return postJson<ListenResult>('/voice/cancel', { table_id: tableId })
+}
+
+// POST /voice/mute → mute/unmute the robot's speaker for this table. Muting cuts the sentence
+// currently playing; the agent's replies keep arriving as text bubbles either way.
+export function setVoiceMuted(tableId: number, muted: boolean): Promise<ListenResult> {
+  return postJson<ListenResult>('/voice/mute', { table_id: tableId, muted })
+}
+
+// POST /voice/new-chat → wipe the agent's conversation memory for this table (fresh LLM thread;
+// the visit/bill continues). 'agent_unreachable' when the LLM service is down.
+export interface NewChatResult {
+  status: 'ok' | 'agent_unreachable'
+}
+
+export function newVoiceChat(tableId: number): Promise<NewChatResult> {
+  return postJson<NewChatResult>('/voice/new-chat', { table_id: tableId })
 }
 
 // --- Tables -----------------------------------------------------------------

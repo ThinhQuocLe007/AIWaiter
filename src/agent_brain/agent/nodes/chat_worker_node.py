@@ -89,6 +89,7 @@ def chat_worker_node(state: AgentState) -> dict[str, Any]:
             order_stage=state.get("order_stage", "IDLE"),
             chat_history=list(messages),
             curated_memory=_to_curated_memory(search_results),
+            table_context=state.get("table_context"),
             delegate_reason=state.get("delegate_reason"),
         ),
     }

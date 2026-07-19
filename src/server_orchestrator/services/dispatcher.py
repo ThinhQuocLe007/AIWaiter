@@ -49,14 +49,27 @@ SNAPSHOT_EVERY = 15.0  # seconds
 # The robot's heartbeat pose is published in this same map frame, so these line up with it (and
 # with restaurant.pgm). Used to score "which idle robot is nearest"; the robot navigates itself.
 TABLE_POS: dict[int, tuple[float, float]] = {
-    1: (7.99985, 1.36319),
-    2: (8.05419, 0.33537),
-    3: (7.97830, -0.64879),
-    4: (7.92656, -3.28752),
-    5: (7.98864, -4.28860),
-    6: (8.00802, -5.27848),
+    1: (8.730, 1.301),
+    2: (7.233, 0.314),
+    3: (8.741, -0.694),
+    4: (8.700, -3.152),
+    5: (7.257, -4.309),
+    6: (8.679, -5.178),
 }
 DOCK_POS = (0.0, 0.0)  # spawn/dock in the map frame; an idle robot's default position
+
+# ArUco marker positions per table in the map frame — the marker hangs at the table itself
+# (computed from food_delivery.get_marker_global_tf's world poses through the world→map
+# transform). This is where the physical table actually is, so the panel minimap draws the
+# table icons here; TABLE_POS above is only the robot's *approach* waypoint in front of it.
+TABLE_MARKER_POS: dict[int, tuple[float, float]] = {
+    1: (7.110, 1.343),
+    2: (8.890, 0.350),
+    3: (7.110, -0.650),
+    4: (7.110, -3.250),
+    5: (8.890, -4.250),
+    6: (7.110, -5.250),
+}
 
 # Approach heading per table, as a unit vector in the map frame (NORTH=+X, SOUTH=-X,
 # WEST=+Y, EAST=-Y), copied from food_delivery.py DESTINATIONS. The ArUco marker sits in
@@ -87,6 +100,11 @@ _SERVING_ACTIVITY = {
     "deliver": "Đang giao món · Bàn {table}",
 }
 _IDLE_ACTIVITY = "Đang ở dock"
+# After task_done the robot is still physically DRIVING home — it only becomes "Đang ở dock"
+# when it reports `at_dock` (see on_at_dock). Both sim bridge and mock robot send that frame.
+_RETURNING_ACTIVITY = "Đang về dock"
+# Seeded robot whose bridge (make simbridge / mockrobot) has never connected this run.
+_UNACTIVATED_ACTIVITY = "Chưa kích hoạt"
 
 
 # --- Read helpers -----------------------------------------------------------------------------
@@ -137,7 +155,11 @@ def _pick_robot(conn, table_id: int | None) -> str | None:
     """
     online = manager.connected_robot_ids()
     candidates = []
-    for r in conn.execute("SELECT * FROM robots WHERE status = 'idle'").fetchall():
+    # 'returning' counts as free: the robot is just driving home and both robot clients queue a
+    # task assigned mid-drive, so it starts as soon as the wheels are free.
+    for r in conn.execute(
+        "SELECT * FROM robots WHERE status IN ('idle', 'returning')"
+    ).fetchall():
         if r["id"] not in online:
             continue
         # Live pose/battery (RAM) over the DB snapshot, so "nearest + charged enough" uses the
@@ -331,11 +353,17 @@ async def on_arrived(robot_id: str, task_id: int | None) -> None:
     # drops (on disconnect). For go_to_table/call the robot now WAITS here until the guest orders
     # or pays — the orders/payments routers then call release_robot_at_table to send it home.
     manager.bind_table_robot(task.table_id, robot_id)
+    # Wake the table's customer_ui: the robot is standing there now, so the tablet should switch
+    # to the right screen on its own (menu for a first visit, order-more/pay chooser for a call).
+    await manager.broadcast(
+        "customer",
+        {"type": "robot.arrived", "table_id": task.table_id, "kind": task.kind},
+    )
     log.info("task %s arrived (table %s) — voice bound to %s", task_id, task.table_id, robot_id)
 
 
 async def on_done(robot_id: str, task_id: int | None) -> None:
-    """Task finished: close it, free the robot, then pull the next queued task."""
+    """Task finished: close it, mark the robot driving home, then pull the next queued task."""
     manager.unbind_robot(robot_id)  # robot is driving home — it no longer serves any table's mic
     with get_conn() as conn:
         if task_id is not None:
@@ -345,13 +373,43 @@ async def on_done(robot_id: str, task_id: int | None) -> None:
             )
             await _broadcast_task(conn, task_id, "task.updated")
         conn.execute(
-            "UPDATE robots SET status = 'idle', current_task_id = NULL, activity = ? "
+            "UPDATE robots SET status = 'returning', current_task_id = NULL, activity = ? "
             "WHERE id = ?",
-            (_IDLE_ACTIVITY, robot_id),
+            (_RETURNING_ACTIVITY, robot_id),
         )
         await _broadcast_robot(conn, robot_id)
-    log.info("task %s done by %s", task_id, robot_id)
+    log.info("task %s done by %s — heading back to dock", task_id, robot_id)
     await try_assign()
+
+
+async def on_at_dock(robot_id: str) -> None:
+    """Robot reports it physically reached the dock: flip 'Đang về dock' → 'Đang ở dock'.
+
+    Guarded on status = 'returning' so a late frame never clobbers a robot that was already
+    dispatched to a new task mid-drive (busy) or dropped offline.
+    """
+    with get_conn() as conn:
+        cur = conn.execute(
+            "UPDATE robots SET status = 'idle', activity = ? "
+            "WHERE id = ? AND status = 'returning'",
+            (_IDLE_ACTIVITY, robot_id),
+        )
+        if cur.rowcount:
+            await _broadcast_robot(conn, robot_id)
+            log.info("robot %s docked", robot_id)
+
+
+def reset_fleet_offline() -> None:
+    """Backend startup: no robot WS can be connected yet, so every seeded robot is unactivated
+    until its bridge (make simbridge / mockrobot) connects. Also clears the stale battery/pose
+    snapshot from a previous run — the panel must not show pin/vị trí without live data behind it.
+    """
+    with get_conn() as conn:
+        conn.execute(
+            "UPDATE robots SET status = 'offline', current_task_id = NULL, activity = ?, "
+            "battery = NULL, x = NULL, y = NULL",
+            (_UNACTIVATED_ACTIVITY,),
+        )
 
 
 async def release_robot_at_table(table_id: int) -> None:

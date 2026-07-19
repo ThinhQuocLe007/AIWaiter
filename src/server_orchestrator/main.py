@@ -28,6 +28,9 @@ async def lifespan(app: FastAPI):
     seed_tables()
     seed_dishes()
     seed_robots()
+    # Fresh start: no robot WS is connected yet, so every robot shows "Chưa kích hoạt" until its
+    # bridge connects (stale idle/battery rows from a previous run would lie on the panel).
+    dispatcher.reset_fleet_offline()
     # Background watchdog: detects robots that went silent (hung) and requeues their tasks.
     watchdog = asyncio.create_task(dispatcher.watchdog_loop())
     yield

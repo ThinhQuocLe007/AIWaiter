@@ -1,6 +1,7 @@
 import asyncio
 import io
 import logging
+import os
 import re
 import subprocess
 import threading
@@ -14,10 +15,14 @@ import soundfile as sf
 logger = logging.getLogger(__name__)
 
 # ── Engine selection ─────────────────────────────────────────────────────────
+# Force the cloud engine (edge-tts) regardless of whether piper is installed:
+#   TTS_BACKEND=cloud make voice
+_FORCE_CLOUD = os.getenv("TTS_BACKEND", "").lower() in ("cloud", "edge", "edge-tts")
+
 try:
     from piper import PiperVoice
 
-    _HAS_PIPER = True
+    _HAS_PIPER = not _FORCE_CLOUD
 except ImportError:
     _HAS_PIPER = False
 
@@ -121,13 +126,16 @@ class StreamingPlayer:
     def __init__(self, vad=None):
         self._vad = vad
         self._stop = threading.Event()
+        # Speaker toggle from the tablet ("tắt loa"): unlike _stop it survives reset() — it is a
+        # persistent preference, not a per-turn interrupt. The conversation keeps flowing as text.
+        self._muted = threading.Event()
 
     def play_sentence(self, audio: np.ndarray):
-        if self._stop.is_set():
+        if self._stop.is_set() or self._muted.is_set():
             return
         sd.play(audio, samplerate=SAMPLE_RATE, blocking=False)
         while sd.get_stream() is not None and sd.get_stream().active:
-            if self._stop.is_set():
+            if self._stop.is_set() or self._muted.is_set():
                 sd.stop()
                 break
             if self._vad and self._vad.is_speaking():
@@ -145,6 +153,19 @@ class StreamingPlayer:
     def is_stopped(self) -> bool:
         return self._stop.is_set()
 
+    def set_muted(self, muted: bool):
+        if muted:
+            self._muted.set()
+            try:
+                sd.stop()  # cut the sentence currently playing, not just future ones
+            except Exception:
+                pass
+        else:
+            self._muted.clear()
+
+    def is_muted(self) -> bool:
+        return self._muted.is_set()
+
     def reset(self):
         self._stop.clear()
 
@@ -153,6 +174,8 @@ class StreamingPlayer:
 
 
 def speak_streaming(text: str, stage: str, player: StreamingPlayer):
+    if player.is_muted():
+        return  # skip synthesis entirely — no point paying TTS latency for silence
     sentences = split_vietnamese_sentences(text)
     if not sentences:
         return
@@ -171,7 +194,7 @@ def speak_streaming(text: str, stage: str, player: StreamingPlayer):
 
 def speak_sentence(text: str, player: StreamingPlayer) -> None:
     """Play a single pre-split sentence through TTS immediately (streaming path)."""
-    if not text.strip():
+    if not text.strip() or player.is_muted():
         return
     audio = synthesize(text)
     if not player.is_stopped():
@@ -184,5 +207,7 @@ def warmup() -> None:
         _synthesize_piper(".")
         logger.info("TTS warmup complete (piper)")
     else:
-        asyncio.run(_synthesize_edge_tts(".", "IDLE"))
+        # edge-tts returns NoAudioReceived for punctuation-only text (e.g. ".");
+        # warm up with a real speakable word instead.
+        asyncio.run(_synthesize_edge_tts("Xin chào", "IDLE"))
         logger.info("TTS warmup complete (edge-tts fallback)")

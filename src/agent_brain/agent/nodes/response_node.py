@@ -180,6 +180,9 @@ def _format_history_for_llm(messages) -> str:
 def _format_chat_for_llm(ctx: ChatResponseContext) -> str:
     blocks = []
 
+    if ctx.table_context:
+        blocks.append(f"Đang phục vụ: {ctx.table_context}")
+
     cart = ctx.active_cart
     cart_text = "trống"
     if cart and cart.items:
@@ -192,12 +195,14 @@ def _format_chat_for_llm(ctx: ChatResponseContext) -> str:
     blocks.append(f"Trạng thái đơn: {ctx.order_stage}")
 
     if ctx.curated_memory:
+        # No per-dish prices here (same reason as _format_search_for_llm): suggestions are
+        # spoken by TTS while the tablet shows price cards. Cart lines above DO keep prices —
+        # "tổng bao nhiêu?" must still be answerable out loud.
         mem_lines = []
         for d in ctx.curated_memory:
-            price_part = f"{_vnd(d.price)}/phần" if d.price else "?₫/phần"
             tags_part = ", ".join(d.tags) if d.tags else ""
             taste_part = d.taste_profile or ""
-            parts = [p for p in [d.name, price_part, tags_part, taste_part] if p]
+            parts = [p for p in [d.name, tags_part, taste_part] if p]
             mem_lines.append(f"  - {' | '.join(parts)}")
         blocks.append("Món đã thảo luận (từ các lần tìm kiếm trước):\n" + "\n".join(mem_lines))
 

@@ -307,6 +307,7 @@ service delivers). Tablets filter events by their own `table_id`.
 | Agent → backend HTTP seam | [src/agent_brain/services/orchestrator_client.py](../src/agent_brain/services/orchestrator_client.py) |
 | Agent resources (centroids, few-shots, prompts, skills) | [src/agent_brain/agent/resources/](../src/agent_brain/agent/resources/) |
 | Voice loop on Jetson (mic → VAD → Whisper → POST /chat → TTS) | [src/edge_voice/main.py](../src/edge_voice/main.py) |
+| Sim robot bridge (dispatcher tasks → Nav2/ArUco in Gazebo + heartbeats) | [robot_ws/src/sim/ai_sim_bridge/ai_sim_bridge/task_bridge.py](../robot_ws/src/sim/ai_sim_bridge/ai_sim_bridge/task_bridge.py) |
 | VAD + STT + cross-thread queues | [src/edge_voice/perception/](../src/edge_voice/perception/) |
 | TTS | [src/edge_voice/output/tts_engine.py](../src/edge_voice/output/tts_engine.py) |
 | Agent HTTP service (LLM on the server; POST /chat) | [src/agent_brain/server.py](../src/agent_brain/server.py) |

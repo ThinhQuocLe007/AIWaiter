@@ -77,5 +77,7 @@ async def _handle_robot_message(dispatcher, robot_id: str, raw: str) -> None:
         await dispatcher.on_arrived(robot_id, msg.get("task_id"))
     elif mtype == "task_done":
         await dispatcher.on_done(robot_id, msg.get("task_id"))
+    elif mtype == "at_dock":
+        await dispatcher.on_at_dock(robot_id)
     else:
         log.warning("unknown robot message type=%r from %s", mtype, robot_id)

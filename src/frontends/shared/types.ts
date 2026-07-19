@@ -101,6 +101,9 @@ export type WsEvent =
   | { type: 'task.created'; task: Task }
   | { type: 'task.updated'; task: Task }
   | { type: 'reset' }
+  // A robot reached a table (role=customer): the tablet at that table switches screens on its
+  // own — 'go_to_table' opens the menu (fresh party), 'call' opens the order-more/pay chooser.
+  | { type: 'robot.arrived'; table_id: number; kind: 'go_to_table' | 'deliver' | 'call' }
   // Voice mirror (role=customer): what the robot heard / replied for a given table. The tablet
   // filters by its own table_id and shows the live conversation + follows any UI action.
   | { type: 'voice.progress'; table_id: number }

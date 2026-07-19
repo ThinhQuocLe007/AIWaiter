@@ -66,6 +66,8 @@ class RobotStatus(str, Enum):
     """Per-robot state (the panel's robot board)."""
     IDLE = "idle"
     BUSY = "busy"
+    # Task finished, driving back to the dock (still assignable — a new task can be queued).
+    RETURNING = "returning"
     OFFLINE = "offline"
 
 

@@ -93,6 +93,9 @@ class ChatResponseContext(BaseModel):
     order_stage: OrderStage = "IDLE"
     chat_history: List[BaseMessage] = Field(default_factory=list)
     curated_memory: List[CuratedDish] = Field(default_factory=list)
+    # Who the agent is serving right now — "Bàn 3 · 2 khách" — resolved from the table's
+    # ACTIVE session (seating records the party size). None before any seating.
+    table_context: Optional[str] = None
     ui_action: None = None
     error_message: None = None
     delegate_reason: Optional[str] = None

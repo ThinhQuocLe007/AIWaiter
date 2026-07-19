@@ -18,7 +18,7 @@ from pathlib import Path
 from fastapi import APIRouter, Response
 from PIL import Image
 
-from ..services.dispatcher import DOCK_POS, TABLE_HEADING, TABLE_POS
+from ..services.dispatcher import DOCK_POS, TABLE_HEADING, TABLE_MARKER_POS
 
 router = APIRouter(tags=["layout"])
 
@@ -30,11 +30,10 @@ _YAML = _MAP_DIR / "restaurant.yaml"
 
 TABLE_SIZE = 0.7  # metres, square footprint drawn at each table
 
-# TABLE_POS is the robot's approach waypoint. The robot faces the ArUco marker (its heading
-# direction) to read the table number, but the real table sits on the OPPOSITE side — away
-# from the marker, out at the wall edge. So for the minimap we push the drawn icon this far
-# against the table's heading.
-TABLE_EDGE_OFFSET = -0.7  # metres (negative = opposite the heading, away from the marker)
+# The icon is anchored at the table's ArUco marker (TABLE_MARKER_POS — the marker hangs at the
+# table itself), then pushed a little further along the robot's approach heading so the square
+# is centred on the table body just beyond the marker rather than on the marker post.
+TABLE_EDGE_OFFSET = 0.35  # metres past the marker, along the approach heading
 
 
 @lru_cache
@@ -78,7 +77,7 @@ def map_image() -> Response:
 def get_layout() -> dict:
     """SLAM map metadata + table/dock positions (map frame, metres) for the minimap."""
     tables = []
-    for tid, (x, y) in sorted(TABLE_POS.items()):
+    for tid, (x, y) in sorted(TABLE_MARKER_POS.items()):
         hx, hy = TABLE_HEADING.get(tid, (0.0, 0.0))
         tables.append({
             "id": tid,
