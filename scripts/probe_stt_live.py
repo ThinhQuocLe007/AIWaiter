@@ -30,6 +30,7 @@ Run:
 Tuning knobs (same as the VAD probe), e.g.:
     VAD_THRESHOLD=0.4 MIC_DEVICE_INDEX=4 uv run python scripts/probe_stt_live.py
 """
+import logging
 import os
 import sys
 import signal
@@ -46,6 +47,11 @@ from src.agent_brain.config import settings
 
 
 def main():
+    # Surface the perception layer's info logs -- which mic got picked, which rate it opened
+    # at, and each "Utterance flushed" -- otherwise the root logger's WARNING default hides
+    # them and a silent mic looks identical to a broken STT.
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+
     print(f"[cfg] DEVICE={settings.DEVICE}  (STT compute: "
           f"{'float16' if settings.DEVICE == 'cuda' else 'int8'})")
 

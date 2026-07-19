@@ -11,6 +11,7 @@ Run:
 On Jetson: run `tegrastats`/`jtop` in another terminal to read unified RAM.
 """
 import argparse
+import logging
 import os
 import sys
 import time
@@ -41,6 +42,11 @@ def main():
     ap.add_argument("--chunks", type=int, default=200, help="number of 512-sample chunks to run (~6.4s)")
     ap.add_argument("--mic", action="store_true", help="test live mic (requires pyaudio)")
     args = ap.parse_args()
+
+    # Without this the perception layer's logger.info() calls are swallowed (root defaults to
+    # WARNING) -- and "Auto-selected USB capture device N" / "Mic opened: ... rate=..." are
+    # exactly what you need to see when diagnosing a mic that opens but records silence.
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 
     base = rss_mb()
     report("startup", base)
