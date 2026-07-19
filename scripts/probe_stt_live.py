@@ -84,7 +84,14 @@ def main():
     print(" Ctrl-C to stop")
     print("=" * 56)
 
+    # The VAD gate is push-to-talk: production arms it per `start_listening` command from the
+    # server. This probe has no server, so re-arm it here after every flushed utterance --
+    # that turns the single-shot gate into the continuous "speak -> see text" loop the probe
+    # is for. Guarded by is_listening() because begin_listen() discards audio in progress.
     while True:
+        if not vad.is_listening():
+            vad.begin_listen()
+
         t = get_transcript(timeout=0.5)
         if t is None or not t.text.strip():
             continue

@@ -210,6 +210,11 @@ class SileroVAD(threading.Thread):
         self._utt_done.clear()
         self._listening.set()
 
+    def is_listening(self) -> bool:
+        """True while a turn is armed. Check before re-arming: begin_listen() drops any
+        utterance in progress, so calling it blindly in a loop would cut speech mid-word."""
+        return self._listening.is_set()
+
     def wait_for_utterance(self, timeout: float) -> bool:
         """Block until the armed utterance is flushed (True) or `timeout` seconds pass (False)."""
         return self._utt_done.wait(timeout)
