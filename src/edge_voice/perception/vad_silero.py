@@ -1,3 +1,4 @@
+import importlib.machinery
 import threading
 import time
 import logging
@@ -66,7 +67,13 @@ class SileroVAD(threading.Thread):
             import torchaudio  # noqa: F401
         except (ImportError, OSError) as e:
             logger.warning(f"torchaudio unusable ({e}) -- stubbing it; silero VAD does not need it")
-            sys.modules["torchaudio"] = types.ModuleType("torchaudio")
+            stub = types.ModuleType("torchaudio")
+            # torch.hub._check_dependencies() walks hubconf's `dependencies = ['torch',
+            # 'torchaudio']` through importlib.util.find_spec(), which reads __spec__ off an
+            # already-imported module and raises `ValueError: torchaudio.__spec__ is None` on a
+            # bare ModuleType. A loader-less ModuleSpec is enough to look well-formed.
+            stub.__spec__ = importlib.machinery.ModuleSpec("torchaudio", loader=None)
+            sys.modules["torchaudio"] = stub
 
     def _load_model(self):
         self._stub_torchaudio_if_broken()
