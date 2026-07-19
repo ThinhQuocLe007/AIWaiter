@@ -1224,7 +1224,8 @@
     "diet_type": "mặn",
     "category": "Ốc Hấp",
     "taste_profile": "Ngọt thanh, thơm sả",
-    "tags": "món mặn, hải sản, tôm, hấp sả"
+    "tags": "món mặn, hải sản, tôm, hấp sả",
+    "image": "/dishes/tom-cang-xanh.jpg"
   },
   {
     "name": "Cá Chim Nướng Sa Tế",
@@ -1410,7 +1411,8 @@
     "diet_type": "mặn",
     "category": "Ốc Hấp",
     "taste_profile": "Dai giòn, thơm sả",
-    "tags": "món mặn, ốc, hấp sả"
+    "tags": "món mặn, ốc, hấp sả",
+    "image": "/dishes/oc-buou.jpg"
   },
   {
     "name": "Ốc Hương Hấp Sả",
@@ -1418,7 +1420,8 @@
     "diet_type": "mặn",
     "category": "Ốc Hấp",
     "taste_profile": "Giòn ngọt, thơm sả",
-    "tags": "món mặn, ốc, hấp sả"
+    "tags": "món mặn, ốc, hấp sả",
+    "image": "/dishes/oc-huong.jpg"
   },
   {
     "name": "Ốc Bươu Nhồi Thịt Hấp Sả",
@@ -1435,7 +1438,8 @@
     "diet_type": "mặn",
     "category": "Ốc Hấp",
     "taste_profile": "Giòn ngọt, thơm sả",
-    "tags": "món mặn, ốc, hấp sả"
+    "tags": "món mặn, ốc, hấp sả",
+    "image": "/dishes/oc-bulot.jpg"
   },
   {
     "name": "Ốc Móng Tay Hấp Sả Quế",
@@ -1443,7 +1447,8 @@
     "diet_type": "mặn",
     "category": "Ốc Hấp",
     "taste_profile": "Ngọt thịt, thơm sả quế",
-    "tags": "món mặn, ốc, hấp sả"
+    "tags": "món mặn, ốc, hấp sả",
+    "image": "/dishes/oc-mong-tay.jpg"
   },
   {
     "name": "Sò Lông Hấp Sả",
@@ -1451,7 +1456,8 @@
     "diet_type": "mặn",
     "category": "Ốc Hấp",
     "taste_profile": "Ngọt thịt, thơm sả",
-    "tags": "món mặn, hải sản, sò, hấp sả"
+    "tags": "món mặn, hải sản, sò, hấp sả",
+    "image": "/dishes/so-long.jpg"
   },
   {
     "name": "Sò Huyết Hấp Sả",
@@ -1459,7 +1465,8 @@
     "diet_type": "mặn",
     "category": "Ốc Hấp",
     "taste_profile": "Ngọt béo, thơm sả",
-    "tags": "món mặn, hải sản, sò huyết, hấp sả"
+    "tags": "món mặn, hải sản, sò huyết, hấp sả",
+    "image": "/dishes/so-huyet.jpg"
   },
   {
     "name": "Vẹm Hấp Sả",
@@ -1467,7 +1474,8 @@
     "diet_type": "mặn",
     "category": "Ốc Hấp",
     "taste_profile": "Ngọt thịt, thơm sả",
-    "tags": "món mặn, hải sản, vẹm, hấp sả"
+    "tags": "món mặn, hải sản, vẹm, hấp sả",
+    "image": "/dishes/vem-new-zealand.jpg"
   },
   {
     "name": "Hàu Sữa Hấp Sả",
@@ -1475,7 +1483,8 @@
     "diet_type": "mặn",
     "category": "Ốc Hấp",
     "taste_profile": "Béo ngậy, thơm sả",
-    "tags": "món mặn, hải sản, hàu, hấp sả"
+    "tags": "món mặn, hải sản, hàu, hấp sả",
+    "image": "/dishes/hau-nuong.jpg"
   },
   {
     "name": "Trứng Cút Lộn",
@@ -1492,7 +1501,8 @@
     "diet_type": "mặn",
     "category": "Ốc Hấp",
     "taste_profile": "Giòn dai, thơm sả",
-    "tags": "món mặn, hải sản, bạch tuộc, hấp sả"
+    "tags": "món mặn, hải sản, bạch tuộc, hấp sả",
+    "image": "/dishes/bach-tuoc.jpg"
   },
   {
     "name": "Mực Hấp Sả Gừng",
@@ -1500,7 +1510,8 @@
     "diet_type": "mặn",
     "category": "Ốc Hấp",
     "taste_profile": "Giòn ngọt, thơm sả gừng",
-    "tags": "món mặn, hải sản, mực, hấp sả"
+    "tags": "món mặn, hải sản, mực, hấp sả",
+    "image": "/dishes/muc.jpg"
   },
   {
     "name": "Tré Trộn Thái",
@@ -1536,7 +1547,8 @@
     "diet_type": "mặn",
     "category": "Gỏi & Trộn",
     "taste_profile": "Chua ngọt, tươi mát, đậm đà",
-    "tags": "món mặn, gỏi, hải sản, khai vị, chia sẻ"
+    "tags": "món mặn, gỏi, hải sản, khai vị, chia sẻ",
+    "image": "/dishes/goi-xoai.jpg"
   },
   {
     "name": "Gỏi Bò Khoai Môn",
@@ -1600,7 +1612,8 @@
     "diet_type": "mặn",
     "category": "Chiên & Khai Vị",
     "taste_profile": "Giòn rụm, ngọt dai",
-    "tags": "món mặn, hải sản, mực, chiên, khai vị"
+    "tags": "món mặn, hải sản, mực, chiên, khai vị",
+    "image": "/dishes/rang-muc.jpg"
   },
   {
     "name": "Hàu Chiên Trứng",
@@ -1608,7 +1621,8 @@
     "diet_type": "mặn",
     "category": "Chiên & Khai Vị",
     "taste_profile": "Béo bùi, mềm thơm",
-    "tags": "món mặn, hải sản, hàu, trứng, chiên"
+    "tags": "món mặn, hải sản, hàu, trứng, chiên",
+    "image": "/dishes/hau-nuong.jpg"
   },
   {
     "name": "Trứng Cút Lộn Chiên Giòn",
@@ -1616,7 +1630,8 @@
     "diet_type": "mặn",
     "category": "Chiên & Khai Vị",
     "taste_profile": "Giòn rụm, béo bùi",
-    "tags": "món mặn, trứng cút lộn, chiên, ăn vặt, nhậu"
+    "tags": "món mặn, trứng cút lộn, chiên, ăn vặt, nhậu",
+    "image": "/dishes/trung-cut-lon.jpg"
   },
   {
     "name": "Chim Cút Chiên Bơ",
@@ -1884,7 +1899,8 @@
     "category": "Mì - Cháo - Cơm",
     "taste_profile": "Béo bùi, vừa miệng",
     "tags": "món mặn, cơm chiên, trứng cút, no bụng",
-    "group": "Cơm Phủ Trứng"
+    "group": "Cơm Phủ Trứng",
+    "image": "/dishes/com-chien.jpg"
   },
   {
     "name": "Cơm Phủ Trứng Sò Điệp",
@@ -1893,7 +1909,8 @@
     "category": "Mì - Cháo - Cơm",
     "taste_profile": "Ngọt béo, đậm đà",
     "tags": "món mặn, cơm chiên, sò điệp, hải sản, no bụng",
-    "group": "Cơm Phủ Trứng"
+    "group": "Cơm Phủ Trứng",
+    "image": "/dishes/com-chien.jpg"
   },
   {
     "name": "Cơm Phủ Trứng Bò",
@@ -1902,7 +1919,8 @@
     "category": "Mì - Cháo - Cơm",
     "taste_profile": "Đậm đà, thịt bò mềm",
     "tags": "món mặn, cơm chiên, thịt bò, no bụng",
-    "group": "Cơm Phủ Trứng"
+    "group": "Cơm Phủ Trứng",
+    "image": "/dishes/com-chien.jpg"
   },
   {
     "name": "Lẩu Khổ Qua Cá Thác Lác",

@@ -1,7 +1,8 @@
 <template>
   <div class="dish-card">
     <img v-if="item.image" :src="item.image" :alt="item.name" class="dish-img" loading="lazy" />
-    <div v-else class="dish-img dish-img-placeholder" aria-hidden="true">🍽️</div>
+    <!-- No photo for this dish: its category icon (🥤, 🦪, …) beats a generic plate. -->
+    <div v-else class="dish-img dish-img-placeholder" aria-hidden="true">{{ categoryIcon }}</div>
     <div class="dish-info">
       <span class="dish-name">{{ item.name }}</span>
       <span class="dish-price">{{ formatPrice(item.price) }}</span>
@@ -20,12 +21,17 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useCartStore } from '@/stores/cart'
+import { useMenuStore } from '@/stores/menu'
 import { formatPrice } from '@/utils/format'
 import type { FoodItem } from '@/types'
 
 const props = defineProps<{ item: FoodItem }>()
 const cart = useCartStore()
+const menu = useMenuStore()
 const quantity = computed(() => cart.quantityFor(props.item.id))
+const categoryIcon = computed(
+  () => menu.categories.find((c) => c.id === props.item.categoryId)?.icon ?? '🍽️',
+)
 </script>
 
 <style scoped>

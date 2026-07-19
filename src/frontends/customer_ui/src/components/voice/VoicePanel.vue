@@ -37,9 +37,14 @@
 
           <!-- Dishes the AI just mentioned: tappable cards (image + price + add) under the
                bubble. The reply text carries no prices — the robot speaks words only, the
-               guest reads the numbers here and can order with a tap instead of by voice. -->
+               guest reads the numbers here and can order with a tap instead of by voice.
+               A family mention ("lẩu") renders as one group card: shared photo, every
+               option priced on its own row. -->
           <div v-if="msg.role === 'ai' && dishesFor(msg).length" class="dish-cards">
-            <VoiceDishCard v-for="d in dishesFor(msg)" :key="d.id" :item="d" />
+            <template v-for="m in dishesFor(msg)" :key="m.kind === 'group' ? `g-${m.group.id}` : m.item.id">
+              <VoiceGroupCard v-if="m.kind === 'group'" :group="m.group" />
+              <VoiceDishCard v-else :item="m.item" />
+            </template>
           </div>
         </template>
 
@@ -106,9 +111,9 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { useVoiceStore, type ChatMessage } from '@/stores/voice'
 import { useMenuStore } from '@/stores/menu'
-import { buildDishIndex, matchDishes } from '@/utils/matchDishes'
+import { buildDishIndex, matchDishes, type DishMatch } from '@/utils/matchDishes'
 import VoiceDishCard from './VoiceDishCard.vue'
-import type { FoodItem } from '@/types'
+import VoiceGroupCard from './VoiceGroupCard.vue'
 
 const voice = useVoiceStore()
 const menu = useMenuStore()
@@ -127,10 +132,10 @@ watch(
 const dishIndex = computed(() => buildDishIndex(menu.foodItems, menu.groupsByCategory))
 
 // Cache per message id — messages are immutable once pushed.
-const dishCache = new Map<number, FoodItem[]>()
+const dishCache = new Map<number, DishMatch[]>()
 watch(dishIndex, () => dishCache.clear()) // menu (re)loaded: stale matches out
 
-function dishesFor(msg: ChatMessage): FoodItem[] {
+function dishesFor(msg: ChatMessage): DishMatch[] {
   if (dishIndex.value.length === 0) return []
   let dishes = dishCache.get(msg.id)
   if (!dishes) {
@@ -334,7 +339,14 @@ watch(
   width: min(88%, 560px);
 }
 
-.dish-cards:has(> :only-child) {
+/* A group card lists several priced options — give it the full row. */
+.dish-cards > .group-card {
+  grid-column: 1 / -1;
+}
+
+/* Shrink only when the sole card is a single dish; a lone group card keeps the width
+   its option rows need. */
+.dish-cards:has(> .dish-card:only-child) {
   grid-template-columns: minmax(0, 1fr);
   width: min(60%, 300px);
 }
