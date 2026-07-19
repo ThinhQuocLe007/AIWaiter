@@ -20,6 +20,7 @@
 |------|-------------|
 | [`guides/run-guide-vi.md`](guides/run-guide-vi.md) | Setup & run instructions (Vietnamese) |
 | [`guides/run-voice-vi.md`](guides/run-voice-vi.md) | Voice pipeline setup guide (Vietnamese) |
+| [`guides/jetson-boot-runbook-vi.md`](guides/jetson-boot-runbook-vi.md) | Thứ tự chạy từ lúc boot Jetson tới lúc nói được: server → mic → binding bàn → nút "nói chuyện" (Vietnamese) |
 | [`guides/setup-deploy.md`](guides/setup-deploy.md) | Deployment configuration, CUDA extras, environment setup |
 | [`guides/makefile-reference.md`](guides/makefile-reference.md) | Complete Makefile target reference |
 | [`guides/jetson-ctranslate2-build.md`](guides/jetson-ctranslate2-build.md) | Building ctranslate2 on Jetson |
