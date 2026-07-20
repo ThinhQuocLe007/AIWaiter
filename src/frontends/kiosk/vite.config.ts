@@ -7,6 +7,10 @@ import vue from '@vitejs/plugin-vue'
 // Standalone app per the per-surface convention; shares dependency-free code with the
 // other frontends via the @shared alias.
 export default defineConfig({
+  // Production is served by FastAPI at http://<server>:8000/kiosk (see main.py `_mount_spa`).
+  // Without this the bundle would request its assets from /assets/* — the path customer_ui
+  // owns at the root mount — and the kiosk would load a blank page.
+  base: '/kiosk/',
   plugins: [vue()],
   resolve: {
     alias: {

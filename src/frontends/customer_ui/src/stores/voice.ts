@@ -239,9 +239,17 @@ export const useVoiceStore = defineStore('voice', () => {
   // Speaker toggle — not just a local flag: it mutes the robot's actual TTS output (the audio
   // plays on the robot's Jetson, not this tablet). Muting cuts the sentence currently playing;
   // best-effort when no robot is at the table (the flag still drives the next turn's state).
-  function toggleSound() {
+  async function toggleSound() {
     isSoundEnabled.value = !isSoundEnabled.value
-    setVoiceMuted(getStoredTableId(), !isSoundEnabled.value).catch(() => {})
+    // Say so when the command didn't reach a robot. The toggle used to swallow every failure,
+    // so a guest at a table with no robot bound saw the icon flip and the speaker keep talking,
+    // with nothing on screen explaining why — indistinguishable from a dead button.
+    try {
+      const res = await setVoiceMuted(getStoredTableId(), !isSoundEnabled.value)
+      if (res.status === 'no_device') pushMessage('ai', 'Chưa kết nối được loa của robot ạ.')
+    } catch {
+      pushMessage('ai', 'Chưa đổi được chế độ loa ạ, anh/chị thử lại nhé.')
+    }
   }
 
   // The "talk to AI" / "Nói tiếp" button. The mic lives on the table's voice device (Jetson/laptop),
@@ -281,8 +289,14 @@ export const useVoiceStore = defineStore('voice', () => {
     aiState.value = 'idle'
     if (phase === 'listening' || phase === 'thinking') {
       suppressTurn = true
-      // Best-effort device-side abort; harmless if the utterance already left the device.
-      cancelVoiceListen(getStoredTableId()).catch(() => {})
+      // Best-effort device-side abort; harmless if the utterance already left the device. The
+      // view is already back to idle either way — but if the command never reached a robot the
+      // speaker keeps going, so name that instead of leaving the guest with a silent no-op.
+      cancelVoiceListen(getStoredTableId())
+        .then((res) => {
+          if (res.status === 'no_device') pushMessage('ai', 'Chưa kết nối được robot để dừng ạ.')
+        })
+        .catch(() => {})
     }
   }
 
@@ -300,6 +314,11 @@ export const useVoiceStore = defineStore('voice', () => {
       const res = await newVoiceChat(getStoredTableId()) // also stops any in-flight turn/speech
       if (res.status === 'ok') {
         pushMessage('ai', 'Dạ, mình bắt đầu cuộc trò chuyện mới nhé ạ!')
+        // Memory wiped, but no robot mic to cut off: it may still be finishing the previous
+        // answer aloud. Say it, so the leftover speech doesn't look like the reset failed.
+        if (res.device === false) {
+          pushMessage('ai', '(Chưa kết nối được robot nên câu đang nói có thể vẫn phát hết ạ.)')
+        }
       } else {
         pushMessage('ai', 'Trợ lý chưa sẵn sàng làm mới ạ, anh/chị thử lại sau nhé.')
       }

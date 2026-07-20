@@ -6,6 +6,10 @@ import vue from '@vitejs/plugin-vue'
 // Control panel (kitchen / manager). Standalone app per the per-surface convention;
 // shares dependency-free code with the other frontends via the @shared alias.
 export default defineConfig({
+  // Production is served by FastAPI at http://<server>:8000/panel (see main.py `_mount_spa`).
+  // Without this the bundle would request its assets from /assets/* — the path customer_ui
+  // owns at the root mount — and the panel would load a blank page.
+  base: '/panel/',
   plugins: [vue()],
   resolve: {
     alias: {

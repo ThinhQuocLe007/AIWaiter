@@ -89,11 +89,23 @@ kiosk:
 panel:
 	@cd src/frontends/panel && npm run dev
 
+# Build ALL THREE web apps for production. `make backend` then serves the dist/ folders itself
+# (src/server_orchestrator/main.py) on ONE origin — customer_ui at :8000/, kiosk at :8000/kiosk,
+# panel at :8000/panel. Clients (Jetson chromium, entrance tablet, kitchen panel) only open a URL;
+# they need neither Node nor a dev server. Run this on the SERVER after every `git pull`.
 build:
-	@echo "Building frontend for production..."
+	@echo "Building customer_ui, kiosk, panel for production..."
 	@cd src/frontends/customer_ui && npm run build
-	@echo "Done. Output in src/frontends/customer_ui/dist/"
+	@cd src/frontends/kiosk && npm run build
+	@cd src/frontends/panel && npm run build
+	@echo ""
+	@echo "Done. Restart 'make backend' — it serves:"
+	@echo "    http://<SERVER_IP>:8000/        customer_ui (robot / table tablet)"
+	@echo "    http://<SERVER_IP>:8000/kiosk   kiosk cổng"
+	@echo "    http://<SERVER_IP>:8000/panel   bảng điều khiển bếp"
 
+# Local sanity-check of ONE production bundle through Vite's own preview server (its proxy sends
+# /api + /ws to :8000). Deploy does not use this — the backend serves dist/ directly, see `build`.
 serve:
 	@echo "Serving production build on http://0.0.0.0:4173"
 	@cd src/frontends/customer_ui && npm run preview -- --host 0.0.0.0 --port 4173

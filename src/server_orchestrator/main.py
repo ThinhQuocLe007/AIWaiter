@@ -10,9 +10,11 @@ robot WS hub. Bước 0 ships the skeleton + GET /menu; orders/payments/tasks co
 
 import asyncio
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from .services import dispatcher
 from .config import settings
@@ -58,7 +60,39 @@ app.include_router(admin.router)
 app.include_router(voice.router)
 app.include_router(ws_router)
 
+# The browsers call every endpoint under /api — in dev the Vite proxy strips that prefix before
+# forwarding here, so the bare paths above are all a dev server ever needs. In production the SPAs
+# are served by THIS app (below) with no proxy in front, so the same routers must also answer at
+# /api or every fetch from the built bundles 404s. Bare paths stay for the non-browser callers
+# (agent_brain's voice bridge, the robot clients) which address the backend directly.
+# include_in_schema=False: the alias would otherwise duplicate every operation in /docs.
+for _api_router in (menu, tables, orders, payments, robots, layout, tasks, admin, voice):
+    app.include_router(_api_router.router, prefix="/api", include_in_schema=False)
+
 
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
+
+
+# ── Production web serving ───────────────────────────────────────────────────────────────────
+# One origin for everything: the server builds all three SPAs (`make build`) and serves them here,
+# so every client (Jetson kiosk browser, entrance tablet, kitchen panel) only opens a URL — no
+# Node, no build, no CORS, no dev server. Mounted only when a dist/ exists, so a machine that
+# never built the web still boots the API fine.
+#
+# customer_ui uses hash routing and kiosk/panel are single-page, so no SPA history fallback is
+# needed — the server never sees a client-side route.
+FRONTENDS_DIR = Path(__file__).resolve().parents[2] / "src" / "frontends"
+
+
+def _mount_spa(url_path: str, app_name: str) -> None:
+    dist = FRONTENDS_DIR / app_name / "dist"
+    if dist.is_dir():
+        app.mount(url_path, StaticFiles(directory=dist, html=True), name=app_name)
+
+
+# Sub-path apps first: mounting "/" is a catch-all and would shadow anything mounted after it.
+_mount_spa("/kiosk", "kiosk")
+_mount_spa("/panel", "panel")
+_mount_spa("/", "customer_ui")

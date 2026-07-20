@@ -55,8 +55,12 @@ export function setVoiceMuted(tableId: number, muted: boolean): Promise<ListenRe
 
 // POST /voice/new-chat → wipe the agent's conversation memory for this table (fresh LLM thread;
 // the visit/bill continues). 'agent_unreachable' when the LLM service is down.
+// `device` is false when no robot's mic was reachable to stop mid-sentence: the memory reset
+// still happened, so the button is not a failure — but the robot may finish the old answer out
+// loud, and the guest should be told rather than left guessing.
 export interface NewChatResult {
   status: 'ok' | 'agent_unreachable'
+  device?: boolean
 }
 
 export function newVoiceChat(tableId: number): Promise<NewChatResult> {

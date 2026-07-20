@@ -125,6 +125,15 @@ watch(() => props.items.length, () => nextTick(updateArrows))
   padding-bottom: 0.5rem;
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
+  /* This is the app's ONLY horizontal scroller, and the one place native touch panning
+     doesn't work on the kiosk — useDragScroll drives it from pointer events instead.
+     For that to happen the browser must not claim the gesture: while it thinks it may
+     pan horizontally here it fires pointercancel on the first finger move and the drag
+     handler never sees the rest of the gesture (hence "only the scrollbar/arrows work").
+     `pan-y` hands vertical back to the browser (the page still scrolls through the strip)
+     and keeps the horizontal axis ours. The value intersects with the ancestors' — the
+     cards' `touch-action: manipulation` from main.css can't widen it back. */
+  touch-action: pan-y;
 }
 
 .nav-arrow {

@@ -184,7 +184,11 @@ async def voice_device_loop(vad: SileroVAD, agent_client: httpx.Client, player: 
     url = _backend_ws_url()
     retry = 0
     turn_task: asyncio.Task | None = None
-    cancel = threading.Event()  # per-turn abort flag, shared with the capture worker thread
+    # Abort flag of the CURRENT turn, handed to that turn's capture worker. A fresh Event per
+    # turn, never a reused one: a cancelled worker can still be parked in a blocking call (the
+    # agent stream, the STT queue wait) for seconds after we cancel it, and clearing a SHARED
+    # flag for the next turn would un-cancel that zombie and let it speak over the new one.
+    turn_cancel = threading.Event()
     while True:
         try:
             async with websockets.connect(url) as ws:
@@ -203,19 +207,25 @@ async def voice_device_loop(vad: SileroVAD, agent_client: httpx.Client, player: 
                         if table_id is None:
                             print("[WARN] start_listening thiếu table_id, bỏ qua.")
                             continue
-                        if turn_task is not None and not turn_task.done():
+                        # Busy only counts for a turn still doing real work. A CANCELLED turn is a
+                        # zombie: it has been told to quit and is just unwinding a blocking read,
+                        # which can take as long as the agent takes to answer. Treating it as busy
+                        # is what made the device go deaf after Hủy / "cuộc trò chuyện mới" — every
+                        # later start_listening was dropped here and the guest saw an agent that
+                        # had simply stopped hearing them.
+                        if turn_task is not None and not turn_task.done() and not turn_cancel.is_set():
                             print("[BUSY] một lượt đang chạy — bỏ qua start_listening.")
                             continue
-                        cancel.clear()
+                        turn_cancel = threading.Event()  # this turn's own flag; zombies keep theirs set
                         player.reset()  # clear a leftover interrupt; mute (if on) persists
                         turn_task = asyncio.create_task(asyncio.to_thread(
-                            _capture_and_send_streaming, vad, agent_client, table_id, player, cancel
+                            _capture_and_send_streaming, vad, agent_client, table_id, player, turn_cancel
                         ))
                     elif mtype == "cancel_listening":
                         # Tablet's Hủy/Dừng: kill the whole in-flight turn — armed mic, agent
                         # stream consumption AND the sentence currently coming out of the speaker.
                         print("[CANCEL] khách bấm dừng — hủy lượt hiện tại.")
-                        cancel.set()
+                        turn_cancel.set()
                         vad.cancel_listen()
                         player.interrupt()
                     elif mtype == "set_muted":

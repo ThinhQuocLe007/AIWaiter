@@ -153,7 +153,7 @@ async def voice_new_chat(req: ListenRequest) -> dict:
     the reset over plain HTTP (the orchestrator↔agent boundary stays import-free). Also cancel
     whatever the robot is currently saying/capturing so the old conversation stops immediately.
     """
-    await manager.send_to_voice_device(
+    device = await manager.send_to_voice_device(
         req.table_id, {"type": "cancel_listening", "table_id": req.table_id}
     )
     try:
@@ -164,5 +164,8 @@ async def voice_new_chat(req: ListenRequest) -> dict:
             )
             resp.raise_for_status()
     except httpx.HTTPError:
-        return {"status": "agent_unreachable"}
-    return {"status": "ok"}
+        return {"status": "agent_unreachable", "device": False}
+    # The memory reset is what "new chat" MEANS, so it's ok even with no robot at the table — but
+    # report the device separately. Without it the robot keeps talking through the old turn while
+    # the tablet claims a fresh conversation started, which reads as "the button does nothing".
+    return {"status": "ok", "device": device}
