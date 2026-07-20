@@ -48,15 +48,16 @@ def _get_embed_fn():
             "CLASSIFIER_EMBEDDING_MODEL", "bkai-foundation-models/vietnamese-bi-encoder"
         )
         # Same precedence as the retriever's get_embedding_model(): EMBEDDING_DEVICE wins so
-        # the encoders can be pushed off the iGPU independently of the LLM, else the global
-        # DEVICE. float16 only on CUDA -- PyTorch's CPU half-precision kernels are slower.
+        # the encoder can be pushed off the iGPU independently of the LLM, else global DEVICE.
         device = os.getenv("EMBEDDING_DEVICE") or os.getenv("DEVICE") or "cpu"
-        torch_dtype = "float16" if device == "cuda" else "float32"
+        # float32 on both devices, unlike the retriever: these embeddings are fed straight
+        # into the MLP, which holds float32 weights, and the router's margins are small
+        # enough that half-precision rounding could flip a borderline intent.
         _embed_fn = SentenceTransformer(
             model_name,
             device=device,
             trust_remote_code=True,
-            model_kwargs={"torch_dtype": torch_dtype},
+            model_kwargs={"torch_dtype": "float32"},
         )
     return _embed_fn
 
