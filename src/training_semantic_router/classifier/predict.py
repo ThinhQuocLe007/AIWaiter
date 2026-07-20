@@ -38,12 +38,11 @@ def _get_embed_fn():
     if _embed_fn is None:
         from sentence_transformers import SentenceTransformer
 
-        # Deliberately NOT settings.EMBEDDING_MODEL: that one selects the *retriever's*
-        # model (AITeamVN, 1024-dim) and the saved classifier weights are dimension-locked
-        # to whatever they were trained on -- bkai, 768-dim. Reading the shared variable
-        # would load a 1024-dim encoder into a 778-input network and blow up on the first
-        # utterance, which is now the agent's entry point (graph.py: START -> classifier_router).
-        # Retrain via src/training_semantic_router/scripts/train.py before changing this.
+        # Only reached by the OFFLINE scripts (train/evaluate/benchmark/compare), which call
+        # classify() without a vector. In the agent, classifier_router_node encodes through
+        # the shared encode_queries() and passes embedding=..., so this never runs there --
+        # serving-time width is governed by EMBEDDING_MODEL, not by this variable. Keep the
+        # two equal, or offline scores stop describing what production actually does.
         model_name = os.getenv(
             "CLASSIFIER_EMBEDDING_MODEL", "bkai-foundation-models/vietnamese-bi-encoder"
         )
