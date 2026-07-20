@@ -115,10 +115,15 @@ def classify(
         emb = _encode(utterance)
 
     if emb.shape[0] != EMBEDDING_DIM:
+        # Name the variable that actually governs whichever path produced this vector:
+        # the agent passes embedding=... from the shared encoder (EMBEDDING_MODEL), while
+        # the offline scripts fall through to _encode() (CLASSIFIER_EMBEDDING_MODEL).
+        # Blaming the wrong one sends people editing a variable that changes nothing.
+        culprit = "EMBEDDING_MODEL" if embedding is not None else "CLASSIFIER_EMBEDDING_MODEL"
         raise ValueError(
             f"Encoder produced {emb.shape[0]}-dim embeddings but the trained classifier "
-            f"expects {EMBEDDING_DIM}. CLASSIFIER_EMBEDDING_MODEL is pointing at a model "
-            f"the checkpoint was not trained on -- retrain before switching encoders."
+            f"expects {EMBEDDING_DIM}. {culprit} is pointing at a model the checkpoint was "
+            f"not trained on -- retrain before switching encoders."
         )
 
     context_features = extract_context_features(state, utterance)

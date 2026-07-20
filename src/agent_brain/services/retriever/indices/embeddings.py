@@ -87,12 +87,18 @@ def get_sentence_transformer() -> SentenceTransformer:
 
     Model: settings.EMBEDDING_MODEL (falls back to EMBEDDING_MODEL_NAME).
     Device: settings.EMBEDDING_DEVICE (falls back to the global DEVICE). Keeping
-    the embedding model off the iGPU frees unified RAM for the Ollama LLM. float16
-    is only used on CUDA — on CPU PyTorch lacks fast/complete half-precision
-    kernels, so float32 is both faster and safer there.
+    the embedding model off the iGPU frees unified RAM for the Ollama LLM.
+
+    float32 on every device, CUDA included. This encoder is not retrieval-only: since the
+    classifier router replaced the centroid one, its output also feeds the intent MLP,
+    which holds float32 weights and decides on small margins. The float32 pin inside
+    ``training_semantic_router/classifier/predict.py`` does NOT cover this path — that
+    one only runs for the offline scripts — so dropping to float16 here would silently
+    feed the router half-precision vectors. Cosine ranking would tolerate fp16; the
+    router is the reason we don't.
     """
     device = settings.EMBEDDING_DEVICE or settings.DEVICE
-    torch_dtype = "float16" if device == "cuda" else "float32"
+    torch_dtype = "float32"
     return SentenceTransformer(
         active_model_name(),
         device=device,
