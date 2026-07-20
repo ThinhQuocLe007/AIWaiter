@@ -1,0 +1,167 @@
+<?xml version="1.0"?>
+<robot name="restaurant_robot">
+
+    <link name="base_footprint"/>
+
+    <link name="base_link">
+        <visual>
+            <origin xyz="0.0 0.0 0.06855" rpy="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.114" length="0.106"/>
+            </geometry>
+            <material name="blue">
+                <color rgba="0.0 0.3 0.8 1.0"/>
+            </material>
+        </visual>
+    </link>
+
+    <joint name="base_joint" type="fixed">
+        <parent link="base_footprint"/>
+        <child link="base_link"/>
+        <origin xyz="0.0 0.0 0.0362" rpy="0 0 0"/>
+    </joint>
+    
+    
+    <!-- Add lidar stand: a pole spanning exactly from the body top plane (0.12155)
+         to the lidar bottom plane (0.20). Height = 0.20 - 0.12155 = 0.07845 m. -->
+    <link name="lidar_stand">
+        <visual>
+            <!-- link frame sits on the body top plane; pole grows upward -->
+            <origin xyz="0.0 0.0 0.039225" rpy="0.0 0.0 0.0"/>
+            <geometry>
+                <cylinder radius="0.02" length="0.07845"/>
+            </geometry>
+            <material name="grey">
+                <color rgba="0.5 0.5 0.5 1.0"/>
+            </material>
+        </visual>
+    </link>
+
+    <joint name="lidar_stand_joint" type="fixed">
+        <parent link="base_link"/>
+        <child link="lidar_stand"/>
+        <!-- placed on the body top plane (0.12155 m above base_link) -->
+        <origin xyz="0.045 0.0 0.12155" rpy="0.0 0.0 0.0"/>
+    </joint>
+
+    <!-- Add laser scanner. Center = body top (0.12155) + stand (0.07845) + half laser (0.02)
+         = 0.22 m above base_link. -->
+    <link name="laser_link">
+        <visual>
+            <geometry>
+                <cylinder radius="0.035" length="0.04"/>
+            </geometry>
+        </visual>
+    </link>
+    
+    <joint name="laser_joint" type="fixed">
+        <parent link="lidar_stand"/>
+        <child link="laser_link"/>
+        <origin xyz="0.0 0.0 0.09845" rpy="0.0 0.0 3.14159"/>
+    </joint>
+
+    <!-- Rear display screen (cosmetic only, not used by any sensor pipeline).
+         Sketch: slant length 0.105 m, horizontal 0.08 m, vertical rise 0.068 m,
+         tilt = 40.3 deg from horizontal = 49.7 deg from vertical (pitch = 0.867 rad).
+         WIDTH (0.15) and THICKNESS (0.01) are ASSUMED — adjust to real values.
+         Panel long axis is local Z; visual is offset +Z by half its length so it
+         rises from the joint mount point. -->
+    <link name="screen_link">
+        <visual>
+            <origin xyz="0.0 0.0 0.0525" rpy="0.0 0.0 0.0"/>
+            <geometry>
+                <box size="0.01 0.16 0.135"/>
+            </geometry>
+            <material name="black">
+                <color rgba="0.0 0.0 0.0 1.0"/>
+            </material>
+        </visual>
+    </link>
+
+    <joint name="screen_joint" type="fixed">
+        <parent link="base_link"/>
+        <child link="screen_link"/>
+        <!-- Base sits 0.08 m behind base_link center (the sketched 8 cm is measured
+             from the robot center outward). Yaw 180 deg (about Z) orients the panel
+             so it leans back over the center. Base raised to z=0.142 so the top
+             reaches ~0.21 m, just below the lidar center (0.22 m) to avoid the scan plane. -->
+        <origin xyz="-0.08 0.0 0.142" rpy="0.0 -0.867 3.14159"/>
+    </joint>
+
+    <!-- Add wheels -->
+    <link name="left_wheel">
+        <visual>
+            <geometry>
+                <cylinder radius="0.0362" length="0.053"/>
+            </geometry>
+            <material name="black">
+                <color rgba="0.0 0.0 0.0 1.0"/>
+            </material>
+        </visual>
+    </link>
+
+    <joint name="left_wheel_joint" type="continuous">
+        <parent link="base_link"/>
+        <child link="left_wheel"/>
+        <origin xyz="0.0 0.103 0.0" rpy="-1.57079633 0.0 0.0"/>
+        <axis xyz="0.0 0.0 1.0"/>
+    </joint>
+
+    <link name="right_wheel">
+        <visual>
+            <geometry>
+                <cylinder radius="0.0362" length="0.053"/>
+            </geometry>
+            <material name="black">
+                <color rgba="0.0 0.0 0.0 1.0"/>
+            </material>
+        </visual>
+    </link>
+
+    <joint name="right_wheel_joint" type="continuous">
+        <parent link="base_link"/>
+        <child link="right_wheel"/>
+        <origin xyz="0.0 -0.103 0.0" rpy="-1.57079633 0.0 0.0"/>
+        <axis xyz="0.0 0.0 1.0"/>
+    </joint>
+
+    <!-- RealSense D435: base_link -> camera_link.
+         Optical frames (color/depth/...) are published by the RealSense driver. -->
+    <link name="camera_link">
+        <visual>
+            <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
+            <geometry>
+                <!-- Approx D435 body: 90 x 25 x 25 mm -->
+                <box size="0.025 0.09 0.025"/>
+            </geometry>
+            <material name="realsense_grey">
+                <color rgba="0.2 0.2 0.2 1.0"/>
+            </material>
+        </visual>
+    </link>
+
+    <joint name="camera_joint" type="fixed">
+        <parent link="base_link"/>
+        <child link="camera_link"/>
+        <origin xyz="0.10 0.0 0.17655" rpy="0 0 0"/>
+    </joint>
+
+    <!-- Add a caster wheel-->
+    <link name="caster_wheel">
+        <visual>
+            <geometry>
+                <sphere radius="0.015"/>
+            </geometry>
+            <material name="white">
+                <color rgba="1.0 1.0 1.0 1.0"/>
+            </material>
+        </visual>
+    </link>
+
+    <joint name="caster_wheel_joint" type="fixed">
+        <parent link="base_link"/>
+        <child link="caster_wheel"/>
+        <origin xyz="0.09 0.0 -0.0212" rpy="0.0 0.0 0.0"/>
+    </joint>
+    
+</robot>
