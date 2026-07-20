@@ -37,7 +37,13 @@
     "Tôi chọn món này",
     "lấy 2 mì xào sò vs 1 bánh mì bơ tỏi nha",
     "Ê lấy cho anh 1 Tôm Càng Xanh Nướng Phô Mai",
-    "Gọi 1 Khoai Tây Lắc Phô Mai mang về"
+    "Gọi 1 Khoai Tây Lắc Phô Mai mang về",
+    "2 phần ốc hương nha em",
+    "3 chai bia Sài Gòn đi",
+    "1 lẩu hải sản với 2 coca",
+    "Đổi sang món khác giùm mình",
+    "Thay món này bằng món kia đi em",
+    "Sửa đơn giùm, bỏ món này thêm món kia"
   ],
   "ORDER_CONFIRM": [
     "Ok, ghi vào đơn cho mình",
@@ -64,7 +70,11 @@
     "Chốt giùm mình đơn này",
     "Ok vậy được, đặt luôn đi",
     "Ok đặt thôi",
-    "Ừ đúng rồi, xác nhận"
+    "Ừ đúng rồi, xác nhận",
+    "Ghi nhận đơn dùm mình đi",
+    "Lên đơn giúp anh nha",
+    "Tiến hành đặt món giùm mình",
+    "Cho mình xác nhận đơn hàng nha"
   ],
   "SEARCH": [
     "Có món chay không?",
@@ -118,7 +128,34 @@
     "Quán mình có món Hàn Quốc không?",
     "Món chay dưới 50k có những món nào?",
     "Đồ uống trên 15k có gì?",
-    "Món nướng từ 50k đến 100k có những món nào?"
+    "Món nướng từ 50k đến 100k có những món nào?",
+    "Tôm Càng Xanh Nướng Phô Mai giá bao nhiêu một phần?",
+    "Tôm Càng Xanh Nướng Phô Mai có ngon không?",
+    "Chả Giò Hải Sản bao nhiêu calo vậy?",
+    "Chả Giò Hải Sản có mấy cái một phần?",
+    "Nem Chua Rán có ăn kèm với nước chấm gì không?",
+    "Khô Mực Nướng có dai không bạn?",
+    "Cháo Hàu nấu với gì vậy em?",
+    "Cháo Hàu bao nhiêu một tô?",
+    "Lẩu Cá Tầm Măng Chua dành cho mấy người ăn?",
+    "Mực Cháy Tỏi với Mực Chiên Xù khác gì nhau?",
+    "Sò Huyết Hấp Sả bao nhiêu một dĩa thế?",
+    "Ốc Bươu Nhồi Thịt có mấy con một phần?",
+    "Bánh Mì Bơ Tỏi có phải món chay không?",
+    "Sò Điệp Nướng Phô Mai với Mỡ Hành cái nào ngon hơn?",
+    "Ốc Hương Xốt Trứng Muối bao nhiêu calo?",
+    "Ốc Hương Xốt Trứng Muối dành cho mấy người?",
+    "Khoai Tây Lắc Phô Mai ăn có ngán không?",
+    "Bia Sài Gòn với Bia Tiger Bạc cái nào rẻ hơn?",
+    "Trà Tắc với Trà Ổi cái nào ít ngọt hơn?",
+    "Trà Tắc có dùng cho người tiểu đường được không?",
+    "Có giao hàng tận nơi không shop?",
+    "Quán có chỗ đậu xe hơi không?",
+    "Có phòng VIP hay phòng riêng không?",
+    "Món này có những cách chế biến nào?",
+    "Chờ món khoảng bao lâu thì có?",
+    "Bao lâu thì lên món vậy em?",
+    "Nhiêu tiền một phần vậy?"
   ],
   "PAYMENT": [
     "Tính tiền giùm",
@@ -153,7 +190,14 @@
     "Cho mình xin hóa đơn VAT",
     "Xuất hóa đơn đỏ giùm mình",
     "Kiểm tra lại hóa đơn giùm mình",
-    "Xem chi tiết từng món trong hóa đơn"
+    "Xem chi tiết từng món trong hóa đơn",
+    "Cho mình xin bill thanh toán nha",
+    "Check bill dùm mình với",
+    "Ck qua stk được hông em?",
+    "Quẹt thẻ visa được không?",
+    "Cho mình cà thẻ nha",
+    "Mình muốn thanh toán bằng thẻ tín dụng",
+    "Có máy POS không shop?"
   ],
   "CHAT": [
     "Xin chào",
@@ -187,6 +231,11 @@
     "Nãy giờ mình gọi những món gì rồi?",
     "Tổng tiền hiện tại bao nhiêu em?",
     "Mình đã đặt những món nào rồi?",
-    "Đơn hàng của mình tới đâu rồi?"
+    "Đơn hàng của mình tới đâu rồi?",
+    "Trời hôm nay mưa to quá",
+    "Hôm nay nắng nóng ghê",
+    "Ngoài đường kẹt xe dữ vậy",
+    "Cho mình xem lại những món đã kêu",
+    "Mình đã gọi những món nào rồi ta"
   ]
 }

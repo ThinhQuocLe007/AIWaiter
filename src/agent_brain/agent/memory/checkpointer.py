@@ -10,6 +10,8 @@ def get_checkpointer():
     db_path = str(settings.CHECKPOINTS_DB_PATH)
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
     conn = sqlite3.connect(db_path, check_same_thread=False)
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA busy_timeout=5000")
     return SqliteSaver(conn)
 
 

@@ -36,7 +36,7 @@ def last_n_turns(messages: list, n: int) -> list:
 def load_prompt(filename: str, sub_dir: str = "system_prompts") -> str:
     """
     Loads a markdown or text prompt file from the resources directory.
-    Example: load_prompt("router_agent.md") or load_prompt("hospitality.md", "skills")
+    Example: load_prompt("rewriter_agent.md") or load_prompt("hospitality.md", "skills")
     """
     path = settings.resources_dir / sub_dir / filename
     if not path.exists():

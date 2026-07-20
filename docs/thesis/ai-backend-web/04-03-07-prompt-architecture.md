@@ -7,7 +7,7 @@
 
 ---
 
-The system uses zero fine-tuning — all model adaptation is achieved through prompting. Off-the-shelf models (Qwen2.5 7B Instruct, AITeamVN/Vietnamese_Embedding, faster-whisper with PhoWhisper weights) are used without any weight modification. Domain adaptation — Vietnamese restaurant vocabulary, menu knowledge, ordering workflow, hospitality tone — is encoded entirely in the prompt files loaded at agent startup. The prompt architecture is therefore a first-class design element, not an implementation detail (DP4, §4.1.4).
+The system uses zero fine-tuning — all model adaptation is achieved through prompting. Off-the-shelf models (Qwen2.5 7B Instruct, bkai-foundation-models/vietnamese-bi-encoder, faster-whisper with PhoWhisper weights) are used without any weight modification. The intent classifier (§4.3.2) is the exception — it is a trained MLP that learns from synthetic data, but it uses a frozen bi-encoder embedding, so only the lightweight classifier head (220K parameters) is trained. Domain adaptation — Vietnamese restaurant vocabulary, menu knowledge, ordering workflow, hospitality tone — is encoded in the prompt files loaded at agent startup for the LLM-based nodes (worker, response). The prompt architecture is therefore a first-class design element, not an implementation detail (DP4, §4.1.4).
 
 ### 4.3.7.1 Prompt File Inventory
 

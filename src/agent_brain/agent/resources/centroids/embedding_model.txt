@@ -1,1 +1,1 @@
-AITeamVN/Vietnamese_Embedding
+bkai-foundation-models/vietnamese-bi-encoder

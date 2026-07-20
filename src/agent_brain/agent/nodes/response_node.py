@@ -11,6 +11,7 @@ their full text as a single sentence.
 
 import logging
 import re
+import threading
 from queue import Queue
 from typing import Any
 
@@ -55,7 +56,7 @@ _SENTENCE_BOUNDARY = re.compile(r"[.!?]\s")
 
 
 class _StreamContext:
-    """Per-request stream state. Module-level singleton; safe for v1 single-concurrent-request."""
+    """Per-thread stream state. Each request gets its own context via ``threading.local``."""
 
     def __init__(self):
         self.queue: Queue | None = None
@@ -79,11 +80,19 @@ class _StreamContext:
         return self._streamed
 
 
-_stream = _StreamContext()
+_stream_local = threading.local()
+
+
+def _get_stream() -> _StreamContext:
+    ctx = getattr(_stream_local, 'ctx', None)
+    if ctx is None:
+        ctx = _StreamContext()
+        _stream_local.ctx = ctx
+    return ctx
 
 
 def set_output_queue(q: Queue | None) -> None:
-    _stream.set_queue(q)
+    _get_stream().set_queue(q)
 
 # ── LLM client + static prompts (loaded once at module level) ───────────────
 _response_llm = ChatOllama(
@@ -113,6 +122,7 @@ def _llm_invoke(system_prompt: str, context_text: str, fallback: str) -> str:
 
 def _llm_stream(system_prompt: str, context_text: str, fallback: str) -> str:
     """Stream LLM output, emitting complete sentences (punctuation + whitespace)."""
+    stream = _get_stream()
     full_text: list[str] = []
     buffer = ""
     try:
@@ -136,23 +146,24 @@ def _llm_stream(system_prompt: str, context_text: str, fallback: str) -> str:
                 end = match.end()
                 sentence = buffer[:end].strip()
                 if sentence:
-                    _stream.emit(sentence)
+                    stream.emit(sentence)
                 buffer = buffer[end:]
         remaining = buffer.strip()
         if remaining:
-            _stream.emit(remaining)
+            stream.emit(remaining)
         return "".join(full_text)
     except (httpx.HTTPError, ConnectionError) as e:
         logger.error("LLM stream failed: %s", e)
         if fallback:
-            _stream.emit(fallback)
+            stream.emit(fallback)
         return fallback
 
 
 # ── Context formatters (text passed to the LLM as CONTEXT) ──────────────────
 def _format_search_for_llm(ctx: SearchResponseContext) -> str:
     lines = [
-        f"- {r.document.metadata.get('name', 'Unknown')} — {_vnd(r.document.metadata.get('price', 0))}"
+        f"- {r.document.metadata.get('name', 'Unknown')}"
+        f" — {_vnd(r.document.metadata.get('price', 0))}"
         for r in ctx.results
         if r.document.metadata.get("type") == "menu"
         and r.document.metadata.get("price", 0) > 0
@@ -215,67 +226,87 @@ def _format_chat_for_llm(ctx: ChatResponseContext) -> str:
 
 # ── Per-context-type rewriters ──────────────────────────────────────────────
 def _rewrite_order(ctx: OrderResponseContext) -> str:
+    stream = _get_stream()
     if ctx.ambiguous:
         reply = _format_ambiguity(ctx)
-        _stream.emit(reply)
+        stream.emit(reply)
         return reply
     if ctx.off_menu:
-        reply = _format_off_menu_with_suggestions(ctx) if any(o.suggestion for o in ctx.off_menu) else _format_off_menu(ctx)
-        _stream.emit(reply)
+        reply = (
+            _format_off_menu_with_suggestions(ctx)
+            if any(o.suggestion for o in ctx.off_menu)
+            else _format_off_menu(ctx)
+        )
+        stream.emit(reply)
         return reply
     if ctx.status == "error":
         reply = _format_order_error(ctx)
-        _stream.emit(reply)
+        stream.emit(reply)
         return reply
     if ctx.tool == "confirm_order" and ctx.status == "success":
         reply = _format_confirm_reply(ctx.order_id)
-        _stream.emit(reply)
+        stream.emit(reply)
         return reply
     if ctx.tool == "remove_cart" and ctx.status == "success":
         reply = _format_remove_reply(ctx)
-        _stream.emit(reply)
+        stream.emit(reply)
         return reply
     if ctx.tool == "clear_cart" and ctx.status == "success":
         reply = _format_clear_reply()
-        _stream.emit(reply)
+        stream.emit(reply)
         return reply
     reply = _format_cart_echo(ctx)
-    _stream.emit(reply)
+    stream.emit(reply)
     return reply
 
 
 def _rewrite_search(ctx: SearchResponseContext) -> str:
+    stream = _get_stream()
     if ctx.status == "error":
         reply = "Dạ, em chưa tìm thấy món phù hợp ạ. Anh/chị thử từ khóa khác nhé ạ."
-        _stream.emit(reply)
+        stream.emit(reply)
         return reply
     if not ctx.results:
         query_text = f"'{ctx.query}'" if ctx.query else "món này"
-        reply = f"Dạ, {query_text} không có trong thực đơn của quán mình ạ. Anh/chị muốn em gợi ý món khác không ạ?"
-        _stream.emit(reply)
+        reply = (
+            f"Dạ, {query_text} không có trong thực đơn của quán mình ạ."
+            f" Anh/chị muốn em gợi ý món khác không ạ?"
+        )
+        stream.emit(reply)
         return reply
     return _llm_stream(_WAITER_PROMPT, _format_search_for_llm(ctx), _FALLBACK_REPLY)
 
 
 def _rewrite_payment(ctx: PaymentResponseContext) -> str:
+    stream = _get_stream()
     if ctx.tool == "request_payment":
         if ctx.status == "error" or not ctx.amount_vnd:
             reply = "Dạ, hiện chưa có đơn hàng nào trong phiên này ạ."
-            _stream.emit(reply)
+            stream.emit(reply)
             return reply
-        reply = f"Dạ, tổng hóa đơn của anh/chị là {ctx.amount_vnd}₫ ạ. Anh/chị vui lòng quét mã QR để thanh toán nhé."
-        _stream.emit(reply)
+        reply = (
+            f"Dạ, tổng hóa đơn của anh/chị là {ctx.amount_vnd}₫ ạ."
+            f" Anh/chị vui lòng quét mã QR để thanh toán nhé."
+        )
+        stream.emit(reply)
         return reply
     if ctx.status == "success":
-        reply = "Dạ, em đã xác nhận thanh toán thành công. Cảm ơn anh/chị đã dùng bữa tại Ốc Quậy ạ!"
-        _stream.emit(reply)
+        reply = (
+            "Dạ, em đã xác nhận thanh toán thành công."
+            " Cảm ơn anh/chị đã dùng bữa tại Ốc Quậy ạ!"
+        )
+        stream.emit(reply)
         return reply
-    reply = f"Dạ, chưa xác nhận được thanh toán. {ctx.error_message or 'Anh/chị thử lại giúp em nhé ạ.'}"
-    _stream.emit(reply)
+    reply = (
+        f"Dạ, chưa xác nhận được thanh toán."
+        f" {ctx.error_message or 'Anh/chị thử lại giúp em nhé ạ.'}"
+    )
+    stream.emit(reply)
     return reply
 
 
 def _rewrite_chat(ctx: ChatResponseContext) -> str:
+    stream = _get_stream()
     reason = ctx.delegate_reason
     if reason and "xem lại" in reason:
         cart = ctx.active_cart
@@ -284,30 +315,30 @@ def _rewrite_chat(ctx: ChatResponseContext) -> str:
                 tool="add_cart", status="success", cart=cart.items,
                 total_vnd=_vnd(cart.total_price), stage=ctx.order_stage,
             ))
-            _stream.emit(reply)
+            stream.emit(reply)
             return reply
         reply = "Dạ, hiện tại giỏ hàng của anh/chị đang trống ạ."
-        _stream.emit(reply)
+        stream.emit(reply)
         return reply
     if reason and "không rõ" in reason:
         reply = "Dạ em chưa rõ ý anh/chị lắm, anh/chị có thể nói lại được không ạ?"
-        _stream.emit(reply)
+        stream.emit(reply)
         return reply
     msg = _normalize(ctx.user_message)
     if _is_greeting(msg):
         reply = _format_greeting()
-        _stream.emit(reply)
+        stream.emit(reply)
         return reply
     if _is_thanks(msg):
         reply = _format_thanks()
-        _stream.emit(reply)
+        stream.emit(reply)
         return reply
     return _llm_stream(_CHAT_PROMPT, _format_chat_for_llm(ctx), _FALLBACK_REPLY)
 
 
 def _rewrite_retry(ctx: RetryResponseContext) -> str:
     reply = f"Dạ, em xin lỗi anh/chị, {ctx.feedback} Anh/chị kiểm tra lại giúp em nhé ạ."
-    _stream.emit(reply)
+    _get_stream().emit(reply)
     return reply
 
 
@@ -329,12 +360,13 @@ def _rewrite(ctx: ResponseContext) -> str:
 # ── Public node entry point ─────────────────────────────────────────────────
 @trace_latency("Response Node", run_type="chain")
 def response_node(state: AgentState) -> dict[str, Any]:
+    stream = _get_stream()
     ctx = state.get("response_context")
     if ctx is None:
-        if not _stream.was_streamed:
-            _stream.emit(_FALLBACK_REPLY)
+        if not stream.was_streamed:
+            stream.emit(_FALLBACK_REPLY)
         return {"messages": [AIMessage(content=_FALLBACK_REPLY)], "response_context": None}
     reply = _rewrite(ctx)
-    if not _stream.was_streamed:
-        _stream.emit(reply)
+    if not stream.was_streamed:
+        stream.emit(reply)
     return {"messages": [AIMessage(content=reply)], "response_context": None}

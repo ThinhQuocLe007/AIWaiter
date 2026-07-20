@@ -12,7 +12,7 @@ class RetrieverManager:
         self.bm25_engine = bm25_engine
         self.score_threshold = score_threshold
         self.k = k
-        self.executor = ThreadPoolExecutor(max_workers=2)
+        self._executor = ThreadPoolExecutor(max_workers=2)
 
     def search(self,
                query: str,
@@ -43,10 +43,16 @@ class RetrieverManager:
         )
 
     def _get_raw_scores(self, query: str, k: int) -> Tuple[list, list]:
-        future_bm25 = self.executor.submit(self.bm25_engine.search, query, k=k)
-        future_vector = self.executor.submit(self.vector_engine.search, query, k=k)
-
+        executor = self._executor
+        if executor is None:
+            return self.bm25_engine.search(query, k=k), self.vector_engine.search(query, k=k)
+        future_bm25 = executor.submit(self.bm25_engine.search, query, k=k)
+        future_vector = executor.submit(self.vector_engine.search, query, k=k)
         bm25 = future_bm25.result()
         vector = future_vector.result()
-
         return bm25, vector
+
+    def shutdown(self) -> None:
+        if self._executor is not None:
+            self._executor.shutdown(wait=False)
+            self._executor = None

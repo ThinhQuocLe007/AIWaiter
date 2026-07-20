@@ -4,15 +4,18 @@ from pydantic import BaseModel, Field
 
 IntentType = Literal["ORDER", "ORDER_CONFIRM", "SEARCH", "PAYMENT", "CHAT"]
 
+
 class IntentPrediction(BaseModel):
-    """The result of the SLM multi-intent routing."""
+    """Result of SLM multi-intent routing (legacy, kept for backward compatibility with eval)."""
     intents: list[IntentType] = Field(
-        description="List of classified user intents in sequential execution order. E.g., ['SEARCH', 'ORDER']."
+        description="List of classified user intents in sequential execution order."
     )
     reasoning: str = Field(description="Brief step-by-step reasoning for the classification.")
-    queries: dict[str, str] | None = Field(
-        default=None,
-        description="Per-intent sub-queries for multi-intent turns. "
-        "e.g. {'SEARCH': 'Ốc Hương có cay không?', 'ORDER': 'lấy 1 phần Ốc Hương'}. "
-        "Omit for single-intent turns."
+
+
+class RewriterOutput(BaseModel):
+    """Output of the rewriter node: utterance decomposed into single-intent fragments."""
+    fragments: list[str] = Field(
+        description="Single-intent fragment strings. Each is a complete, self-contained "
+        "Vietnamese sentence that the semantic router can classify independently."
     )

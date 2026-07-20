@@ -32,6 +32,8 @@ def build_centroids(
     encode_queries,
     model_name: str,
 ) -> None:
+    from sklearn.cluster import KMeans
+
     print(f"Loading utterances from: {utterances_path}")
     with open(utterances_path, "r", encoding="utf-8") as f:
         routes = json.load(f)
@@ -44,12 +46,25 @@ def build_centroids(
     print(f"\nEmbedding model (active): {model_name}")
 
     centroids: dict[str, np.ndarray] = {}
-    print("\nComputing centroids (np.mean per class):")
+    print("\nComputing multi-centroids (k-means per class):")
     for intent, utterances in routes.items():
+        n = len(utterances)
+        k = max(1, min(3, n // 10))
         embeddings = encode_queries(utterances)
-        centroid = np.mean(embeddings, axis=0)
-        centroids[intent] = centroid
-        print(f"  {intent:8s}: {len(utterances):3d} utterances → centroid shape {centroid.shape}")
+
+        if k == 1:
+            sub_centroids = [np.mean(embeddings, axis=0)]
+        else:
+            kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
+            labels = kmeans.fit_predict(embeddings)
+            sub_centroids = []
+            for i in range(k):
+                cluster_embeddings = embeddings[labels == i]
+                sub_centroids.append(np.mean(cluster_embeddings, axis=0))
+
+        for i, cent in enumerate(sub_centroids):
+            centroids[f"{intent}_{i}"] = cent
+        print(f"  {intent:8s}: {n:3d} utterances → {k} sub-centroids")
 
     # Save centroids
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -67,10 +82,10 @@ def build_centroids(
     print("\nVerifying — loading centroids.npz back ...")
     data = np.load(str(npz_path))
     loaded = {k: data[k] for k in data.files}
-    for intent, centroid in loaded.items():
-        assert np.allclose(centroid, centroids[intent], rtol=1e-6), \
-            f"Mismatch in {intent} centroid!"
-    print(f"  All {len(loaded)} centroids verified ✓")
+    for key, centroid in loaded.items():
+        assert np.allclose(centroid, centroids[key], rtol=1e-6), \
+            f"Mismatch in {key} centroid!"
+    print(f"  All {len(loaded)} sub-centroids verified ✓")
     print("\nDone.")
 
 

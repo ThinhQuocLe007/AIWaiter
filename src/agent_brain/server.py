@@ -226,68 +226,70 @@ def chat_stream(req: ChatRequest):
         table_int = normalise_table_id(table_id)
         text = req.text.strip()
 
-        _orchestrator.post_voice_event(
-            {"type": "voice.heard", "table_id": table_int, "text": text}
-        )
-
-        yield f"data: {json.dumps({'event': 'progress', 'text': 'processing'})}\n\n"
-        _orchestrator.post_voice_event(
-            {"type": "voice.progress", "table_id": table_int, "status": "đang xử lý..."}
-        )
-
         executor = ThreadPoolExecutor(max_workers=1)
-        future = executor.submit(_agent.chat, text, table_id)
+        try:
+            _orchestrator.post_voice_event(
+                {"type": "voice.heard", "table_id": table_int, "text": text}
+            )
 
-        while True:
-            try:
-                msg = q.get(timeout=0.1)
-                event_type, payload = msg
-                if event_type == "sentence":
-                    yield f"data: {json.dumps({'event': 'sentence', 'text': payload})}\n\n"
-            except Empty:
-                if future.done():
-                    while True:
-                        try:
-                            msg = q.get_nowait()
-                            if msg[0] == "sentence":
-                                payload = json.dumps(
-                                    {"event": "sentence", "text": msg[1]}
-                                )
-                                yield f"data: {payload}\n\n"
-                        except Empty:
-                            break
-                    break
+            yield f"data: {json.dumps({'event': 'progress', 'text': 'processing'})}\n\n"
+            _orchestrator.post_voice_event(
+                {"type": "voice.progress", "table_id": table_int, "status": "đang xử lý..."}
+            )
 
-        set_output_queue(None)
-        result = future.result()
-        executor.shutdown(wait=False)
+            future = executor.submit(_agent.chat, text, table_id)
 
-        response = result["response"]
-        action = result.get("action")
-        stage = result.get("final_stage", "IDLE")
-        session_id = result.get("session_id")
-        cart = result.get("cart")
-        confirmed = result.get("order_confirmed", False)
-        cart_touched = result.get("cart_touched", False)
+            while True:
+                try:
+                    msg = q.get(timeout=0.1)
+                    event_type, payload = msg
+                    if event_type == "sentence":
+                        yield f"data: {json.dumps({'event': 'sentence', 'text': payload})}\n\n"
+                except Empty:
+                    if future.done():
+                        while True:
+                            try:
+                                msg = q.get_nowait()
+                                if msg[0] == "sentence":
+                                    payload = json.dumps(
+                                        {"event": "sentence", "text": msg[1]}
+                                    )
+                                    yield f"data: {payload}\n\n"
+                            except Empty:
+                                break
+                        break
 
-        _orchestrator.post_voice_event({
-            "type": "voice.reply", "table_id": table_int,
-            "text": response, "action": action,
-            "stage": stage, "cart": cart, "confirmed": confirmed,
-            "cart_touched": cart_touched,
-        })
+            result = future.result()
 
-        log_turn(
-            table_id=table_id, session_id=session_id,
-            user_text=text, response=response,
-            stage=stage, action=action,
-        )
+            response = result["response"]
+            action = result.get("action")
+            stage = result.get("final_stage", "IDLE")
+            session_id = result.get("session_id")
+            cart = result.get("cart")
+            confirmed = result.get("order_confirmed", False)
+            cart_touched = result.get("cart_touched", False)
 
-        done_data = json.dumps({
-            "event": "done",
-            "action": action, "stage": stage,
-            "session_id": session_id,
-        })
-        yield f"data: {done_data}\n\n"
+            _orchestrator.post_voice_event({
+                "type": "voice.reply", "table_id": table_int,
+                "text": response, "action": action,
+                "stage": stage, "cart": cart, "confirmed": confirmed,
+                "cart_touched": cart_touched,
+            })
+
+            log_turn(
+                table_id=table_id, session_id=session_id,
+                user_text=text, response=response,
+                stage=stage, action=action,
+            )
+
+            done_data = json.dumps({
+                "event": "done",
+                "action": action, "stage": stage,
+                "session_id": session_id,
+            })
+            yield f"data: {done_data}\n\n"
+        finally:
+            set_output_queue(None)
+            executor.shutdown(wait=False)
 
     return StreamingResponse(generate(), media_type="text/event-stream")

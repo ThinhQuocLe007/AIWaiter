@@ -1,16 +1,25 @@
 from langchain_core.tools import tool
 
 from src.agent_brain.schemas.search import SearchInput, SearchResponse
-from src.agent_brain.services.retriever.builder import IndexBuilder
-from src.agent_brain.services.retriever.hybrid_retriever import RetrieverManager
 from src.agent_brain.utils import logger, trace_latency
 
-builder = IndexBuilder()
-builder.load_database()
-retriever = RetrieverManager(
-    vector_engine=builder.vector_engine,
-    bm25_engine=builder.bm25_engine
-)
+_retriever = None
+
+
+def _get_retriever():
+    """Lazy-load the hybrid retriever once, deferring index file I/O to first use."""
+    global _retriever
+    if _retriever is None:
+        from src.agent_brain.services.retriever.builder import IndexBuilder
+        from src.agent_brain.services.retriever.hybrid_retriever import RetrieverManager
+
+        builder = IndexBuilder()
+        builder.load_database()
+        _retriever = RetrieverManager(
+            vector_engine=builder.vector_engine,
+            bm25_engine=builder.bm25_engine,
+        )
+    return _retriever
 
 
 def _split_query(query: str) -> list[str]:
@@ -34,7 +43,7 @@ def search(query: str,
     sub_queries = _split_query(query)
 
     if len(sub_queries) == 1:
-        results = retriever.search(
+        results = _get_retriever().search(
             query=sub_queries[0],
             k=6,
             max_price=max_price,
@@ -61,6 +70,7 @@ def search(query: str,
 
 def _multi_search(sub_queries: list[str], max_price: float | None,
                   min_price: float | None) -> list:
+    retriever = _get_retriever()
     all_results: list = []
     seen: set[str] = set()
 

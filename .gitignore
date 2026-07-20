@@ -37,6 +37,7 @@ env/
 ENV/
 pyenv/
 .pytest_cache/
+.ruff_cache/
 .coverage
 htmlcov/
 
@@ -96,33 +97,17 @@ evals/results/
 scratch/
 !scratch/.gitkeep
 
-# Logs and Runtime Traces
+# Logs and Jupyter
 *.log
 logs/
-log/
-install/
-.ipynb_checkpoints/
-*.log
-*.txt
-*.text
-!robot_ws/**/package.xml
-!robot_ws/**/setup.py
-# Re-include build/dependency manifests caught by *.txt above — MUST be committed.
-# (ament_cmake packages don't build without CMakeLists.txt.)
-!**/CMakeLists.txt
-!**/requirements.txt
-# Embedding-model fingerprint travels WITH the committed centroids.npz so the
-# router can verify the centroids match the active model after a fresh clone.
-!src/agent_brain/agent/resources/centroids/embedding_model.txt
-# Re-include frontend manifests — MUST be committed for reproducible installs.
-# (node_modules/ is an excluded directory so its internal .json files stay ignored.)
-!**/package.json
-!**/package-lock.json
-!frontends/**/*.json
+ .ipynb_checkpoints/
 
 # OS files
 .DS_Store
 Thumbs.db
+
+# Dev scratchpad screenshots
+pict/
 
 # Documentation
 *.docx

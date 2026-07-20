@@ -33,6 +33,7 @@ class SileroVAD(threading.Thread):
         # until the tablet asks, capture one turn, then back to idle.
         self._listening = threading.Event()
         self._utt_done = threading.Event()
+        self._speaking = threading.Event()
         self._current_utterance = []
         self._model = None
         self._stream = None
@@ -203,11 +204,12 @@ class SileroVAD(threading.Thread):
         return prob >= self.threshold
 
     def is_speaking(self) -> bool:
-        return len(self._current_utterance) > 3
+        return self._speaking.is_set()
 
     def begin_listen(self) -> None:
         """Arm capture of a single utterance (push-to-talk). Call from the WS command handler."""
         self._current_utterance.clear()
+        self._speaking.clear()
         self._utt_done.clear()
         self._listening.set()
 
@@ -251,15 +253,18 @@ class SileroVAD(threading.Thread):
             if not self._listening.is_set():
                 if utterance:
                     utterance.clear()
+                    self._speaking.clear()
                     silence_frames = 0
                 continue
 
             if self.is_speech(chunk):
                 utterance.append(chunk)
+                self._speaking.set()
                 silence_frames = 0
             elif utterance:
                 silence_frames += 1
                 if silence_frames >= SILENCE_FRAMES_NEEDED:
+                    self._speaking.clear()
                     audio = b"".join(utterance)
                     timestamp = time.time()
                     # `audio` is int16 PCM bytes, so bytes -> samples -> seconds. Dividing the

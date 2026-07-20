@@ -1,0 +1,62 @@
+[
+  {
+    "query": "Cho tôi 2 phần Ốc Hương Xốt Trứng Muối nhé",
+    "reasoning": "Single-intent order. Pass through as one fragment.",
+    "fragments": ["Cho tôi 2 phần Ốc Hương Xốt Trứng Muối nhé"]
+  },
+  {
+    "query": "Cho tôi 1 Lẩu Thái và tính tiền luôn",
+    "reasoning": "Two intents: order (Lẩu Thái) then payment (tính tiền). Split at 'và'.",
+    "fragments": ["Cho tôi 1 Lẩu Thái", "Tính tiền luôn"]
+  },
+  {
+    "query": "Lẩu Thái có cay không? Nếu không cay thì lấy cho 2 phần nhé",
+    "reasoning": "Search question first, conditional order second. Split at intent boundary.",
+    "fragments": ["Lẩu Thái có cay không?", "Lấy cho 2 phần Lẩu Thái"]
+  },
+  {
+    "query": "Mình muốn gọi 2 Tôm Càng Xanh Nướng Phô Mai, nhưng trước đó cho hỏi phần này ăn mấy người?",
+    "reasoning": "Search question before order. 'Phần này' resolved from context.",
+    "fragments": ["Tôm Càng Xanh Nướng Phô Mai phần này ăn mấy người?", "Gọi 2 Tôm Càng Xanh Nướng Phô Mai"]
+  },
+  {
+    "query": "Lấy thêm 1 Mì Xào Sò và 1 Trà Tắc, xong tính tiền nhé",
+    "reasoning": "Order first, then payment after 'xong'. Split at boundary.",
+    "fragments": ["Lấy thêm 1 Mì Xào Sò và 1 Trà Tắc", "Tính tiền nhé"]
+  },
+  {
+    "query": "Tính tiền đi, mà trước đó cho hỏi món nào đang khuyến mãi?",
+    "reasoning": "Payment first, then search question. Split at 'mà trước đó cho hỏi'.",
+    "fragments": ["Tính tiền đi", "Món nào đang khuyến mãi?"]
+  },
+  {
+    "query": "Thêm 3 hàu nướng nữa rồi chốt đơn cho anh",
+    "reasoning": "Order first, then confirm. Split at 'rồi'.",
+    "fragments": ["Thêm 3 hàu nướng nữa", "Chốt đơn cho anh"]
+  },
+  {
+    "query": "Cho 2 ốc hương, giá bao nhiêu?",
+    "reasoning": "Order first, then price question. 'Giá bao nhiêu' references the dish just mentioned. Cross-reference ORDER fragment for SEARCH subject.",
+    "fragments": ["Cho 2 ốc hương", "Ốc hương giá bao nhiêu?"]
+  },
+  {
+    "query": "Món này cay không? Nếu không cay thì lấy 2 phần",
+    "reasoning": "'Món này' needs resolution from chat history. Resolved to the last mentioned dish.",
+    "fragments": ["Món này có cay không?", "Lấy 2 phần món này"]
+  },
+  {
+    "query": "Gọi 1 lẩu và cho hỏi có cay không?",
+    "reasoning": "Order plus search question. 'Có cay không' references 'lẩu' from the ORDER half.",
+    "fragments": ["Gọi 1 lẩu", "Lẩu có cay không?"]
+  },
+  {
+    "query": "Xác nhận đặt luôn đi",
+    "reasoning": "Single-intent explicit confirmation. Pass through.",
+    "fragments": ["Xác nhận đặt luôn đi"]
+  },
+  {
+    "query": "Chào bạn, quán hôm nay mấy giờ đóng cửa vậy?",
+    "reasoning": "Greeting + search question combined. The greeting is part of the search utterance, not a separate CHAT fragment.",
+    "fragments": ["Quán hôm nay mấy giờ đóng cửa vậy?"]
+  }
+]

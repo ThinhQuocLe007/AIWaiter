@@ -1,0 +1,4772 @@
+[
+  {
+    "utterance": "Cho em 2 phần Ốc Hương Xốt Trứng Muối ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi món lịch sự, đầy đủ số lượng tên món"
+  },
+  {
+    "utterance": "Dạ cho em gọi 1 phần Hàu Nướng Phô Mai và 3 ly Trà Tắc ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi nhiều món, dùng kính ngữ dạ ạ"
+  },
+  {
+    "utterance": "Em muốn đặt 1 phần Tôm Càng Xanh Nướng Phô Mai ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Đặt món với chủ ngữ đầy đủ"
+  },
+  {
+    "utterance": "Cho em hỏi, em có thể gọi thêm 1 phần Chả Giò Hải Sản được không ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi thêm món với câu hỏi lịch sự"
+  },
+  {
+    "utterance": "Dạ vui lòng cho em 2 phần Sò Điệp Nướng Mỡ Hành ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi món rất lịch sự, có vui lòng"
+  },
+  {
+    "utterance": "Cho em xin 1 Lẩu Thái Hải Sản và 4 chai Bia Tiger ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi lẩu kèm bia"
+  },
+  {
+    "utterance": "Em xin gọi 1 phần Mì Xào Sò và 1 Bánh Mì Bơ Tỏi ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi món ăn kèm"
+  },
+  {
+    "utterance": "Dạ cho em đặt 1 Mực Cháy Tỏi và 1 Gỏi Xoài Bạch Tuộc ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Đặt nhiều món với dạ"
+  },
+  {
+    "utterance": "Cho em xin 2 Ốc Len Xào Dừa ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi món ốc"
+  },
+  {
+    "utterance": "Em muốn gọi thêm 1 phần Sò Huyết Hấp Sả được không ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi thêm món lịch sự"
+  },
+  {
+    "utterance": "Dạ cho em đổi món, bỏ Ốc Hương Xốt Me và thêm Ốc Hương Xốt Trứng Muối ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Đổi món lịch sự"
+  },
+  {
+    "utterance": "Em xin phép hủy món Gỏi Hải Sản ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Hủy món lịch sự"
+  },
+  {
+    "utterance": "Cho em xin 1 phần Cá Chim Nướng Sa Tế và 1 Lẩu Cá Tầm Măng Chua ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi cá và lẩu"
+  },
+  {
+    "utterance": "Dạ em muốn sửa đơn, bỏ Nem Chua Rán và thêm Chả Giò Hải Sản ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Sửa đơn hàng lịch sự"
+  },
+  {
+    "utterance": "Cho em ghi chú không hành cho món Ốc Len Xào Dừa ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Ghi chú món ăn"
+  },
+  {
+    "utterance": "Dạ vui lòng cho em 2 phần Ốc Bươu Nhồi Thịt ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi ốc bươu"
+  },
+  {
+    "utterance": "Em xin gọi 1 Khô Mực Nướng và 1 Hàu Nướng Mỡ Hành ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi mực và hàu"
+  },
+  {
+    "utterance": "Cho em 3 ly Trà Ổi và 1 Khoai Tây Lắc Phô Mai ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi đồ uống và món ăn"
+  },
+  {
+    "utterance": "Dạ em muốn lấy thêm 1 dĩa Nghêu Hấp Sả ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi thêm nghêu"
+  },
+  {
+    "utterance": "Cho em 1 phần Cua Rang Me và 2 chai Bia Sài Gòn ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi cua kèm bia"
+  },
+  {
+    "utterance": "Em xin gọi thêm 1 phần Cháo Hàu ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi thêm cháo"
+  },
+  {
+    "utterance": "Dạ cho em hủy món Mực Chiên Xù ra khỏi đơn ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Hủy món"
+  },
+  {
+    "utterance": "Em muốn đổi 2 Bia Sài Gòn thành 2 Bia 333 ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Đổi bia"
+  },
+  {
+    "utterance": "Cho em xin 1 phần Mì Xào Hải Sản thay cho Mì Xào Sò ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Thay đổi món"
+  },
+  {
+    "utterance": "Dạ em muốn đặt 1 Lẩu Cá Tầm Măng Chua cho 4 người ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Đặt lẩu cho nhóm"
+  },
+  {
+    "utterance": "Cho em 1 phần Tôm Sú Nướng Muối Ớt ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi tôm sú"
+  },
+  {
+    "utterance": "Dạ em muốn gọi 2 phần Hàu Sữa Nướng Mỡ Hành ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi hàu sữa"
+  },
+  {
+    "utterance": "Em xin đặt 1 Ốc Móng Tay Xào Rau Muống ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi ốc móng tay"
+  },
+  {
+    "utterance": "Cho em 2 Lon Coca Cola và 1 dĩa Khoai Tây Chiên ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi nước ngọt và đồ ăn vặt"
+  },
+  {
+    "utterance": "Dạ vui lòng cho em thêm 1 phần Sò Long Nướng Trứng Cút ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi thêm sò long"
+  },
+  {
+    "utterance": "Em muốn gọi 3 phần Cơm Chiên Hải Sản và 1 Canh Chua Cá ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi cơm và canh"
+  },
+  {
+    "utterance": "Cho em 1 Ốc Giác Xào Xả Ớt ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi ốc giác"
+  },
+  {
+    "utterance": "Dạ em muốn gọi 2 phần Bạch Tuộc Nướng Sa Tế ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi bạch tuộc"
+  },
+  {
+    "utterance": "Em xin đặt 1 Gỏi Xoài Ốc Giác và 1 Nghêu Nướng Mỡ Hành ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi gỏi và nghêu"
+  },
+  {
+    "utterance": "Cho em hỏi em có thể đặt thêm 1 Cháo Nghêu được không ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi thêm cháo nghêu"
+  },
+  {
+    "utterance": "Dạ em muốn đổi món Ốc Len Xào Dừa thành Ốc Len Xào Me ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Đổi cách chế biến"
+  },
+  {
+    "utterance": "Cho em xin 2 phần Hàu Nướng Phô Mai không hành ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi món kèm ghi chú"
+  },
+  {
+    "utterance": "Dạ em muốn sửa ghi chú món Lẩu Thái thành ít cay ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Sửa ghi chú"
+  },
+  {
+    "utterance": "Cho em 1 Suất Cháo Hàu và 1 ly Trà Đào ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi cháo và trà"
+  },
+  {
+    "utterance": "Em muốn gọi thêm 2 phần Ốc Hương Xốt Me ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Thêm ốc hương"
+  },
+  {
+    "utterance": "Dạ cho em 1 phần Tôm Hùm Nướng Mỡ Hành ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi tôm hùm"
+  },
+  {
+    "utterance": "Em xin hủy toàn bộ đơn hàng hiện tại ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Hủy toàn bộ đơn"
+  },
+  {
+    "utterance": "Cho em 2 dĩa Gỏi Hải Sản Thái ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi gỏi thái"
+  },
+  {
+    "utterance": "Dạ em muốn đặt 1 Mì Xào Giòn Hải Sản ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi mì xào giòn"
+  },
+  {
+    "utterance": "Cho em 2 phần Sò Điệp Nướng Phô Mai và 1 Salad Rong Biển ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi sò điệp và salad"
+  },
+  {
+    "utterance": "Em xin gọi 1 Lẩu Đầu Cá Hồi ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi lẩu đầu cá"
+  },
+  {
+    "utterance": "Dạ cho em đặt thêm 1 phần Mực Ống Nướng ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Thêm mực ống"
+  },
+  {
+    "utterance": "Cho em 1 phần Sò Huyết Hấp Sả Gừng ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi sò huyết hấp"
+  },
+  {
+    "utterance": "Cho 2 ốc hương đi em",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi món bình dân, rút gọn"
+  },
+  {
+    "utterance": "Lấy cho anh 1 lẩu thái nha",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi lẩu ngắn gọn"
+  },
+  {
+    "utterance": "Cho 2 dĩa hàu nướng phô mai đi",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi hàu nướng"
+  },
+  {
+    "utterance": "Ê lấy thêm 1 tôm càng xanh nướng nghen",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi thêm với ê"
+  },
+  {
+    "utterance": "Cho 3 chai bia tiger với 1 khô mực nướng",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi bia kèm mồi"
+  },
+  {
+    "utterance": "Lấy giùm mình 2 phần sò điệp phô mai",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi sò điệp"
+  },
+  {
+    "utterance": "Thêm 1 dĩa khoai tây lắc phô mai nữa đi",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Thêm khoai tây"
+  },
+  {
+    "utterance": "Cho anh 2 mì xào sò với 1 bánh mì bơ tỏi",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi mì và bánh mì"
+  },
+  {
+    "utterance": "Bỏ món mực chiên xù ra khỏi đơn giúp anh",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Bỏ món"
+  },
+  {
+    "utterance": "Đổi 2 bia Sài Gòn thành 2 bia 333 đi em",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Đổi bia"
+  },
+  {
+    "utterance": "Lấy 1 mực cháy tỏi với 1 gỏi xoài đi",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi mực và gỏi"
+  },
+  {
+    "utterance": "Thêm dĩa ốc bulot nữa đi em",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Thêm ốc bulot"
+  },
+  {
+    "utterance": "Cho 2 phần ốc len xào dừa",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi ốc len"
+  },
+  {
+    "utterance": "Lấy giùm 1 cá chim nướng sa tế",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi cá chim"
+  },
+  {
+    "utterance": "Cho mình thêm 1 chả giò hải sản nữa",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Thêm chả giò"
+  },
+  {
+    "utterance": "Lấy 3 ly trà tắc cho bàn mình",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi đồ uống"
+  },
+  {
+    "utterance": "Sửa đơn giùm, bỏ nem chua rán thêm chả giò",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Sửa đơn ngắn gọn"
+  },
+  {
+    "utterance": "Cho 1 tô cháo hàu với 2 lon coca",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi cháo và coca"
+  },
+  {
+    "utterance": "Ghi chú không hành cho ốc len dùm anh",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Ghi chú"
+  },
+  {
+    "utterance": "Lấy giùm 2 phần sò huyết hấp sả đi",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi sò huyết"
+  },
+  {
+    "utterance": "Thêm 1 cháo hàu với 1 trà đào nha em",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Thêm cháo và trà"
+  },
+  {
+    "utterance": "Cho anh 1 cua rang me với 2 bia 333",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi cua kèm bia"
+  },
+  {
+    "utterance": "Lấy 2 nghêu hấp sả đi",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi nghêu"
+  },
+  {
+    "utterance": "Gọi thêm 1 ốc bươu nhồi thịt cho anh",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Thêm ốc bươu"
+  },
+  {
+    "utterance": "Cho 1 lẩu cá tầm măng chua nha",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi lẩu cá tầm"
+  },
+  {
+    "utterance": "Hủy gỏi hải sản dùm anh",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Hủy gỏi"
+  },
+  {
+    "utterance": "Lấy giùm anh 2 tôm sú nướng muối ớt",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi tôm sú"
+  },
+  {
+    "utterance": "Thêm 1 dĩa hàu sữa nướng mỡ hành",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Thêm hàu sữa"
+  },
+  {
+    "utterance": "Cho mình 1 ốc móng tay xào rau muống",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi ốc móng tay"
+  },
+  {
+    "utterance": "Lấy 3 lon coca với 1 khoai tây chiên",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi coca và khoai tây"
+  },
+  {
+    "utterance": "Cho thêm 1 sò long nướng trứng cút đi",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Thêm sò long"
+  },
+  {
+    "utterance": "Lấy 2 cơm chiên hải sản với 1 canh chua cá",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi cơm và canh"
+  },
+  {
+    "utterance": "Cho anh 1 ốc giác xào xả ớt",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi ốc giác"
+  },
+  {
+    "utterance": "Lấy 2 bạch tuộc nướng sa tế giùm",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi bạch tuộc"
+  },
+  {
+    "utterance": "Cho 1 gỏi xoài ốc giác với 1 nghêu nướng",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi gỏi và nghêu"
+  },
+  {
+    "utterance": "Thêm 1 cháo nghêu cho ấm bụng",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Thêm cháo nghêu"
+  },
+  {
+    "utterance": "Đổi ốc len xào dừa qua ốc len xào me đi",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Đổi cách chế biến"
+  },
+  {
+    "utterance": "Lấy 2 hàu nướng phô mai không hành nha",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi hàu kèm ghi chú"
+  },
+  {
+    "utterance": "Sửa lẩu thái thành ít cay dùm em",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Sửa ghi chú"
+  },
+  {
+    "utterance": "Cho 1 suất cháo hàu với 1 ly trà đào",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi cháo và trà"
+  },
+  {
+    "utterance": "Lấy thêm 2 phần ốc hương xốt me",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Thêm ốc hương"
+  },
+  {
+    "utterance": "Cho anh 1 tôm hùm nướng mỡ hành",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi tôm hùm"
+  },
+  {
+    "utterance": "Hủy nguyên đơn giùm anh đi",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Hủy toàn bộ đơn"
+  },
+  {
+    "utterance": "Lấy 2 dĩa gỏi hải sản thái đi",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi gỏi thái"
+  },
+  {
+    "utterance": "Cho 1 mì xào giòn hải sản",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi mì xào giòn"
+  },
+  {
+    "utterance": "Lấy 2 sò điệp phô mai với 1 salad rong biển",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi sò điệp và salad"
+  },
+  {
+    "utterance": "Cho 1 lẩu đầu cá hồi nha em",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi lẩu đầu cá"
+  },
+  {
+    "utterance": "Thêm 1 mực ống nướng đi em",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Thêm mực ống"
+  },
+  {
+    "utterance": "Lấy 1 sò huyết hấp sả gừng",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi sò huyết hấp"
+  },
+  {
+    "utterance": "Cho 2 phần ốc hương đi",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi rất ngắn gọn"
+  },
+  {
+    "utterance": "Lấy cho anh 3 chai bia tiger nha",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi bia đơn giản"
+  },
+  {
+    "utterance": "Thêm 2 dĩa hàu nướng đi em",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Thêm hàu ngắn gọn"
+  },
+  {
+    "utterance": "Cho anh 2 phần ốc hương nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Giọng miền Nam, dùng nghen"
+  },
+  {
+    "utterance": "Lấy dùm anh 1 lẩu thái với 3 chai bia tiger nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi lẩu và bia, giọng Nam"
+  },
+  {
+    "utterance": "Cho anh 2 phần tôm càng xanh nướng mỡ hành nghen em",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi tôm càng, giọng Nam"
+  },
+  {
+    "utterance": "Làm ơn cho chị 1 dĩa hàu nướng phô mai nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi hàu, giọng Nam"
+  },
+  {
+    "utterance": "Lấy thêm cho anh 2 phần sò điệp nướng mỡ hành nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Thêm sò điệp, giọng Nam"
+  },
+  {
+    "utterance": "Cho bàn em 1 mực cháy tỏi với 2 lon coca nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi mực và coca"
+  },
+  {
+    "utterance": "Cho chị hỏi, lấy thêm 1 ốc len xào dừa được hông",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Giọng Nam, hông thay không"
+  },
+  {
+    "utterance": "Ê lấy cho anh 1 cá chim nướng sa tế nghen mày",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi cá chim, thân mật Nam Bộ"
+  },
+  {
+    "utterance": "Cho anh 2 phần ốc bươu nhồi thịt với 1 cháo hàu nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi ốc bươu và cháo"
+  },
+  {
+    "utterance": "Bỏ dùm anh món gỏi hải sản ra khỏi đơn nghen em",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Bỏ món, giọng Nam"
+  },
+  {
+    "utterance": "Đổi cho anh 2 bia Sài Gòn thành 2 bia 333 nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Đổi bia, giọng Nam"
+  },
+  {
+    "utterance": "Lấy dùm chị 1 khô mực nướng với 1 gỏi xoài bạch tuộc nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi mực và gỏi"
+  },
+  {
+    "utterance": "Cho anh 2 phần sò huyết hấp sả nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi sò huyết"
+  },
+  {
+    "utterance": "Lấy cho chị 3 ly trà ổi với 1 dĩa khoai tây lắc phô mai nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi đồ uống"
+  },
+  {
+    "utterance": "Cho anh thêm 1 chả giò hải sản nữa nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Thêm chả giò"
+  },
+  {
+    "utterance": "Sửa đơn dùm anh, bỏ nem chua rán thêm chả giò nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Sửa đơn, giọng Nam"
+  },
+  {
+    "utterance": "Ê mày ơi cho tao 2 tô cháo hàu với 1 ly trà đào cái",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi cháo, rất thân mật Nam Bộ"
+  },
+  {
+    "utterance": "Ghi chú không hành cho ốc len dùm anh nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Ghi chú"
+  },
+  {
+    "utterance": "Lấy dùm 1 cua rang me với 2 bia 333 nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi cua"
+  },
+  {
+    "utterance": "Cho chị 2 phần nghêu hấp sả nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi nghêu"
+  },
+  {
+    "utterance": "Cho anh 1 lẩu cá tầm măng chua nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi lẩu cá tầm"
+  },
+  {
+    "utterance": "Lấy dùm anh 2 tôm sú nướng muối ớt nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi tôm sú"
+  },
+  {
+    "utterance": "Cho thêm 1 dĩa hàu sữa nướng mỡ hành nghen em",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Thêm hàu sữa"
+  },
+  {
+    "utterance": "Lấy cho anh 1 ốc móng tay xào rau muống nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi ốc móng tay"
+  },
+  {
+    "utterance": "Cho 3 lon coca với 1 khoai tây chiên đi bây",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi đồ uống, giọng Nam"
+  },
+  {
+    "utterance": "Ê lấy thêm 1 sò long nướng trứng cút nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Thêm sò long"
+  },
+  {
+    "utterance": "Cho 2 cơm chiên hải sản với 1 canh chua cá nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi cơm canh"
+  },
+  {
+    "utterance": "Lấy 1 ốc giác xào xả ớt dùm anh",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi ốc giác"
+  },
+  {
+    "utterance": "Cho 2 bạch tuộc nướng sa tế nghen em",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi bạch tuộc"
+  },
+  {
+    "utterance": "Lấy 1 gỏi xoài ốc giác với 1 nghêu nướng nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi gỏi và nghêu"
+  },
+  {
+    "utterance": "Thêm 1 cháo nghêu cho ấm bụng nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Thêm cháo nghêu"
+  },
+  {
+    "utterance": "Đổi ốc len xào dừa qua ốc len xào me dùm anh nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Đổi cách chế biến"
+  },
+  {
+    "utterance": "Lấy 2 hàu nướng phô mai không hành nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi hàu kèm ghi chú"
+  },
+  {
+    "utterance": "Sửa lẩu thái thành ít cay dùm em nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Sửa ghi chú"
+  },
+  {
+    "utterance": "Cho 1 suất cháo hàu với 1 ly trà đào nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi cháo trà"
+  },
+  {
+    "utterance": "Lấy thêm 2 phần ốc hương xốt me nghen em",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Thêm ốc hương"
+  },
+  {
+    "utterance": "Cho anh 1 tôm hùm nướng mỡ hành nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi tôm hùm"
+  },
+  {
+    "utterance": "Hủy nguyên đơn dùm anh nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Hủy đơn"
+  },
+  {
+    "utterance": "Lấy 2 dĩa gỏi hải sản thái nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi gỏi"
+  },
+  {
+    "utterance": "Cho 1 mì xào giòn hải sản nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi mì"
+  },
+  {
+    "utterance": "Lấy cho anh 2 sò điệp phô mai với 1 salad rong biển nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi sò điệp và salad"
+  },
+  {
+    "utterance": "Cho 1 lẩu đầu cá hồi nghen em",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi lẩu đầu cá"
+  },
+  {
+    "utterance": "Thêm 1 mực ống nướng nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Thêm mực ống"
+  },
+  {
+    "utterance": "Lấy 1 sò huyết hấp sả gừng nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi sò huyết"
+  },
+  {
+    "utterance": "Cho anh 2 ốc hương với nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi ốc hương ngắn"
+  },
+  {
+    "utterance": "Em muốn gọi 1 phần tôm càng xanh giá bao nhiêu rứa",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Giọng Trung, rứa thay vậy"
+  },
+  {
+    "utterance": "Món ni giá bao nhiêu rứa em",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Giọng Trung, ni thay này"
+  },
+  {
+    "utterance": "Quán mình có món chi ngon ngon không rứa",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi món ngon, giọng Trung"
+  },
+  {
+    "utterance": "Ốc hương xốt trứng muối bao nhiêu một dĩa rứa",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi giá, giọng Trung"
+  },
+  {
+    "utterance": "Món mô bán chạy nhất ở đây rứa em",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi best seller, giọng Trung mô=tê"
+  },
+  {
+    "utterance": "Quán ni mở cửa tới mấy giờ rứa",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi giờ mở cửa, giọng Trung"
+  },
+  {
+    "utterance": "Lẩu thái ni có cay không rứa",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi độ cay"
+  },
+  {
+    "utterance": "Có món ăn chơi mô ngon hông em",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi món ăn chơi, hông thay không"
+  },
+  {
+    "utterance": "Hàu nướng ni có mấy kiểu chế biến rứa",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi kiểu chế biến"
+  },
+  {
+    "utterance": "Bia tiger ni nhiêu một chai rứa",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi giá bia"
+  },
+  {
+    "utterance": "Món nướng có những món chi rứa em",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi danh sách món nướng"
+  },
+  {
+    "utterance": "Có món nào đang giảm giá hông rứa",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi khuyến mãi"
+  },
+  {
+    "utterance": "Nguyên liệu món ốc bulot ni là chi rứa",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi nguyên liệu"
+  },
+  {
+    "utterance": "Cho anh hỏi ốc hương xốt trứng muối có ngon hông ta",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi ý kiến món, giọng Nam"
+  },
+  {
+    "utterance": "Tôm càng nướng phô mai bao nhiêu một phần dzị",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi giá, dị thay vậy, giọng Nam"
+  },
+  {
+    "utterance": "Quán mình có món chay hông em",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi món chay"
+  },
+  {
+    "utterance": "Mực cháy tỏi với mực chiên xù món nào ngon hơn dị",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "So sánh món"
+  },
+  {
+    "utterance": "Cho hỏi cháo hàu nấu với chi rứa",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi thành phần cháo"
+  },
+  {
+    "utterance": "Có ship đồ ăn về nhà hông em",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi giao hàng"
+  },
+  {
+    "utterance": "Nhà ni có máy lạnh hông",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi tiện nghi"
+  },
+  {
+    "utterance": "Cho anh hỏi bia tiger với bia 333 loại nào rẻ hơn dzậy em",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "So sánh giá"
+  },
+  {
+    "utterance": "Cho em hỏi bãi đậu xe ở mô rứa",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi chỗ đậu xe, giọng Trung"
+  },
+  {
+    "utterance": "Ốc móng tay ni chế biến kiểu chi rứa",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi cách chế biến ốc móng tay"
+  },
+  {
+    "utterance": "Gỏi xoài ốc giác có chua lắm hông em",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi vị gỏi"
+  },
+  {
+    "utterance": "Cho hỏi nhà vệ sinh ở mô rứa",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi nhà vệ sinh, giọng Trung"
+  },
+  {
+    "utterance": "Bao lâu thì có đồ ăn rứa em",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi thời gian chờ"
+  },
+  {
+    "utterance": "Quán mình tính tiền nghen",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Đòi tính tiền, giọng Nam"
+  },
+  {
+    "utterance": "Cho anh xin cái bill với em",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Xin hóa đơn"
+  },
+  {
+    "utterance": "Thanh toán chuyển khoản được hông em",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Hỏi chuyển khoản, hông"
+  },
+  {
+    "utterance": "Quẹt thẻ visa được hông ta",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Hỏi quẹt thẻ"
+  },
+  {
+    "utterance": "Hết nhiêu tiền rồi em ơi",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Hỏi tổng tiền"
+  },
+  {
+    "utterance": "Cho em xin mã qr thanh toán nha",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Xin QR"
+  },
+  {
+    "utterance": "Chia đôi hóa đơn dùm tụi anh nghen",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Chia bill"
+  },
+  {
+    "utterance": "Trả bằng momo được hông em",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Hỏi MoMo"
+  },
+  {
+    "utterance": "Tính riêng từng người dùm bàn em nghen",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Tách bill"
+  },
+  {
+    "utterance": "Cho anh xin cái hóa đơn đỏ nghen",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Xin hóa đơn VAT"
+  },
+  {
+    "utterance": "Anh trả tiền mặt nghen em",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Thanh toán tiền mặt"
+  },
+  {
+    "utterance": "Bao nhiêu tiền một đĩa ốc hương vậy em",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi giá ốc hương"
+  },
+  {
+    "utterance": "Dạ cho em hỏi quán mình có món chay không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi món chay lịch sự"
+  },
+  {
+    "utterance": "Cho em hỏi Lẩu Thái có cay không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi độ cay lịch sự"
+  },
+  {
+    "utterance": "Dạ em muốn biết Hàu Nướng có những kiểu chế biến nào ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi kiểu chế biến"
+  },
+  {
+    "utterance": "Cho em hỏi có món gì hợp cho nhóm 4 người nhậu không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi gợi ý nhóm"
+  },
+  {
+    "utterance": "Dạ quán mình mở cửa tới mấy giờ vậy ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi giờ đóng cửa"
+  },
+  {
+    "utterance": "Cho em hỏi món nào bán chạy nhất ở đây ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi best seller"
+  },
+  {
+    "utterance": "Dạ ốc bulot làm từ nguyên liệu gì thế ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi nguyên liệu"
+  },
+  {
+    "utterance": "Cho em hỏi quán mình có giao hàng tận nơi không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi giao hàng"
+  },
+  {
+    "utterance": "Dạ cho em hỏi Ốc Hương Xốt Trứng Muối bao nhiêu calo ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi calo"
+  },
+  {
+    "utterance": "Cho em hỏi món này có dùng được cho người ăn kiêng không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi phù hợp ăn kiêng"
+  },
+  {
+    "utterance": "Dạ cho em hỏi quán có wifi không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi wifi"
+  },
+  {
+    "utterance": "Cho em hỏi nhà vệ sinh ở đâu ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi nhà vệ sinh"
+  },
+  {
+    "utterance": "Dạ em muốn biết Tôm Càng Xanh Nướng Phô Mai giá bao nhiêu một phần ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi giá tôm càng"
+  },
+  {
+    "utterance": "Cho em hỏi cháo hàu nấu với gì vậy ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi thành phần cháo hàu"
+  },
+  {
+    "utterance": "Dạ quán mình có món Hàn Quốc nào không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi món Hàn"
+  },
+  {
+    "utterance": "Cho em hỏi món nướng từ 50k đến 100k có những món nào ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi theo khoảng giá"
+  },
+  {
+    "utterance": "Dạ cho em hỏi Lẩu Cá Tầm Măng Chua dành cho mấy người ăn ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi khẩu phần lẩu"
+  },
+  {
+    "utterance": "Cho em hỏi Mực Cháy Tỏi với Mực Chiên Xù khác gì nhau ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "So sánh món"
+  },
+  {
+    "utterance": "Dạ cho em hỏi Sò Điệp Nướng Phô Mai với Mỡ Hành cái nào ngon hơn ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "So sánh món"
+  },
+  {
+    "utterance": "Cho em hỏi Bia Sài Gòn với Bia Tiger Bạc cái nào rẻ hơn ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "So sánh giá bia"
+  },
+  {
+    "utterance": "Dạ quán mình có chỗ đậu xe hơi không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi chỗ đậu xe"
+  },
+  {
+    "utterance": "Cho em hỏi có phòng VIP hay phòng riêng không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi phòng riêng"
+  },
+  {
+    "utterance": "Dạ chờ món khoảng bao lâu thì có ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi thời gian chờ"
+  },
+  {
+    "utterance": "Cho em hỏi quán mình có chương trình khuyến mãi gì không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi khuyến mãi"
+  },
+  {
+    "utterance": "Dạ em muốn biết Nem Chua Rán có ăn kèm với nước chấm gì ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi nước chấm"
+  },
+  {
+    "utterance": "Cho em hỏi Trà Tắc có dùng cho người tiểu đường được không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi phù hợp sức khỏe"
+  },
+  {
+    "utterance": "Dạ cho em hỏi Chả Giò Hải Sản bao nhiêu calo ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi calo"
+  },
+  {
+    "utterance": "Cho em hỏi quán có phục vụ tiệc sinh nhật không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi dịch vụ"
+  },
+  {
+    "utterance": "Dạ em muốn hỏi Khô Mực Nướng có dai không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi kết cấu món"
+  },
+  {
+    "utterance": "Cho em hỏi Gỏi Xoài Ốc Giác có chua không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi vị"
+  },
+  {
+    "utterance": "Dạ Ốc Bươu Nhồi Thịt có mấy con một phần ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi định lượng"
+  },
+  {
+    "utterance": "Cho em hỏi Bánh Mì Bơ Tỏi có phải món chay không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi món chay"
+  },
+  {
+    "utterance": "Dạ cho em hỏi Khoai Tây Lắc Phô Mai ăn có ngán không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi cảm nhận món"
+  },
+  {
+    "utterance": "Cho em hỏi món đặc sản ở đây là gì ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi đặc sản"
+  },
+  {
+    "utterance": "Dạ em muốn biết có món nào lạ miệng không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi món lạ"
+  },
+  {
+    "utterance": "Cho em hỏi quán có nhận đặt bàn trước không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi đặt bàn"
+  },
+  {
+    "utterance": "Dạ cho em hỏi món Ốc Len Xào Dừa ăn có ngon không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi ngon không"
+  },
+  {
+    "utterance": "Cho em hỏi giá cả các món như thế nào ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi giá tổng quan"
+  },
+  {
+    "utterance": "Ốc hương giá bao nhiêu vậy em",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi giá"
+  },
+  {
+    "utterance": "Có món chay không em",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi món chay ngắn"
+  },
+  {
+    "utterance": "Lẩu thái có cay không",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi cay"
+  },
+  {
+    "utterance": "Hàu nướng có mấy kiểu chế biến vậy",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi kiểu chế biến"
+  },
+  {
+    "utterance": "Có món gì hợp cho 4 người nhậu không",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi gợi ý"
+  },
+  {
+    "utterance": "Quán mở cửa tới mấy giờ vậy",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi giờ"
+  },
+  {
+    "utterance": "Món nào bán chạy nhất ở đây",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi best seller"
+  },
+  {
+    "utterance": "Ốc bulot làm từ gì thế",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi nguyên liệu ốc bulot"
+  },
+  {
+    "utterance": "Có giao hàng tận nơi không em",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi giao hàng"
+  },
+  {
+    "utterance": "Tôm càng xanh nướng phô mai giá bao nhiêu",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi giá tôm càng"
+  },
+  {
+    "utterance": "Có wifi không em",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi wifi"
+  },
+  {
+    "utterance": "Nhà vệ sinh ở đâu vậy em",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi WC"
+  },
+  {
+    "utterance": "Món này có nhiều ớt không",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi ớt"
+  },
+  {
+    "utterance": "Cháo hàu bao nhiêu một tô",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi giá cháo"
+  },
+  {
+    "utterance": "Lẩu cá tầm măng chua dành cho mấy người",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi khẩu phần"
+  },
+  {
+    "utterance": "Mực cháy tỏi với mực chiên xù cái nào ngon hơn",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "So sánh"
+  },
+  {
+    "utterance": "Sò huyết hấp sả bao nhiêu một dĩa",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi giá sò huyết"
+  },
+  {
+    "utterance": "Có chỗ đậu xe hơi không",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi đậu xe"
+  },
+  {
+    "utterance": "Chờ món bao lâu thì có",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi thời gian"
+  },
+  {
+    "utterance": "Có phòng riêng không em",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi phòng riêng"
+  },
+  {
+    "utterance": "Quán có khuyến mãi gì không",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi khuyến mãi"
+  },
+  {
+    "utterance": "Nem chua rán có nước chấm gì không",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi nước chấm"
+  },
+  {
+    "utterance": "Trà tắc uống có ngọt lắm không",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi độ ngọt"
+  },
+  {
+    "utterance": "Quán có nhận đặt bàn trước không",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi đặt bàn"
+  },
+  {
+    "utterance": "Gỏi xoài ốc giác có chua lắm không",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi vị chua"
+  },
+  {
+    "utterance": "Khoai tây lắc phô mai bao nhiêu tiền",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi giá khoai tây"
+  },
+  {
+    "utterance": "Có bán pizza hay món tây không em",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi món khác"
+  },
+  {
+    "utterance": "Cá chim nướng sa tế có nhiều xương không",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi xương cá"
+  },
+  {
+    "utterance": "Trà đào bao nhiêu một ly",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi giá trà đào"
+  },
+  {
+    "utterance": "Có món gì cho trẻ em ăn không",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi món cho trẻ em"
+  },
+  {
+    "utterance": "Ốc móng tay chế biến kiểu gì vậy",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi cách chế biến"
+  },
+  {
+    "utterance": "Hôm nay có món gì đặc biệt không em",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi món đặc biệt"
+  },
+  {
+    "utterance": "Cho hỏi tổng cộng bao nhiêu tiền vậy em",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi tổng tiền - vẫn là SEARCH chưa phải PAYMENT"
+  },
+  {
+    "utterance": "Dạ cho em tính tiền ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Tính tiền lịch sự"
+  },
+  {
+    "utterance": "Cho em xin hóa đơn thanh toán ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Xin hóa đơn"
+  },
+  {
+    "utterance": "Dạ em muốn thanh toán bằng chuyển khoản được không ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi chuyển khoản"
+  },
+  {
+    "utterance": "Cho em hỏi quẹt thẻ visa được không ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi quẹt thẻ"
+  },
+  {
+    "utterance": "Dạ cho em xin mã qr thanh toán ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Xin QR"
+  },
+  {
+    "utterance": "Cho em hỏi hết bao nhiêu tiền rồi ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi tổng tiền"
+  },
+  {
+    "utterance": "Dạ em muốn chia đôi hóa đơn ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Chia bill"
+  },
+  {
+    "utterance": "Cho em hỏi thanh toán bằng MoMo được không ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi MoMo"
+  },
+  {
+    "utterance": "Dạ em muốn trả bằng tiền mặt ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Trả tiền mặt"
+  },
+  {
+    "utterance": "Cho em xin hóa đơn VAT ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Xin hóa đơn đỏ"
+  },
+  {
+    "utterance": "Dạ em muốn kiểm tra lại hóa đơn ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Kiểm tra bill"
+  },
+  {
+    "utterance": "Cho em hỏi có máy POS để cà thẻ không ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi máy POS"
+  },
+  {
+    "utterance": "Dạ cho em thanh toán bàn 5 ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Thanh toán theo bàn"
+  },
+  {
+    "utterance": "Cho em hỏi tổng cộng bàn em bao nhiêu tiền ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi tổng bill"
+  },
+  {
+    "utterance": "Dạ em muốn tách bill riêng từng người ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Tách bill"
+  },
+  {
+    "utterance": "Cho em hỏi có thể trả góp được không ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi trả góp"
+  },
+  {
+    "utterance": "Dạ cho em thanh toán qua thẻ tín dụng ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Thanh toán thẻ tín dụng"
+  },
+  {
+    "utterance": "Cho em hỏi chuyển khoản qua số tài khoản nào ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi STK"
+  },
+  {
+    "utterance": "Dạ em muốn xem chi tiết từng món trong hóa đơn ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Xem chi tiết bill"
+  },
+  {
+    "utterance": "Cho em hỏi bàn em có được giảm giá gì không ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi giảm giá khi thanh toán"
+  },
+  {
+    "utterance": "Dạ em muốn thanh toán rồi mang món về ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Thanh toán mang về"
+  },
+  {
+    "utterance": "Cho em hỏi bill có tính phí phục vụ không ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi phí phục vụ"
+  },
+  {
+    "utterance": "Dạ cho em xin phiếu thanh toán ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Xin phiếu"
+  },
+  {
+    "utterance": "Cho em hỏi thanh toán bằng app ngân hàng được không ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi app ngân hàng"
+  },
+  {
+    "utterance": "Dạ em muốn thanh toán trước khi món lên ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Thanh toán trước"
+  },
+  {
+    "utterance": "Cho em hỏi tối thiểu thanh toán bằng thẻ là bao nhiêu ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi mức tối thiểu"
+  },
+  {
+    "utterance": "Dạ em muốn gửi hóa đơn điện tử qua email ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hóa đơn điện tử"
+  },
+  {
+    "utterance": "Cho em hỏi có chấp nhận thanh toán bằng tiền đô không ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi ngoại tệ"
+  },
+  {
+    "utterance": "Dạ cho em tính tiền 2 bàn luôn ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Tính nhiều bàn"
+  },
+  {
+    "utterance": "Em muốn thanh toán rồi kêu thêm món sau ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Thanh toán trước gọi thêm sau"
+  },
+  {
+    "utterance": "Dạ cho em hỏi thanh toán bằng ví điện tử được không ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi ví điện tử"
+  },
+  {
+    "utterance": "Cho em hỏi tiền tip có được tính trong bill không ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi tip"
+  },
+  {
+    "utterance": "Dạ em muốn thanh toán ngay bây giờ ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Thanh toán ngay"
+  },
+  {
+    "utterance": "Cho em hỏi bàn em hết tổng cộng bao nhiêu ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi tổng"
+  },
+  {
+    "utterance": "Dạ em muốn xuất hóa đơn công ty ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Xuất hóa đơn công ty"
+  },
+  {
+    "utterance": "Cho em hỏi có thể chuyển khoản bằng ZaloPay không ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi ZaloPay"
+  },
+  {
+    "utterance": "Dạ cho em thanh toán, làm ơn tính tiền giùm",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Thanh toán"
+  },
+  {
+    "utterance": "Tính tiền đi em",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Đòi tính tiền ngắn"
+  },
+  {
+    "utterance": "Cho xin hóa đơn nha",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Xin hóa đơn ngắn"
+  },
+  {
+    "utterance": "Thanh toán chuyển khoản được không em",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hỏi chuyển khoản"
+  },
+  {
+    "utterance": "Quẹt thẻ được hông",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hỏi quẹt thẻ"
+  },
+  {
+    "utterance": "Hết nhiêu tiền rồi",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hỏi tổng tiền"
+  },
+  {
+    "utterance": "Cho xin mã qr đi em",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Xin QR"
+  },
+  {
+    "utterance": "Chia đôi bill cho tụi anh",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Chia bill"
+  },
+  {
+    "utterance": "Momo được không em",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hỏi MoMo ngắn"
+  },
+  {
+    "utterance": "Trả tiền mặt nha em",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Trả tiền mặt"
+  },
+  {
+    "utterance": "Cho xin hóa đơn đỏ",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Xin hóa đơn đỏ ngắn"
+  },
+  {
+    "utterance": "Kiểm tra bill dùm anh",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Kiểm tra bill"
+  },
+  {
+    "utterance": "Cà thẻ chỗ nào em",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hỏi chỗ cà thẻ"
+  },
+  {
+    "utterance": "Tính tiền bàn 3 đi em",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Tính tiền theo bàn"
+  },
+  {
+    "utterance": "Tổng cộng bao nhiêu vậy",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hỏi tổng cộng"
+  },
+  {
+    "utterance": "Tách bill ra đi em",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Tách bill"
+  },
+  {
+    "utterance": "Trả thẻ tín dụng được không",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hỏi thẻ tín dụng"
+  },
+  {
+    "utterance": "Chuyển khoản qua stk nào",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hỏi STK"
+  },
+  {
+    "utterance": "Xem lại bill từng món coi",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Xem chi tiết bill"
+  },
+  {
+    "utterance": "Bill có tính phí phục vụ không",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hỏi phí"
+  },
+  {
+    "utterance": "Cho xin phiếu thanh toán",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Xin phiếu"
+  },
+  {
+    "utterance": "App ngân hàng chuyển được hông",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hỏi app NH"
+  },
+  {
+    "utterance": "Tính tiền trước đi, rồi gọi thêm",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Tính trước gọi thêm"
+  },
+  {
+    "utterance": "Bill tối thiểu quẹt thẻ bao nhiêu",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hỏi tối thiểu"
+  },
+  {
+    "utterance": "Gửi hóa đơn qua email dùm",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hóa đơn điện tử"
+  },
+  {
+    "utterance": "Tính tiền 2 bàn luôn em",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Tính 2 bàn"
+  },
+  {
+    "utterance": "ZaloPay được không",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hỏi ZaloPay"
+  },
+  {
+    "utterance": "Tip có tính trong bill không vậy",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hỏi tip"
+  },
+  {
+    "utterance": "Xuất hóa đơn công ty dùm",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hóa đơn công ty"
+  },
+  {
+    "utterance": "Tổng hết nhiêu, trả luôn",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hỏi tổng và thanh toán"
+  },
+  {
+    "utterance": "Cho anh tiền, tính thiệt hông đó",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hỏi tính tiền thân mật"
+  },
+  {
+    "utterance": "Ê tính bill đi mày",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Gọi bill thân mật"
+  },
+  {
+    "utterance": "Lấy bill thanh toán cho anh",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Lấy bill"
+  },
+  {
+    "utterance": "Hết bao nhiêu anh trả luôn",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Trả ngay"
+  },
+  {
+    "utterance": "Tính tiền đi, anh trả hết",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Tính tiền trả hết"
+  },
+  {
+    "utterance": "Xin chào em ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Chào lịch sự"
+  },
+  {
+    "utterance": "Dạ cảm ơn em nhiều ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Cảm ơn lịch sự"
+  },
+  {
+    "utterance": "Chúc em một ngày tốt lành ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Chúc lịch sự"
+  },
+  {
+    "utterance": "Dạ cho em hỏi em tên gì thế ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Hỏi tên"
+  },
+  {
+    "utterance": "Rất vui được gặp em ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Xã giao"
+  },
+  {
+    "utterance": "Dạ chào buổi tối em ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Chào buổi tối"
+  },
+  {
+    "utterance": "Đồ ăn ở quán mình ngon quá ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Khen đồ ăn"
+  },
+  {
+    "utterance": "Dạ không gian quán đẹp quá ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Khen không gian"
+  },
+  {
+    "utterance": "Em phục vụ nhiệt tình quá ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Khen phục vụ"
+  },
+  {
+    "utterance": "Dạ em là nhân viên hay là robot thế ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Hỏi về bản thân"
+  },
+  {
+    "utterance": "Hôm nay thời tiết đẹp quá em ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Nói về thời tiết"
+  },
+  {
+    "utterance": "Dạ quán mình đông khách quá em ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Nhận xét quán"
+  },
+  {
+    "utterance": "Cảm ơn em vì bữa ăn ngon ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Cảm ơn bữa ăn"
+  },
+  {
+    "utterance": "Dạ lần sau anh sẽ quay lại ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Hẹn quay lại"
+  },
+  {
+    "utterance": "Chúc quán mình ngày càng đông khách ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Chúc quán"
+  },
+  {
+    "utterance": "Dạ em ơi cho anh hỏi em bao nhiêu tuổi ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Hỏi tuổi - tán gẫu"
+  },
+  {
+    "utterance": "Món này hợp khẩu vị của em quá ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Khen món"
+  },
+  {
+    "utterance": "Dạ cho em hỏi quán mở được bao lâu rồi ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Hỏi về quán - CHAT"
+  },
+  {
+    "utterance": "Anh thấy em dễ thương quá ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Khen người"
+  },
+  {
+    "utterance": "Dạ em có người yêu chưa ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Tán tỉnh"
+  },
+  {
+    "utterance": "Chào buổi sáng em ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Chào sáng"
+  },
+  {
+    "utterance": "Dạ anh xin phép về trước ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Chào tạm biệt"
+  },
+  {
+    "utterance": "Tạm biệt em nhé ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Tạm biệt"
+  },
+  {
+    "utterance": "Dạ hẹn gặp lại em ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Hẹn gặp"
+  },
+  {
+    "utterance": "Em giúp được những gì cho anh thế ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Hỏi khả năng"
+  },
+  {
+    "utterance": "Dạ quán mình có nhạc sống không ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Hỏi về giải trí - CHAT"
+  },
+  {
+    "utterance": "Ngon tuyệt vời luôn em ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Khen ngon"
+  },
+  {
+    "utterance": "Dạ ăn ở đây thích thật ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Khen trải nghiệm"
+  },
+  {
+    "utterance": "Bữa nay vui quá em ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Bày tỏ cảm xúc"
+  },
+  {
+    "utterance": "Dạ chắc anh sẽ giới thiệu bạn bè tới đây ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Giới thiệu quán"
+  },
+  {
+    "utterance": "Em làm ở đây lâu chưa ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Hỏi về em"
+  },
+  {
+    "utterance": "Dạ cho anh gửi lời khen tới đầu bếp ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Khen đầu bếp"
+  },
+  {
+    "utterance": "Anh thấy món này hơi mặn ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Góp ý nhẹ"
+  },
+  {
+    "utterance": "Dạ em có thể hát một bài được không ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Yêu cầu vui"
+  },
+  {
+    "utterance": "Anh thấy quán mình view đẹp quá ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Khen view"
+  },
+  {
+    "utterance": "Xin chào em",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Chào ngắn"
+  },
+  {
+    "utterance": "Cảm ơn em nha",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Cảm ơn ngắn"
+  },
+  {
+    "utterance": "Chào em nha",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Chào thân mật"
+  },
+  {
+    "utterance": "Đồ ăn ngon quá trời",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Khen ngon"
+  },
+  {
+    "utterance": "Quán đông ghê ha",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Nhận xét quán"
+  },
+  {
+    "utterance": "Phục vụ nhiệt tình ghê",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Khen phục vụ"
+  },
+  {
+    "utterance": "Trời hôm nay mưa to quá",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Thời tiết"
+  },
+  {
+    "utterance": "Hôm nay nắng nóng ghê",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Thời tiết"
+  },
+  {
+    "utterance": "Ngoài đường kẹt xe dữ lắm",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Tán gẫu"
+  },
+  {
+    "utterance": "Em tên gì vậy",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Hỏi tên"
+  },
+  {
+    "utterance": "Bữa nay ăn ngon quá",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Khen"
+  },
+  {
+    "utterance": "Lần sau anh ghé lại nha",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Hẹn quay lại"
+  },
+  {
+    "utterance": "Quán mới mở hả em",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Hỏi về quán"
+  },
+  {
+    "utterance": "Ê món này đỉnh nha",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Khen món"
+  },
+  {
+    "utterance": "Anh no quá rồi",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Bày tỏ cảm giác"
+  },
+  {
+    "utterance": "Về thôi mày ơi",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Nói với bạn"
+  },
+  {
+    "utterance": "Ăn ở đây đã ghê",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Khen"
+  },
+  {
+    "utterance": "Nực quá, quạt đâu rồi",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Than nóng"
+  },
+  {
+    "utterance": "Để bụng lát về ngủ",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Tán gẫu"
+  },
+  {
+    "utterance": "Mai mốt rủ thêm bạn đi ăn",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Lên kế hoạch"
+  },
+  {
+    "utterance": "Anh thấy hôm nay vui quá",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Bày tỏ cảm xúc"
+  },
+  {
+    "utterance": "Món ni ngon thiệt chứ",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Khen món"
+  },
+  {
+    "utterance": "Tính ra quán này cũng ok",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Nhận xét"
+  },
+  {
+    "utterance": "Anh thấy đồ ăn hơi lâu",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Than chậm"
+  },
+  {
+    "utterance": "Mà quán có view đẹp thiệt",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Khen view"
+  },
+  {
+    "utterance": "Giá mà có thêm món lẩu nữa",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Ước"
+  },
+  {
+    "utterance": "Anh khoái mấy món nướng",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Sở thích"
+  },
+  {
+    "utterance": "Mình ăn xong đi hát karaoke đi",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Kế hoạch sau ăn"
+  },
+  {
+    "utterance": "Làm ly bia cho mát",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Tán gẫu"
+  },
+  {
+    "utterance": "Đồ nhậu ở đây ngon thiệt",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Khen đồ nhậu"
+  },
+  {
+    "utterance": "Mà hôm nay vui ghê",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Vui"
+  },
+  {
+    "utterance": "Chào em, anh tới ăn nè",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Chào khi tới"
+  },
+  {
+    "utterance": "Ê mày, ở đây ngon nè",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Nói với bạn"
+  },
+  {
+    "utterance": "Cho anh hỏi em tên gì vậy",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Làm quen"
+  },
+  {
+    "utterance": "Gặp em là anh vui rồi",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Tán tỉnh"
+  },
+  {
+    "utterance": "Chào em nha, anh mới tới",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Chào mới tới"
+  },
+  {
+    "utterance": "Dạ chào em, anh tới ăn nè",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Chào thân mật"
+  },
+  {
+    "utterance": "Cảm ơn em nhiều nghen",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Cảm ơn giọng Nam"
+  },
+  {
+    "utterance": "Đồ ăn ở đây ngon quá trời luôn",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Khen quá trời, giọng Nam"
+  },
+  {
+    "utterance": "Quán ni đông khách ghê hè",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Nhận xét, giọng Trung"
+  },
+  {
+    "utterance": "Phục vụ ở đây nhiệt tình dữ thần",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Khen phục vụ"
+  },
+  {
+    "utterance": "Trời hôm ni mưa dữ thần luôn",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Thời tiết, giọng Trung"
+  },
+  {
+    "utterance": "Hôm ni nắng nóng muốn chết luôn",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Than nóng"
+  },
+  {
+    "utterance": "Kẹt xe ngoài đường dữ lắm luôn",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Tán gẫu giao thông"
+  },
+  {
+    "utterance": "Em tên chi rứa",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Hỏi tên, giọng Trung"
+  },
+  {
+    "utterance": "Bữa ni ăn ngon quá trời",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Khen bữa ăn"
+  },
+  {
+    "utterance": "Lần sau ghé lại nghen em",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Hẹn quay lại"
+  },
+  {
+    "utterance": "Món ni đỉnh của đỉnh luôn",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Khen món"
+  },
+  {
+    "utterance": "Anh no bụng quá rồi nghen",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "No bụng"
+  },
+  {
+    "utterance": "Về thôi bây ơi",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Rủ về, giọng Nam"
+  },
+  {
+    "utterance": "Ăn ở ni đã cái bụng ghê",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Khen no"
+  },
+  {
+    "utterance": "Nực quá trời, bật quạt lên coi",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Than nóng"
+  },
+  {
+    "utterance": "Mai mốt rủ nguyên đám vô ăn",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Lên kế hoạch"
+  },
+  {
+    "utterance": "Anh khoái món ni nhất trên đời",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Sở thích"
+  },
+  {
+    "utterance": "Nhậu ở đây đã cái nư luôn",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Khen nhậu"
+  },
+  {
+    "utterance": "Hôm ni vui quá xá",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Vui"
+  },
+  {
+    "utterance": "Chào em, bữa ni anh ghé ăn nè",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Chào ghé"
+  },
+  {
+    "utterance": "Em dễ thương quá hà",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Khen dễ thương"
+  },
+  {
+    "utterance": "Quán ni mở hồi nèo rứa em",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Hỏi mở khi nào"
+  },
+  {
+    "utterance": "Đồ ăn hơi lâu, mà thôi kệ đi",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Than rồi kệ"
+  },
+  {
+    "utterance": "Anh thấy vui quá, cảm ơn em nghen",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Vui và cảm ơn"
+  },
+  {
+    "utterance": "Ê mày, tao ưng quán ni rồi nghen",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Thích quán"
+  },
+  {
+    "utterance": "Mai mốt anh dắt cả nhà vô ăn",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Hứa quay lại"
+  },
+  {
+    "utterance": "Ở ni có nhạc sống hông em",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Hỏi nhạc sống"
+  },
+  {
+    "utterance": "Cho anh hỏi em có người yêu chưa",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Tán tỉnh"
+  },
+  {
+    "utterance": "Anh mới chia tay, buồn quá em ơi",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Tâm sự"
+  },
+  {
+    "utterance": "Giá mà có em ngồi ăn cùng anh",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Tán tỉnh"
+  },
+  {
+    "utterance": "Quán ni view đẹp mà đồ ăn cũng ngon",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Khen cả hai"
+  },
+  {
+    "utterance": "Anh từ Cần Thơ lên ăn đó nghen",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Kể chuyện"
+  },
+  {
+    "utterance": "Hồi xưa anh hay ăn món ni ở Đà Nẵng",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Kể kỷ niệm"
+  },
+  {
+    "utterance": "Ừ chốt đơn đi em",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Xác nhận đơn cực ngắn"
+  },
+  {
+    "utterance": "Ok đặt luôn đi",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Ok đặt, xác nhận ngắn"
+  },
+  {
+    "utterance": "Ừ đúng rồi đó",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Xác nhận đúng, mơ hồ"
+  },
+  {
+    "utterance": "Được, chốt luôn đi em",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Được chốt"
+  },
+  {
+    "utterance": "Ok em, đặt đi",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Ok đặt đi"
+  },
+  {
+    "utterance": "Đúng rồi, chốt đi",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Xác nhận rồi chốt"
+  },
+  {
+    "utterance": "Chốt luôn đi em ơi",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Chốt ngắn"
+  },
+  {
+    "utterance": "Ừ, vậy đi, chốt đơn",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Ừ chốt"
+  },
+  {
+    "utterance": "Ok xác nhận đơn luôn",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Ok xác nhận"
+  },
+  {
+    "utterance": "Lên đơn đi",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Lên đơn, cực ngắn"
+  },
+  {
+    "utterance": "Đặt đi em",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Đặt đi"
+  },
+  {
+    "utterance": "Chốt nha em",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Chốt ngắn"
+  },
+  {
+    "utterance": "Ok order đi",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Ok order"
+  },
+  {
+    "utterance": "Cho anh... ừm... 2 phần ốc hương",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Ngập ngừng khi gọi món"
+  },
+  {
+    "utterance": "À mà cho thêm 1 bia nữa",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "À mà, gọi thêm đột ngột"
+  },
+  {
+    "utterance": "Khoan đã, đổi món này qua món kia",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Khoan đã, đổi món"
+  },
+  {
+    "utterance": "Thôi bỏ món đó đi",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Thôi bỏ"
+  },
+  {
+    "utterance": "Thôi được, lấy luôn đi",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Thôi được lấy luôn"
+  },
+  {
+    "utterance": "Vậy lấy 2 phần đi em",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Vậy lấy..."
+  },
+  {
+    "utterance": "Rồi, ok, chốt luôn",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Rồi ok chốt"
+  },
+  {
+    "utterance": "Ừ đặt giùm anh",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Ừ đặt"
+  },
+  {
+    "utterance": "Uh, chốt đi em",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Uh chốt"
+  },
+  {
+    "utterance": "Đúng đơn đó, làm đi",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Đúng đơn làm đi"
+  },
+  {
+    "utterance": "Ok đúng rồi, gọi món đi",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Ok đúng gọi món"
+  },
+  {
+    "utterance": "Vậy chốt đơn nha em",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Vậy chốt"
+  },
+  {
+    "utterance": "Ừm, lấy hết đi",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Ừm lấy hết"
+  },
+  {
+    "utterance": "Từ từ để anh xem đã",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Từ từ, đang xem xét - ORDER vì đang trong giai đoạn gọi món"
+  },
+  {
+    "utterance": "Để anh suy nghĩ tí",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Suy nghĩ khi gọi món"
+  },
+  {
+    "utterance": "Chưa biết nữa, từ từ đi",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Chưa biết, do dự"
+  },
+  {
+    "utterance": "Chờ xíu, để anh coi lại",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Chờ xíu coi lại"
+  },
+  {
+    "utterance": "Khoan, để coi lại đơn cái đã",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Khoan coi lại đơn"
+  },
+  {
+    "utterance": "Cho anh... ơ... 1 lẩu cá tầm",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Ngập ngừng với ơ"
+  },
+  {
+    "utterance": "À mà thôi, lấy ốc hương đi",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "À mà thôi đổi ý"
+  },
+  {
+    "utterance": "Hay là lấy món ni đi",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Hay là... do dự"
+  },
+  {
+    "utterance": "Hay thôi, đổi qua món khác",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Hay thôi đổi"
+  },
+  {
+    "utterance": "Mà thôi, bỏ món đó đi em",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Mà thôi bỏ"
+  },
+  {
+    "utterance": "Thôi chốt vậy đi, không sửa nữa",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Thôi chốt không sửa"
+  },
+  {
+    "utterance": "Gọi thêm... ừm... 2 hàu nướng nữa",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Ngập ngừng gọi thêm"
+  },
+  {
+    "utterance": "Ê mà quên, thêm cái này nữa",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Quên, thêm món"
+  },
+  {
+    "utterance": "À có cái này nữa, cho anh 2 chai bia",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "À thêm bia"
+  },
+  {
+    "utterance": "Xác nhận đơn giùm nha",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Xác nhận đơn ngắn"
+  },
+  {
+    "utterance": "Ok luôn đi em",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Ok luôn"
+  },
+  {
+    "utterance": "Vậy ok chốt nha",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Vậy ok chốt"
+  },
+  {
+    "utterance": "Ừ, lấy giùm anh đi",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Ừ lấy giùm"
+  },
+  {
+    "utterance": "Đúng rồi, ok em",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Đúng rồi ok"
+  },
+  {
+    "utterance": "Chuẩn rồi, chốt luôn",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Chuẩn rồi chốt"
+  },
+  {
+    "utterance": "Chuẩn, lên đơn đi em",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Chuẩn lên đơn"
+  },
+  {
+    "utterance": "Ok chốt không thay đổi gì nữa",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Ok chốt không đổi"
+  },
+  {
+    "utterance": "Từ từ đi, cho anh coi lại cái",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Từ từ coi lại"
+  },
+  {
+    "utterance": "Để coi... ừm... vậy đi",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Do dự rồi quyết"
+  },
+  {
+    "utterance": "Ừ",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Ừ - mơ hồ nhất, thường là CHAT khi không có context"
+  },
+  {
+    "utterance": "Ok",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Ok đơn thuần"
+  },
+  {
+    "utterance": "Được",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Được - có thể là đồng ý chung"
+  },
+  {
+    "utterance": "Đi",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Đi cực ngắn"
+  },
+  {
+    "utterance": "Ừm",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Ừm, từ đệm"
+  },
+  {
+    "utterance": "À",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "À, nhận ra"
+  },
+  {
+    "utterance": "Rồi",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Rồi xác nhận"
+  },
+  {
+    "utterance": "Ừ để coi",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Ừ để coi, suy nghĩ"
+  },
+  {
+    "utterance": "Để xem đã",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Để xem, chưa quyết"
+  },
+  {
+    "utterance": "Từ từ đi",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Từ từ"
+  },
+  {
+    "utterance": "Khoan đã",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Khoan đã dừng lại"
+  },
+  {
+    "utterance": "À mà thôi",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "À mà thôi, đổi ý"
+  },
+  {
+    "utterance": "Chưa biết nữa",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Chưa biết"
+  },
+  {
+    "utterance": "Chờ xíu",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Chờ xíu"
+  },
+  {
+    "utterance": "Hello",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Hello tiếng Anh"
+  },
+  {
+    "utterance": "Hi",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Hi ngắn"
+  },
+  {
+    "utterance": "Hey",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Hey"
+  },
+  {
+    "utterance": "Alo",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Alo"
+  },
+  {
+    "utterance": "Ê",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Ê gọi"
+  },
+  {
+    "utterance": "Ngon",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Ngon, khen"
+  },
+  {
+    "utterance": "Tuyệt",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Tuyệt"
+  },
+  {
+    "utterance": "Đỉnh",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Đỉnh"
+  },
+  {
+    "utterance": "Chán",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Chán"
+  },
+  {
+    "utterance": "Cũng được",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Cũng được"
+  },
+  {
+    "utterance": "Tạm được",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Tạm được"
+  },
+  {
+    "utterance": "Bình thường",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Bình thường"
+  },
+  {
+    "utterance": "Hơi chán",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Hơi chán"
+  },
+  {
+    "utterance": "Rất ngon",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Rất ngon khen"
+  },
+  {
+    "utterance": "Quá ngon",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Quá ngon"
+  },
+  {
+    "utterance": "Tuyệt vời",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Tuyệt vời"
+  },
+  {
+    "utterance": "Thôi đi về",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Đi về"
+  },
+  {
+    "utterance": "Bye em",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Bye"
+  },
+  {
+    "utterance": "Bai bai",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Bai bai"
+  },
+  {
+    "utterance": "Tạm biệt",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Tạm biệt"
+  },
+  {
+    "utterance": "Hẹn gặp lại",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Hẹn gặp"
+  },
+  {
+    "utterance": "Cảm ơn",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Cảm ơn ngắn"
+  },
+  {
+    "utterance": "Thanks",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Thanks"
+  },
+  {
+    "utterance": "Thank you",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Thank you"
+  },
+  {
+    "utterance": "Mắc quá",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Mắc, than"
+  },
+  {
+    "utterance": "Rẻ ghê",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Rẻ ghê, nhận xét"
+  },
+  {
+    "utterance": "Đông quá",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Đông quá"
+  },
+  {
+    "utterance": "Vắng ghê",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Vắng ghê"
+  },
+  {
+    "utterance": "Nóng quá",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Nóng"
+  },
+  {
+    "utterance": "Lạnh quá",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Lạnh"
+  },
+  {
+    "utterance": "Ồn quá",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Ồn"
+  },
+  {
+    "utterance": "Cái này giá bao nhiêu",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Hỏi giá cực ngắn"
+  },
+  {
+    "utterance": "Món ni giá sao",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Hỏi giá ngắn"
+  },
+  {
+    "utterance": "Bao nhiêu tiền",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Hỏi giá rất ngắn"
+  },
+  {
+    "utterance": "Có cay không",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Hỏi cay cực ngắn"
+  },
+  {
+    "utterance": "Có ngon không",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Hỏi ngon cực ngắn"
+  },
+  {
+    "utterance": "Có chay không",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Hỏi chay ngắn"
+  },
+  {
+    "utterance": "Menu đâu em",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Hỏi menu"
+  },
+  {
+    "utterance": "Cho coi menu",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Coi menu"
+  },
+  {
+    "utterance": "Món này là gì",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Hỏi món"
+  },
+  {
+    "utterance": "Làm từ gì",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Hỏi nguyên liệu cực ngắn"
+  },
+  {
+    "utterance": "Có món gì ngon",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Hỏi món ngon"
+  },
+  {
+    "utterance": "Gợi ý đi",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Gợi ý"
+  },
+  {
+    "utterance": "Món nào best",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Hỏi best"
+  },
+  {
+    "utterance": "Có gì uống",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Hỏi đồ uống"
+  },
+  {
+    "utterance": "Có bia không",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Hỏi bia"
+  },
+  {
+    "utterance": "Wifi đâu",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Hỏi wifi ngắn"
+  },
+  {
+    "utterance": "WC đâu",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Hỏi WC"
+  },
+  {
+    "utterance": "Mở cửa tới mấy giờ",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Hỏi giờ ngắn"
+  },
+  {
+    "utterance": "Có ship không",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Hỏi ship"
+  },
+  {
+    "utterance": "Đậu xe đâu",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Hỏi đậu xe"
+  },
+  {
+    "utterance": "Bao lâu có",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Hỏi thời gian chờ cực ngắn"
+  },
+  {
+    "utterance": "Có khuyến mãi không",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Hỏi KM ngắn"
+  },
+  {
+    "utterance": "Còn món ni không",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Hỏi còn món"
+  },
+  {
+    "utterance": "Hết món ni rồi hả",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Hỏi hết món"
+  },
+  {
+    "utterance": "Có tươi không",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Hỏi độ tươi"
+  },
+  {
+    "utterance": "Tính tiền",
+    "intent": "PAYMENT",
+    "style": "edge",
+    "notes": "Tính tiền cực ngắn"
+  },
+  {
+    "utterance": "Bill",
+    "intent": "PAYMENT",
+    "style": "edge",
+    "notes": "Bill đơn từ"
+  },
+  {
+    "utterance": "Tính bill",
+    "intent": "PAYMENT",
+    "style": "edge",
+    "notes": "Tính bill"
+  },
+  {
+    "utterance": "Check bill",
+    "intent": "PAYMENT",
+    "style": "edge",
+    "notes": "Check bill"
+  },
+  {
+    "utterance": "Hóa đơn",
+    "intent": "PAYMENT",
+    "style": "edge",
+    "notes": "Hóa đơn đơn từ"
+  },
+  {
+    "utterance": "Thanh toán",
+    "intent": "PAYMENT",
+    "style": "edge",
+    "notes": "Thanh toán"
+  },
+  {
+    "utterance": "Trả tiền",
+    "intent": "PAYMENT",
+    "style": "edge",
+    "notes": "Trả tiền ngắn"
+  },
+  {
+    "utterance": "Bao nhiêu",
+    "intent": "PAYMENT",
+    "style": "edge",
+    "notes": "Bao nhiêu tiền, mơ hồ với SEARCH"
+  },
+  {
+    "utterance": "Cho xin bill",
+    "intent": "PAYMENT",
+    "style": "edge",
+    "notes": "Xin bill ngắn"
+  },
+  {
+    "utterance": "QR đâu",
+    "intent": "PAYMENT",
+    "style": "edge",
+    "notes": "Hỏi QR"
+  },
+  {
+    "utterance": "Chuyển khoản",
+    "intent": "PAYMENT",
+    "style": "edge",
+    "notes": "Chuyển khoản"
+  },
+  {
+    "utterance": "Quẹt thẻ",
+    "intent": "PAYMENT",
+    "style": "edge",
+    "notes": "Quẹt thẻ"
+  },
+  {
+    "utterance": "Tiền mặt",
+    "intent": "PAYMENT",
+    "style": "edge",
+    "notes": "Tiền mặt"
+  },
+  {
+    "utterance": "Momo",
+    "intent": "PAYMENT",
+    "style": "edge",
+    "notes": "Momo"
+  },
+  {
+    "utterance": "Chia đôi",
+    "intent": "PAYMENT",
+    "style": "edge",
+    "notes": "Chia đôi"
+  },
+  {
+    "utterance": "Tách bill",
+    "intent": "PAYMENT",
+    "style": "edge",
+    "notes": "Tách bill"
+  },
+  {
+    "utterance": "Bao nhiêu tiền rồi",
+    "intent": "PAYMENT",
+    "style": "edge",
+    "notes": "Hỏi tổng tiền ngắn"
+  },
+  {
+    "utterance": "Cà thẻ",
+    "intent": "PAYMENT",
+    "style": "edge",
+    "notes": "Cà thẻ"
+  },
+  {
+    "utterance": "Chốt bill",
+    "intent": "PAYMENT",
+    "style": "edge",
+    "notes": "Chốt bill"
+  },
+  {
+    "utterance": "Tính tiền đi",
+    "intent": "PAYMENT",
+    "style": "edge",
+    "notes": "Tính tiền đi"
+  },
+  {
+    "utterance": "Bill đi",
+    "intent": "PAYMENT",
+    "style": "edge",
+    "notes": "Bill đi"
+  },
+  {
+    "utterance": "Cho trả tiền",
+    "intent": "PAYMENT",
+    "style": "edge",
+    "notes": "Cho trả tiền"
+  },
+  {
+    "utterance": "Dạ cho em hỏi quán mình có nhận tiệc không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi tiệc"
+  },
+  {
+    "utterance": "Cho em hỏi món Cua Rang Me bao nhiêu tiền một con ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi giá cua"
+  },
+  {
+    "utterance": "Dạ em muốn biết quán có món lẩu nào ngon nhất ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi lẩu ngon nhất"
+  },
+  {
+    "utterance": "Cho em hỏi món Tôm Sú Nướng Muối Ớt có cay nhiều không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi cay của tôm sú"
+  },
+  {
+    "utterance": "Dạ em muốn hỏi quán có món nào không cay cho trẻ em không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi món cho trẻ em"
+  },
+  {
+    "utterance": "Cho em hỏi Cháo Hàu có bao nhiêu calo ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi calo cháo"
+  },
+  {
+    "utterance": "Dạ cho em hỏi món Gỏi Xoài Bạch Tuộc có vị gì đặc biệt ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi vị gỏi"
+  },
+  {
+    "utterance": "Cho em hỏi Sò Điệp Nướng Mỡ Hành có mấy con một phần ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi định lượng sò điệp"
+  },
+  {
+    "utterance": "Dạ em muốn biết quán có phục vụ lẩu băng chuyền không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi lẩu băng chuyền"
+  },
+  {
+    "utterance": "Cho em hỏi Nghêu Hấp Sả có tươi không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi độ tươi"
+  },
+  {
+    "utterance": "Dạ em muốn hỏi món Bạch Tuộc Nướng Sa Tế có cay không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi cay bạch tuộc"
+  },
+  {
+    "utterance": "Cho em hỏi quán có bán mang về không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi bán mang về"
+  },
+  {
+    "utterance": "Dạ em muốn biết Ốc Bươu Nhồi Thịt giá bao nhiêu ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi giá ốc bươu"
+  },
+  {
+    "utterance": "Cho em hỏi món này có dùng nước mắm không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi nước chấm"
+  },
+  {
+    "utterance": "Dạ em muốn hỏi quán có món tráng miệng gì không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi tráng miệng"
+  },
+  {
+    "utterance": "Cho em hỏi đồ uống có những loại nào ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi đồ uống"
+  },
+  {
+    "utterance": "Có món gì lạ miệng không em",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi món lạ"
+  },
+  {
+    "utterance": "Tôm càng nướng phô mai có béo không",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi độ béo"
+  },
+  {
+    "utterance": "Mì xào sò có nhiều sò không em",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi lượng sò"
+  },
+  {
+    "utterance": "Quán có chương trình giảm giá gì không",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi giảm giá"
+  },
+  {
+    "utterance": "Bánh mì bơ tỏi có giòn không",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi độ giòn"
+  },
+  {
+    "utterance": "Mực ống nướng với mực lá cái nào ngon hơn",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "So sánh mực"
+  },
+  {
+    "utterance": "Hàu sữa khác hàu thường thế nào",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi khác biệt"
+  },
+  {
+    "utterance": "Có món gì dưới 50k không",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi theo giá"
+  },
+  {
+    "utterance": "Quán có bán bia tươi không",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi bia tươi"
+  },
+  {
+    "utterance": "Trà tắc với trà đào cái nào ngon hơn",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "So sánh trà"
+  },
+  {
+    "utterance": "Cơm chiên hải sản có nhiều hải sản không",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi lượng hải sản"
+  },
+  {
+    "utterance": "Quán có nhận đặt món qua điện thoại không",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi đặt qua ĐT"
+  },
+  {
+    "utterance": "Lươn nướng sa tế có bán không em",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi món lươn"
+  },
+  {
+    "utterance": "Ốc tỏi xào bơ cay không em",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi cay ốc tỏi"
+  },
+  {
+    "utterance": "Sò long nướng trứng cút bao nhiêu tiền",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi giá sò long"
+  },
+  {
+    "utterance": "Quán mình có nhạc sống không em",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi nhạc sống"
+  },
+  {
+    "utterance": "Có phòng lạnh không em",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi phòng lạnh"
+  },
+  {
+    "utterance": "Món ni có cay không rứa",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi cay giọng Trung"
+  },
+  {
+    "utterance": "Ốc hương xốt me có chua không rứa",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi chua giọng Trung"
+  },
+  {
+    "utterance": "Cho hỏi mực cháy tỏi ni nhiêu một dĩa rứa",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi giá giọng Trung"
+  },
+  {
+    "utterance": "Quán ni có món mô đặc sản rứa",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi đặc sản giọng Trung"
+  },
+  {
+    "utterance": "Có món nướng chi ngon không rứa em",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi món nướng giọng Trung"
+  },
+  {
+    "utterance": "Cá chình nướng muối ớt có bán hông em",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi cá chình giọng Nam"
+  },
+  {
+    "utterance": "Ốc len xào dừa có ngọt hông em",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi vị ngọt"
+  },
+  {
+    "utterance": "Gỏi hải sản ni có những chi trong đó rứa",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi thành phần gỏi"
+  },
+  {
+    "utterance": "Món ni có hợp cho bà bầu hông rứa",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi cho bà bầu"
+  },
+  {
+    "utterance": "Dạ em muốn thanh toán và xin biên lai ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Thanh toán xin biên lai"
+  },
+  {
+    "utterance": "Cho em hỏi em thanh toán bằng Apple Pay được không ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi Apple Pay"
+  },
+  {
+    "utterance": "Dạ bàn em tính tiền riêng mỗi người ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Tính riêng"
+  },
+  {
+    "utterance": "Cho em hỏi em muốn kiểm tra bill trước khi thanh toán ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Kiểm tra trước thanh toán"
+  },
+  {
+    "utterance": "Dạ em muốn xuất hóa đơn đỏ cho công ty ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Xuất hóa đơn đỏ"
+  },
+  {
+    "utterance": "Cho em hỏi quán có chấp nhận thẻ Visa Debit không ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi thẻ Visa Debit"
+  },
+  {
+    "utterance": "Dạ em muốn thanh toán qua ví ShopeePay được không ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi ShopeePay"
+  },
+  {
+    "utterance": "Cho em hỏi bill đã bao gồm thuế VAT chưa ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi VAT"
+  },
+  {
+    "utterance": "Dạ em muốn thanh toán hết rồi gọi thêm món mới ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Thanh toán rồi gọi thêm"
+  },
+  {
+    "utterance": "Cho em hỏi quán có thu thêm phí ngày lễ không ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi phí ngày lễ"
+  },
+  {
+    "utterance": "Dạ cho em tính tiền và lấy hóa đơn luôn ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Tính tiền và lấy hóa đơn"
+  },
+  {
+    "utterance": "Cho em hỏi thanh toán bằng Samsung Pay được không ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi Samsung Pay"
+  },
+  {
+    "utterance": "Dạ em muốn in hóa đơn giấy cho công ty ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "In hóa đơn"
+  },
+  {
+    "utterance": "Cho em hỏi có thể trả bằng đô la Mỹ không ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi trả USD"
+  },
+  {
+    "utterance": "Dạ em muốn thanh toán hết rồi mới ăn tiếp ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Thanh toán trước"
+  },
+  {
+    "utterance": "Tính tiền đi anh ơi",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Gọi tính tiền thân mật"
+  },
+  {
+    "utterance": "Trả tiền chỗ nào em",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hỏi chỗ trả tiền"
+  },
+  {
+    "utterance": "Bao nhiêu một người vậy em",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hỏi tiền mỗi người"
+  },
+  {
+    "utterance": "Cho anh xin cái bill rồi tính luôn",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Xin bill và tính"
+  },
+  {
+    "utterance": "Có trả góp không em",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hỏi trả góp"
+  },
+  {
+    "utterance": "Tính tiền rồi tụi anh về",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Tính tiền rồi về"
+  },
+  {
+    "utterance": "Có giảm giá cho khách quen không",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hỏi giảm giá"
+  },
+  {
+    "utterance": "Tính bill nhanh nha em",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Tính bill nhanh"
+  },
+  {
+    "utterance": "Bill bao nhiêu đây em",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hỏi bill"
+  },
+  {
+    "utterance": "Cho anh xin cái qr thanh toán đi",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Xin QR"
+  },
+  {
+    "utterance": "Lấy bill cho anh coi đã",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Lấy bill coi"
+  },
+  {
+    "utterance": "Bao tiền rồi em ơi",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hỏi tiền"
+  },
+  {
+    "utterance": "Tính tiền rồi lấy thêm đồ về",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Tính tiền rồi mua thêm"
+  },
+  {
+    "utterance": "Mình trả bằng thẻ nha em",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Trả thẻ"
+  },
+  {
+    "utterance": "Chia đều ra mỗi người bao nhiêu",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hỏi chia tiền"
+  },
+  {
+    "utterance": "Tính tiền dùm anh nghen",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Tính tiền giọng Nam"
+  },
+  {
+    "utterance": "Cho chị xin bill thanh toán nghen",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Xin bill giọng Nam"
+  },
+  {
+    "utterance": "Chuyển khoản stk nào rứa em",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Hỏi STK giọng Trung"
+  },
+  {
+    "utterance": "Trả bằng thẻ visa được hông rứa",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Hỏi visa giọng Trung"
+  },
+  {
+    "utterance": "Hết nhiêu tiền rồi tính luôn nghen",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Hỏi tiền và tính"
+  },
+  {
+    "utterance": "Bao tiền một đứa rứa em",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Hỏi tiền mỗi người giọng Trung"
+  },
+  {
+    "utterance": "Cho anh trả bằng tiền mặt nghen",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Trả tiền mặt giọng Nam"
+  },
+  {
+    "utterance": "Có tính thêm phí gì không rứa",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Hỏi phí thêm"
+  },
+  {
+    "utterance": "Bill ni có thuế VAT chưa rứa",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Hỏi VAT giọng Trung"
+  },
+  {
+    "utterance": "Tính riêng từng đứa dùm chị nghen",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Tách bill giọng Nam"
+  },
+  {
+    "utterance": "Xin chào quý khách",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Chào trang trọng"
+  },
+  {
+    "utterance": "Dạ em ơi cho anh hỏi em có bạn trai chưa ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Tán tỉnh lịch sự"
+  },
+  {
+    "utterance": "Quán mình trang trí đẹp quá ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Khen trang trí"
+  },
+  {
+    "utterance": "Dạ lần đầu em tới quán mình ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Lần đầu tới"
+  },
+  {
+    "utterance": "Em ơi cho anh hỏi gần đây có chỗ nào hát karaoke không ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Hỏi địa điểm khác"
+  },
+  {
+    "utterance": "Dạ bữa nay trời đẹp quá em ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Khen thời tiết"
+  },
+  {
+    "utterance": "Anh thấy đồ ăn ở đây chất lượng thật ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Khen chất lượng"
+  },
+  {
+    "utterance": "Dạ cho anh gửi lời cảm ơn tới toàn thể nhân viên ạ",
+    "intent": "CHAT",
+    "style": "formal",
+    "notes": "Cảm ơn tập thể"
+  },
+  {
+    "utterance": "Món lẩu hơi nhạt",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Góp ý"
+  },
+  {
+    "utterance": "Đồ ăn cũng được",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Nhận xét trung tính"
+  },
+  {
+    "utterance": "Mai mốt quay lại ăn tiếp",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Hứa quay lại"
+  },
+  {
+    "utterance": "Anh ăn no căng bụng rồi",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "No bụng"
+  },
+  {
+    "utterance": "Để anh đi rửa tay cái đã",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Tán gẫu"
+  },
+  {
+    "utterance": "Cho anh mượn cái gạt tàn",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Hỏi đồ vật"
+  },
+  {
+    "utterance": "Ê mày ăn gì chưa",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Nói với bạn"
+  },
+  {
+    "utterance": "Món ni ngon hơn quán kia",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "So sánh quán"
+  },
+  {
+    "utterance": "Xin chào em nghen",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Chào giọng Nam"
+  },
+  {
+    "utterance": "Bao giờ rảnh anh dẫn em đi chơi nghen",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Tán tỉnh"
+  },
+  {
+    "utterance": "Hôm ni mưa ướt hết trơn",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Than mưa"
+  },
+  {
+    "utterance": "Ở đây mát mẻ ghê hè",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Khen mát"
+  },
+  {
+    "utterance": "Anh khoái cái không khí ở ni",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Khen không khí"
+  },
+  {
+    "utterance": "Làm ly bia giải khát cái coi",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Tán gẫu"
+  },
+  {
+    "utterance": "Bao lâu rồi chưa gặp tụi bây",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Nói với bạn"
+  },
+  {
+    "utterance": "Giờ này năm ngoái tụi mình cũng đang nhậu",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Hồi tưởng"
+  },
+  {
+    "utterance": "Dạ vui lòng cho em thanh toán bằng thẻ ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Thanh toán thẻ lịch sự"
+  },
+  {
+    "utterance": "Cho em hỏi em muốn thanh toán qua VNPay được không ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi VNPay"
+  },
+  {
+    "utterance": "Dạ em muốn xin phiếu giảm giá cho lần sau ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Xin phiếu giảm giá"
+  },
+  {
+    "utterance": "Cho em hỏi tổng bill có bao gồm phí phục vụ 10% không ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi phí phục vụ"
+  },
+  {
+    "utterance": "Dạ em trả tiền rồi lấy xe về ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Trả tiền rồi về"
+  },
+  {
+    "utterance": "Cho em hỏi có thể chuyển khoản bằng Internet Banking không ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi Internet Banking"
+  },
+  {
+    "utterance": "Dạ em muốn thanh toán từng món một ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Thanh toán từng món"
+  },
+  {
+    "utterance": "Cho em hỏi quán có tích điểm thành viên không ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi tích điểm"
+  },
+  {
+    "utterance": "Dạ em muốn biết bill hôm nay được giảm bao nhiêu ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi số tiền giảm"
+  },
+  {
+    "utterance": "Cho em hỏi thanh toán quốc tế có được không ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi thanh toán quốc tế"
+  },
+  {
+    "utterance": "Dạ em chuyển khoản qua số điện thoại được không ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi chuyển khoản qua SĐT"
+  },
+  {
+    "utterance": "Cho em hỏi có máy quẹt thẻ không chạm không ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi contactless"
+  },
+  {
+    "utterance": "Dạ em muốn thanh toán trước 50 phần trăm ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Trả trước một phần"
+  },
+  {
+    "utterance": "Tính tiền mỗi đứa bao nhiêu vậy em",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hỏi tiền mỗi người"
+  },
+  {
+    "utterance": "Trả bằng ví điện tử được không em",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hỏi ví điện tử"
+  },
+  {
+    "utterance": "Hết bao nhiêu để anh trả",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hỏi tiền và trả"
+  },
+  {
+    "utterance": "Bill nhiêu rồi em",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hỏi bill"
+  },
+  {
+    "utterance": "Tính tiền phần anh thôi",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Tính riêng một người"
+  },
+  {
+    "utterance": "Có thẻ thành viên có được giảm không",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hỏi thẻ thành viên"
+  },
+  {
+    "utterance": "Lấy bill cho anh xem cái coi",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Xem bill"
+  },
+  {
+    "utterance": "Tính tiền rồi anh order thêm",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Tính rồi order thêm"
+  },
+  {
+    "utterance": "Bữa ni ai bao rứa",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Hỏi ai trả tiền"
+  },
+  {
+    "utterance": "Chia tiền ra mỗi đứa bao nhiêu rứa",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Chia tiền giọng Trung"
+  },
+  {
+    "utterance": "Anh trả hết cho tụi bây nghen",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Bao hết giọng Nam"
+  },
+  {
+    "utterance": "Quẹt thẻ rồi ký tên ở mô rứa",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Hỏi ký tên"
+  },
+  {
+    "utterance": "Có giảm giá cho sinh viên hông em",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Hỏi giảm giá SV"
+  },
+  {
+    "utterance": "Dạ cho em hỏi quán có phòng máy lạnh không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi máy lạnh"
+  },
+  {
+    "utterance": "Cho em hỏi Sò Huyết Hấp Sả có tươi không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi độ tươi"
+  },
+  {
+    "utterance": "Dạ em muốn biết Ốc Giác Xào Xả Ớt giá bao nhiêu ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi giá ốc giác"
+  },
+  {
+    "utterance": "Cho em hỏi trong thực đơn có hình ảnh không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi hình ảnh menu"
+  },
+  {
+    "utterance": "Dạ cho em hỏi có món gì hợp cho người lớn tuổi không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi món cho người già"
+  },
+  {
+    "utterance": "Cho em hỏi quán mình có món gì mới không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi món mới"
+  },
+  {
+    "utterance": "Dạ em muốn hỏi đồ uống có loại không đường không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi đồ uống không đường"
+  },
+  {
+    "utterance": "Cho em hỏi Cơm Chiên Hải Sản giá bao nhiêu một phần ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi giá cơm chiên"
+  },
+  {
+    "utterance": "Dạ quán mình có phục vụ đồ chay vào ngày rằm không ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi đồ chay ngày rằm"
+  },
+  {
+    "utterance": "Cho em hỏi món ốc nào đang giảm giá ạ",
+    "intent": "SEARCH",
+    "style": "formal",
+    "notes": "Hỏi giảm giá ốc"
+  },
+  {
+    "utterance": "Có món gì ăn vặt không em",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi món ăn vặt"
+  },
+  {
+    "utterance": "Quán có bán mang về được không",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi mang về"
+  },
+  {
+    "utterance": "Món nướng có những món gì vậy",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi danh sách món nướng"
+  },
+  {
+    "utterance": "Có lẩu riêu cua không em",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi lẩu riêu cua"
+  },
+  {
+    "utterance": "Ốc len xào dừa có ngọt không",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi vị"
+  },
+  {
+    "utterance": "Canh chua cá nấu với cá gì vậy",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi cá trong canh"
+  },
+  {
+    "utterance": "Quán có nhận đặt tiệc sinh nhật không",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi đặt tiệc"
+  },
+  {
+    "utterance": "Cơm chiên hải sản có cay không em",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi cay cơm chiên"
+  },
+  {
+    "utterance": "Món nướng nào rẻ nhất vậy",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi món rẻ nhất"
+  },
+  {
+    "utterance": "Bạch tuộc nướng sa tế có cay không",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi cay bạch tuộc"
+  },
+  {
+    "utterance": "Có món gì làm từ cá lóc không",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi món cá lóc"
+  },
+  {
+    "utterance": "Lẩu đầu cá hồi có mấy người ăn",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi khẩu phần"
+  },
+  {
+    "utterance": "Quán có món lẩu chua cay không",
+    "intent": "SEARCH",
+    "style": "casual",
+    "notes": "Hỏi lẩu chua cay"
+  },
+  {
+    "utterance": "Ốc mỡ xào me có bán hông em",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi ốc mỡ giọng Nam"
+  },
+  {
+    "utterance": "Có món ni cho người ăn chay hông",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi món chay giọng Nam"
+  },
+  {
+    "utterance": "Cua gạch rang me nhiêu một con rứa",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi giá cua gạch giọng Trung"
+  },
+  {
+    "utterance": "Món lẩu ni có nấu với măng chua hông",
+    "intent": "SEARCH",
+    "style": "dialect",
+    "notes": "Hỏi nguyên liệu lẩu"
+  },
+  {
+    "utterance": "Còn món ni hông em",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Hỏi còn món"
+  },
+  {
+    "utterance": "Hết chưa",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Hỏi hết món cực ngắn"
+  },
+  {
+    "utterance": "Cho hỏi tí",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Mở đầu hỏi"
+  },
+  {
+    "utterance": "À quên, còn món ni không",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Quên hỏi thêm"
+  },
+  {
+    "utterance": "Tươi hông",
+    "intent": "SEARCH",
+    "style": "edge",
+    "notes": "Hỏi độ tươi cực ngắn giọng Nam"
+  },
+  {
+    "utterance": "Dạ cho em 1 phần Ốc Mỡ Xào Me ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi ốc mỡ lịch sự"
+  },
+  {
+    "utterance": "Em muốn đổi 1 phần Cơm Chiên Hải Sản thành Cơm Chiên Dương Châu ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Đổi cơm chiên"
+  },
+  {
+    "utterance": "Dạ cho em gọi thêm 1 dĩa Salad Rong Biển ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi thêm salad"
+  },
+  {
+    "utterance": "Cho em 2 phần Cháo Lươn và 1 Trà Gừng ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi cháo lươn"
+  },
+  {
+    "utterance": "Dạ em xin đặt 1 Lẩu Riêu Cua cho 3 người ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Đặt lẩu riêu cua"
+  },
+  {
+    "utterance": "Cho em 1 Cơm Chiên Dương Châu và 1 Canh Chua Cá Lóc ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Gọi cơm và canh"
+  },
+  {
+    "utterance": "Dạ em muốn hủy món Gỏi Xoài Ốc Giác ạ",
+    "intent": "ORDER",
+    "style": "formal",
+    "notes": "Hủy gỏi xoài"
+  },
+  {
+    "utterance": "Cho em 1 Ốc Mỡ Xào Me đi",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi ốc mỡ"
+  },
+  {
+    "utterance": "Lấy dùm 1 trà gừng với 1 bánh mì bơ tỏi",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi trà và bánh mì"
+  },
+  {
+    "utterance": "Đổi cơm chiên hải sản thành cơm chiên dương châu đi",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Đổi cơm"
+  },
+  {
+    "utterance": "Thêm 1 cháo lươn nữa",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Thêm cháo lươn"
+  },
+  {
+    "utterance": "Cho 1 lẩu riêu cua nha",
+    "intent": "ORDER",
+    "style": "casual",
+    "notes": "Gọi lẩu riêu cua"
+  },
+  {
+    "utterance": "Cho anh 2 ốc mỡ xào me nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi ốc mỡ giọng Nam"
+  },
+  {
+    "utterance": "Lấy cho chị 1 trà gừng với 1 bánh mì bơ tỏi nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi trà bánh mì giọng Nam"
+  },
+  {
+    "utterance": "Đổi cơm chiên hải sản qua cơm chiên dương châu dùm anh nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Đổi cơm giọng Nam"
+  },
+  {
+    "utterance": "Thêm 1 cháo lươn cho ấm bụng nghen",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Thêm cháo lươn"
+  },
+  {
+    "utterance": "Cho 1 lẩu riêu cua nghen em",
+    "intent": "ORDER",
+    "style": "dialect",
+    "notes": "Gọi lẩu riêu cua giọng Nam"
+  },
+  {
+    "utterance": "Đặt 2 phần đi",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Đặt cực ngắn"
+  },
+  {
+    "utterance": "Ok gọi hết đi",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Ok gọi hết"
+  },
+  {
+    "utterance": "Rồi ok gọi đi em",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Rồi ok gọi"
+  },
+  {
+    "utterance": "Gọi món đó đi",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Gọi món đó"
+  },
+  {
+    "utterance": "Xác nhận đi em",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Xác nhận đi"
+  },
+  {
+    "utterance": "Lên đơn luôn đi",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Lên đơn luôn"
+  },
+  {
+    "utterance": "Ừm đặt đi em",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Ừm đặt đi"
+  },
+  {
+    "utterance": "Thôi chốt vậy",
+    "intent": "ORDER",
+    "style": "edge",
+    "notes": "Thôi chốt"
+  },
+  {
+    "utterance": "Hay quá, cảm ơn em",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Khen và cảm ơn"
+  },
+  {
+    "utterance": "Ở đây vui ghê",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Khen vui"
+  },
+  {
+    "utterance": "Ngồi đây chill quá",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Chill"
+  },
+  {
+    "utterance": "Anh thích cái view này",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Khen view"
+  },
+  {
+    "utterance": "Giờ này chắc quán vắng hơn",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Dự đoán"
+  },
+  {
+    "utterance": "Đồ ăn lên nhanh ghê",
+    "intent": "CHAT",
+    "style": "casual",
+    "notes": "Khen nhanh"
+  },
+  {
+    "utterance": "Ở ni vui thiệt chứ",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Khen vui giọng Nam"
+  },
+  {
+    "utterance": "Ngồi ni chill dữ thần",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Khen chill giọng Nam"
+  },
+  {
+    "utterance": "View ni đẹp thiệt chứ",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Khen view giọng Trung"
+  },
+  {
+    "utterance": "Đồ ăn lên nhanh dữ",
+    "intent": "CHAT",
+    "style": "dialect",
+    "notes": "Khen nhanh"
+  },
+  {
+    "utterance": "Hay",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Hay khen"
+  },
+  {
+    "utterance": "Ok được đó",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Ok được đó"
+  },
+  {
+    "utterance": "Ừm ngon đó",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Ừm ngon đó"
+  },
+  {
+    "utterance": "Ờ",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Ờ đơn giản"
+  },
+  {
+    "utterance": "Ngon thiệt",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Ngon thiệt"
+  },
+  {
+    "utterance": "Công nhận",
+    "intent": "CHAT",
+    "style": "edge",
+    "notes": "Công nhận"
+  },
+  {
+    "utterance": "Dạ cho em hỏi thanh toán bằng thẻ ghi nợ có được không ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi thẻ ghi nợ"
+  },
+  {
+    "utterance": "Em muốn trả bằng thẻ ATM được không ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi thẻ ATM"
+  },
+  {
+    "utterance": "Dạ em muốn thanh toán rồi xin thêm 1 ly nước lọc ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Thanh toán xin nước"
+  },
+  {
+    "utterance": "Cho em hỏi bàn em hết tổng cộng một triệu hai ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Xác nhận số tiền"
+  },
+  {
+    "utterance": "Dạ em trả bằng thẻ xong rồi ký tên ở đâu ạ",
+    "intent": "PAYMENT",
+    "style": "formal",
+    "notes": "Hỏi ký tên"
+  },
+  {
+    "utterance": "Trả thẻ ATM được không em",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hỏi thẻ ATM"
+  },
+  {
+    "utterance": "Có cần ký tên khi trả thẻ không",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Hỏi ký tên"
+  },
+  {
+    "utterance": "Anh đưa thẻ rồi quẹt dùm",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Đưa thẻ quẹt"
+  },
+  {
+    "utterance": "Tính tiền rồi cho anh xin ly trà đá",
+    "intent": "PAYMENT",
+    "style": "casual",
+    "notes": "Tính tiền xin trà đá"
+  },
+  {
+    "utterance": "Bao nhiêu tiền một người rứa",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Hỏi tiền mỗi người giọng Trung"
+  },
+  {
+    "utterance": "Thẻ ATM quẹt được hông em",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Hỏi thẻ ATM giọng Nam"
+  },
+  {
+    "utterance": "Tính tiền rồi cho chị xin ly trà đá nghen",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Tính tiền xin trà đá"
+  },
+  {
+    "utterance": "Ủa bill ni tính sai rồi nè",
+    "intent": "PAYMENT",
+    "style": "dialect",
+    "notes": "Phát hiện bill sai"
+  },
+  {
+    "utterance": "Chuyển khoản",
+    "intent": "PAYMENT",
+    "style": "edge",
+    "notes": "Chuyển khoản đơn từ"
+  },
+  {
+    "utterance": "Quẹt đi",
+    "intent": "PAYMENT",
+    "style": "edge",
+    "notes": "Quẹt đi"
+  },
+  {
+    "utterance": "Đưa bill đây",
+    "intent": "PAYMENT",
+    "style": "edge",
+    "notes": "Đưa bill"
+  },
+  {
+    "utterance": "Bao nhiêu đây",
+    "intent": "PAYMENT",
+    "style": "edge",
+    "notes": "Bao nhiêu"
+  },
+  {
+    "utterance": "Anh trả hết",
+    "intent": "PAYMENT",
+    "style": "edge",
+    "notes": "Trả hết"
+  }
+]

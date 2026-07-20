@@ -39,10 +39,10 @@ REQUIRED_FILES = [
     "assets/data/restaurant_info.txt",
     # Few-shots
     "src/agent_brain/agent/resources/few_shots/utterances.json",
-    "src/agent_brain/agent/resources/few_shots/router.json",
+    "src/agent_brain/agent/resources/few_shots/rewriter.json",
     "src/agent_brain/agent/resources/few_shots/search_worker.json",
     # Prompts
-    "src/agent_brain/agent/resources/system_prompts/router_agent.md",
+    "src/agent_brain/agent/resources/system_prompts/rewriter_agent.md",
     "src/agent_brain/agent/resources/system_prompts/order_worker_agent.md",
     "src/agent_brain/agent/resources/system_prompts/search_agent.md",
     "src/agent_brain/agent/resources/system_prompts/waiter_agent.md",

@@ -18,19 +18,15 @@ This is the intellectual core of the software contribution. Give it the most dep
 - 11 nodes, 7 conditional edges, 5 normal edges
 - Three-stage conceptual pipeline: Classify (router determines what the user wants) → Execute (workers call tools, validator checks, tools run, state updates — looping per intent) → Respond (build typed response context, generate text or template)
 - Compiled with SQLite checkpointer (thread_id = session_id)
-4.3.3 Intent Classification — Two-Tier Hybrid Router
-- Intent taxonomy: ORDER, ORDER_CONFIRM, SEARCH, PAYMENT, CHAT. Multi-intent support for compound utterances
-- Tier 1 — Semantic router (fast path, ~15ms):
-- Centroid construction: 192 hand-crafted Vietnamese utterances across 5 intents, embedded via SentenceTransformer (AITeamVN/Vietnamese_Embedding, 1024-dim), averaged per intent → 5 centroid vectors
-- Inference: encode utterance → cosine similarity to each centroid → temperature-scaled softmax (T=0.20) → gap gating
-- Gating algorithm: if max_sim < 0.35 → reject. If P1 ≥ 0.25 AND (P1-P2) ≥ 0.15 → accept. Otherwise → defer to Tier 2
-- Temperature calibration rationale: lower T sharpens distribution, reduces false positives on ambiguous utterances
-- Tier 2 — SLM router (fallback, ~1.8s):
-- Model: Qwen2.5 7B, temperature=0.0 (deterministic), structured output via Pydantic IntentPrediction schema
-- Prompt: system prompt with 4-step reasoning protocol + 14 few-shot examples + dynamic context (last 2 conversation turns + current order_stage)
-- Why dynamic context matters: "ok" at AWAITING_CONFIRMATION stage → ORDER_CONFIRM; same utterance at IDLE → CHAT
-- Multi-intent decomposition: each intent gets its own sub-query for downstream workers
-- Design rationale: semantic path handles ~55% of utterances in ~15ms; SLM path catches ambiguous, multi-intent, and context-dependent cases. The gap gate is the calibration point — thresholds tuned via grid search on development data
+4.3.3 Intent Classification — Trained MLP Classifier
+- Intent taxonomy: 4-class output (ORDER, SEARCH, PAYMENT, CHAT). ORDER_CONFIRM merged into ORDER at router level; downstream order state machine handles the distinction
+- Input features (778-dim): 768-dim frozen sentence embedding (bkai-foundation-models/vietnamese-bi-encoder) + 10 context features from AgentState
+- Context features: order_stage one-hot (5-dim), has_cart, cart_size_norm, has_search_context, search_context_size_norm, utterance_length_norm
+- Network: 3-layer MLP (778→256→64→4) with ReLU, Dropout(0.2), softmax output
+- Training: 3,712 synthetic utterances, 80/20 split, class-weighted CrossEntropyLoss, Adam, early stopping
+- Why trained classifier over LLM routing: (a) ~0.17ms vs ~1.8s forward pass — 10,000× faster, (b) deterministic (same input → same output), (c) context features encode conversation state that embeddings miss, (d) 95.6% vs 73.3% accuracy on 45-case A/B comparison
+- Inference: word segmentation → embedding → context extraction → StandardScaler → concatenate → MLP → softmax (total ~52ms, embedding dominates at ~50ms)
+- The router design evolved through three iterations evaluated as an ablation: semantic centroid (89.0% on 100 cases) → two-tier hybrid (73.3% on 45 cases) → trained MLP (92.0% on 100 cases, 97.4% on 39-case holdout)
 4.3.4 Workers — Per-Intent Processing
 Worker	Type	What it does	Why this design
 ORDER	LLM call	Qwen2.5 7B, temp=0.1, tool_choice="any" → one cart CRUD tool	Menu NOT in prompt (~200 tokens). 5 few-shot examples with tool calls for KV-cache sharing. Retry on empty output
@@ -74,7 +70,7 @@ delegate	Escape hatch	Route to CHAT worker with reason
 - 217 dishes from menu.json across 12 categories. Per-dish document: Vietnamese natural-language description + structured metadata (name, price, category, diet_type, taste_profile, tags)
 - Supporting sources: restaurant_info.txt, best_seller.json, customer_info.json (FAQ)
 4.4.2 Index Construction
-- FAISS dense index: AITeamVN/Vietnamese_Embedding (BGE-M3 fine-tune, 1024-dim). Fingerprint file verifies model identity at load time to prevent dimension mismatches
+- FAISS dense index: bkai-foundation-models/vietnamese-bi-encoder (768-dim). Fingerprint file verifies model identity at load time to prevent dimension mismatches
 - BM25 sparse index: rank_bm25.BM25Okapi with k1=1.2, b=0. Vietnamese word segmentation via underthesea.word_tokenize for both indexing and querying. Index text: concatenated metadata fields optimized for keyword matching
 4.4.3 Hybrid Retrieval with RRF Fusion
 - Parallel BM25 + FAISS search via ThreadPoolExecutor (2 workers), raw k=10 each

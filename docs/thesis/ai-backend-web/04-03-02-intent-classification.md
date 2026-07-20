@@ -2,176 +2,127 @@
 
 > **Status:** draft
 > **Cross-refs:** §4.3.1 for execution model, §4.3.3 for workers, §5.3.1 for router evaluation
-> **Source:** `src/agent_brain/agent/nodes/hybrid_router_node.py` (58 lines), `semantic_router_node.py` (145 lines), `slm_router_node.py` (131 lines)
-> **Figures needed:** Fig 4.3.2 (two-tier router flow: utterance → semantic gate → SLM fallback)
+> **Source:** `src/training_semantic_router/classifier/predict.py` (84 lines), `classifier/model.py` (34 lines), `classifier/features.py` (45 lines), `src/agent_brain/agent/nodes/classifier_router_node.py`
+> **Figures needed:** Fig 4.3.2 (MLP classifier pipeline: utterance → segmentation → embedding → context features → MLP → intent)
 
 ---
 
-Before any action can be taken, the system must determine what the customer wants. This is a classification problem: given an utterance in Vietnamese, select one or more intents from the set {ORDER, ORDER_CONFIRM, SEARCH, PAYMENT, CHAT}. The router is the first node in the graph, and its output — the `current_intents` FIFO queue — determines which worker nodes execute downstream.
+Before any action can be taken, the system must determine what the customer wants. This is a classification problem: given an utterance in Vietnamese, select the correct intent from the set {ORDER, SEARCH, PAYMENT, CHAT}. The classifier is the first node in the graph, and its output — the `current_intents` queue — determines which worker nodes execute downstream.
 
-The router is designed as a **two-tier hybrid architecture**: a fast semantic router (Tier 1, ~15ms) handles unambiguous utterances via centroid-based cosine similarity, while a slower but more capable SLM router (Tier 2, ~1.8s) serves as the fallback for ambiguous, multi-intent, and context-dependent cases. This design follows from a latency-accuracy trade-off: ~33% of utterances can be classified instantaneously with zero errors, but the remaining cases require an LLM's contextual reasoning. Running all utterances through the LLM would add 1.8s of unnecessary latency for one-third of turns.
+The router architecture evolved through three iterations: (1) a pure semantic centroid router achieving 89.0% on 100 cases, (2) a two-tier hybrid (semantic + SLM) achieving 73.3% on 45 cases, and (3) the final trained MLP classifier achieving 95.6% on 45 cases, 97.4% on a 39-case holdout, and 92.0% on 100 balanced cases. This section describes the final MLP architecture. The two prior iterations are evaluated as ablation baselines in §5.3.1.
 
 ### 4.3.2.1 Intent Taxonomy
 
-The system recognizes five intent categories, each routing to a distinct processing path downstream:
+The system recognizes four output classes at the classifier level. ORDER_CONFIRM utterances ("ok em", "chốt đơn") are merged with ORDER — the distinction is handled downstream by the order state machine (§4.3.5.2), not the classifier. Multi-intent utterances ("Cho 2 Ốc Hương rồi tính tiền luôn") are classified by their dominant intent; sequential multi-intent execution is handled by the graph's intent queue loop (§4.3.5.3).
 
-| Intent | Abbreviation | Vietnamese Trigger Examples | Worker | LLM Called? |
-|--------|-------------|----------------------------|--------|-------------|
-| **ORDER** | `ORDER` | "Cho 2 Ốc Hương", "Gọi thêm 1 Lẩu Thái", "Bỏ món X" | `order_worker` | Yes |
-| **ORDER_CONFIRM** | `ORDER_CONFIRM` | "Xác nhận", "Chốt đơn", "Đặt đi", "Ok đặt nha" | `order_worker` | Yes |
-| **SEARCH** | `SEARCH` | "Món nào cay cay?", "Ốc Hương giá bao nhiêu?", "Có món chay không?" | `search_worker` | Yes |
-| **PAYMENT** | `PAYMENT` | "Tính tiền", "Cho xin bill", "Thanh toán QR" | `payment_dispatch` | No (deterministic) |
-| **CHAT** | `CHAT` | "Chào em", "Cảm ơn", "Ngon quá", "Quán mở cửa đến mấy giờ?" | `chat_worker` | No (pure function) |
+| Intent | Vietnamese Trigger Examples | Worker | Notes |
+|--------|----------------------------|--------|-------|
+| **ORDER** | "Cho 2 Ốc Hương", "Gọi thêm 1 Lẩu Thái", "Bỏ món X", "Ok chốt đơn", "Đúng rồi đặt luôn" | `order_worker` | ORDER_CONFIRM merged at classifier level |
+| **SEARCH** | "Món nào cay cay?", "Ốc Hương giá bao nhiêu?", "Có món chay không?" | `search_worker` | All informational queries |
+| **PAYMENT** | "Tính tiền", "Cho xin bill", "Thanh toán QR" | `payment_dispatch` | Deterministic dispatch (no LLM) |
+| **CHAT** | "Chào em", "Cảm ơn", "Ngon quá", "Quán đông ghê" | `chat_worker` | Smalltalk and non-task utterances |
 
-**ORDER_CONFIRM is a distinct intent, not a sub-type of ORDER**, because its processing path differs fundamentally. ORDER triggers `add_cart`/`remove_cart` tools that modify the cart, while ORDER_CONFIRM triggers `confirm_order` which sends the composed order to the kitchen. The distinction is critical for multi-intent decomposition: "Cho 2 Ốc Hương rồi tính tiền luôn" produces [ORDER, PAYMENT], whereas "Ok đặt đi" at the confirmation stage produces [ORDER_CONFIRM].
+### 4.3.2.2 MLP Classifier Architecture
 
-**Multi-intent support** handles compound utterances that express multiple sequential actions. The SLM router decomposes these into an ordered list, and the graph processes them as a FIFO queue (§4.3.5.3). Examples:
+The classifier is a 3-layer multi-layer perceptron trained on 3,712 synthetically generated and augmented Vietnamese utterances. It accepts a 778-dimensional input vector — the concatenation of a frozen 768-dim sentence embedding and 10 hand-crafted context features extracted from `AgentState`. The output is a 4-class probability distribution.
 
-- "Cho 1 Lẩu Thái và tính tiền luôn" → [ORDER, PAYMENT]
-- "Món này cay không? Nếu không cay thì lấy 2 phần" → [SEARCH, ORDER]
-- "Xác nhận đơn và gọi thêm 1 Bia" → [ORDER_CONFIRM, ORDER]
+#### Input Features (778-dim)
 
-### 4.3.2.2 Tier 1 — Semantic Router (Fast Path)
+**Embedding component (768-dim):** Each utterance is encoded via `bkai-foundation-models/vietnamese-bi-encoder`, a SentenceTransformer model pre-trained on Vietnamese sentence pairs. The bi-encoder produces L2-normalized 768-dimensional embeddings. This model was selected over general-domain alternatives (e.g., `AITeamVN/Vietnamese_Embedding`, 1024-dim) for its native handling of Vietnamese diacritics, compound words, and informal speech patterns — critical for a restaurant setting where customers use teencode ("ad", "vs", "ck", "z", "nhiêu") and dialectal variants.
 
-The semantic router encodes the utterance into a 1024-dimensional embedding, computes cosine similarity to five pre-computed per-intent centroid vectors, then applies temperature-scaled softmax with gap gating to decide whether the classification is confident enough to bypass the LLM.
+**Context features (10-dim):** Ten features extracted from `AgentState` encode the conversation state that pure embedding similarity cannot see. These features are the key architectural innovation: an utterance of "ok" maps to ORDER when `order_stage=AWAITING_CONFIRMATION` but to CHAT at `IDLE` — the embedding alone cannot make this distinction, but the context features can.
 
-#### Centroid Construction (Offline)
+| Feature | Dims | Description | Extraction |
+|---------|------|-------------|------------|
+| `order_stage` one-hot | 5 | IDLE, BUILDING, AWAITING_CONFIRMATION, CONFIRMED, MODIFYING | `state["order_stage"]` |
+| `has_cart` | 1 | 1 if `active_cart` is non-empty, else 0 | `state["active_cart"] is not None` |
+| `cart_size_norm` | 1 | `min(len(cart.items), 10) / 10` | Normalized cart item count |
+| `has_search_context` | 1 | 1 if `search_context` is non-empty, else 0 | `state["search_context"] is not None` |
+| `search_context_size_norm` | 1 | `min(len(search_context), 20) / 20` | Normalized search result count |
+| `utterance_length_norm` | 1 | `min(len(utterance), 200) / 200` | Character count of raw text |
 
-Each intent is represented by a centroid vector — the arithmetic mean of embeddings for all utterances belonging to that intent. The centroid construction process runs once offline:
+**Rationale for context features.** Each feature targets a specific ambiguity: (a) `order_stage` distinguishes "ok" as ORDER_CONFIRM vs CHAT based on whether the customer is currently confirming an order, (b) `has_cart` and `cart_size_norm` help distinguish "gọi thêm" (add to existing cart → ORDER) from "gọi món" (first order on empty cart → ORDER), (c) `has_search_context` and `search_context_size_norm` help the classifier recognize that the customer has already been searching for dishes, so a follow-up question is likely SEARCH rather than CHAT, (d) `utterance_length_norm` helps distinguish short affirmations ("ok", "ừ" — typically ORDER_CONFIRM) from longer queries (typically SEARCH or CHAT).
 
-1. A set of 192 hand-crafted Vietnamese utterances is written across the 5 intent categories. Each utterance is a realistic example of how a Vietnamese restaurant customer expresses that intent (e.g., "Cho em 2 phần Ốc Hương Xốt Trứng Muối nha" for ORDER, "Cho em hỏi quán mình có món chay nào không ạ?" for SEARCH).
-2. Each utterance is embedded via `SentenceTransformer` using the `AITeamVN/Vietnamese_Embedding` model (1024-dimensional). This model is a BGE-M3 fine-tune optimized for Vietnamese semantic similarity.
-3. Per-intent centroid vectors are computed as `c_i = (1/|U_i|) Σ embed(u)` for all utterances u in intent i.
-4. The five centroids are saved to `centroids.npz` along with an embedding model fingerprint. At agent startup, the semantic router loads these centroids and verifies the fingerprint — if the embedding model has changed (dimensions differ), the router rejects the centroids and falls back to runtime re-encoding of the 192 utterances.
-
-The fingerprint check is critical: mismatched centroids (built with a 1024-dim model, queried with a 768-dim model) would silently produce wrong cosine similarities with no error output. The fingerprint prevents this.
-
-#### Online Inference
-
-When an utterance arrives at the semantic router (`semantic_router_node.py:127`):
-
-1. **Embed the utterance** using the same `SentenceTransformer` instance shared with the RAG retriever, producing a 1024-dim vector `q`.
-2. **Compute cosine similarity** to each of the 5 centroid vectors: `s_i = cosine_similarity(q, c_i)`.
-3. **Apply softmax-gap gating** via the `softmax_routing()` function:
+#### Network Architecture
 
 ```
-Algorithm: Softmax-gap gating
-
-1. max_sim = max(s_i for all intents i)
-2. If max_sim < MIN_SIM_THRESHOLD (0.35):
-   → reject (utterance too far from ALL centroids — likely CHAT or noise)
-3. Compute softmax probabilities:
-   p_i = exp(s_i / T) / Σ exp(s_j / T)   where T = 0.20
-4. Sort probabilities descending. Let P₁ = top-1, P₂ = top-2.
-5. If P₁ ≥ PROB_THRESHOLD (0.25) AND (P₁ − P₂) ≥ GAP_THRESHOLD (0.15):
-   → accept: return the intent with highest probability
-6. Else:
-   → reject: return None (defer to Tier 2 SLM)
+Input (778-dim)
+  │
+  ├── Linear (778 → 256)
+  ├── ReLU
+  ├── Dropout (p=0.2)
+  │
+  ├── Linear (256 → 64)
+  ├── ReLU
+  ├── Dropout (p=0.2)
+  │
+  └── Linear (64 → 4)
+        └── Softmax → {ORDER, SEARCH, PAYMENT, CHAT}
 ```
 
-**Temperature calibration.** T = 0.20 was selected via grid search on the development set. Lower temperature sharpens the softmax distribution — at T = 0.20, a 0.1 difference in cosine similarity maps to a much larger probability gap than at T = 1.0. This prevents ambiguous utterances (e.g., "Ok" at IDLE, which is borderline between CHAT and ORDER_CONFIRM) from passing the gap threshold.
+The network is intentionally small — 3 layers, ~220K parameters — because the embedding already provides a strong 768-dim semantic representation. The 10 context features inject conversation-state awareness. The dropout layers (p=0.2) prevent overfitting to the synthetic training data and ensure generalization to real customer utterances not seen during training. The model fits in under 1 MB on disk.
 
-**Two-threshold design.** The gating uses two independent conditions that must hold simultaneously: (a) `max_sim ≥ 0.35` ensures the utterance has some semantic relationship to at least one intent centroid — it is not noise or completely out-of-domain; (b) `P₁ − P₂ ≥ 0.15` ensures the top intent is unambiguously separated from the runner-up. An utterance could have high similarity to one centroid (passing condition a) but also high similarity to a second centroid (failing condition b), indicating ambiguity that requires the SLM.
+#### Training Pipeline
 
-**Design rationale.** The semantic fast-track is designed to be **zero-error on accepted utterances**. The high gap threshold (0.15) ensures that only utterances with unambiguous intent membership pass. In evaluation on 80 test cases (§5.3.1), 27 utterances (33.8%) were fast-tracked with zero misclassifications. This is intentional: the semantic router sacrifices recall (only 33% fast-track rate) for precision (100% on fast-tracked cases). Any utterance that is even potentially ambiguous falls through to the SLM.
+**Data.** 3,712 Vietnamese utterances were synthetically generated via an LLM and augmented with context features, covering all 4 intents across diverse restaurant scenarios. A subset of 795 raw utterances was expanded to 3,712 through systematic augmentation: each utterance was paired with multiple context configurations (different `order_stage` values at which that utterance could realistically occur, different cart/search states). The 4-class labels were assigned by the generating LLM and manually verified. A 39-case holdout set (`test_holdout.json`) was separated before augmentation and never seen during training.
 
-### 4.3.2.3 Tier 2 — SLM Router (Fallback)
+**Training configuration.** 80/20 stratified train/validation split. CrossEntropyLoss with class weights inversely proportional to class frequency (SEARCH and CHAT are under-represented in the raw data, so they receive higher weights). Adam optimizer (lr=1e-3, weight_decay=1e-4). Early stopping with patience=10 on validation loss. All 3,712 × 768-dim embeddings are precomputed offline — training runs entirely on CPU in approximately 2 minutes.
 
-When the semantic router rejects an utterance (returns `None`), the SLM router takes over. This is an LLM-based classifier using Qwen2.5 7B Instruct served by Ollama with structured output.
+**Artifacts.** Three files saved to `classifier/saved/`: `model.pt` (PyTorch state_dict), `label_encoder.json` (class→index mapping), `scaler.npz` (StandardScaler mean/scale for the 10 context features, fitted on the training set). These are loaded at agent startup and reused for every inference call.
 
-#### Model Configuration
+#### Online Inference Pipeline
 
-The SLM router uses the same Qwen2.5 7B model as the workers and response node, but configured differently for deterministic classification:
+When an utterance arrives at the classifier (`classifier_router_node`):
 
-| Parameter | Value | Rationale |
-|-----------|-------|-----------|
-| `temperature` | 0.0 | Deterministic output — same utterance always produces the same classification |
-| `num_ctx` | 8192 | Sufficient for long prompts with 14 few-shot examples |
-| `keep_alive` | -1 | Model pinned in VRAM; no cold-start on classification turns |
-| `with_structured_output` | `IntentPrediction` | Forces the LLM to output a Pydantic `IntentPrediction` schema with `intents: list[IntentType]` and `reasoning: str` |
+1. **Word segmentation:** The utterance is tokenized via `underthesea.word_tokenize()`, preserving Vietnamese compound words ("ốc_hương", "trứng_muối") as single tokens.
 
-The `IntentPrediction` Pydantic model (`schemas/routing.py`) constrains the LLM's output to valid JSON with a finite set of intent values. This eliminates parsing errors — the LLM cannot produce a malformed intent string or a classification outside the 5-category taxonomy.
+2. **Embedding:** The segmented text is encoded by the frozen `bkai-foundation-models/vietnamese-bi-encoder` → 768-dim L2-normalized vector. This step is shared with the RAG retriever (§4.4), so the embedding model is loaded once and reused.
 
-#### Prompt Construction
+3. **Context extraction:** Ten features are extracted from the current `AgentState` using `extract_context_features()`. The `StandardScaler` (fitted on training data) is applied to normalize each feature to zero mean and unit variance.
 
-The router prompt (`slm_router_node.py:94`) is assembled from four components, each designed for a specific role:
+4. **Concatenation:** The 768-dim embedding and 10-dim scaled context features are concatenated → 778-dim input vector.
 
-**1. System prompt** (`router_agent.md`, 83 lines). This is the core instruction set that defines the router's role, the five intent categories with Vietnamese trigger keywords, and a 4-step reasoning protocol:
-- **Step 1 — Check context:** Read `order_stage` and recent chat history. A short affirmation ("ok", "ừ") at `AWAITING_CONFIRMATION` is ORDER_CONFIRM; the same utterance at `IDLE` is CHAT. This requires dynamic context injection (see below).
-- **Step 2 — Identify primary intent:** Scan for action keywords ("cho" → ORDER, "tính tiền" → PAYMENT, question words → SEARCH).
-- **Step 3 — Check for sequential intents:** If the utterance expresses multiple actions in sequence, output them in spoken order with deduplication.
-- **Step 4 — Produce JSON output:** A `reasoning` string in Vietnamese explaining the classification, and the `intents` array.
+5. **MLP forward pass:** The saved `model.pt` is loaded, the forward pass executes in ~0.17ms, and softmax produces a 4-class probability distribution.
 
-**2. Few-shot examples** (`router.json`, 14 examples). These cover single-intent, multi-intent, and edge cases:
-- Single-intent examples for each category: "Cho 2 Ốc Hương" → [ORDER], "Món này cay không?" → [SEARCH], "Tính tiền đi" → [PAYMENT], "Chào em" → [CHAT].
-- Multi-intent examples: "Cho 1 Lẩu Thái và tính tiền luôn" → [ORDER, PAYMENT].
-- Context-dependent edge cases: "Ok" at AWAITING_CONFIRMATION → [ORDER_CONFIRM] vs "Ok" at IDLE → [CHAT].
-- Teencode and informal speech: "ad" (anh/chị), "vs" (với), "ck" (chồng).
-- Short affirmations: "ừ", "uh", "được", "ok em".
+6. **Output:** The classifier returns `{"intent": max_class, "confidence": max_prob, "all_probs": {...}}`. The `current_intents` queue is set to `[intent]` and the graph proceeds to the corresponding worker node.
 
-The few-shot examples use LangChain's `FewShotChatMessagePromptTemplate`, which formats each example as a `(human, ai)` message pair. This enables KV-cache optimization — the static portion of the prompt (system + few-shot) is identical across turns, so Ollama reuses cached attention keys/values.
+### 4.3.2.3 Design Rationale
 
-**3. Dynamic context** (last 2 conversation turns + current `order_stage`). This is the critical innovation that makes the router context-aware. Without it, "ok" is always classified as CHAT regardless of cart state. With it, "ok" at `AWAITING_CONFIRMATION` is correctly classified as ORDER_CONFIRM. The dynamic context is injected via the `chat_history` and `order_stage` template variables (`slm_router_node.py:51-59`), placed after the static few-shot examples to preserve prefix caching.
+The MLP classifier was chosen over the prior two-tier hybrid router for four reasons:
 
-**4. User message.** The raw utterance text, appended last.
+**1. Latency.** The MLP forward pass (0.17ms) is three orders of magnitude faster than the SLM fallback path in the old two-tier hybrid (1.8s). Even compared to the semantic centroid computation (1.2ms cosine similarity), the MLP is 7× faster. The shared embedding step (~50ms) dominates total classification latency regardless of routing method, so the routing logic itself contributes negligibly.
 
-#### Structured Output and Error Handling
+**2. Determinism.** The MLP is a pure function of its input — same utterance + same context always produces the same output. An LLM-based router, even at temperature=0.0, can produce different outputs on different runs due to floating-point non-determinism in GPU matrix operations. For a restaurant system, "ok em" must route to ORDER 100% of the time.
 
-The SLM router chain is compiled once at module level (`slm_router_node.py:95`): `ChatPromptTemplate | ChatOllama.with_structured_output(IntentPrediction)`. This chain is reused for every turn — no re-compilation overhead.
+**3. Context awareness.** The 10 context features encode conversation state that pure embedding similarity cannot see. The two-tier hybrid router achieved 73.3% on the 45-case evaluation set because many utterances fell below the semantic gate threshold (max_sim < 0.35) and defaulted to CHAT. The MLP's context features — particularly `order_stage` and `cart_size` — distinguish these cases correctly. Ten of the hybrid's 12 failures on the 45-case set are corrected by the MLP (§5.3.1).
 
-Error handling covers two failure modes:
-- **LLM unreachable** (Ollama crash, GPU OOM): `httpx.HTTPError` and `ConnectionError` are caught; the router defaults to `["CHAT"]` as the safest fallback — CHAT triggers a conversational response that prompts the customer to repeat themselves.
-- **No user message found** (empty state, edge case): Defaults to `["CHAT"]` with a warning log.
+**4. Accuracy.** On the 45-case A/B comparison, the MLP achieves 95.6% vs 73.3% for the hybrid — a 22-point improvement. On the 39-case holdout (never seen during training), the MLP achieves 97.4% with a single misclassification (a delivery query mapped to PAYMENT instead of SEARCH). ORDER, CHAT, and non-delivery SEARCH queries are classified perfectly.
 
-### 4.3.2.4 Router Orchestration — The Hybrid Router Node
+**Limitation.** The MLP requires the frozen bi-encoder embedding model to remain unchanged. If the embedding model is swapped (e.g., upgrading from a 768-dim to a 1024-dim model), the classifier must be retrained because the input dimension and the embedding distribution change. The fingerprint check used by the semantic centroid router (offline) does not apply here — retraining is the only safe migration path.
 
-The `hybrid_router_node` (`hybrid_router_node.py:14`) orchestrates the two tiers:
+### 4.3.2.4 Routing to Workers
 
-```
-def hybrid_router_node(state):
-    1. Execute semantic_router_node(state) → {intent, confidence, all_similarities}
-    2. If intent is not None:
-       → fast-track: set current_intents = [intent], decided_by = "SEMANTIC"
-       → return immediately (no LLM call)
-    3. Else:
-       → execute slm_router_node(state) → {current_intents}
-       → fallback: use SLM's predicted intents, decided_by = "SLM"
-    4. Build routing_meta (for tracing/debugging)
-    5. Return {current_intents, routing_meta}
-```
-
-The `routing_meta` dict is stored in `AgentState` and includes: which tier decided, semantic confidence and similarities, SLM-predicted intents, and total routing latency. This metadata is used for evaluation (§5.3.1) and debugging — a LangSmith trace can show exactly why a particular utterance was routed to a particular worker.
-
-**Deduplication.** When the SLM returns `intents`, duplicate consecutive intents are removed via `dict.fromkeys()` (`hybrid_router_node.py:40`). This handles the case where the LLM outputs `[ORDER, ORDER, PAYMENT]` — the deduplication produces `[ORDER, PAYMENT]`.
-
-### 4.3.2.5 Routing Functions — Worker Dispatch
-
-After the hybrid router sets `current_intents`, the routing function `_route_by_intent` (`graph.py:56`) maps the first intent to its worker node:
+After classification, the routing function `_route_by_intent` maps the predicted intent to its worker node:
 
 ```python
 INTENT_TO_WORKER = {
-    "ORDER":          "order_worker",
-    "ORDER_CONFIRM":  "order_worker",    # same worker, different tool call
-    "SEARCH":         "search_worker",
-    "PAYMENT":        "payment_dispatch", # deterministic, no LLM
-    "CHAT":           "chat_worker",      # pure function, no LLM
+    "ORDER":    "order_worker",          # LLM: tool_choice="any" for cart CRUD + confirm
+    "SEARCH":   "search_worker",         # LLM: tool_choice="any" for search() + delegate()
+    "PAYMENT":  "payment_dispatch",      # Deterministic — always emits request_payment
+    "CHAT":     "chat_worker",           # Pure function — builds curated memory context
 }
 ```
 
-ORDER and ORDER_CONFIRM both route to `order_worker` because they share the same tool bindings (cart CRUD + confirm), but the worker distinguishes them via the current `order_stage` and the per-intent sub-query in `intent_queries`.
+The routing function is a pure function (`AgentState → str`) that encapsulates the graph's branching logic, keeping the `StateGraph` construction declarative and the business logic testable in isolation.
 
-The routing functions are pure functions (`AgentState → str`) that encapsulate the graph's branching logic, keeping the `StateGraph` construction declarative and the business logic testable in isolation.
+### 4.3.2.5 Design Iteration History (Ablation Context)
 
-### 4.3.2.6 Design Summary
+The final MLP classifier is the third iteration of the router. The first two iterations serve as ablation baselines in §5.3.1:
 
-| Property | Tier 1 — Semantic | Tier 2 — SLM |
-|----------|-------------------|--------------|
-| **Method** | Cosine similarity to 5 centroids | LLM with structured output + 14 few-shot examples |
-| **Latency** | ~15ms | ~1.79s |
-| **Fast-track rate** | 33.8% (27/80 eval cases) | N/A (all remaining cases) |
-| **Accuracy on handled** | 100% (zero errors on 27 fast-tracked) | See §5.3.1 for full confusion matrix |
-| **Multi-intent** | No (single-intent only) | Yes (decomposes "Cho X rồi tính tiền" → [ORDER, PAYMENT]) |
-| **Context-aware** | No (utterance only) | Yes (last 2 turns + order_stage injected in prompt) |
-| **Failure mode** | Rejects all ambiguous utterances (defer to Tier 2) | Defaults to CHAT on LLM error |
+| Iteration | Architecture | Accuracy (45-case) | Latency (routing) | Key Weakness |
+|-----------|-------------|--------------------|--------------------|--------------|
+| 1 — Semantic centroid | Cosine similarity to 5 per-intent centroids, softmax-gap gating | 89.0% (100-case) | ~1.2ms | Max_sim < 0.35 → NONE on ~11% of utterances. Centroid representation too coarse for restaurant-domain ambiguity |
+| 2 — Two-tier hybrid | Semantic fast-path + SLM fallback (Qwen2.5 7B, 14 few-shot) | 73.3% | ~1.8s (SLM) | Low centroid similarity → default to CHAT. SLM latency 1.8s per fallback. No context features |
+| **3 — MLP classifier** | Frozen bi-encoder (768-dim) + 10 context features → MLP → 4-class | **95.6%** | **~0.17ms** | Embedding step (~50ms) dominates. Delivery queries still confused with PAYMENT |
 
-The hybrid design achieves the latency of the semantic router for unambiguous cases and the accuracy of the SLM for everything else. The cost — two tiers instead of one — is justified by the evaluation results: semantic-only accuracy is estimated at ~65%, and SLM-only latency is consistently ~1.8s. The hybrid achieves 90% accuracy at 1.19s mean latency (34% reduction from SLM-only), with zero errors on fast-tracked cases. The ablation experiments in §5.3.1 quantify this trade-off.
+The progression from iteration 1 to 3 demonstrates that (a) pure embedding similarity is insufficient — context features are necessary, (b) LLM-based routing adds latency without proportional accuracy gain over a trained classifier, and (c) a small MLP trained on domain-specific data outperforms both a hand-crafted gating system and a general-purpose LLM on this task.

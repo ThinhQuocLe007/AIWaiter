@@ -1,0 +1,1308 @@
+{
+  "total": 45,
+  "hybrid_accuracy": 0.7333,
+  "classifier_accuracy": 0.9556,
+  "hybrid_correct": 33,
+  "classifier_correct": 43,
+  "both_correct": 33,
+  "both_wrong": 2,
+  "hybrid_wins": 0,
+  "classifier_wins": 10,
+  "single_intent": {
+    "count": 39,
+    "hybrid_accuracy": 0.7692,
+    "classifier_accuracy": 0.9487
+  },
+  "details": [
+    {
+      "id": "RT-001",
+      "utterance": "Cho tôi 2 phần Ốc Hương xốt trứng muối",
+      "difficulty": "easy",
+      "expected": "ORDER",
+      "expected_4class": [
+        "ORDER"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "ORDER"
+      ],
+      "hybrid_canon": [
+        "ORDER"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": true,
+      "classifier_intent": "ORDER",
+      "classifier_confidence": 0.9999,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.9998838901519775,
+        "SEARCH": 0.000114977199700661,
+        "PAYMENT": 6.278050364016963e-07,
+        "CHAT": 4.691637229825574e-07
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-002",
+      "utterance": "Lấy 1 Lẩu Thái với 3 chai bia Tiger",
+      "difficulty": "easy",
+      "expected": "ORDER",
+      "expected_4class": [
+        "ORDER"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "ORDER"
+      ],
+      "hybrid_canon": [
+        "ORDER"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": true,
+      "classifier_intent": "ORDER",
+      "classifier_confidence": 0.9997,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.9997078776359558,
+        "SEARCH": 0.00027265679091215134,
+        "PAYMENT": 7.683640433242545e-06,
+        "CHAT": 1.1847895621031057e-05
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-003",
+      "utterance": "Mình muốn gọi thêm 5 con Hàu Nướng",
+      "difficulty": "easy",
+      "expected": "ORDER",
+      "expected_4class": [
+        "ORDER"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "ORDER"
+      ],
+      "hybrid_canon": [
+        "ORDER"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": true,
+      "classifier_intent": "ORDER",
+      "classifier_confidence": 0.9993,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.9992870688438416,
+        "SEARCH": 0.000582480279263109,
+        "PAYMENT": 0.00012861676805187017,
+        "CHAT": 1.8449505887474515e-06
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-004",
+      "utterance": "Cho 2 dĩa Khoai Tây Lắc Phô Mai nha",
+      "difficulty": "easy",
+      "expected": "ORDER",
+      "expected_4class": [
+        "ORDER"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "ORDER"
+      ],
+      "hybrid_canon": [
+        "ORDER"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": true,
+      "classifier_intent": "ORDER",
+      "classifier_confidence": 0.9954,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.995445728302002,
+        "SEARCH": 0.0013713908847421408,
+        "PAYMENT": 0.0030919259879738092,
+        "CHAT": 9.087211219593883e-05
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-005",
+      "utterance": "ad cho mình 1 tô cháo hàu vs 2 lon coca",
+      "difficulty": "medium",
+      "expected": "ORDER",
+      "expected_4class": [
+        "ORDER"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "ORDER"
+      ],
+      "hybrid_canon": [
+        "ORDER"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": true,
+      "classifier_intent": "ORDER",
+      "classifier_confidence": 0.9996,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.9996166229248047,
+        "SEARCH": 0.000335933844326064,
+        "PAYMENT": 8.533696927770507e-06,
+        "CHAT": 3.889777508447878e-05
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-006",
+      "utterance": "thêm dĩa ốc bulot nữa đi",
+      "difficulty": "medium",
+      "expected": "ORDER",
+      "expected_4class": [
+        "ORDER"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "ORDER"
+      ],
+      "hybrid_canon": [
+        "ORDER"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": true,
+      "classifier_intent": "ORDER",
+      "classifier_confidence": 0.9946,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.9945619702339172,
+        "SEARCH": 0.005266136024147272,
+        "PAYMENT": 0.0001334588450845331,
+        "CHAT": 3.8454149034805596e-05
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-007",
+      "utterance": "bỏ món mực chiên xù ra khỏi đơn giúp mình",
+      "difficulty": "medium",
+      "expected": "ORDER",
+      "expected_4class": [
+        "ORDER"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "ORDER"
+      ],
+      "hybrid_canon": [
+        "ORDER"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": true,
+      "classifier_intent": "ORDER",
+      "classifier_confidence": 0.994,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.9940313696861267,
+        "SEARCH": 0.0012689391151070595,
+        "PAYMENT": 0.004689326975494623,
+        "CHAT": 1.0272203326167073e-05
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-008",
+      "utterance": "đổi 2 bia Sài Gòn thành 2 bia 333",
+      "difficulty": "medium",
+      "expected": "ORDER",
+      "expected_4class": [
+        "ORDER"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "ORDER"
+      ],
+      "hybrid_canon": [
+        "ORDER"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": true,
+      "classifier_intent": "ORDER",
+      "classifier_confidence": 0.9792,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.9791735410690308,
+        "SEARCH": 0.001576820737682283,
+        "PAYMENT": 0.017092421650886536,
+        "CHAT": 0.0021572078112512827
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-009",
+      "utterance": "cho t 3 phần sò huyết hấp sả",
+      "difficulty": "medium",
+      "expected": "ORDER",
+      "expected_4class": [
+        "ORDER"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "ORDER"
+      ],
+      "hybrid_canon": [
+        "ORDER"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": true,
+      "classifier_intent": "ORDER",
+      "classifier_confidence": 0.9999,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.9999386072158813,
+        "SEARCH": 5.936146408203058e-05,
+        "PAYMENT": 1.6824590147734853e-06,
+        "CHAT": 3.457029436049197e-07
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-010",
+      "utterance": "1 lẩu cá tầm măng chua nhe bạn",
+      "difficulty": "easy",
+      "expected": "ORDER",
+      "expected_4class": [
+        "ORDER"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "SEARCH"
+      ],
+      "hybrid_canon": [
+        "SEARCH"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": false,
+      "classifier_intent": "ORDER",
+      "classifier_confidence": 0.5062,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.5061843991279602,
+        "SEARCH": 0.035979390144348145,
+        "PAYMENT": 0.00039479578845202923,
+        "CHAT": 0.45744144916534424
+      },
+      "win": "classifier"
+    },
+    {
+      "id": "RT-011",
+      "utterance": "Đúng rồi, xác nhận đặt luôn",
+      "difficulty": "easy",
+      "expected": "ORDER_CONFIRM",
+      "expected_4class": [
+        "ORDER"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "ORDER_CONFIRM"
+      ],
+      "hybrid_canon": [
+        "ORDER"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": true,
+      "classifier_intent": "ORDER",
+      "classifier_confidence": 0.9987,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.9987014532089233,
+        "SEARCH": 0.0012098649749532342,
+        "PAYMENT": 8.109742339001969e-05,
+        "CHAT": 7.61618503020145e-06
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-012",
+      "utterance": "Ok chốt đơn đi em",
+      "difficulty": "easy",
+      "expected": "ORDER_CONFIRM",
+      "expected_4class": [
+        "ORDER"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "ORDER_CONFIRM"
+      ],
+      "hybrid_canon": [
+        "ORDER"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": true,
+      "classifier_intent": "ORDER",
+      "classifier_confidence": 0.997,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.9970105886459351,
+        "SEARCH": 6.46982662146911e-05,
+        "PAYMENT": 0.0008042133995331824,
+        "CHAT": 0.002120621269568801
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-013",
+      "utterance": "Ừ đặt nha",
+      "difficulty": "medium",
+      "expected": "ORDER_CONFIRM",
+      "expected_4class": [
+        "ORDER"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "ORDER_CONFIRM"
+      ],
+      "hybrid_canon": [
+        "ORDER"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": true,
+      "classifier_intent": "ORDER",
+      "classifier_confidence": 0.9561,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.9560811519622803,
+        "SEARCH": 0.04318281263113022,
+        "PAYMENT": 6.000687426421791e-05,
+        "CHAT": 0.0006760512478649616
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-014",
+      "utterance": "chuẩn rồi, lên đơn giúp anh",
+      "difficulty": "medium",
+      "expected": "ORDER_CONFIRM",
+      "expected_4class": [
+        "ORDER"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "ORDER_CONFIRM"
+      ],
+      "hybrid_canon": [
+        "ORDER"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": true,
+      "classifier_intent": "ORDER",
+      "classifier_confidence": 0.9103,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.9102838635444641,
+        "SEARCH": 3.0227909519453533e-05,
+        "PAYMENT": 0.08043622225522995,
+        "CHAT": 0.009249662049114704
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-015",
+      "utterance": "Uh đúng rồi đó",
+      "difficulty": "hard",
+      "expected": "ORDER_CONFIRM",
+      "expected_4class": [
+        "ORDER"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "CHAT"
+      ],
+      "hybrid_canon": [
+        "CHAT"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": false,
+      "classifier_intent": "ORDER",
+      "classifier_confidence": 0.9406,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.9405848383903503,
+        "SEARCH": 0.03244337439537048,
+        "PAYMENT": 0.000598956597968936,
+        "CHAT": 0.026372788473963737
+      },
+      "win": "classifier"
+    },
+    {
+      "id": "RT-016",
+      "utterance": "ok em",
+      "difficulty": "hard",
+      "expected": "ORDER_CONFIRM",
+      "expected_4class": [
+        "ORDER"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "CHAT"
+      ],
+      "hybrid_canon": [
+        "CHAT"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": false,
+      "classifier_intent": "ORDER",
+      "classifier_confidence": 0.9959,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.9958945512771606,
+        "SEARCH": 0.002168002538383007,
+        "PAYMENT": 0.0002923776628449559,
+        "CHAT": 0.0016451114788651466
+      },
+      "win": "classifier"
+    },
+    {
+      "id": "RT-017",
+      "utterance": "Ốc Hương giá bao nhiêu vậy?",
+      "difficulty": "easy",
+      "expected": "SEARCH",
+      "expected_4class": [
+        "SEARCH"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "SEARCH"
+      ],
+      "hybrid_canon": [
+        "SEARCH"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": true,
+      "classifier_intent": "SEARCH",
+      "classifier_confidence": 0.9988,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.000171313266037032,
+        "SEARCH": 0.9987737536430359,
+        "PAYMENT": 2.064759064523969e-05,
+        "CHAT": 0.0010343065951019526
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-018",
+      "utterance": "Quán mình có món chay không?",
+      "difficulty": "easy",
+      "expected": "SEARCH",
+      "expected_4class": [
+        "SEARCH"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "SEARCH"
+      ],
+      "hybrid_canon": [
+        "SEARCH"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": true,
+      "classifier_intent": "SEARCH",
+      "classifier_confidence": 0.9996,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.00011993438965873793,
+        "SEARCH": 0.999617338180542,
+        "PAYMENT": 0.0001326396013610065,
+        "CHAT": 0.00013018182653468102
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-019",
+      "utterance": "Lẩu Thái cay không em?",
+      "difficulty": "easy",
+      "expected": "SEARCH",
+      "expected_4class": [
+        "SEARCH"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "SEARCH"
+      ],
+      "hybrid_canon": [
+        "SEARCH"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": true,
+      "classifier_intent": "SEARCH",
+      "classifier_confidence": 0.8688,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.00434603588655591,
+        "SEARCH": 0.8687865734100342,
+        "PAYMENT": 0.010693577118217945,
+        "CHAT": 0.11617384105920792
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-020",
+      "utterance": "Hàu nướng có những kiểu chế biến nào?",
+      "difficulty": "medium",
+      "expected": "SEARCH",
+      "expected_4class": [
+        "SEARCH"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "CHAT"
+      ],
+      "hybrid_canon": [
+        "CHAT"
+      ],
+      "hybrid_decided_by": "L4_ASK_CUSTOMER",
+      "hybrid_correct": false,
+      "classifier_intent": "SEARCH",
+      "classifier_confidence": 0.951,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.001074618543498218,
+        "SEARCH": 0.9510425329208374,
+        "PAYMENT": 0.04422781616449356,
+        "CHAT": 0.0036548825446516275
+      },
+      "win": "classifier"
+    },
+    {
+      "id": "RT-021",
+      "utterance": "có món gì hợp cho nhóm 4 người nhậu không",
+      "difficulty": "medium",
+      "expected": "SEARCH",
+      "expected_4class": [
+        "SEARCH"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "SEARCH"
+      ],
+      "hybrid_canon": [
+        "SEARCH"
+      ],
+      "hybrid_decided_by": "REWRITER",
+      "hybrid_correct": true,
+      "classifier_intent": "SEARCH",
+      "classifier_confidence": 0.8907,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.032837964594364166,
+        "SEARCH": 0.890679657459259,
+        "PAYMENT": 0.00611842842772603,
+        "CHAT": 0.07036389410495758
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-022",
+      "utterance": "quán mở cửa tới mấy giờ vậy",
+      "difficulty": "medium",
+      "expected": "SEARCH",
+      "expected_4class": [
+        "SEARCH"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "SEARCH"
+      ],
+      "hybrid_canon": [
+        "SEARCH"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": true,
+      "classifier_intent": "SEARCH",
+      "classifier_confidence": 0.9145,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.00042224981007166207,
+        "SEARCH": 0.9145232439041138,
+        "PAYMENT": 0.009221029467880726,
+        "CHAT": 0.07583357393741608
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-023",
+      "utterance": "món nào bán chạy nhất ở đây",
+      "difficulty": "medium",
+      "expected": "SEARCH",
+      "expected_4class": [
+        "SEARCH"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "SEARCH"
+      ],
+      "hybrid_canon": [
+        "SEARCH"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": true,
+      "classifier_intent": "SEARCH",
+      "classifier_confidence": 0.9999,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 3.00892315863166e-05,
+        "SEARCH": 0.9998973608016968,
+        "PAYMENT": 3.261691745137796e-05,
+        "CHAT": 3.995991573901847e-05
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-024",
+      "utterance": "ốc bulot làm từ nguyên liệu gì thế",
+      "difficulty": "medium",
+      "expected": "SEARCH",
+      "expected_4class": [
+        "SEARCH"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "CHAT"
+      ],
+      "hybrid_canon": [
+        "CHAT"
+      ],
+      "hybrid_decided_by": "L4_ASK_CUSTOMER",
+      "hybrid_correct": false,
+      "classifier_intent": "SEARCH",
+      "classifier_confidence": 0.9993,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.00024846152518875897,
+        "SEARCH": 0.9993020296096802,
+        "PAYMENT": 0.0002990890643559396,
+        "CHAT": 0.00015034353418741375
+      },
+      "win": "classifier"
+    },
+    {
+      "id": "RT-025",
+      "utterance": "có ship về quận 7 ko shop",
+      "difficulty": "hard",
+      "expected": "SEARCH",
+      "expected_4class": [
+        "SEARCH"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "CHAT"
+      ],
+      "hybrid_canon": [
+        "CHAT"
+      ],
+      "hybrid_decided_by": "L4_ASK_CUSTOMER",
+      "hybrid_correct": false,
+      "classifier_intent": "PAYMENT",
+      "classifier_confidence": 0.6468,
+      "classifier_correct": false,
+      "classifier_all_probs": {
+        "ORDER": 0.09109111875295639,
+        "SEARCH": 0.25485938787460327,
+        "PAYMENT": 0.646817684173584,
+        "CHAT": 0.007231803145259619
+      },
+      "win": "neither"
+    },
+    {
+      "id": "RT-026",
+      "utterance": "bia heineken nhiêu 1 lon z",
+      "difficulty": "hard",
+      "expected": "SEARCH",
+      "expected_4class": [
+        "SEARCH"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "CHAT"
+      ],
+      "hybrid_canon": [
+        "CHAT"
+      ],
+      "hybrid_decided_by": "L4_ASK_CUSTOMER",
+      "hybrid_correct": false,
+      "classifier_intent": "CHAT",
+      "classifier_confidence": 0.7178,
+      "classifier_correct": false,
+      "classifier_all_probs": {
+        "ORDER": 0.09595104306936264,
+        "SEARCH": 0.16144029796123505,
+        "PAYMENT": 0.02475995570421219,
+        "CHAT": 0.7178486585617065
+      },
+      "win": "neither"
+    },
+    {
+      "id": "RT-027",
+      "utterance": "Tính tiền giùm anh",
+      "difficulty": "easy",
+      "expected": "PAYMENT",
+      "expected_4class": [
+        "PAYMENT"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "PAYMENT"
+      ],
+      "hybrid_canon": [
+        "PAYMENT"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": true,
+      "classifier_intent": "PAYMENT",
+      "classifier_confidence": 0.9999,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 9.741606277202663e-08,
+        "SEARCH": 6.533160501476232e-08,
+        "PAYMENT": 0.9998865127563477,
+        "CHAT": 0.00011334854934830219
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-028",
+      "utterance": "Cho xin hóa đơn",
+      "difficulty": "easy",
+      "expected": "PAYMENT",
+      "expected_4class": [
+        "PAYMENT"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "PAYMENT"
+      ],
+      "hybrid_canon": [
+        "PAYMENT"
+      ],
+      "hybrid_decided_by": "REWRITER",
+      "hybrid_correct": true,
+      "classifier_intent": "PAYMENT",
+      "classifier_confidence": 0.9974,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 2.101880636473652e-05,
+        "SEARCH": 0.0001007003229460679,
+        "PAYMENT": 0.9973684549331665,
+        "CHAT": 0.002509752055630088
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-029",
+      "utterance": "Thanh toán chuyển khoản được không?",
+      "difficulty": "easy",
+      "expected": "PAYMENT",
+      "expected_4class": [
+        "PAYMENT"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "PAYMENT"
+      ],
+      "hybrid_canon": [
+        "PAYMENT"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": true,
+      "classifier_intent": "PAYMENT",
+      "classifier_confidence": 0.9998,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 9.118447223954718e-07,
+        "SEARCH": 0.00022059712500777096,
+        "PAYMENT": 0.9997566342353821,
+        "CHAT": 2.1865769667783752e-05
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-030",
+      "utterance": "Quẹt thẻ được hông em",
+      "difficulty": "medium",
+      "expected": "PAYMENT",
+      "expected_4class": [
+        "PAYMENT"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "CHAT"
+      ],
+      "hybrid_canon": [
+        "CHAT"
+      ],
+      "hybrid_decided_by": "L4_ASK_CUSTOMER",
+      "hybrid_correct": false,
+      "classifier_intent": "PAYMENT",
+      "classifier_confidence": 1.0,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 8.538820139847303e-08,
+        "SEARCH": 5.371908855522634e-07,
+        "PAYMENT": 0.9999926090240479,
+        "CHAT": 6.792105978092877e-06
+      },
+      "win": "classifier"
+    },
+    {
+      "id": "RT-031",
+      "utterance": "ck cho mình cái qr với",
+      "difficulty": "hard",
+      "expected": "PAYMENT",
+      "expected_4class": [
+        "PAYMENT"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "CHAT"
+      ],
+      "hybrid_canon": [
+        "CHAT"
+      ],
+      "hybrid_decided_by": "L4_ASK_CUSTOMER",
+      "hybrid_correct": false,
+      "classifier_intent": "PAYMENT",
+      "classifier_confidence": 0.9992,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.000242190231801942,
+        "SEARCH": 0.000123325502499938,
+        "PAYMENT": 0.9992082715034485,
+        "CHAT": 0.0004262294096406549
+      },
+      "win": "classifier"
+    },
+    {
+      "id": "RT-032",
+      "utterance": "hết nhiêu tiền rồi em ơi",
+      "difficulty": "medium",
+      "expected": "PAYMENT",
+      "expected_4class": [
+        "PAYMENT"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "PAYMENT"
+      ],
+      "hybrid_canon": [
+        "PAYMENT"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": true,
+      "classifier_intent": "PAYMENT",
+      "classifier_confidence": 0.9933,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 8.702905688551255e-06,
+        "SEARCH": 0.0012751317117363214,
+        "PAYMENT": 0.9932934045791626,
+        "CHAT": 0.005422843154519796
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-033",
+      "utterance": "cho xin mã qr thanh toán",
+      "difficulty": "easy",
+      "expected": "PAYMENT",
+      "expected_4class": [
+        "PAYMENT"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "PAYMENT"
+      ],
+      "hybrid_canon": [
+        "PAYMENT"
+      ],
+      "hybrid_decided_by": "REWRITER",
+      "hybrid_correct": true,
+      "classifier_intent": "PAYMENT",
+      "classifier_confidence": 1.0,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 1.8467119389242725e-07,
+        "SEARCH": 2.5119615543189866e-07,
+        "PAYMENT": 0.9999535083770752,
+        "CHAT": 4.596029975800775e-05
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-034",
+      "utterance": "bill đi em",
+      "difficulty": "hard",
+      "expected": "PAYMENT",
+      "expected_4class": [
+        "PAYMENT"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "PAYMENT"
+      ],
+      "hybrid_canon": [
+        "PAYMENT"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": true,
+      "classifier_intent": "PAYMENT",
+      "classifier_confidence": 0.9996,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.0002657132863532752,
+        "SEARCH": 4.407378946780227e-05,
+        "PAYMENT": 0.9995667338371277,
+        "CHAT": 0.00012339939712546766
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-035",
+      "utterance": "Xin chào shop",
+      "difficulty": "easy",
+      "expected": "CHAT",
+      "expected_4class": [
+        "CHAT"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "CHAT"
+      ],
+      "hybrid_canon": [
+        "CHAT"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": true,
+      "classifier_intent": "CHAT",
+      "classifier_confidence": 0.9997,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 6.747433872078545e-06,
+        "SEARCH": 8.879846063791774e-06,
+        "PAYMENT": 0.00033434986835345626,
+        "CHAT": 0.9996500015258789
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-036",
+      "utterance": "Cảm ơn em nhiều nha",
+      "difficulty": "easy",
+      "expected": "CHAT",
+      "expected_4class": [
+        "CHAT"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "CHAT"
+      ],
+      "hybrid_canon": [
+        "CHAT"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": true,
+      "classifier_intent": "CHAT",
+      "classifier_confidence": 0.9998,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 1.3700025192520116e-05,
+        "SEARCH": 4.207915026199771e-06,
+        "PAYMENT": 0.00014460198872257024,
+        "CHAT": 0.9998375177383423
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-037",
+      "utterance": "Đồ ăn ở đây ngon quá trời",
+      "difficulty": "medium",
+      "expected": "CHAT",
+      "expected_4class": [
+        "CHAT"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "CHAT"
+      ],
+      "hybrid_canon": [
+        "CHAT"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": true,
+      "classifier_intent": "CHAT",
+      "classifier_confidence": 1.0,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 4.5834065076633124e-07,
+        "SEARCH": 2.5574527171556838e-06,
+        "PAYMENT": 4.280763278075028e-06,
+        "CHAT": 0.9999927282333374
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-038",
+      "utterance": "ê quán đông ghê ha",
+      "difficulty": "medium",
+      "expected": "CHAT",
+      "expected_4class": [
+        "CHAT"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "CHAT"
+      ],
+      "hybrid_canon": [
+        "CHAT"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": true,
+      "classifier_intent": "CHAT",
+      "classifier_confidence": 1.0,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 6.06004107339686e-07,
+        "SEARCH": 5.221120773057919e-06,
+        "PAYMENT": 3.090974496444687e-05,
+        "CHAT": 0.9999632835388184
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-039",
+      "utterance": "trời hôm nay mưa to thật",
+      "difficulty": "hard",
+      "expected": "CHAT",
+      "expected_4class": [
+        "CHAT"
+      ],
+      "is_multi": false,
+      "hybrid_intents": [
+        "CHAT"
+      ],
+      "hybrid_canon": [
+        "CHAT"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": true,
+      "classifier_intent": "CHAT",
+      "classifier_confidence": 0.9999,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 3.2858395115908934e-06,
+        "SEARCH": 3.7629536109307082e-06,
+        "PAYMENT": 4.591837932821363e-05,
+        "CHAT": 0.9999470710754395
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-040",
+      "utterance": "Cho 2 Ốc Hương rồi tính tiền luôn",
+      "difficulty": "hard",
+      "expected": [
+        "ORDER",
+        "PAYMENT"
+      ],
+      "expected_4class": [
+        "ORDER",
+        "PAYMENT"
+      ],
+      "is_multi": true,
+      "hybrid_intents": [
+        "ORDER",
+        "PAYMENT"
+      ],
+      "hybrid_canon": [
+        "ORDER",
+        "PAYMENT"
+      ],
+      "hybrid_decided_by": "REWRITER",
+      "hybrid_correct": true,
+      "classifier_intent": "ORDER",
+      "classifier_confidence": 0.9608,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.9607698321342468,
+        "SEARCH": 0.030308406800031662,
+        "PAYMENT": 0.008907821029424667,
+        "CHAT": 1.3929763554187957e-05
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-041",
+      "utterance": "Lẩu Thái cay không? Không cay thì cho mình 1 phần",
+      "difficulty": "hard",
+      "expected": [
+        "SEARCH",
+        "ORDER"
+      ],
+      "expected_4class": [
+        "SEARCH",
+        "ORDER"
+      ],
+      "is_multi": true,
+      "hybrid_intents": [
+        "SEARCH"
+      ],
+      "hybrid_canon": [
+        "SEARCH"
+      ],
+      "hybrid_decided_by": "REWRITER",
+      "hybrid_correct": false,
+      "classifier_intent": "SEARCH",
+      "classifier_confidence": 0.965,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.00417960062623024,
+        "SEARCH": 0.9650177359580994,
+        "PAYMENT": 0.030765997245907784,
+        "CHAT": 3.655179534689523e-05
+      },
+      "win": "classifier"
+    },
+    {
+      "id": "RT-042",
+      "utterance": "Xác nhận đơn cũ và thêm 2 bia Tiger",
+      "difficulty": "hard",
+      "expected": [
+        "ORDER_CONFIRM",
+        "ORDER"
+      ],
+      "expected_4class": [
+        "ORDER",
+        "ORDER"
+      ],
+      "is_multi": true,
+      "hybrid_intents": [
+        "ORDER_CONFIRM"
+      ],
+      "hybrid_canon": [
+        "ORDER"
+      ],
+      "hybrid_decided_by": "SEMANTIC_ARGMX",
+      "hybrid_correct": false,
+      "classifier_intent": "ORDER",
+      "classifier_confidence": 0.9999,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.9999179840087891,
+        "SEARCH": 4.538322173175402e-05,
+        "PAYMENT": 3.488683432806283e-05,
+        "CHAT": 1.6161889107024763e-06
+      },
+      "win": "classifier"
+    },
+    {
+      "id": "RT-043",
+      "utterance": "Tính tiền đi, à mà món nào đang giảm giá vậy?",
+      "difficulty": "hard",
+      "expected": [
+        "PAYMENT",
+        "SEARCH"
+      ],
+      "expected_4class": [
+        "PAYMENT",
+        "SEARCH"
+      ],
+      "is_multi": true,
+      "hybrid_intents": [
+        "PAYMENT",
+        "SEARCH"
+      ],
+      "hybrid_canon": [
+        "PAYMENT",
+        "SEARCH"
+      ],
+      "hybrid_decided_by": "REWRITER",
+      "hybrid_correct": true,
+      "classifier_intent": "PAYMENT",
+      "classifier_confidence": 0.9976,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 1.6828464140417054e-05,
+        "SEARCH": 0.002231272868812084,
+        "PAYMENT": 0.9976286292076111,
+        "CHAT": 0.00012329705350566655
+      },
+      "win": "both"
+    },
+    {
+      "id": "RT-044",
+      "utterance": "Cho mình xem qua menu rồi lấy 1 cháo hàu",
+      "difficulty": "hard",
+      "expected": [
+        "SEARCH",
+        "ORDER"
+      ],
+      "expected_4class": [
+        "SEARCH",
+        "ORDER"
+      ],
+      "is_multi": true,
+      "hybrid_intents": [
+        "CHAT"
+      ],
+      "hybrid_canon": [
+        "CHAT"
+      ],
+      "hybrid_decided_by": "L4_ASK_CUSTOMER",
+      "hybrid_correct": false,
+      "classifier_intent": "ORDER",
+      "classifier_confidence": 0.9996,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.999566376209259,
+        "SEARCH": 0.00032026838744059205,
+        "PAYMENT": 9.075100388145074e-05,
+        "CHAT": 2.2572117813979276e-05
+      },
+      "win": "classifier"
+    },
+    {
+      "id": "RT-045",
+      "utterance": "Thêm 3 hàu nướng nữa rồi chốt đơn cho anh",
+      "difficulty": "hard",
+      "expected": [
+        "ORDER",
+        "ORDER_CONFIRM"
+      ],
+      "expected_4class": [
+        "ORDER",
+        "ORDER"
+      ],
+      "is_multi": true,
+      "hybrid_intents": [
+        "ORDER",
+        "ORDER_CONFIRM"
+      ],
+      "hybrid_canon": [
+        "ORDER",
+        "ORDER"
+      ],
+      "hybrid_decided_by": "REWRITER",
+      "hybrid_correct": true,
+      "classifier_intent": "ORDER",
+      "classifier_confidence": 1.0,
+      "classifier_correct": true,
+      "classifier_all_probs": {
+        "ORDER": 0.9999626874923706,
+        "SEARCH": 1.9298317056382075e-05,
+        "PAYMENT": 1.72745330928592e-05,
+        "CHAT": 6.726125434397545e-07
+      },
+      "win": "both"
+    }
+  ]
+}

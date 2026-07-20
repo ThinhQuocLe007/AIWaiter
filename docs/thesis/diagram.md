@@ -376,7 +376,7 @@ Sensors --> ROS2 : /scan, /camera, /imu
 
 | Stage | Color | Contains |
 |-------|-------|----------|
-| **Classify** | Blue zone (`#E3F2FD`) | Hybrid Router node (two-tier detail inside) |
+| **Classify** | Blue zone (`#E3F2FD`) | MLP Classifier node (embedding + context features → MLP → intent) |
 | **Execute** | Green zone (`#E8F5E9`) | 4 Workers → Validator → ToolNode → State Updater, with multi-intent loop arrow |
 | **Respond** | Orange zone (`#FFF3E0`) | State Outcome → Response → output |
 
@@ -495,7 +495,7 @@ title Two-Tier Intent Router
 start
 :User utterance;
 
-:Encode via SentenceTransformer\n(AITeamVN/Vietnamese_Embedding);
+:Encode via SentenceTransformer\n(bkai-foundation-models/vietnamese-bi-encoder);
 :Compute cosine similarity\nto 5 intent centroids;
 
 if (Semantic confident?) then (yes)
@@ -540,7 +540,7 @@ start
 fork
   :**BM25**\n(k1=1.2, b=0)\nunderthesea tokenize;
 fork again
-  :**FAISS**\n(AITeamVN/Vietnamese_Embedding\n1024-dim);
+  :**FAISS**\n(bkai-foundation-models/vietnamese-bi-encoder\n768-dim);
 end fork
 
 :Metadata filter\n(price, diet, category);
