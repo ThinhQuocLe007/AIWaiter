@@ -48,14 +48,16 @@ def _format_ambiguity(ctx: OrderResponseContext) -> str:
     parts = []
     if ctx.cart:
         lines = _format_cart_lines(ctx.cart)
-        parts.append(f"Dạ, giỏ hàng của anh/chị hiện có:\n{lines}\nTổng tạm tính {ctx.total_vnd}₫.")
+        # total_vnd already carries the ₫ (state_outcome_node builds it with _vnd()).
+        parts.append(f"Dạ, giỏ hàng của anh/chị hiện có:\n{lines}\nTổng tạm tính {ctx.total_vnd}.")
     if ctx.off_menu:
         names = ", ".join(o.name for o in ctx.off_menu if o.name)
         parts.append(f"Món {names} hiện không có trong thực đơn ạ.")
     for a in ctx.ambiguous:
         cands = "\n".join(f"  - {c}" for c in a.candidates)
         parts.append(
-            f"Dạ, món **{a.name}** bên em có nhiều loại ạ, "
+            # No markdown: this text is spoken by TTS, which reads ** out loud.
+            f"Dạ, món {a.name} bên em có nhiều loại ạ, "
             f"anh/chị muốn chọn loại nào ạ?\n{cands}"
         )
     return "\n\n".join(parts)
@@ -103,7 +105,7 @@ def _format_cart_echo(ctx: OrderResponseContext) -> str:
     suffix = "\nAnh/chị xác nhận đặt hàng chưa ạ?" if ctx.stage == "AWAITING_CONFIRMATION" else ""
     return (
         f"Dạ, giỏ hàng của anh/chị hiện có:\n{cart}\n"
-        f"Tổng tạm tính {ctx.total_vnd}₫"
+        f"Tổng tạm tính {ctx.total_vnd}"  # already ₫-suffixed by _vnd()
         f"{'.' + suffix if suffix else '.'}"
     )
 
