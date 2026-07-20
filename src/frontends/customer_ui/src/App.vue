@@ -2,12 +2,17 @@
 import { onMounted, onUnmounted } from 'vue'
 import { RouterView } from 'vue-router'
 import { useViewportScale } from '@/composables/useViewportScale'
+import { useDragScroll } from '@/composables/useDragScroll'
 import { useVoiceStore } from '@/stores/voice'
 import { useCartStore } from '@/stores/cart'
 import { getStoredTableId } from '@/data/tableSession'
 
 // Scale the fixed 1024x600 stage to fit the current viewport (kiosk: scale = 1).
 useViewportScale()
+
+// Touchscreen swipe-to-scroll (with momentum) for the whole app — native touch panning
+// inside overflow containers is unreliable on the Jetson's Chromium kiosk.
+useDragScroll()
 
 // Open the voice mirror (role=customer WS) for the whole app lifetime so the assistant panel can
 // pop up the moment the robot hears this table speak — even before the guest taps the banner.
