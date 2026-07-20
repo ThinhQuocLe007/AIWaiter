@@ -8,11 +8,11 @@ from langgraph.prebuilt import ToolNode
 from src.agent_brain.agent.actions import build_action, emit_action
 from src.agent_brain.agent.memory.checkpointer import create_thread_config, get_checkpointer
 from src.agent_brain.agent.nodes.chat_worker_node import chat_worker_node
+from src.agent_brain.agent.nodes.classifier_router_node import classifier_router_node
 from src.agent_brain.agent.nodes.deterministic_validator_node import deterministic_validator_node
 from src.agent_brain.agent.nodes.hybrid_router_node import hybrid_router_node
 from src.agent_brain.agent.nodes.order_worker_node import order_worker_node
 from src.agent_brain.agent.nodes.payment_dispatch_node import payment_dispatch_node
-from src.agent_brain.agent.nodes.planner_node import planner_node
 from src.agent_brain.agent.nodes.response_node import response_node
 from src.agent_brain.agent.nodes.search_worker_node import search_worker_node
 from src.agent_brain.agent.nodes.state_outcome_node import state_outcome_node
@@ -148,6 +148,7 @@ class AIWaiterGraph:
 
         # Nodes
         workflow.add_node("router", hybrid_router_node)
+        workflow.add_node("classifier_router", classifier_router_node)
         workflow.add_node("order_worker", order_worker_node)
         workflow.add_node("search_worker", search_worker_node)
         workflow.add_node("payment_dispatch", payment_dispatch_node)
@@ -160,17 +161,27 @@ class AIWaiterGraph:
         workflow.add_node("state_updater", update_state_node)
         workflow.add_node("state_outcome", state_outcome_node)
         workflow.add_node("response_node", response_node)
-        workflow.add_node("planner", planner_node)
 
-        # START → router
-        workflow.add_edge(START, "router")
+        # START → classifier_router (trained MLP classifier, 97.4% accuracy).
+        # Rollback: change back to "router" to use the old hybrid_router_node (semantic + keyword).
+        workflow.add_edge(START, "classifier_router")
 
-        # Router → planner (splits multi-intent utterances into per-intent sub-queries)
-        workflow.add_edge("router", "planner")
-
-        # Planner → worker (sequential by first intent)
+        # Router → worker (direct, no planner in between — hybrid router handles
+        # utterance decomposition + intent classification in one pass)
         workflow.add_conditional_edges(
-            "planner",
+            "router",
+            _route_by_intent,
+            {
+                "order_worker": "order_worker",
+                "search_worker": "search_worker",
+                "payment_dispatch": "payment_dispatch",
+                "chat_worker": "chat_worker",
+            },
+        )
+
+        # Classifier router → worker (same routing, trained MLP instead of semantic + keyword)
+        workflow.add_conditional_edges(
+            "classifier_router",
             _route_by_intent,
             {
                 "order_worker": "order_worker",

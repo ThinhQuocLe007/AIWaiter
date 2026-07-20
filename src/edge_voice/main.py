@@ -43,7 +43,7 @@ from src.edge_voice.output.tts_engine import StreamingPlayer, speak_sentence, sp
 from src.edge_voice.perception import PhoWhisperSTT, SileroVAD
 from src.edge_voice.perception.queues import get_transcript, shutdown_all
 
-load_dotenv()
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 logger = logging.getLogger("src.edge_voice")
 
 # This device's robot identity — the SAME id the robot's motion client uses (mock_robot.py --id).
@@ -63,57 +63,6 @@ def _backend_ws_url() -> str:
     """ws://<backend>/ws?role=voice-device&robot_id=<id> derived from ORCHESTRATOR_URL."""
     base = settings.ORCHESTRATOR_URL.rstrip("/").replace("https://", "wss://").replace("http://", "ws://")
     return f"{base}/ws?role=voice-device&robot_id={ROBOT_ID}"
-
-
-def _capture_and_send(vad: SileroVAD, agent_client: httpx.Client, table_id: int,
-                      player: StreamingPlayer, cancel: threading.Event) -> None:
-    """Blocking: arm one utterance, wait for it, transcribe, POST to the agent for `table_id` (the
-    table the server says this robot is serving). Runs off the WS loop in a worker thread so the
-    socket stays responsive; `cancel` is set by a cancel_listening frame and aborts the turn at
-    every stage boundary."""
-    # Drop any stale transcript so we POST only what the guest says now.
-    while get_transcript(timeout=0.0) is not None:
-        pass
-
-    vad.begin_listen()
-    print("[LISTENING] mời anh/chị nói...")
-    if not vad.wait_for_utterance(UTTERANCE_TIMEOUT):
-        print("[TIMEOUT] không nghe thấy gì, quay lại chờ.")
-        return
-    if cancel.is_set():
-        print("[CANCELLED] khách hủy khi đang nghe.")
-        return
-
-    transcript = get_transcript(timeout=TRANSCRIPT_TIMEOUT)
-    if transcript is None or not transcript.text.strip():
-        print("[EMPTY] không nhận ra lời nói.")
-        return
-    if cancel.is_set():
-        print("[CANCELLED] khách hủy — không gửi cho agent.")
-        return
-
-    text = transcript.text
-    print(f"[HEARD @ {transcript.timestamp:.1f}s | bàn {table_id}]: {text}")
-
-    # Send to the server-side agent. No sticky session_id: the agent re-resolves the table's backend
-    # session each turn (thread resets after payment). The server mirrors this turn to the tablet.
-    try:
-        # The agent's /chat keys tables as the "T<N>" string convention; we got an int from the
-        # server's start_listening command, so format it back.
-        resp = agent_client.post("/chat", json={"table_id": f"T{table_id}", "text": text})
-        resp.raise_for_status()
-        result = resp.json()
-    except httpx.HTTPError as e:
-        print(f"Agent request failed: {e}")
-        return
-
-    response = result.get("response", "")
-    stage = result.get("final_stage", "IDLE")
-
-    print(f"[WAITER]: {response}")
-
-    if response and not cancel.is_set() and not player.is_stopped():
-        speak_streaming(response, stage, player)
 
 
 def _capture_and_send_streaming(vad: SileroVAD, agent_client: httpx.Client, table_id: int,

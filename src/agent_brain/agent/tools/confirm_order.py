@@ -21,17 +21,25 @@ def confirm_order(table_id: str, items: list[OrderItem]) -> ConfirmOrderResponse
     items: The final list of items in the customer's cart.
     """
     try:
-        # Prices come from the menu (never trust the cart), then the backend persists the order
-        # under the table's active session and recomputes the total server-side.
-        item_payloads = [
-            {
+        item_payloads = []
+        for item in items:
+            price = menu_manager.get_price(item.name)
+            if price == 0.0:
+                missing = ConfirmOrderResponse(
+                    status="error",
+                    order_id=None,
+                    message=(
+                        f"Không tìm thấy món '{item.name}' trong thực đơn."
+                        f" Vui lòng kiểm tra lại tên món."
+                    ),
+                )
+                return (missing.message, missing)
+            item_payloads.append({
                 "name": item.name,
                 "qty": item.quantity,
-                "price": menu_manager.get_price(item.name),
+                "price": price,
                 "note": item.special_requests,
-            }
-            for item in items
-        ]
+            })
         order = client.create_order(table_id, item_payloads)
         result = ConfirmOrderResponse(
             status="success",

@@ -1,0 +1,41 @@
+{
+  "iterations": 200,
+  "embedding": {
+    "count": 200,
+    "mean_ms": 50.1355,
+    "std_ms": 4.7407,
+    "min_ms": 38.9135,
+    "max_ms": 70.5176,
+    "p50_ms": 49.9019,
+    "p95_ms": 58.5687,
+    "p99_ms": 65.4057
+  },
+  "centroid_routing": {
+    "count": 200,
+    "mean_ms": 1.2217,
+    "std_ms": 0.1512,
+    "min_ms": 1.0427,
+    "max_ms": 1.831,
+    "p50_ms": 1.1892,
+    "p95_ms": 1.5221,
+    "p99_ms": 1.7453
+  },
+  "mlp_routing": {
+    "count": 200,
+    "mean_ms": 0.2021,
+    "std_ms": 0.2714,
+    "min_ms": 0.1498,
+    "max_ms": 3.964,
+    "p50_ms": 0.1672,
+    "p95_ms": 0.3213,
+    "p99_ms": 0.3973
+  },
+  "total_semantic_p50_ms": 51.091,
+  "total_classifier_p50_ms": 50.0691,
+  "total_semantic_p95_ms": 60.0908,
+  "total_classifier_p95_ms": 58.8901,
+  "ratio_p50": 0.98,
+  "ratio_p95": 0.98,
+  "gate_p95_under_20ms": false,
+  "gate_under_2x_semantic": true
+}

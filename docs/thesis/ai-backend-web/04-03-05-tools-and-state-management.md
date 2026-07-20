@@ -44,7 +44,7 @@ These tools make HTTP POST calls to the orchestrator backend, which owns the bus
 The `search` tool wraps the hybrid retrieval pipeline — it is the only tool with no orchestrator dependency. When the search worker calls `search(query="món nước ấm")`:
 
 1. The query is tokenized for Vietnamese via `underthesea.word_tokenize()`.
-2. Two parallel retrievals execute: BM25 (sparse lexical) and FAISS (dense semantic with SentenceTransformer embeddings at 1024-dim).
+2. Two parallel retrievals execute: BM25 (sparse lexical) and FAISS (dense semantic with SentenceTransformer embeddings at 768-dim).
 3. Results are fused via Reciprocal Rank Fusion: `score(d) = Σ 1/(60 + rank_d)` where `k=60` is the smoothing constant.
 4. A dual-lane gatekeeper filters results: the top FAISS result must have cosine ≥ 0.35, or the query keywords must appear in the top BM25 document text. If both fail, the result set is empty.
 5. Metadata post-filters (price range, dietary type, category) are applied if specified in the query.

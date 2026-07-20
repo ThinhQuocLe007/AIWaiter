@@ -1,0 +1,719 @@
+{
+  "dataset": "semantic_eval",
+  "version": "1.0",
+  "description": "Đánh giá độ chính xác của Semantic Router (centroid-based) trên các câu ĐƠN INTENT (single-intent). Không chứa multi-intent hay câu phụ thuộc ngữ cảnh (context-dependent). Mỗi câu là một utterance hoàn chỉnh, tự thân (self-contained) mà semantic router phải phân loại độc lập. 5 nhãn: ORDER, ORDER_CONFIRM, SEARCH, PAYMENT, CHAT.",
+  "total_cases": 100,
+  "cases_per_route": {
+    "ORDER": 20,
+    "ORDER_CONFIRM": 20,
+    "SEARCH": 20,
+    "PAYMENT": 20,
+    "CHAT": 20
+  },
+  "cases": [
+    {
+      "id": "SEM-001",
+      "input": "Cho tôi 2 phần Ốc Hương Xốt Trứng Muối",
+      "expected_route": "ORDER",
+      "difficulty": "easy",
+      "note": "Gọi món chuẩn, có số lượng và tên đầy đủ"
+    },
+    {
+      "id": "SEM-002",
+      "input": "Lấy 1 Lẩu Thái với 3 chai bia Tiger",
+      "expected_route": "ORDER",
+      "difficulty": "easy",
+      "note": "Gọi nhiều món, vẫn một intent ORDER"
+    },
+    {
+      "id": "SEM-003",
+      "input": "Mình muốn gọi thêm 5 con Hàu Nướng",
+      "expected_route": "ORDER",
+      "difficulty": "easy",
+      "note": "Dùng 'gọi thêm' + đơn vị 'con'"
+    },
+    {
+      "id": "SEM-004",
+      "input": "Cho 2 dĩa Khoai Tây Lắc Phô Mai nha",
+      "expected_route": "ORDER",
+      "difficulty": "easy",
+      "note": "Gọi món vặt"
+    },
+    {
+      "id": "SEM-005",
+      "input": "ad cho mình 1 tô cháo hàu vs 2 lon coca",
+      "expected_route": "ORDER",
+      "difficulty": "medium",
+      "note": "Teencode 'ad', 'vs', viết thường"
+    },
+    {
+      "id": "SEM-006",
+      "input": "thêm dĩa ốc bulot nữa đi",
+      "expected_route": "ORDER",
+      "difficulty": "medium",
+      "note": "Thêm món, không nêu số lượng rõ, 'bulot' = boulot"
+    },
+    {
+      "id": "SEM-007",
+      "input": "bỏ món mực chiên xù ra khỏi đơn giúp mình",
+      "expected_route": "ORDER",
+      "difficulty": "medium",
+      "note": "Huỷ món → vẫn là ORDER"
+    },
+    {
+      "id": "SEM-008",
+      "input": "đổi 2 bia Sài Gòn thành 2 bia 333",
+      "expected_route": "ORDER",
+      "difficulty": "medium",
+      "note": "Sửa đơn (thay món)"
+    },
+    {
+      "id": "SEM-009",
+      "input": "cho t 3 phần sò huyết hấp sả",
+      "expected_route": "ORDER",
+      "difficulty": "medium",
+      "note": "Teencode 't' (tôi)"
+    },
+    {
+      "id": "SEM-010",
+      "input": "1 lẩu cá tầm măng chua nhe bạn",
+      "expected_route": "ORDER",
+      "difficulty": "easy",
+      "note": "Số lượng đứng đầu câu"
+    },
+    {
+      "id": "SEM-011",
+      "input": "Mình đặt 1 Mực Cháy Tỏi với 2 ly Trà Tắc",
+      "expected_route": "ORDER",
+      "difficulty": "easy",
+      "note": "Gọi combo món chính + nước uống"
+    },
+    {
+      "id": "SEM-012",
+      "input": "Gọi 1 phần Sò Điệp Nướng Mỡ Hành ghi chú ít cay",
+      "expected_route": "ORDER",
+      "difficulty": "easy",
+      "note": "Gọi món kèm ghi chú"
+    },
+    {
+      "id": "SEM-013",
+      "input": "Lấy thêm 1 Khoai Tây Lắc Phô Mai mang về",
+      "expected_route": "ORDER",
+      "difficulty": "easy",
+      "note": "Gọi thêm + takeaway"
+    },
+    {
+      "id": "SEM-014",
+      "input": "Hủy Gỏi Hải Sản giùm mình",
+      "expected_route": "ORDER",
+      "difficulty": "easy",
+      "note": "Huỷ món"
+    },
+    {
+      "id": "SEM-015",
+      "input": "Sửa lại đơn bỏ Nem Chua Rán thêm Chả Giò Hải Sản",
+      "expected_route": "ORDER",
+      "difficulty": "medium",
+      "note": "Sửa đơn phức tạp (bỏ + thêm)"
+    },
+    {
+      "id": "SEM-016",
+      "input": "Ghi chú không hành cho món Ốc Len Xào Dừa",
+      "expected_route": "ORDER",
+      "difficulty": "medium",
+      "note": "Ghi chú (modifier cho món đã gọi)"
+    },
+    {
+      "id": "SEM-017",
+      "input": "Cho 2 Khô Mực Nướng và 1 Hàu Nướng Mỡ Hành",
+      "expected_route": "ORDER",
+      "difficulty": "easy",
+      "note": "Gọi hai món cùng lúc"
+    },
+    {
+      "id": "SEM-018",
+      "input": "lấy 2 mì xào sò vs 1 bánh mì bơ tỏi nha",
+      "expected_route": "ORDER",
+      "difficulty": "medium",
+      "note": "Teencode 'vs', viết thường toàn bộ"
+    },
+    {
+      "id": "SEM-019",
+      "input": "Ê lấy cho anh 1 Tôm Càng Xanh Nướng Phô Mai",
+      "expected_route": "ORDER",
+      "difficulty": "medium",
+      "note": "Xưng hô thân mật 'ê', 'anh'"
+    },
+    {
+      "id": "SEM-020",
+      "input": "Cho mình đổi món lấy Mì Xào Sò thay vì Ốc Hương",
+      "expected_route": "ORDER",
+      "difficulty": "medium",
+      "note": "Đổi món với cấu trúc câu dài"
+    },
+
+    {
+      "id": "SEM-021",
+      "input": "Đúng rồi xác nhận đặt luôn",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "easy",
+      "note": "Xác nhận rõ ràng"
+    },
+    {
+      "id": "SEM-022",
+      "input": "Ok chốt đơn đi em",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "easy",
+      "note": "Chốt đơn"
+    },
+    {
+      "id": "SEM-023",
+      "input": "Xác nhận đơn hàng tiến hành đi",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "easy",
+      "note": "Xác nhận với từ khóa rõ ràng"
+    },
+    {
+      "id": "SEM-024",
+      "input": "chuẩn rồi lên đơn giúp anh",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "medium",
+      "note": "Diễn đạt khác của xác nhận"
+    },
+    {
+      "id": "SEM-025",
+      "input": "Ừ mình đồng ý với đơn đó",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "easy",
+      "note": "Đồng ý với đơn"
+    },
+    {
+      "id": "SEM-026",
+      "input": "Ok cứ vậy đi gọi cho mình",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "medium",
+      "note": "Xác nhận ngầm 'cứ vậy đi'"
+    },
+    {
+      "id": "SEM-027",
+      "input": "Ok chốt luôn không thay đổi gì nữa",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "medium",
+      "note": "Chốt + khẳng định không thay đổi"
+    },
+    {
+      "id": "SEM-028",
+      "input": "Vậy được rồi tiến hành đặt món",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "medium",
+      "note": "Xác nhận gián tiếp"
+    },
+    {
+      "id": "SEM-029",
+      "input": "Cứ như vậy đi em chốt đơn giùm anh",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "medium",
+      "note": "Xác nhận dài"
+    },
+    {
+      "id": "SEM-030",
+      "input": "Ok đồng ý gửi đơn đi em",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "easy",
+      "note": "Đồng ý gửi đơn"
+    },
+    {
+      "id": "SEM-031",
+      "input": "Đúng đơn đó rồi cho mình đặt nhé",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "easy",
+      "note": "Xác nhận đúng đơn"
+    },
+    {
+      "id": "SEM-032",
+      "input": "Chốt giùm mình đơn này",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "easy",
+      "note": "Chốt đơn ngắn gọn"
+    },
+    {
+      "id": "SEM-033",
+      "input": "Ok vậy được đặt luôn đi",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "medium",
+      "note": "Xác nhận ngắn"
+    },
+    {
+      "id": "SEM-034",
+      "input": "Ok đặt thôi",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "medium",
+      "note": "Rất ngắn, dễ nhầm CHAT"
+    },
+    {
+      "id": "SEM-035",
+      "input": "Xác nhận đơn hàng",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "easy",
+      "note": "Cụm từ xác nhận thuần túy"
+    },
+    {
+      "id": "SEM-036",
+      "input": "Xác nhận đơn và gọi món luôn nhé",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "medium",
+      "note": "'Gọi món luôn' trong ngữ cảnh này là xác nhận"
+    },
+    {
+      "id": "SEM-037",
+      "input": "Ghi nhận đơn hàng của tôi",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "medium",
+      "note": "Cách nói khác của xác nhận"
+    },
+    {
+      "id": "SEM-038",
+      "input": "Tiến hành đặt món đó cho mình",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "medium",
+      "note": "Ra lệnh đặt món"
+    },
+    {
+      "id": "SEM-039",
+      "input": "Đơn này được rồi chốt giùm mình",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "medium",
+      "note": "Chốt sau khi xem lại"
+    },
+    {
+      "id": "SEM-040",
+      "input": "Ừ được đặt giùm mình nhé",
+      "expected_route": "ORDER_CONFIRM",
+      "difficulty": "medium",
+      "note": "Xác nhận ngắn có 'được' và 'đặt'"
+    },
+
+    {
+      "id": "SEM-041",
+      "input": "Ốc Hương giá bao nhiêu vậy",
+      "expected_route": "SEARCH",
+      "difficulty": "easy",
+      "note": "Hỏi giá món cụ thể"
+    },
+    {
+      "id": "SEM-042",
+      "input": "Quán mình có món chay không",
+      "expected_route": "SEARCH",
+      "difficulty": "easy",
+      "note": "Hỏi về menu/diet"
+    },
+    {
+      "id": "SEM-043",
+      "input": "Lẩu Thái cay không em",
+      "expected_route": "SEARCH",
+      "difficulty": "easy",
+      "note": "Hỏi tính chất món"
+    },
+    {
+      "id": "SEM-044",
+      "input": "Hàu nướng có những kiểu chế biến nào",
+      "expected_route": "SEARCH",
+      "difficulty": "medium",
+      "note": "Hỏi biến thể món"
+    },
+    {
+      "id": "SEM-045",
+      "input": "có món gì hợp cho nhóm 4 người nhậu không",
+      "expected_route": "SEARCH",
+      "difficulty": "medium",
+      "note": "Hỏi gợi ý theo nhu cầu"
+    },
+    {
+      "id": "SEM-046",
+      "input": "quán mở cửa tới mấy giờ vậy",
+      "expected_route": "SEARCH",
+      "difficulty": "medium",
+      "note": "Hỏi thông tin nhà hàng"
+    },
+    {
+      "id": "SEM-047",
+      "input": "món nào bán chạy nhất ở đây",
+      "expected_route": "SEARCH",
+      "difficulty": "medium",
+      "note": "Hỏi best seller"
+    },
+    {
+      "id": "SEM-048",
+      "input": "ốc bulot làm từ nguyên liệu gì thế",
+      "expected_route": "SEARCH",
+      "difficulty": "medium",
+      "note": "Hỏi thành phần món"
+    },
+    {
+      "id": "SEM-049",
+      "input": "có ship về quận 7 ko shop",
+      "expected_route": "SEARCH",
+      "difficulty": "hard",
+      "note": "Teencode + hỏi dịch vụ"
+    },
+    {
+      "id": "SEM-050",
+      "input": "bia heineken nhiêu 1 lon z",
+      "expected_route": "SEARCH",
+      "difficulty": "hard",
+      "note": "Teencode 'nhiêu', 'z', hỏi giá"
+    },
+    {
+      "id": "SEM-051",
+      "input": "Món Ốc Len Xào Dừa ăn có ngon không",
+      "expected_route": "SEARCH",
+      "difficulty": "easy",
+      "note": "Hỏi review món"
+    },
+    {
+      "id": "SEM-052",
+      "input": "Loại lẩu nào được ưa chuộng nhất",
+      "expected_route": "SEARCH",
+      "difficulty": "easy",
+      "note": "Hỏi món phổ biến"
+    },
+    {
+      "id": "SEM-053",
+      "input": "Có món nào lạ miệng không bạn",
+      "expected_route": "SEARCH",
+      "difficulty": "medium",
+      "note": "Hỏi gợi ý món lạ"
+    },
+    {
+      "id": "SEM-054",
+      "input": "Món Cá Chim Nướng Sa Tế có nhiều xương không",
+      "expected_route": "SEARCH",
+      "difficulty": "medium",
+      "note": "Hỏi đặc điểm món"
+    },
+    {
+      "id": "SEM-055",
+      "input": "So sánh món ốc hương và món sò điệp giúp mình",
+      "expected_route": "SEARCH",
+      "difficulty": "hard",
+      "note": "So sánh hai món"
+    },
+    {
+      "id": "SEM-056",
+      "input": "Món này ăn kèm với gì thì ngon",
+      "expected_route": "SEARCH",
+      "difficulty": "medium",
+      "note": "Hỏi gợi ý kết hợp món"
+    },
+    {
+      "id": "SEM-057",
+      "input": "Có đồ uống nào không đường không",
+      "expected_route": "SEARCH",
+      "difficulty": "easy",
+      "note": "Hỏi menu đồ uống đặc biệt"
+    },
+    {
+      "id": "SEM-058",
+      "input": "Món chay dưới 50k có những món nào",
+      "expected_route": "SEARCH",
+      "difficulty": "medium",
+      "note": "Hỏi lọc theo giá + loại món"
+    },
+    {
+      "id": "SEM-059",
+      "input": "Nhà vệ sinh ở đâu vậy",
+      "expected_route": "SEARCH",
+      "difficulty": "medium",
+      "note": "Hỏi thông tin nhà hàng (không phải món)"
+    },
+    {
+      "id": "SEM-060",
+      "input": "Có wifi không bạn",
+      "expected_route": "SEARCH",
+      "difficulty": "easy",
+      "note": "Hỏi tiện ích nhà hàng"
+    },
+
+    {
+      "id": "SEM-061",
+      "input": "Tính tiền giùm anh",
+      "expected_route": "PAYMENT",
+      "difficulty": "easy",
+      "note": "Yêu cầu thanh toán chuẩn"
+    },
+    {
+      "id": "SEM-062",
+      "input": "Cho xin hóa đơn",
+      "expected_route": "PAYMENT",
+      "difficulty": "easy",
+      "note": "Xin hoá đơn"
+    },
+    {
+      "id": "SEM-063",
+      "input": "Thanh toán chuyển khoản được không",
+      "expected_route": "PAYMENT",
+      "difficulty": "easy",
+      "note": "Hỏi phương thức thanh toán"
+    },
+    {
+      "id": "SEM-064",
+      "input": "Quẹt thẻ được hông em",
+      "expected_route": "PAYMENT",
+      "difficulty": "medium",
+      "note": "Hỏi quẹt thẻ"
+    },
+    {
+      "id": "SEM-065",
+      "input": "ck cho mình cái qr với",
+      "expected_route": "PAYMENT",
+      "difficulty": "hard",
+      "note": "Teencode 'ck' + xin QR"
+    },
+    {
+      "id": "SEM-066",
+      "input": "hết nhiêu tiền rồi em ơi",
+      "expected_route": "PAYMENT",
+      "difficulty": "medium",
+      "note": "Hỏi tổng tiền"
+    },
+    {
+      "id": "SEM-067",
+      "input": "cho xin mã qr thanh toán",
+      "expected_route": "PAYMENT",
+      "difficulty": "easy",
+      "note": "Xin QR"
+    },
+    {
+      "id": "SEM-068",
+      "input": "bill đi em",
+      "expected_route": "PAYMENT",
+      "difficulty": "hard",
+      "note": "Rất ngắn, từ mượn 'bill'"
+    },
+    {
+      "id": "SEM-069",
+      "input": "Tôi muốn trả tiền",
+      "expected_route": "PAYMENT",
+      "difficulty": "easy",
+      "note": "Yêu cầu trả tiền trực tiếp"
+    },
+    {
+      "id": "SEM-070",
+      "input": "Gửi hóa đơn cho tôi",
+      "expected_route": "PAYMENT",
+      "difficulty": "easy",
+      "note": "Yêu cầu gửi bill"
+    },
+    {
+      "id": "SEM-071",
+      "input": "Cho mình thanh toán qua MoMo",
+      "expected_route": "PAYMENT",
+      "difficulty": "easy",
+      "note": "Thanh toán MoMo"
+    },
+    {
+      "id": "SEM-072",
+      "input": "Mình chuyển khoản được không",
+      "expected_route": "PAYMENT",
+      "difficulty": "easy",
+      "note": "Hỏi chuyển khoản"
+    },
+    {
+      "id": "SEM-073",
+      "input": "Cho mình xin hóa đơn VAT",
+      "expected_route": "PAYMENT",
+      "difficulty": "medium",
+      "note": "Xin hoá đơn đỏ"
+    },
+    {
+      "id": "SEM-074",
+      "input": "Xuất hóa đơn đỏ giùm mình",
+      "expected_route": "PAYMENT",
+      "difficulty": "medium",
+      "note": "Yêu cầu xuất hoá đơn VAT"
+    },
+    {
+      "id": "SEM-075",
+      "input": "Bàn mình hết bao nhiêu tiền",
+      "expected_route": "PAYMENT",
+      "difficulty": "easy",
+      "note": "Hỏi tổng bill"
+    },
+    {
+      "id": "SEM-076",
+      "input": "Chia đôi hóa đơn giùm mình",
+      "expected_route": "PAYMENT",
+      "difficulty": "medium",
+      "note": "Yêu cầu tách bill"
+    },
+    {
+      "id": "SEM-077",
+      "input": "Tính riêng từng người giùm mình",
+      "expected_route": "PAYMENT",
+      "difficulty": "medium",
+      "note": "Tách bill theo người"
+    },
+    {
+      "id": "SEM-078",
+      "input": "Trả bằng MoMo được không bạn",
+      "expected_route": "PAYMENT",
+      "difficulty": "easy",
+      "note": "Hỏi thanh toán MoMo"
+    },
+    {
+      "id": "SEM-079",
+      "input": "Mình trả tiền mặt",
+      "expected_route": "PAYMENT",
+      "difficulty": "easy",
+      "note": "Thanh toán tiền mặt"
+    },
+    {
+      "id": "SEM-080",
+      "input": "Check bill giùm mình",
+      "expected_route": "PAYMENT",
+      "difficulty": "medium",
+      "note": "Từ mượn 'check bill'"
+    },
+
+    {
+      "id": "SEM-081",
+      "input": "Xin chào shop",
+      "expected_route": "CHAT",
+      "difficulty": "easy",
+      "note": "Chào hỏi"
+    },
+    {
+      "id": "SEM-082",
+      "input": "Cảm ơn em nhiều nha",
+      "expected_route": "CHAT",
+      "difficulty": "easy",
+      "note": "Cảm ơn"
+    },
+    {
+      "id": "SEM-083",
+      "input": "Đồ ăn ở đây ngon quá trời",
+      "expected_route": "CHAT",
+      "difficulty": "medium",
+      "note": "Khen, không có hành động"
+    },
+    {
+      "id": "SEM-084",
+      "input": "ê quán đông ghê ha",
+      "expected_route": "CHAT",
+      "difficulty": "medium",
+      "note": "Tán gẫu"
+    },
+    {
+      "id": "SEM-085",
+      "input": "trời hôm nay mưa to thật",
+      "expected_route": "CHAT",
+      "difficulty": "hard",
+      "note": "Lạc đề hoàn toàn, không liên quan nhà hàng"
+    },
+    {
+      "id": "SEM-086",
+      "input": "Chào buổi sáng bạn",
+      "expected_route": "CHAT",
+      "difficulty": "easy",
+      "note": "Chào buổi sáng"
+    },
+    {
+      "id": "SEM-087",
+      "input": "Bạn là ai vậy",
+      "expected_route": "CHAT",
+      "difficulty": "easy",
+      "note": "Hỏi về bot"
+    },
+    {
+      "id": "SEM-088",
+      "input": "Tạm biệt nhé",
+      "expected_route": "CHAT",
+      "difficulty": "easy",
+      "note": "Tạm biệt"
+    },
+    {
+      "id": "SEM-089",
+      "input": "Bạn tên là gì",
+      "expected_route": "CHAT",
+      "difficulty": "easy",
+      "note": "Hỏi tên bot"
+    },
+    {
+      "id": "SEM-090",
+      "input": "Hello",
+      "expected_route": "CHAT",
+      "difficulty": "easy",
+      "note": "Chào tiếng Anh"
+    },
+    {
+      "id": "SEM-091",
+      "input": "Hi bạn",
+      "expected_route": "CHAT",
+      "difficulty": "easy",
+      "note": "Chào ngắn"
+    },
+    {
+      "id": "SEM-092",
+      "input": "Bàn mình chờ hơi lâu rồi nhé",
+      "expected_route": "CHAT",
+      "difficulty": "medium",
+      "note": "Phàn nàn, không phải order"
+    },
+    {
+      "id": "SEM-093",
+      "input": "Quán này dễ thương ghê",
+      "expected_route": "CHAT",
+      "difficulty": "medium",
+      "note": "Khen quán"
+    },
+    {
+      "id": "SEM-094",
+      "input": "Không gian quán đẹp quá",
+      "expected_route": "CHAT",
+      "difficulty": "medium",
+      "note": "Khen không gian"
+    },
+    {
+      "id": "SEM-095",
+      "input": "Phục vụ nhiệt tình thật đấy",
+      "expected_route": "CHAT",
+      "difficulty": "medium",
+      "note": "Khen phục vụ"
+    },
+    {
+      "id": "SEM-096",
+      "input": "Ngon tuyệt vời luôn",
+      "expected_route": "CHAT",
+      "difficulty": "medium",
+      "note": "Khen đồ ăn"
+    },
+    {
+      "id": "SEM-097",
+      "input": "Cho anh xem lại giỏ hàng đang có những gì",
+      "expected_route": "CHAT",
+      "difficulty": "hard",
+      "note": "Xem cart, không phải ORDER vì không thêm/bớt món"
+    },
+    {
+      "id": "SEM-098",
+      "input": "Nãy giờ mình gọi những món gì rồi",
+      "expected_route": "CHAT",
+      "difficulty": "hard",
+      "note": "Review cart, dễ nhầm SEARCH"
+    },
+    {
+      "id": "SEM-099",
+      "input": "Bạn là robot hay người thật vậy",
+      "expected_route": "CHAT",
+      "difficulty": "medium",
+      "note": "Hỏi về bot"
+    },
+    {
+      "id": "SEM-100",
+      "input": "Quán đang phục vụ không bạn",
+      "expected_route": "CHAT",
+      "difficulty": "hard",
+      "note": "Hỏi trạng thái, dễ nhầm SEARCH vì có dấu hỏi"
+    }
+  ]
+}

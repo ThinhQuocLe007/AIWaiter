@@ -44,7 +44,7 @@ The system is organized into three physical tiers connected over a local WiFi ne
 │  │  Ollama: Qwen2.5 7B Instruct (3 endpoints, same model)   │   │
 │  │  Router T=0.0  │  Worker T=0.1  │  Response T=0.3        │   │
 │  ├──────────────────────────────────────────────────────────┤   │
-│  │  RAG: FAISS (1024-dim) + BM25 (k1=1.2,b=0) + RRF (k=60) │   │
+│  │  RAG: FAISS (768-dim) + BM25 (k1=1.2,b=0) + RRF (k=60) │   │
 │  │  217 dishes × 12 categories from menu.json               │   │
 │  └──────────────────────────────────────────────────────────┘   │
 └──────────────────────┬───────────────────┬───────────────────────┘

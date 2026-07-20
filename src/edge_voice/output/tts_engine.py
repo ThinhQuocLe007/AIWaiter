@@ -112,11 +112,22 @@ async def _synthesize_edge_tts(text: str, stage: str = "IDLE") -> np.ndarray:
 
 # ── Public API ───────────────────────────────────────────────────────────────
 
+_thread_loop: asyncio.AbstractEventLoop | None = None
+_thread_loop_lock = threading.Lock()
+
+
+def _run_async(coro):
+    global _thread_loop
+    with _thread_loop_lock:
+        if _thread_loop is None or _thread_loop.is_closed():
+            _thread_loop = asyncio.new_event_loop()
+    return _thread_loop.run_until_complete(coro)
+
 
 def synthesize(text: str, stage: str = "IDLE") -> np.ndarray:
     if _HAS_PIPER and _PIPER_VOICE is not None:
         return _synthesize_piper(text)
-    return asyncio.run(_synthesize_edge_tts(text, stage))
+    return _run_async(_synthesize_edge_tts(text, stage))
 
 
 # ── Streaming player ─────────────────────────────────────────────────────────

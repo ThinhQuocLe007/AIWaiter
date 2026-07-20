@@ -1,0 +1,390 @@
+{
+  "dataset": "test_holdout",
+  "version": "1.0",
+  "description": "Holdout test set for trained intent classifier. Derived from router_eval.json single-intent cases. ORDER_CONFIRM merged into ORDER (4 classes). Teencode cases replaced with spoken Vietnamese equivalents. Context features included where applicable for ambiguous utterances.",
+  "total_cases": 39,
+  "classes": ["ORDER", "SEARCH", "PAYMENT", "CHAT"],
+  "cases_per_class": {
+    "ORDER": 14,
+    "SEARCH": 10,
+    "PAYMENT": 8,
+    "CHAT": 5
+  },
+  "cases": [
+    {
+      "id": "HO-001",
+      "source": "RT-001",
+      "utterance": "Cho tôi 2 phần Ốc Hương xốt trứng muối",
+      "intent": "ORDER",
+      "difficulty": "easy",
+      "note": "Gọi món chuẩn có số lượng và tên đầy đủ",
+      "context": null
+    },
+    {
+      "id": "HO-002",
+      "source": "RT-002",
+      "utterance": "Lấy 1 Lẩu Thái với 3 chai bia Tiger",
+      "intent": "ORDER",
+      "difficulty": "easy",
+      "note": "Gọi nhiều món trong một câu, vẫn là một intent ORDER",
+      "context": null
+    },
+    {
+      "id": "HO-003",
+      "source": "RT-003",
+      "utterance": "Mình muốn gọi thêm 5 con Hàu Nướng",
+      "intent": "ORDER",
+      "difficulty": "easy",
+      "note": "Dùng 'gọi thêm' + đơn vị 'con'",
+      "context": null
+    },
+    {
+      "id": "HO-004",
+      "source": "RT-004",
+      "utterance": "Cho 2 dĩa Khoai Tây Lắc Phô Mai nha",
+      "intent": "ORDER",
+      "difficulty": "easy",
+      "note": "Gọi món vặt",
+      "context": null
+    },
+    {
+      "id": "HO-005",
+      "source": "RT-005-replaced",
+      "utterance": "Cho mình 1 tô cháo hàu và 2 lon coca",
+      "intent": "ORDER",
+      "difficulty": "medium",
+      "note": "Thay thế RT-005 (teencode 'ad', 'vs'). Bản nói: gọi cháo và coca",
+      "context": null
+    },
+    {
+      "id": "HO-006",
+      "source": "RT-006",
+      "utterance": "thêm dĩa ốc bulot nữa đi",
+      "intent": "ORDER",
+      "difficulty": "medium",
+      "note": "Thêm món, không nêu số lượng rõ",
+      "context": null
+    },
+    {
+      "id": "HO-007",
+      "source": "RT-007",
+      "utterance": "bỏ món mực chiên xù ra khỏi đơn giúp mình",
+      "intent": "ORDER",
+      "difficulty": "medium",
+      "note": "Huỷ/sửa món vẫn thuộc ORDER",
+      "context": null
+    },
+    {
+      "id": "HO-008",
+      "source": "RT-008",
+      "utterance": "đổi 2 bia Sài Gòn thành 2 bia 333",
+      "intent": "ORDER",
+      "difficulty": "medium",
+      "note": "Sửa đơn (thay món)",
+      "context": null
+    },
+    {
+      "id": "HO-009",
+      "source": "RT-009-replaced",
+      "utterance": "cho mình 3 phần sò huyết hấp sả",
+      "intent": "ORDER",
+      "difficulty": "medium",
+      "note": "Thay thế RT-009 (teencode 't'). Bản nói: gọi sò huyết",
+      "context": null
+    },
+    {
+      "id": "HO-010",
+      "source": "RT-010",
+      "utterance": "1 lẩu cá tầm măng chua nhe bạn",
+      "intent": "ORDER",
+      "difficulty": "easy",
+      "note": "Gọi món số lượng đứng đầu",
+      "context": null
+    },
+    {
+      "id": "HO-011",
+      "source": "RT-011",
+      "utterance": "Đúng rồi, xác nhận đặt luôn",
+      "intent": "ORDER",
+      "difficulty": "easy",
+      "note": "Xác nhận đơn (merged from ORDER_CONFIRM)",
+      "context": null
+    },
+    {
+      "id": "HO-012",
+      "source": "RT-012",
+      "utterance": "Ok chốt đơn đi em",
+      "intent": "ORDER",
+      "difficulty": "easy",
+      "note": "Chốt đơn (merged from ORDER_CONFIRM)",
+      "context": null
+    },
+    {
+      "id": "HO-013",
+      "source": "RT-013",
+      "utterance": "Ừ đặt nha",
+      "intent": "ORDER",
+      "difficulty": "hard",
+      "note": "Xác nhận ngắn gọn. Mơ hồ nếu không có context.",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 4,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "context_dependent": true,
+      "default_intent_without_context": "CHAT"
+    },
+    {
+      "id": "HO-014",
+      "source": "RT-014",
+      "utterance": "chuẩn rồi, lên đơn giúp anh",
+      "intent": "ORDER",
+      "difficulty": "medium",
+      "note": "Xác nhận bằng cách diễn đạt khác (merged from ORDER_CONFIRM)",
+      "context": null
+    },
+    {
+      "id": "HO-015",
+      "source": "RT-015",
+      "utterance": "Uh đúng rồi đó",
+      "intent": "ORDER",
+      "difficulty": "hard",
+      "note": "Mơ hồ, cần ngữ cảnh đơn trước đó.",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 4,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "context_dependent": true,
+      "default_intent_without_context": "CHAT"
+    },
+    {
+      "id": "HO-016",
+      "source": "RT-016",
+      "utterance": "ok em",
+      "intent": "ORDER",
+      "difficulty": "hard",
+      "note": "Rất ngắn, dễ nhầm CHAT nếu không có ngữ cảnh.",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 4,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "context_dependent": true,
+      "default_intent_without_context": "CHAT"
+    },
+    {
+      "id": "HO-017",
+      "source": "RT-017",
+      "utterance": "Ốc Hương giá bao nhiêu vậy?",
+      "intent": "SEARCH",
+      "difficulty": "easy",
+      "note": "Hỏi giá",
+      "context": null
+    },
+    {
+      "id": "HO-018",
+      "source": "RT-018",
+      "utterance": "Quán mình có món chay không?",
+      "intent": "SEARCH",
+      "difficulty": "easy",
+      "note": "Hỏi về menu/diet",
+      "context": null
+    },
+    {
+      "id": "HO-019",
+      "source": "RT-019",
+      "utterance": "Lẩu Thái cay không em?",
+      "intent": "SEARCH",
+      "difficulty": "easy",
+      "note": "Hỏi tính chất món",
+      "context": null
+    },
+    {
+      "id": "HO-020",
+      "source": "RT-020",
+      "utterance": "Hàu nướng có những kiểu chế biến nào?",
+      "intent": "SEARCH",
+      "difficulty": "medium",
+      "note": "Hỏi biến thể món",
+      "context": null
+    },
+    {
+      "id": "HO-021",
+      "source": "RT-021",
+      "utterance": "có món gì hợp cho nhóm 4 người nhậu không",
+      "intent": "SEARCH",
+      "difficulty": "medium",
+      "note": "Hỏi gợi ý món theo nhu cầu",
+      "context": null
+    },
+    {
+      "id": "HO-022",
+      "source": "RT-022",
+      "utterance": "quán mở cửa tới mấy giờ vậy",
+      "intent": "SEARCH",
+      "difficulty": "medium",
+      "note": "Hỏi thông tin nhà hàng",
+      "context": null
+    },
+    {
+      "id": "HO-023",
+      "source": "RT-023",
+      "utterance": "món nào bán chạy nhất ở đây",
+      "intent": "SEARCH",
+      "difficulty": "medium",
+      "note": "Hỏi best seller",
+      "context": null
+    },
+    {
+      "id": "HO-024",
+      "source": "RT-024",
+      "utterance": "ốc bulot làm từ nguyên liệu gì thế",
+      "intent": "SEARCH",
+      "difficulty": "medium",
+      "note": "Hỏi thành phần",
+      "context": null
+    },
+    {
+      "id": "HO-025",
+      "source": "RT-025-replaced",
+      "utterance": "có giao hàng về quận 7 không em",
+      "intent": "SEARCH",
+      "difficulty": "hard",
+      "note": "Thay thế RT-025 (teencode 'ko', 'shop'). Bản nói: hỏi giao hàng",
+      "context": null
+    },
+    {
+      "id": "HO-026",
+      "source": "RT-026-replaced",
+      "utterance": "bia heineken bao nhiêu một lon vậy em",
+      "intent": "SEARCH",
+      "difficulty": "hard",
+      "note": "Thay thế RT-026 (teencode 'nhiêu', 'z'). Bản nói: hỏi giá bia",
+      "context": null
+    },
+    {
+      "id": "HO-027",
+      "source": "RT-027",
+      "utterance": "Tính tiền giùm anh",
+      "intent": "PAYMENT",
+      "difficulty": "easy",
+      "note": "Yêu cầu thanh toán chuẩn",
+      "context": null
+    },
+    {
+      "id": "HO-028",
+      "source": "RT-028",
+      "utterance": "Cho xin hóa đơn",
+      "intent": "PAYMENT",
+      "difficulty": "easy",
+      "note": "Xin hoá đơn",
+      "context": null
+    },
+    {
+      "id": "HO-029",
+      "source": "RT-029",
+      "utterance": "Thanh toán chuyển khoản được không?",
+      "intent": "PAYMENT",
+      "difficulty": "easy",
+      "note": "Hỏi phương thức thanh toán",
+      "context": null
+    },
+    {
+      "id": "HO-030",
+      "source": "RT-030",
+      "utterance": "Quẹt thẻ được hông em",
+      "intent": "PAYMENT",
+      "difficulty": "medium",
+      "note": "Hỏi quẹt thẻ",
+      "context": null
+    },
+    {
+      "id": "HO-031",
+      "source": "RT-031-replaced",
+      "utterance": "chuyển khoản cho mình xin cái mã QR với",
+      "intent": "PAYMENT",
+      "difficulty": "hard",
+      "note": "Thay thế RT-031 (teencode 'ck'). Bản nói: xin QR chuyển khoản",
+      "context": null
+    },
+    {
+      "id": "HO-032",
+      "source": "RT-032",
+      "utterance": "hết nhiêu tiền rồi em ơi",
+      "intent": "PAYMENT",
+      "difficulty": "medium",
+      "note": "Hỏi tổng tiền (kiểm tra bill)",
+      "context": null
+    },
+    {
+      "id": "HO-033",
+      "source": "RT-033",
+      "utterance": "cho xin mã qr thanh toán",
+      "intent": "PAYMENT",
+      "difficulty": "easy",
+      "note": "Xin QR",
+      "context": null
+    },
+    {
+      "id": "HO-034",
+      "source": "RT-034",
+      "utterance": "bill đi em",
+      "intent": "PAYMENT",
+      "difficulty": "hard",
+      "note": "Rất ngắn, dùng từ mượn 'bill'",
+      "context": null
+    },
+    {
+      "id": "HO-035",
+      "source": "RT-035",
+      "utterance": "Xin chào shop",
+      "intent": "CHAT",
+      "difficulty": "easy",
+      "note": "Chào hỏi",
+      "context": null
+    },
+    {
+      "id": "HO-036",
+      "source": "RT-036",
+      "utterance": "Cảm ơn em nhiều nha",
+      "intent": "CHAT",
+      "difficulty": "easy",
+      "note": "Cảm ơn",
+      "context": null
+    },
+    {
+      "id": "HO-037",
+      "source": "RT-037",
+      "utterance": "Đồ ăn ở đây ngon quá trời",
+      "intent": "CHAT",
+      "difficulty": "medium",
+      "note": "Khen, không có hành động",
+      "context": null
+    },
+    {
+      "id": "HO-038",
+      "source": "RT-038",
+      "utterance": "ê quán đông ghê ha",
+      "intent": "CHAT",
+      "difficulty": "medium",
+      "note": "Tán gẫu",
+      "context": null
+    },
+    {
+      "id": "HO-039",
+      "source": "RT-039",
+      "utterance": "trời hôm nay mưa to thật",
+      "intent": "CHAT",
+      "difficulty": "hard",
+      "note": "Lạc đề hoàn toàn, không liên quan nhà hàng",
+      "context": null
+    }
+  ]
+}

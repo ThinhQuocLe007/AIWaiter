@@ -24,9 +24,9 @@
 - Hardware appears only as: (a) one short platform paragraph + sensor role table at the start of Ch.3, and (b) the **component list + connection diagram + photos in Ch.5.1** (this is where the reader "meets" the physical robot in detail — same as nhom_NamHuy's "Thi công mô hình" and nhom_Trung's "Hardware model" result sections).
 
 **Your core contributions to highlight** (put diagrams + numbers wherever these appear):
-1. **Two-tier hybrid router** (semantic centroid + softmax/gap gating → SLM fallback; 91.25%).
-2. **Agentic LangGraph workflow** (router → workers → validator → tools, multi-intent, order state machine).
-3. **Hybrid RAG (BM25 + FAISS + RRF)** for Vietnamese + a quantitative eval suite.
+1. **Trained MLP intent classifier** (4-class, 778-dim input: frozen Vietnamese bi-encoder embedding + 10 conversation-context features; 97.4% on 39-case holdout, 95.6% on 45-case router eval — 22 points above the previous two-tier hybrid router at 73.3%).
+2. **Agentic LangGraph workflow** (router → workers → validator → tools, multi-intent queue, order state machine, delegate escape hatch).
+3. **Hybrid RAG (BM25 + FAISS + RRF)** for Vietnamese menus + a quantitative eval suite.
 4. **Integrated autonomous TWD robot**: EKF-fused odometry, RTAB-Map (LiDAR + RGB-D), Nav2 navigation, ArUco table docking.
 
 **Honesty note:** only report what actually runs and has numbers; unfinished parts (some UIs, TTS, etc.) go to Future Works.
@@ -60,7 +60,7 @@ Follow the section list of nhom_Canh/nhom_Trung Ch.1.
   - Integrate the TWD platform into ROS2 with **fused encoder+IMU odometry (EKF)** reaching ≤ X cm return-to-start error on a closed test path.
   - Build the restaurant map with **RTAB-Map (A2M8 + D435)**; navigate kitchen → correct table with success rate ≥ X%.
   - **ArUco docking error < X cm / X°**.
-  - Intent router accuracy ≥ 90% (currently 91.25%); RAG precision/recall@k targets; end-to-end Vietnamese voice ordering.
+  - Intent router accuracy ≥ 90% (achieved 97.44% on 39-case holdout, 95.6% on 45-case A/B comparison); RAG precision/recall@k targets; end-to-end Vietnamese voice ordering.
 
 ### 1.4 Scope of the study
 - Open with the boundary sentence (framing rule above). Then: indoor, flat floor, mapped environment, **robot on a dedicated service lane physically separated from customers** (kitchen → tables), moderate speed, Vietnamese voice, LLM served locally via Ollama on an on-premises server. **Map is 2D.** Limitations: non-holonomic (no lateral motion), 2D navigation, consumer-grade IMU, lighting sensitivity (D435/ArUco), network latency.
@@ -181,10 +181,11 @@ The heaviest chapter. Open with **System requirements** (AI / backend / web — 
 ### 4.3 Orchestration Agent (LangGraph) — the heart of the system
 - Draw your actual graph: `START → router → (order/search/payment/chat worker) → validator → tools → state_updater → (multi-intent loop) → END`. Explain AgentState (messages, active_cart, order_stage `IDLE → AWAITING_CONFIRMATION → CONFIRMED`, current_intents, table_id) and per-table checkpointer memory. One overview diagram + per-node description + one traced example conversation.
 
-### 4.4 Two-Tier Hybrid Router *(write in the most depth)*
-- Tier 1 semantic: sentence embedding → per-intent centroid → cosine → softmax + gap gating (T=0.20, prob≥0.30, gap≥0.20) → ~15 ms fast path.
-- Tier 2 SLM: the small Ollama-served instruct model (see `.env` — `qwen3:4b-instruct` per template, `gemma4:e2b-it-qat` code default), 14 few-shot examples, structured `IntentPrediction`, multi-intent support.
-- Centroid construction from `utterances.json`; temperature calibration. Two-tier diagram + fast-path vs. fallback example table; preview 91.25% (details in Ch.5).
+### 4.3 Intent Classification — Trained MLP Classifier *(write in the most depth)*
+- MLP classifier: frozen Vietnamese bi-encoder embedding (768-dim) + 10 context features from AgentState → 3-layer MLP (778→256→64→4) → softmax. Context features encode order_stage, cart/search state, and utterance length — conversation state that pure embedding similarity cannot see.
+- Training: 3,712 synthetic Vietnamese utterances, class-weighted cross-entropy, early stopping.
+- Inference: word segmentation → embedding (~50ms) → context extraction → MLP forward (0.17ms) → intent. Total routing ~52ms.
+- Evolution: semantic centroid (89% on 100 cases) → two-tier hybrid (73.3% on 45 cases) → MLP classifier (95.6% on 45 cases, 97.4% on 39-case holdout). Evaluate all three as an ablation (§5.3.1).
 
 ### 4.5 Knowledge Retrieval System (Hybrid RAG)
 - Menu data source; chunking + embedding; BM25 + FAISS in parallel; RRF fusion; Vietnamese normalization; top-k/threshold. Pipeline diagram + one example query.
@@ -236,7 +237,7 @@ Check every objective from §1.3 with numbers. Follow the sample theses' pattern
 - (a) Odometry: closed-path tests, encoder-only vs. EKF-fused error table (full data for the §3.2 figure). (b) Real service-lane map + loop closures. (c) Navigation: N trips per table, success rate, average time; **obstacle test = an object placed in the lane** (the robot detects it and stops/re-routes) — no pedestrian tests, since the lane is separated from customers. (d) Docking: per-table statistics, worst case; photo frames.
 
 ### 5.5 AI System Experiments *(run the eval scripts)*
-- Router (`eval_router.py`): 91.25% on 80 cases; fast-path vs. fallback ratio; per-branch latency; honest analysis of the 7 failure cases (SEARCH↔PAYMENT confusion).
+- Router (`evaluate.py`, `compare.py`): MLP classifier at 97.44% on 39-case holdout, 95.6% on 45-case A/B comparison, 92.0% on 100-case balanced set. Ablation against semantic centroid (89.0%) and two-tier hybrid (73.3%).
 - Retrieval (`eval_retrieval.py`): hybrid vs. BM25-only vs. vector-only (shows RRF helps).
 - E2E (`eval_e2e.py`): completion rate of multi-step ordering conversations.
 - Number tables + charts + a few correct/incorrect examples.

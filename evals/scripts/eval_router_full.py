@@ -27,7 +27,7 @@ load_dotenv()
 from langchain_core.messages import HumanMessage
 from src.agent_brain.agent.nodes.hybrid_router_node import hybrid_router_node
 from src.agent_brain.agent.nodes.semantic_router_node import semantic_router_node
-from src.agent_brain.agent.nodes.slm_router_node import slm_router_node
+from src.agent_brain.agent.nodes.rewriter_node import rewriter_node
 
 EVAL_DATA_PATH = PROJECT_ROOT / "evals" / "data" / "router" / "router_eval.json"
 CONTEXT_DATA_PATH = PROJECT_ROOT / "evals" / "data" / "router" / "router_context_eval.json"
@@ -97,7 +97,7 @@ def run_hybrid_eval(cases: list[dict]) -> dict:
     results = []
     correct = 0
     semantic_count = 0
-    slm_count = 0
+    rewriter_count = 0
     per_intent = defaultdict(lambda: {"correct": 0, "total": 0})
     per_difficulty = defaultdict(lambda: {"correct": 0, "total": 0})
     confusion = defaultdict(lambda: defaultdict(int))
@@ -124,10 +124,10 @@ def run_hybrid_eval(cases: list[dict]) -> dict:
             routing_meta = output.get("routing_meta", {})
             decided_by = routing_meta.get("decided_by", "N/A")
 
-            if decided_by == "SEMANTIC":
+            if decided_by == "SEMANTIC_ARGMX":
                 semantic_count += 1
             else:
-                slm_count += 1
+                rewriter_count += 1
 
             ok = is_correct(predicted, expected)
             if ok:
@@ -179,7 +179,7 @@ def run_hybrid_eval(cases: list[dict]) -> dict:
         "total": len(cases),
         "correct": correct,
         "semantic_count": semantic_count,
-        "slm_count": slm_count,
+        "rewriter_count": rewriter_count,
         "fast_track_rate": round(fast_track_rate, 2),
         "per_intent": {
             k: {
@@ -203,8 +203,8 @@ def run_hybrid_eval(cases: list[dict]) -> dict:
 
     logging.info("\n--- Hybrid Summary ---")
     logging.info("Accuracy: %.2f%% (%d/%d)", accuracy, correct, len(cases))
-    logging.info("Semantic fast-track: %d (%.1f%%)", semantic_count, fast_track_rate)
-    logging.info("SLM fallback: %d (%.1f%%)", slm_count, 100 - fast_track_rate)
+    logging.info("Semantic argmax: %d (%.1f%%)", semantic_count, fast_track_rate)
+    logging.info("Rewriter fallback: %d (%.1f%%)", rewriter_count, 100 - fast_track_rate)
 
     for intent in sorted(per_intent.keys()):
         d = per_intent[intent]
@@ -260,10 +260,11 @@ def run_ablation_tier(cases: list[dict]) -> dict:
     sem_acc = sem_correct / len(cases) * 100 if cases else 0
     modes["semantic_only"] = {"accuracy": round(sem_acc, 2), "correct": sem_correct, "total": len(cases)}
 
-    # SLM-only
-    logging.info("\n--- SLM-only ---")
-    slm_correct = 0
-    for case in tqdm(cases, desc="SLM-only"):
+    # Rewriter + per-fragment semantic (replaces old SLM-only ablation)
+    logging.info("\n--- Rewriter-only (fragment decomposition + per-fragment argmax) ---")
+    import sys
+    rw_correct = 0
+    for case in tqdm(cases, desc="Rewriter-only"):
         expected = standardize_expected(case["expected_route"])
         state = {
             "messages": [HumanMessage(content=case["input"])],
@@ -273,15 +274,31 @@ def run_ablation_tier(cases: list[dict]) -> dict:
             "order_stage": case.get("order_stage", "IDLE"),
         }
         try:
-            output = slm_router_node(state)
-            predicted = output.get("current_intents", ["CHAT"])
+            semantic_router_node(state)  # ensure _router_instance is initialized
+            output = rewriter_node(state)
+            fragments = output.get("fragments", [case["input"]])
+
+            predicted: list[str] = []
+            sem_mod = sys.modules["src.agent_brain.agent.nodes.semantic_router_node"]
+            for fragment in fragments:
+                frag_result = sem_mod._router_instance.route(fragment)
+                frag_intent = frag_result.get("intent")
+                if frag_intent:
+                    predicted.append(frag_intent)
+                else:
+                    predicted.append("CHAT")
+
+            if not predicted:
+                predicted = ["CHAT"]
+
+            predicted = list(dict.fromkeys(predicted))
             if is_correct(predicted, expected):
-                slm_correct += 1
+                rw_correct += 1
         except Exception as e:
             logging.error("  Error: %s", e)
 
-    slm_acc = slm_correct / len(cases) * 100 if cases else 0
-    modes["slm_only"] = {"accuracy": round(slm_acc, 2), "correct": slm_correct, "total": len(cases)}
+    rw_acc = rw_correct / len(cases) * 100 if cases else 0
+    modes["rewriter_only"] = {"accuracy": round(rw_acc, 2), "correct": rw_correct, "total": len(cases)}
 
     # Hybrid (already computed above, re-run)
     logging.info("\n--- Hybrid ---")
@@ -294,9 +311,9 @@ def run_ablation_tier(cases: list[dict]) -> dict:
     }
 
     logging.info("\n--- Tier Comparison Summary ---")
-    logging.info("  Semantic-only:  %.2f%%", modes["semantic_only"]["accuracy"])
-    logging.info("  SLM-only:       %.2f%%", modes["slm_only"]["accuracy"])
-    logging.info("  Hybrid:         %.2f%% (%.1f%% fast-tracked)", modes["hybrid"]["accuracy"], modes["hybrid"]["fast_track_rate"])
+    logging.info("  Semantic-only:    %.2f%%", modes["semantic_only"]["accuracy"])
+    logging.info("  Rewriter-only:    %.2f%%", modes["rewriter_only"]["accuracy"])
+    logging.info("  Hybrid:           %.2f%% (%.1f%% fast-tracked)", modes["hybrid"]["accuracy"], modes["hybrid"]["fast_track_rate"])
 
     return {"ablation_tier": modes}
 

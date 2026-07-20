@@ -159,10 +159,9 @@ The voice turn latency — from the customer finishing speech to the robot begin
 | VAD silence detection + utterance flush | Jetson | ~1.5s | Fixed: 1.5s silence timeout before flush |
 | STT (faster-whisper medium) | Jetson | ~0.8s | Variable by utterance length; 3–5s typical utterance |
 | HTTP round-trip (text → agent → text) | Network | ~0.05s | Local WiFi, text payloads only |
-| Agent inference (semantic fast-track) | Server | ~0.015s | If utterance passes semantic router |
-| Agent inference (SLM fallback) | Server | ~1.5–2.5s | LLM inference dominates |
+| Agent inference (MLP classifier routing) | Server | ~0.052s | Embedding (~50ms) + MLP forward (0.17ms) |
+| Agent inference (LLM worker + response) | Server | ~1.5–2.5s | LLM inference dominates |
 | TTS first sentence | Jetson | ~0.5s | Piper or edge-tts |
-| **Total (semantic fast-track)** | — | **~2.9s** | Under the 5s NFR2 target |
-| **Total (SLM fallback)** | — | **~4.4s** | Under the 5s NFR2 target with margin |
+| **Total (total voice turn)** | — | **~3–5s** | Within the 5s NFR2 target |
 
 The dominant latency source is the 1.5s VAD silence timeout — this is a fixed parameter chosen to balance responsiveness (shorter timeout = faster response but risk of cutting off the customer) against completeness. The STT and TTS latencies are model-dependent and could be reduced by using smaller models (faster-whisper small instead of medium, Piper low quality instead of medium), trading accuracy for speed.
