@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>ai_hw_bridge</name>
+  <version>0.1.0</version>
+  <description>AI Waiter — REAL-robot bridge: speaks the dispatcher robot contract over the backend
+  WS hub (role=robot) and drives the tarkbot Nav2 stack (RTAB-Map localization). Mirror of
+  src/sim/ai_sim_bridge, but motion runs on the real robot (nav2_simple_commander + ArUco align)
+  instead of Gazebo/TurtleBot4.</description>
+  <maintainer email="ducduy9304@gmail.com">ducduy</maintainer>
+  <license>Apache 2.0</license>
+
+  <depend>rclpy</depend>
+  <depend>tf2_ros</depend>
+  <depend>geometry_msgs</depend>
+  <!-- real motion drives Nav2 through the simple commander (NavigateToPose action) -->
+  <exec_depend>nav2_simple_commander</exec_depend>
+  <!-- ArUco seam (marker detect/align) is ported/wired from the merged real nav package under
+       src/real once available; those deps (cv_bridge, sensor_msgs, opencv) live with that module. -->
+  <!-- websocket-client (python). rosdep key python3-websocket; else pip install websocket-client -->
+  <exec_depend>python3-websocket</exec_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
