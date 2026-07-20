@@ -194,6 +194,7 @@ Tắt: server `make kill` · Jetson `Ctrl-C` từng terminal.
 | `ModuleNotFoundError: websocket` | Chưa `sudo apt install python3-websocket` (bước ⓪) |
 | Robot không có chấm minimap | ĐÚNG — chưa có localization (nav merge sau). Pin vẫn hiện bình thường |
 | Web `:8000/` ra **404** | Chưa `make build` trên server (backend chỉ mount `dist/` khi có) — hoặc build xong quên **restart `make backend`** |
+| **Một app** 404 còn hai app kia chạy (vd `/kiosk` chết, `/` và `/panel` sống) | Chỉ app đó thiếu `dist/` — build của nó lỗi/bị bỏ qua. Kiểm tra `ls src/frontends/*/dist` trên server, rồi `make build` và **đọc kỹ output đoạn kiosk**; thiếu deps thì `make install` trước |
 | Web mở được nhưng **trang trắng / menu trống** | Bundle gọi API qua `/api` mà không tới được: kiểm tra `curl -s :8000/api/menu`. Riêng `:8000/kiosk` + `:8000/panel` trắng thì thường do build bằng code cũ chưa có `base:` — pull rồi `make build` lại |
 | Sửa web xong mà máy khách vẫn thấy bản cũ | Deploy giờ là **bản build tĩnh**, không hot-reload: phải `make build` + restart backend + reload trình duyệt (Ctrl-Shift-R) |
 | `chromium-browser` chết (`snapd-snap.socket`, `gnome-46-2404`) | Bản chromium đó là snap mà snapd chết — dùng **Firefox deb** (bước ⓪). Test nhanh thì mở `:8000/` trên browser laptop, nút "nói chuyện" bấm từ máy nào cũng được |

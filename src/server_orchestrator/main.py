@@ -14,6 +14,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from .services import dispatcher
@@ -88,8 +89,18 @@ FRONTENDS_DIR = Path(__file__).resolve().parents[2] / "src" / "frontends"
 
 def _mount_spa(url_path: str, app_name: str) -> None:
     dist = FRONTENDS_DIR / app_name / "dist"
-    if dist.is_dir():
-        app.mount(url_path, StaticFiles(directory=dist, html=True), name=app_name)
+    if not dist.is_dir():
+        return
+    if url_path != "/":
+        # Send /panel to /panel/ ourselves. Starlette does this redirect natively, but only when
+        # NOTHING else matches — and the "/" mount below matches everything, so it swallows the
+        # bare path and StaticFiles answers 404 for a file named "panel". Without this the sub-path
+        # apps only load with a trailing slash, which is not what anyone types or bookmarks.
+        # Registered before the "/" mount, so it wins on order.
+        app.get(url_path, include_in_schema=False)(
+            lambda: RedirectResponse(f"{url_path}/", status_code=308)
+        )
+    app.mount(url_path, StaticFiles(directory=dist, html=True), name=app_name)
 
 
 # Sub-path apps first: mounting "/" is a catch-all and would shadow anything mounted after it.
