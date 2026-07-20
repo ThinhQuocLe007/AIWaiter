@@ -19,6 +19,7 @@ src/
 │   └── turtlebot4_python_tutorials/   # node food_delivery (logic task)
 │
 └── real/     # CHỈ build trên Jetson (robot thật) — phần cứng riêng
+    └── tarkbot_robot/                 # driver + SLAM + localization + Nav2 cho XTARK TarkBot R20
 ```
 
 ---
@@ -121,6 +122,7 @@ ros2 launch turtlebot4_viz view_robot.launch.py     # chỉ mở RViz xem robot
 | `turtlebot4_node` | `sim/` | Node C++ giao diện vật lý (màn OLED / nút / LED) |
 | `turtlebot4_ignition_bringup` | `sim/` | Mô phỏng Ignition: **worlds**, spawn robot, ROS↔IGN bridge, gui config |
 | `turtlebot4_python_tutorials` | `sim/` | **Node `food_delivery`** — logic task chính |
+| `tarkbot_robot` | `real/` | Robot thật **XTARK TarkBot R20**: driver serial, EKF, SLAM (SLAM Toolbox / RTAB-Map), localization RTAB-Map, Nav2 (xem mục 6) |
 
 `food_delivery` phụ thuộc chính vào `turtlebot4_navigation.turtlebot4_navigator`
 (`TurtleBot4Navigator`, `TurtleBot4Directions`).
@@ -175,19 +177,100 @@ Entry point khai báo ở [`src/sim/turtlebot4_python_tutorials/setup.py`](src/s
 
 ---
 
-## 6. Chạy thực tế (Jetson)
+## 6. Chạy thực tế (Jetson) — robot TarkBot R20
 
-Trên robot thật (Jetson Orin Nano) dùng profile `real` — **chỉ** build `real/`, **không**
-build đồ mô phỏng:
+Robot thật là **PTD Service Robot** (khác con TurtleBot4 ở `sim/`), code nằm gọn trong
+`src/real/tarkbot_robot/`. Trên Jetson chỉ build profile `real`, **không** build đồ mô phỏng.
+
+### 6.1. Chuẩn bị phần cứng
+
+- **Đế robot (OpenCTR):** cắm USB, cổng `/dev/ttyACM0` @ 230400 baud
+- **RPLidar:** cổng `/dev/ttyUSB0` @ 115200 baud, frame `laser_link`
+- **Camera RealSense D435:** cắm USB3
+
+> Cấp quyền cổng serial nếu bị "Permission denied":
+> `sudo usermod -aG dialout $USER` rồi đăng nhập lại.
+
+### 6.2. Cài dependency (chỉ làm 1 lần)
+
+Ngoài ROS 2 Humble, cần thêm các package sau (cài bằng apt):
+
+```bash
+sudo apt install \
+  ros-humble-rplidar-ros \
+  ros-humble-realsense2-camera \
+  ros-humble-slam-toolbox \
+  ros-humble-rtabmap-ros \
+  ros-humble-robot-localization \
+  ros-humble-depthimage-to-laserscan \
+  ros-humble-nav2-bringup
+```
+
+### 6.3. Build + source môi trường
 
 ```bash
 cd robot_ws
 source setup_env.sh real
 ```
 
-Profile `real` build các driver phần cứng trong `src/real/`. Đây là con robot riêng (khác
-TurtleBot4 ở `sim/`), nên các package điều hướng/driver của nó nằm gọn trong `real/`. Các marker
-ArUco in ra giấy và dán đúng vị trí như mục 5.
+> ⚠️ Mỗi terminal mới đều phải `source setup_env.sh real` lại trước khi `ros2 launch`.
+
+### 6.4. Quét bản đồ (mapping)
+
+Chọn 1 trong 2 cách:
+
+```bash
+# Cách A: SLAM 2D bằng lidar (nhẹ, nhanh)
+ros2 launch tarkbot_robot slam.launch.py
+
+# Cách B: RTAB-Map RGB-D + lidar (bản đồ giàu thông tin hơn)
+ros2 launch tarkbot_robot rtabmap_slam.launch.py
+```
+
+Lái robot đi 1 vòng nhà hàng để quét. RTAB-Map lưu bản đồ tại `~/.ros/rtabmap.db`.
+
+### 6.5. Định vị + điều hướng (Nav2) — 2 terminal
+
+```bash
+# Terminal 1: localization (RTAB-Map trên bản đồ đã lưu)
+ros2 launch tarkbot_robot rtabmap_localization.launch.py
+```
+
+```bash
+# Terminal 2: Nav2 (nhớ source setup_env.sh real lại)
+ros2 launch tarkbot_robot navigation.launch.py use_rviz:=true
+```
+
+> Trong RViz, dùng **"2D Pose Estimate"** đặt vị trí ban đầu cho robot **trước khi** ra lệnh di chuyển.
+
+### 6.6. Lệnh phụ (debug)
+
+```bash
+ros2 launch tarkbot_robot robot.launch.py             # chỉ chạy driver đế robot
+ros2 launch tarkbot_robot ekf_visualization.launch.py # xem odom sau khi lọc EKF
+```
+
+### 6.7. Lưu ý real vs sim
+
+`real/` và `sim/` dùng **chung logic nhà hàng** nhưng **khác phần cứng**. Cả hai đều publish
+các topic/TF trùng tên (`/cmd_vel`, `/scan`, `/map`, `odom`), nên **không chạy đồng thời sim và
+real trên cùng một ROS graph** (cùng máy/cùng `ROS_DOMAIN_ID`) để tránh xung đột.
+
+> **Lưu ý về build khi đổi profile trên CÙNG một máy:** `setup_env.sh sim` và
+> `setup_env.sh real` dùng **chung** thư mục `build/`, `install/`, `log/` (cờ `--base-paths`
+> chỉ chọn package để build, không đổi nơi xuất output). colcon **không** xoá phần của profile
+> kia, nên sau khi build cả hai thì `install/` chứa **cả** package sim (`turtlebot4_*`) lẫn real
+> (`tarkbot_robot`).
+>
+> - **Không lỗi build** — tên package khác nhau nên không đè lên nhau; build `real` chỉ merge thêm vào.
+> - Các launch trùng tên (vd `slam.launch.py`, `navigation.launch.py` có ở cả `turtlebot4_navigation`
+>   lẫn `tarkbot_robot`) vẫn phân biệt được vì gọi theo `ros2 launch <package> <file>`.
+> - Xung đột chỉ xảy ra lúc **chạy** nếu bật cả hai stack cùng lúc (trùng topic/TF) — xem cảnh báo ở trên.
+> - Bình thường sim chạy trên PC, real chạy trên Jetson nên không gặp vấn đề này. Nếu muốn build
+>   sạch hẳn khi đổi profile trên cùng máy: `rm -rf build install log` rồi `source setup_env.sh <profile>`.
+
+> Lưu ý: `config/nav2_params.yaml` vẫn còn phần AMCL/map_server thừa từ template TurtleBot3,
+> trong khi localization thực tế dùng RTAB-Map — giữ nguyên để không đổi hành vi đã tinh chỉnh.
 
 ---
 
@@ -200,6 +283,8 @@ ArUco in ra giấy và dán đúng vị trí như mục 5.
 | World sim | `src/sim/turtlebot4_ignition_bringup/worlds/restaurant.sdf` |
 | Helper điều hướng | `src/sim/turtlebot4_navigation/turtlebot4_navigation/turtlebot4_navigator.py` |
 | Config Nav2 / localization / slam | `src/sim/turtlebot4_navigation/config/` |
+| Code + launch robot thật | `src/real/tarkbot_robot/launch/` |
+| Config robot thật (driver/EKF/Nav2/SLAM) | `src/real/tarkbot_robot/config/` |
 | License vendor turtlebot4 | [`docs/TURTLEBOT4_UPSTREAM_LICENSE`](docs/TURTLEBOT4_UPSTREAM_LICENSE) |
 
 > Build artifacts (`build/`, `install/`, `log/`, `.venv/`) đã được gitignore — không commit.

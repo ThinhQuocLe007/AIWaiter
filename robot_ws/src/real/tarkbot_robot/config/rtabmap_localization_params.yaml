@@ -1,0 +1,51 @@
+# RTAB-Map LOCALIZATION parameters (RGB-D + Lidar)
+# Matched to the MAPPING config (rtabmap_slam.launch.py) so the SAME sensors that
+# built the map are used to localize on it -> enables visual (RGB-D) relocalization,
+# which helps in lidar-symmetric / feature-poor areas.
+# Map database: ~/.ros/rtabmap.db  (no map_server / .pgm used in this flow; /map is published here)
+#
+# TF chain:  map -> odom (this node) | odom -> base_footprint (EKF) | base_footprint -> laser/camera
+
+rtabmap:
+  ros__parameters:
+    frame_id: base_footprint
+
+    # ── Sensors: SAME as mapping (2D lidar + RGB-D camera) ──
+    subscribe_depth: true
+    subscribe_scan: true
+    approx_sync: true
+    sync_queue_size: 50
+    topic_queue_size: 50
+    queue_size: 30
+
+    # ── Localization mode (never modify the saved map) ──
+    Mem/IncrementalMemory: 'false'
+    Mem/InitWMWithAllNodes: 'true'      # load whole map -> visual relocalization works anywhere on the map
+
+    # ── Pose-correction rate (raised vs mapping's 0.5 Hz so nav tracking is smooth, ~AMCL-like) ──
+    Rtabmap/DetectionRate: '5.0'        # set '0' to run at sensor rate if CPU allows
+
+    # ── Occupancy grid published on /map for Nav2 static_layer (from lidar, matches mapping) ──
+    Grid/Sensor: '0'
+    Grid/RangeMax: '12.0'
+    Grid/RayTracing: 'true'
+    map_always_update: false            # static map: keep it fixed while localizing
+
+    # ── Registration: matches mapping. ICP for geometry; visual bag-of-words relocalizes the robot ──
+    Reg/Strategy: '1'                   # 1=ICP (same as mapping). Try '2' (Visual+ICP) for more visual weight.
+    Reg/Force3DoF: 'true'              # 2D (x, y, yaw)
+    RGBD/NeighborLinkRefining: 'true'  # refine odom with consecutive scans
+    RGBD/ProximityBySpace: 'true'      # lidar proximity detection
+    RGBD/ProximityPathMaxNeighbors: '10'
+    RGBD/OptimizeFromGraphEnd: 'false' # keep map referential fixed -> stable map->odom
+
+    # ── Robustness against wrong locks / "teleporting" in symmetric places ──
+    RGBD/OptimizeMaxError: '3.0'       # reject proximity/loop causing large graph error
+    RGBD/MaxOdomCacheSize: '30'        # verify each localization against recent odometry
+
+    # ── ICP scan matching (matches mapping; PointToPlaneK bug fixed) ──
+    Icp/VoxelSize: '0.05'              # = map resolution
+    Icp/MaxCorrespondenceDistance: '0.1'
+    Icp/PointToPlane: 'true'
+    Icp/PointToPlaneK: '20'            # correct param name (mapping used non-existent PointToPlaneNormalK)
+    Icp/Iterations: '30'

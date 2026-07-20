@@ -1,0 +1,27 @@
+# TarkBot Robot ROS2 Configuration File
+#
+tarkbot_robot_node:
+  ros__parameters:
+    # Serial Communication Configuration
+    robot_port: /dev/ttyACM0
+    robot_port_baud: 230400
+
+    # Robot Type Configuration
+    # Options: r20_mec (Mecanum), r20_fwd (Forward), r20_akm (Ackermann),
+    #          r20_twd (Two-Wheel), r20_tak (Tank), r20_omni (Omnidirectional)
+    # NOTE: In OpenCTR firmware this value is used to verify type match (beep),
+    # not to switch kinematics at runtime.
+    robot_type: r20_twd
+
+    # Transform Configuration
+    pub_odom_tf: true
+    odom_frame: odom
+    base_frame: base_footprint
+    imu_frame: imu_link
+
+    # Topic Names
+    odom_topic: odom
+    imu_topic: imu
+    bat_topic: bat_vol
+    cmd_vel_topic: cmd_vel
+    debug_hex: true
