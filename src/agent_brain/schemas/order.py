@@ -53,6 +53,10 @@ class CartAddResponse(BaseModel):
 class CartRemoveResponse(BaseModel):
     status: Literal["success", "error"]
     removed: str
+    # How many portions to take off. None = drop the whole line ("bỏ bia đi"), a number = take
+    # that many off and keep the rest ("xóa một phần lẩu thái"). Without this the tool could only
+    # say WHICH dish, so a partial removal wiped every portion of it.
+    quantity: Optional[int] = None
     total_price: float
     message: str
 

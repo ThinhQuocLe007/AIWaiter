@@ -4,7 +4,7 @@ from typing import Any
 
 from src.agent_brain.agent.actions import ui_action_for_tool
 from src.agent_brain.agent.state import AgentState
-from src.agent_brain.schemas.order import Cart
+from src.agent_brain.schemas.order import Cart, OrderItem
 from src.agent_brain.utils import MenuManager
 
 logger = logging.getLogger(__name__)
@@ -63,17 +63,30 @@ def _handle_add_cart_result(state: AgentState, tool_result) -> dict[str, Any]:
 
 
 def _handle_remove_cart_result(state: AgentState, tool_result) -> dict[str, Any]:
-    """Remove item by name from existing cart."""
+    """Remove an item from the cart — either whole, or just some of its portions.
+
+    ``quantity`` None means "bỏ hẳn món đó" (the original all-or-nothing behaviour). A number
+    means the customer only wanted some portions off ("xóa một phần lẩu thái") — dropping the
+    whole line there would take the other portions with it, which is exactly what used to happen
+    when the tool had no way to say how many.
+    """
     existing = state.get("active_cart")
     if existing is None:
         return {"active_cart": Cart(), "order_stage": "IDLE"}
 
     removed_name = tool_result.removed
-    cart = Cart(
-        items=[i for i in existing.items if i.name != removed_name],
-        total_price=existing.total_price,
-    )
-    cart = recalc_cart(cart)
+    remove_qty = getattr(tool_result, "quantity", None)
+
+    items: list[OrderItem] = []
+    for item in existing.items:
+        if item.name != removed_name:
+            items.append(item)
+            continue
+        # The matching line: keep what's left over, or drop it entirely.
+        if remove_qty is not None and remove_qty < item.quantity:
+            items.append(item.model_copy(update={"quantity": item.quantity - remove_qty}))
+
+    cart = recalc_cart(Cart(items=items, total_price=existing.total_price))
     return {
         "active_cart": cart,
         "order_stage": "AWAITING_CONFIRMATION" if cart.items else "IDLE",

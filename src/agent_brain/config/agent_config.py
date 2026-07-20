@@ -13,7 +13,7 @@ class AgentSettings(BaseSettings):
     # the Jetson Orin 8GB). One uniform value avoids Ollama reloading the model per
     # distinct num_ctx. 8192 fits the largest prompt (order worker ~3.5k tokens with
     # the full menu) plus history/output headroom.
-    LLM_NUM_CTX: int = Field(default=8192, env="LLM_NUM_CTX")
+    LLM_NUM_CTX: int = Field(default=16384, env="LLM_NUM_CTX")
 
     # How long Ollama keeps a model resident in RAM/VRAM after a request. Default Ollama behaviour
     # is 5 minutes, so an idle table evicts the model and the next turn pays the full reload cost.

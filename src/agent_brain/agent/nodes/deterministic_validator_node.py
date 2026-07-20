@@ -110,6 +110,28 @@ def _resolve_remove_name(raw: str, cart) -> str | None:
     return None
 
 
+def _clamp_remove_quantity(raw, resolved_name: str, cart) -> int | None:
+    """Normalise remove_cart's ``quantity`` against what the cart actually holds.
+
+    None means "bỏ cả món" and stays None. Anything else is coerced to an int in
+    [1, số lượng đang có]; a quantity that covers the whole line collapses back to None so the
+    handler drops the line instead of leaving a 0-portion ghost. Garbage (non-numeric, ≤0) is
+    treated as None rather than rejected — the customer clearly wants the dish gone, and failing
+    the turn over a bad argument would be a worse answer than removing it whole.
+    """
+    if raw is None:
+        return None
+    try:
+        qty = int(raw)
+    except (TypeError, ValueError):
+        logger.warning("[validator] remove_cart quantity %r isn't a number — removing whole item", raw)
+        return None
+    if qty <= 0:
+        return None
+    in_cart = next((i.quantity for i in cart.items if i.name == resolved_name), 0)
+    return qty if qty < in_cart else None
+
+
 def _restore_cart_if_additive(state: AgentState, valid_items: list[dict]) -> list[dict]:
     prev_cart = state.get("active_cart")
     if not prev_cart or not prev_cart.items:
@@ -285,6 +307,9 @@ def deterministic_validator_node(state: AgentState) -> dict[str, Any]:
                     resolved = _resolve_remove_name(name, cart)
                     if resolved:
                         args["name"] = resolved
+                        args["quantity"] = _clamp_remove_quantity(
+                            args.get("quantity"), resolved, cart
+                        )
                     else:
                         cart_names = ", ".join(i.name for i in cart.items)
                         errors.append(
