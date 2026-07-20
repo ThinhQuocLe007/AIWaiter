@@ -119,6 +119,34 @@ def reset_conversation(req: ResetRequest) -> dict:
     return {"status": "ok", "thread_id": thread_id}
 
 
+class CartSyncItem(BaseModel):
+    name: str
+    quantity: int
+    note: str | None = None
+
+
+class CartSyncRequest(BaseModel):
+    """The tablet's cart draft after the guest edited it by hand (+/− on the touch screen).
+
+    Always the WHOLE draft, never a delta: the tablet owns what's on screen, so this replaces the
+    agent's cart wholesale. An empty list means "the guest emptied the cart".
+    """
+
+    table_id: str = "T1"
+    items: list[CartSyncItem] = []
+
+
+@app.post("/cart")
+def sync_cart(req: CartSyncRequest) -> dict:
+    """Push the tablet's cart draft into the agent's state, so both sides hold ONE cart.
+
+    Forwarded here by the orchestrator's POST /voice/cart. Deliberately silent — no voice.reply
+    is emitted: the tablet already shows this cart, and echoing it back would fight the guest's
+    next tap. Without this the agent would keep confirming (and billing) its own stale quantities.
+    """
+    return _agent.set_cart(req.table_id, [i.model_dump() for i in req.items])
+
+
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest) -> ChatResponse:
     """Process one recognised utterance: run the agent, mirror it to the tablet, return the reply.
@@ -143,10 +171,13 @@ def chat(req: ChatRequest) -> ChatResponse:
     session_id = result.get("session_id")
     cart = result.get("cart")
     confirmed = result.get("order_confirmed", False)
+    cart_touched = result.get("cart_touched", False)
 
     # Mirror the spoken reply + any UI action (open menu / bill) + the live cart draft to the
     # tablet, so the web cart stays in sync with what the guest ordered by voice. `confirmed`
-    # marks the one turn the order was sent to the kitchen (tablet moves draft → "đã gửi bếp").
+    # marks the one turn the order was sent to the kitchen (tablet moves draft → "đã gửi bếp");
+    # `cart_touched` marks the turns that actually changed the cart, so the tablet leaves a
+    # hand-edited draft alone on every other turn.
     _orchestrator.post_voice_event(
         {
             "type": "voice.reply",
@@ -156,6 +187,7 @@ def chat(req: ChatRequest) -> ChatResponse:
             "stage": stage,
             "cart": cart,
             "confirmed": confirmed,
+            "cart_touched": cart_touched,
         }
     )
 
@@ -236,11 +268,13 @@ def chat_stream(req: ChatRequest):
         session_id = result.get("session_id")
         cart = result.get("cart")
         confirmed = result.get("order_confirmed", False)
+        cart_touched = result.get("cart_touched", False)
 
         _orchestrator.post_voice_event({
             "type": "voice.reply", "table_id": table_int,
             "text": response, "action": action,
             "stage": stage, "cart": cart, "confirmed": confirmed,
+            "cart_touched": cart_touched,
         })
 
         log_turn(

@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import type { CartItem, FoodItem } from '@/types'
 import { getStoredTableId } from '@/data/tableSession'
-import { fetchTable } from '@/data/api'
+import { fetchTable, syncCartToAgent } from '@/data/api'
 
 // The cart survives page reloads and closing the voice sheet: a guest who ordered by voice and
 // then closed the assistant must still see their dishes on the cart card. Menu-independent —
@@ -44,6 +44,10 @@ function normalizeName(s: string): string {
     .trim()
 }
 
+// The guest usually taps "+" several times in a row — coalesce those into one push so we send
+// the settled draft, not every intermediate quantity.
+const PUSH_DEBOUNCE_MS = 400
+
 export const useCartStore = defineStore('cart', () => {
   // Which table's cart bucket is loaded. Kept in module state (not reactive) so the persistence
   // watcher below always writes to the bucket the current lists came from.
@@ -84,6 +88,23 @@ export const useCartStore = defineStore('cart', () => {
     lastOrder.value = null
   }
 
+  // Push the draft to the voice agent so both sides hold ONE cart. Called from the HAND-EDIT
+  // paths only (+/−/xóa/xác nhận on the touch screen) — never from syncFromVoice, which is the
+  // agent's own cart coming the other way and would echo straight back.
+  // Fire-and-forget: the agent being down must not block the guest from ordering on the tablet.
+  let pushTimer: ReturnType<typeof setTimeout> | undefined
+  function pushToAgent() {
+    clearTimeout(pushTimer)
+    const tableId = activeTable // capture: the push must land on the table this edit belongs to
+    pushTimer = setTimeout(() => {
+      const payload = items.value.map((i) => ({ name: i.foodItem.name, quantity: i.quantity }))
+      syncCartToAgent(tableId, payload).catch(() => {
+        // agent unreachable — the tablet cart still works; the two carts re-converge on the
+        // next successful push
+      })
+    }, PUSH_DEBOUNCE_MS)
+  }
+
   // Draft totals (what would be sent by "Xác Nhận Đặt Món")
   const totalPrice = computed(() =>
     items.value.reduce((sum, item) => sum + item.foodItem.price * item.quantity, 0),
@@ -114,11 +135,13 @@ export const useCartStore = defineStore('cart', () => {
     } else {
       items.value.push({ foodItem, quantity: 1 })
     }
+    pushToAgent()
   }
 
   function increment(foodId: string) {
     const item = items.value.find((i) => i.foodItem.id === foodId)
     if (item) item.quantity++
+    pushToAgent()
   }
 
   // Decrement quantity, removing the item when it reaches zero
@@ -130,6 +153,7 @@ export const useCartStore = defineStore('cart', () => {
         items.value = items.value.filter((i) => i.foodItem.id !== foodId)
       }
     }
+    pushToAgent()
   }
 
   function quantityFor(foodId: string): number {
@@ -157,7 +181,10 @@ export const useCartStore = defineStore('cart', () => {
 
   // The draft was confirmed (sent to the kitchen): move it into orderedItems, merging
   // quantities of dishes that were already ordered earlier in the session.
-  function markOrdered() {
+  // `push` tells the agent its draft is gone too — true for the tablet's own "Xác Nhận Đặt Món"
+  // button, false when the agent itself confirmed (it already moved its own state on, and
+  // echoing an empty cart back at it would erase the order it is talking about).
+  function markOrdered({ push = true }: { push?: boolean } = {}) {
     if (items.value.length === 0) return
     lastOrder.value = { count: totalQuantity.value, total: totalPrice.value }
     for (const draft of items.value) {
@@ -166,11 +193,13 @@ export const useCartStore = defineStore('cart', () => {
       else orderedItems.value.push({ ...draft })
     }
     items.value = []
+    if (push) pushToAgent()
   }
 
   // Clear only the draft (e.g. abandoning an unconfirmed selection)
   function clear() {
     items.value = []
+    pushToAgent()
   }
 
   // Session over (payment done): everything goes.

@@ -63,6 +63,23 @@ export function newVoiceChat(tableId: number): Promise<NewChatResult> {
   return postJson<NewChatResult>('/voice/new-chat', { table_id: tableId })
 }
 
+// POST /voice/cart → push this tablet's cart draft to the agent, so the guest's manual +/− is
+// part of the ONE cart both sides share. Always the whole draft (a replace, not a delta).
+// Without it the agent keeps its own stale copy: it would replay it over the guest's edit on the
+// next voice turn, and confirm_order would send the stale quantities to the kitchen.
+export interface CartSyncItem {
+  name: string
+  quantity: number
+  note?: string | null
+}
+
+export function syncCartToAgent(
+  tableId: number,
+  items: CartSyncItem[],
+): Promise<NewChatResult> {
+  return postJson<NewChatResult>('/voice/cart', { table_id: tableId, items })
+}
+
 // --- Tables -----------------------------------------------------------------
 // Minimal view of a table row (mirror of backend TableOut) — enough for this
 // tablet to decide which screen to show on load.

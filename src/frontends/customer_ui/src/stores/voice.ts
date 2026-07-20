@@ -3,7 +3,13 @@ import { ref } from 'vue'
 import { useCartStore } from '@/stores/cart'
 import { useMenuStore } from '@/stores/menu'
 import { getStoredTableId } from '@/data/tableSession'
-import { startVoiceListen, cancelVoiceListen, createPayment } from '@/data/api'
+import {
+  startVoiceListen,
+  cancelVoiceListen,
+  setVoiceMuted,
+  newVoiceChat,
+  createPayment,
+} from '@/data/api'
 import router from '@/router'
 import { connectEvents, type WsHandle } from '@shared/ws'
 import type { UiAction, VoiceCartItem, WsEvent } from '@shared/types'
@@ -65,10 +71,21 @@ export const useVoiceStore = defineStore('voice', () => {
       onHeard(e.text)
     } else if (e.type === 'voice.reply') {
       if (e.table_id !== getStoredTableId()) return
-      onReply(e.text, e.action, e.stage, e.cart, e.confirmed ?? false)
+      onReply(e.text, e.action, e.stage, e.cart, e.confirmed ?? false, e.cart_touched ?? false)
     } else if (e.type === 'voice.progress') {
       if (e.table_id !== getStoredTableId()) return
       aiState.value = 'thinking'
+    } else if (e.type === 'robot.arrived') {
+      // The robot is standing at this table now: bring the tablet to the screen matching the
+      // visit step, so the guest never has to navigate by hand. go_to_table = fresh party →
+      // straight to the menu; call = mid-meal service → the "order more / pay" chooser.
+      // deliver needs no screen change (the guest just takes the food).
+      if (e.table_id !== getStoredTableId()) return
+      if (e.kind === 'go_to_table' && router.currentRoute.value.name !== 'menu') {
+        router.push({ name: 'menu' })
+      } else if (e.kind === 'call' && router.currentRoute.value.name !== 'service') {
+        router.push({ name: 'service' })
+      }
     } else if (e.type === 'table.updated') {
       // Session lifecycle for THIS table: paid (DA_THANH_TOAN) or ended from the panel (TRONG)
       // means the visit is over — the dishes must leave the cart card, no matter where the
@@ -122,6 +139,7 @@ export const useVoiceStore = defineStore('voice', () => {
     stage?: string,
     voiceCart?: VoiceCartItem[] | null,
     confirmed = false,
+    cartTouched = false,
   ) {
     // The guest cancelled this turn: swallow the reply entirely (no bubble, no cart change,
     // no navigation) and re-arm for the next turn.
@@ -132,7 +150,7 @@ export const useVoiceStore = defineStore('voice', () => {
     aiState.value = 'speaking'
     aiResponse.value = text
     if (text.trim()) pushMessage('ai', text)
-    syncCart(stage, voiceCart, confirmed)
+    syncCart(voiceCart, confirmed, cartTouched)
     applyAction(action)
     clearTimeout(speakingTimer)
     speakingTimer = setTimeout(() => {
@@ -141,12 +159,22 @@ export const useVoiceStore = defineStore('voice', () => {
   }
 
   // Mirror the agent's cart into the tablet cart so both stay one cart:
-  // - while drafting / awaiting confirmation → the agent's draft REPLACES the web draft;
+  // - on a turn that actually changed the agent's cart (`cartTouched`) → its draft REPLACES the
+  //   web draft;
   // - on the turn the order was sent to the kitchen (`confirmed`) → move it into the
   //   "đã gửi bếp" list, so closing the voice sheet keeps the dishes on the cart card;
-  // - any other turn (plain chat, post-confirm smalltalk) leaves the web cart alone, so a
-  //   manually-composed cart is never wiped by an unrelated voice turn.
-  async function syncCart(stage?: string, voiceCart?: VoiceCartItem[] | null, confirmed = false) {
+  // - any other turn (a search, plain chat, post-confirm smalltalk) leaves the web cart alone.
+  //
+  // The gate used to be `stage === 'DRAFTING' | 'AWAITING_CONFIRMATION'`, but the stage is
+  // STICKY: it stays AWAITING_CONFIRMATION across later search/chat turns, so every one of them
+  // replayed the agent's cart and silently undid whatever the guest had since added by hand.
+  // `cartTouched` is per-turn, so it can't. Manual edits travel the other way (cart store →
+  // POST /voice/cart), which is what keeps the agent's copy worth mirroring in the first place.
+  async function syncCart(
+    voiceCart?: VoiceCartItem[] | null,
+    confirmed = false,
+    cartTouched = false,
+  ) {
     const cart = useCartStore()
     const menu = useMenuStore()
     const applyDraft = async (items: VoiceCartItem[]) => {
@@ -156,9 +184,10 @@ export const useVoiceStore = defineStore('voice', () => {
     if (confirmed) {
       // Prefer the agent's authoritative list (covers a reloaded tablet with an empty draft).
       if (voiceCart && voiceCart.length > 0) await applyDraft(voiceCart)
-      cart.markOrdered()
-    } else if (stage === 'DRAFTING' || stage === 'AWAITING_CONFIRMATION') {
-      if (Array.isArray(voiceCart)) await applyDraft(voiceCart)
+      // push: false — the agent confirmed this itself; don't echo an empty cart back at it.
+      cart.markOrdered({ push: false })
+    } else if (cartTouched && Array.isArray(voiceCart)) {
+      await applyDraft(voiceCart)
     }
   }
 
@@ -207,8 +236,12 @@ export const useVoiceStore = defineStore('voice', () => {
     aiResponse.value = ''
   }
 
+  // Speaker toggle — not just a local flag: it mutes the robot's actual TTS output (the audio
+  // plays on the robot's Jetson, not this tablet). Muting cuts the sentence currently playing;
+  // best-effort when no robot is at the table (the flag still drives the next turn's state).
   function toggleSound() {
     isSoundEnabled.value = !isSoundEnabled.value
+    setVoiceMuted(getStoredTableId(), !isSoundEnabled.value).catch(() => {})
   }
 
   // The "talk to AI" / "Nói tiếp" button. The mic lives on the table's voice device (Jetson/laptop),
@@ -220,6 +253,9 @@ export const useVoiceStore = defineStore('voice', () => {
     connect()
     suppressTurn = false // a new deliberate turn always shows its own transcript + reply
     aiState.value = 'listening'
+    // Re-sync the speaker preference first: the device may have (re)connected after the guest
+    // toggled it, and its own mute flag lives in device RAM.
+    setVoiceMuted(getStoredTableId(), !isSoundEnabled.value).catch(() => {})
     try {
       const res = await startVoiceListen(getStoredTableId())
       if (res.status === 'no_device') {
@@ -250,6 +286,28 @@ export const useVoiceStore = defineStore('voice', () => {
     }
   }
 
+  // The "cuộc trò chuyện mới" button: wipe the agent's memory for this table (fresh LLM thread)
+  // and clear the visible chat. The visit/bill continues — orders already sent to the kitchen
+  // stay; only the conversation (and the agent's draft cart) starts over.
+  async function newConversation() {
+    clearTimeout(speakingTimer)
+    suppressTurn = false
+    messages.value = []
+    speechText.value = ''
+    aiResponse.value = ''
+    aiState.value = 'idle'
+    try {
+      const res = await newVoiceChat(getStoredTableId()) // also stops any in-flight turn/speech
+      if (res.status === 'ok') {
+        pushMessage('ai', 'Dạ, mình bắt đầu cuộc trò chuyện mới nhé ạ!')
+      } else {
+        pushMessage('ai', 'Trợ lý chưa sẵn sàng làm mới ạ, anh/chị thử lại sau nhé.')
+      }
+    } catch {
+      pushMessage('ai', 'Chưa làm mới được cuộc trò chuyện ạ, anh/chị thử lại nhé.')
+    }
+  }
+
   return {
     isAiOpen,
     aiState,
@@ -262,6 +320,7 @@ export const useVoiceStore = defineStore('voice', () => {
     openPanel,
     closePanel,
     resetConversation,
+    newConversation,
     toggleSound,
     startListening,
     stop,

@@ -9,7 +9,10 @@
           <span class="vp-state">{{ stateLabel }}</span>
         </div>
         <div class="vp-actions">
-          <button class="vp-icon-btn" type="button" :aria-label="voice.isSoundEnabled ? 'Tắt tiếng' : 'Bật tiếng'" @click="voice.toggleSound()">
+          <button class="vp-icon-btn" type="button" aria-label="Cuộc trò chuyện mới" title="Cuộc trò chuyện mới" @click="voice.newConversation()">
+            <i class="ti ti-message-plus" aria-hidden="true"></i>
+          </button>
+          <button class="vp-icon-btn" type="button" :class="{ muted: !voice.isSoundEnabled }" :aria-label="voice.isSoundEnabled ? 'Tắt loa' : 'Bật loa'" :title="voice.isSoundEnabled ? 'Tắt loa' : 'Bật loa'" @click="voice.toggleSound()">
             <i class="ti" :class="voice.isSoundEnabled ? 'ti-volume' : 'ti-volume-off'" aria-hidden="true"></i>
           </button>
           <button class="vp-icon-btn" type="button" aria-label="Đóng" @click="voice.closePanel()">
@@ -173,7 +176,9 @@ watch(
   z-index: 50;
   display: flex;
   flex-direction: column;
-  max-height: 460px;
+  /* Near-fullscreen on the 1024x600 stage: the guest reads the whole exchange without
+     scrolling back and forth. */
+  max-height: 552px;
   background: #1F1B16;
   border-top: 1px solid var(--color-accent-dark);
   border-radius: 16px 16px 0 0;
@@ -242,6 +247,12 @@ watch(
   background: #443F37;
 }
 
+/* Speaker muted: tint the toggle so the "robot sẽ không nói" state is visible at a glance. */
+.vp-icon-btn.muted {
+  background: rgba(155, 58, 53, 0.22);
+  color: #C97A74;
+}
+
 /* Chat */
 .vp-chat {
   flex: 1;
@@ -253,11 +264,11 @@ watch(
 }
 
 .bubble {
-  max-width: 78%;
-  padding: 0.6rem 0.85rem;
-  font-size: 0.8125rem;
+  max-width: 80%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.72rem;
   line-height: 1.45;
-  border-radius: 16px;
+  border-radius: 14px;
 }
 
 .bubble-user {
@@ -318,7 +329,7 @@ watch(
   animation-delay: 0.4s;
 }
 
-/* Dish cards under an AI bubble */
+/* Dish cards under an AI bubble (dishes the reply mentioned) */
 .dish-cards {
   align-self: flex-start;
   margin-left: 38px;
@@ -538,4 +549,5 @@ watch(
 .sheet-leave-to {
   transform: translateY(100%);
 }
+
 </style>

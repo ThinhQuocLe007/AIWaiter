@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 menu_manager = MenuManager()
 
 
-def _recalc_cart(cart: Cart) -> Cart:
+def recalc_cart(cart: Cart) -> Cart:
     """Recalculate total_price and per-item unit_price from MenuManager."""
     cart.total_price = 0.0
     for item in cart.items:
@@ -54,7 +54,7 @@ def _handle_add_cart_result(state: AgentState, tool_result) -> dict[str, Any]:
                     match.special_requests = new_item.special_requests
             else:
                 cart.items.append(new_item)
-        cart = _recalc_cart(cart)
+        cart = recalc_cart(cart)
 
     return {
         "active_cart": cart,
@@ -73,7 +73,7 @@ def _handle_remove_cart_result(state: AgentState, tool_result) -> dict[str, Any]
         items=[i for i in existing.items if i.name != removed_name],
         total_price=existing.total_price,
     )
-    cart = _recalc_cart(cart)
+    cart = recalc_cart(cart)
     return {
         "active_cart": cart,
         "order_stage": "AWAITING_CONFIRMATION" if cart.items else "IDLE",
@@ -99,6 +99,13 @@ def _handle_search_result(state: AgentState, tool_result) -> dict[str, Any]:
         "search_context": tool_result.results,
         "shown_dishes": list(dict.fromkeys(existing + new_names)),
     }
+
+
+# Tools whose success actually changes the cart contents. Drives the per-turn ``cart_touched``
+# flag the tablet gates its cart mirroring on — see AgentState.cart_touched. confirm_order is
+# deliberately absent: it moves the cart to the kitchen, and the tablet follows its own
+# ``order_confirmed`` flag for that.
+CART_MUTATING_TOOLS = ("add_cart", "remove_cart", "clear_cart")
 
 
 TOOL_STATE_HANDLERS: dict[str, Callable] = {
@@ -148,6 +155,8 @@ def update_state_node(state: AgentState) -> dict[str, Any]:
             handler_update = handler(current_state, tool_result)
             result.update(handler_update)
             current_state.update(handler_update)
+            if tool_name in CART_MUTATING_TOOLS:
+                result["cart_touched"] = True
         else:
             logger.debug("No state handler for tool: %s", tool_name)
 

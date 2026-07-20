@@ -16,8 +16,9 @@ from src.agent_brain.agent.nodes.planner_node import planner_node
 from src.agent_brain.agent.nodes.response_node import response_node
 from src.agent_brain.agent.nodes.search_worker_node import search_worker_node
 from src.agent_brain.agent.nodes.state_outcome_node import state_outcome_node
-from src.agent_brain.agent.nodes.update_state_node import update_state_node
+from src.agent_brain.agent.nodes.update_state_node import recalc_cart, update_state_node
 from src.agent_brain.agent.state import AgentState
+from src.agent_brain.schemas.order import Cart, OrderItem
 from src.agent_brain.agent.tools import (
     add_cart,
     clear_cart,
@@ -28,6 +29,7 @@ from src.agent_brain.agent.tools import (
     verify_payment,
 )
 from src.agent_brain.services.orchestrator_client import OrchestratorClient
+from src.agent_brain.utils import resolve_menu_name
 
 logger = logging.getLogger(__name__)
 
@@ -133,6 +135,53 @@ def _route_after_updater(state: AgentState) -> str:
     if intents:
         return _get_next_worker(state)
     return "state_outcome"
+
+
+def _serialize_cart(active_cart: Cart | None) -> list[dict[str, Any]] | None:
+    """Wire form of the cart draft for the tablet. None (not []) when there is no cart, so
+    "no cart" and "cart emptied" stay distinguishable on the other side."""
+    if active_cart is None:
+        return None
+    return [
+        {"name": i.name, "quantity": i.quantity, "note": i.special_requests}
+        for i in active_cart.items
+    ]
+
+
+def _cart_from_tablet(items: list[dict[str, Any]]) -> Cart:
+    """Build the agent's Cart from the tablet's draft (the guest's manual +/− on the touch screen).
+
+    Names arrive as the tablet's menu labels; they come from the same menu the agent reads, but
+    they're canonicalised through ``resolve_menu_name`` anyway so a stray casing/diacritic variant
+    still lands on the official name the cart tools and the validator match against. A name that
+    won't resolve is kept as-is (the guest really did tap that dish — dropping it would make the
+    cart disagree with the screen) and logged, since it means the two menus have drifted apart.
+    """
+    cart_items: list[OrderItem] = []
+    for raw in items:
+        name = str(raw.get("name") or "").strip()
+        quantity = int(raw.get("quantity") or 0)
+        if not name or quantity <= 0:
+            continue
+        resolution = resolve_menu_name(name)
+        if resolution["kind"] in ("exact", "single"):
+            official = resolution["resolved"]
+        else:
+            official = name
+            logger.warning("Tablet cart item %r doesn't resolve to a menu name — kept as-is", name)
+        match = next((i for i in cart_items if i.name == official), None)
+        if match:
+            match.quantity += quantity
+            continue
+        cart_items.append(
+            OrderItem(
+                name=official,
+                quantity=quantity,
+                special_requests=raw.get("note") or None,
+                is_valid=True,
+            )
+        )
+    return recalc_cart(Cart(items=cart_items))
 
 
 class AIWaiterGraph:
@@ -253,6 +302,44 @@ class AIWaiterGraph:
         logger.info("Conversation thread %s reset (table %s)", thread_id, table_id)
         return thread_id
 
+    def set_cart(self, table_id: str, items: list[dict[str, Any]]) -> dict[str, Any]:
+        """Overwrite a table's cart draft with the tablet's, after the guest edited it BY HAND.
+
+        The tablet and the agent are meant to be one cart, but until now the mirroring only ran
+        agent → tablet. A manual +/− on the touch screen therefore stayed invisible to the agent,
+        with two consequences: the next voice turn broadcast the agent's stale cart back and
+        silently undid the edit, and — worse — ``confirm_order`` would have sent the *stale*
+        quantities to the kitchen. Pushing the tablet's draft here closes the loop; the tablet
+        always sends its whole draft, so this is a replace, not a merge, and last writer wins.
+
+        Written straight into the thread's checkpoint as if the last turn had ended with this
+        cart (``as_node="response_node"``, the node that runs into END). That leaves the thread
+        with no pending task, so the guest's next utterance still starts a clean turn at START.
+        """
+        session_id = None
+        try:
+            sess = self.orchestrator.get_active_session(table_id)
+            session_id = sess["id"] if sess else None
+        except httpx.HTTPError as e:
+            logger.warning("Backend unreachable on cart sync — using table-scoped thread: %s", e)
+        config = create_thread_config(table_id, session_id)
+
+        cart = _cart_from_tablet(items)
+        # Same stage semantics as the cart tools (see update_state_node): a non-empty draft is
+        # waiting to be confirmed, an empty one means there's nothing in play.
+        stage = "AWAITING_CONFIRMATION" if cart.items else "IDLE"
+        self.app.update_state(
+            config,
+            {"active_cart": cart, "order_stage": stage},
+            as_node="response_node",
+        )
+        thread_id = config["configurable"]["thread_id"]
+        logger.info(
+            "Cart synced from tablet for table %s (thread %s): %d item(s), stage %s",
+            table_id, thread_id, len(cart.items), stage,
+        )
+        return {"thread_id": thread_id, "stage": stage, "cart": _serialize_cart(cart)}
+
     def chat(self, query: str, table_id: str = "T1", session_id: str = None) -> dict[str, Any]:
         # Resolve the table's CURRENT backend session so the LangGraph thread tracks it. Callers
         # should pass session_id=None every turn: within a visit this returns the same id (memory
@@ -284,6 +371,7 @@ class AIWaiterGraph:
             "order_stage": existing_stage,
             "ui_action": None,  # reset each turn so a command never leaks to the next
             "order_confirmed": False,  # per-turn flag, same lifecycle as ui_action
+            "cart_touched": False,  # per-turn flag, same lifecycle as ui_action
         }
         result = self.app.invoke(inputs, config)
 
@@ -294,16 +382,10 @@ class AIWaiterGraph:
             emit_action(table_id, action)
 
         # Serialize the live cart draft so the tablet can mirror voice-ordered items into its own
-        # cart UI. None (not []) when there is no cart, so "no cart" and "cart emptied" differ.
-        active_cart = result.get("active_cart")
-        cart = (
-            [
-                {"name": i.name, "quantity": i.quantity, "note": i.special_requests}
-                for i in active_cart.items
-            ]
-            if active_cart is not None
-            else None
-        )
+        # cart UI. `cart_touched` tells it whether this turn actually changed the cart — without
+        # it the tablet would replay this (possibly untouched) cart over a draft the guest has
+        # since edited by hand on the touch screen.
+        cart = _serialize_cart(result.get("active_cart"))
 
         return {
             "response": result["messages"][-1].content,
@@ -313,4 +395,5 @@ class AIWaiterGraph:
             "action": action,
             "cart": cart,
             "order_confirmed": bool(result.get("order_confirmed")),
+            "cart_touched": bool(result.get("cart_touched")),
         }

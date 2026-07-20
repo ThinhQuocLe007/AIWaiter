@@ -118,4 +118,8 @@ export type WsEvent =
       cart?: VoiceCartItem[] | null
       // True only on the turn the order was sent to the kitchen (confirm_order ran).
       confirmed?: boolean | null
+      // True only on turns where the agent actually changed the cart (add/remove/clear ran).
+      // The tablet mirrors `cart` into its draft ONLY then: `stage` is sticky, so gating on it
+      // made unrelated turns replay a stale cart over the guest's manual +/− edits.
+      cart_touched?: boolean | null
     }

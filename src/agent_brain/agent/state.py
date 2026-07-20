@@ -81,6 +81,13 @@ class AgentState(TypedDict):
     # once — order_stage alone can't tell "just confirmed" from "still CONFIRMED since earlier".
     order_confirmed: bool
 
+    # True only on a turn where a cart tool (add/remove/clear) actually changed the cart
+    # (per-turn, reset each turn like ui_action). The tablet mirrors the agent's cart into its
+    # own draft ONLY when this is set: ``order_stage`` is sticky (it stays AWAITING_CONFIRMATION
+    # through unrelated search/chat turns), so gating on the stage made every later turn replay a
+    # stale cart and silently undo the guest's manual +/− on the touch screen.
+    cart_touched: bool
+
     # The typed handoff from the implement stage to the response stage.
     # Set by chat_worker (CHAT path) or state_outcome (tool path), read and
     # cleared by response_node. Nothing else in the graph touches it.

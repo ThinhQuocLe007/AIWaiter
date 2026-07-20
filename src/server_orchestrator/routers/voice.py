@@ -36,6 +36,9 @@ class VoiceEvent(BaseModel):
     stage: str | None = None
     cart: list | None = None
     confirmed: bool | None = None
+    # True only on turns where the agent actually changed the cart — the tablet mirrors `cart`
+    # into its draft only then, so a draft the guest edited by hand survives unrelated turns.
+    cart_touched: bool | None = None
     status: str | None = None
 
 
@@ -103,6 +106,43 @@ async def voice_mute(req: MuteRequest) -> dict:
         req.table_id, {"type": "set_muted", "muted": req.muted, "table_id": req.table_id}
     )
     return {"status": "ok" if ok else "no_device"}
+
+
+class CartSyncItem(BaseModel):
+    name: str
+    quantity: int
+    note: str | None = None
+
+
+class CartSyncRequest(BaseModel):
+    """The tablet's cart draft, pushed after the guest edited it by hand (+/− on the screen)."""
+
+    table_id: int
+    items: list[CartSyncItem] = []
+
+
+@router.post("/cart")
+async def voice_cart_sync(req: CartSyncRequest) -> dict:
+    """Forward the tablet's cart draft to the agent so both sides hold ONE cart.
+
+    Mirroring used to run agent → tablet only, so a manual +/− never reached the agent: the next
+    voice turn broadcast the agent's stale cart back over it, and confirm_order would have sent
+    those stale quantities to the kitchen. The cart lives in the agent service (LangGraph
+    checkpoints), not here — same plain-HTTP hop as /voice/new-chat, no src.agent_brain import.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                f"{settings.agent_url.rstrip('/')}/cart",
+                json={
+                    "table_id": f"T{req.table_id}",
+                    "items": [i.model_dump() for i in req.items],
+                },
+            )
+            resp.raise_for_status()
+    except httpx.HTTPError:
+        return {"status": "agent_unreachable"}
+    return {"status": "ok"}
 
 
 @router.post("/new-chat")
