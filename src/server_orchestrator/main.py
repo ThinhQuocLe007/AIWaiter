@@ -9,6 +9,7 @@ robot WS hub. Bước 0 ships the skeleton + GET /menu; orders/payments/tasks co
 """
 
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -17,7 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from .services import dispatcher
+from .services import dispatcher, floorplan
 from .config import settings
 from .data.db import init_db
 from .services.menu_loader import seed_dishes, seed_robots, seed_tables
@@ -34,6 +35,11 @@ async def lifespan(app: FastAPI):
     # Fresh start: no robot WS is connected yet, so every robot shows "Chưa kích hoạt" until its
     # bridge connects (stale idle/battery rows from a previous run would lie on the panel).
     dispatcher.reset_fleet_offline()
+    # Say which restaurant we are serving: the real robot's waypoints/map, or the sim ones. Getting
+    # this wrong is silent otherwise — tasks dispatch fine but the minimap draws the other floor.
+    logging.getLogger(__name__).info(
+        "floorplan: %s (map: %s)", floorplan.path(), floorplan.map_dir()
+    )
     # Background watchdog: detects robots that went silent (hung) and requeues their tasks.
     watchdog = asyncio.create_task(dispatcher.watchdog_loop())
     yield

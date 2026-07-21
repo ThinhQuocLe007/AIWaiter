@@ -17,7 +17,7 @@ import logging
 import math
 import time
 
-from . import fleet
+from . import fleet, floorplan
 from ..config import settings
 from ..data.db import get_conn
 from ..schemas import RobotOut, TaskOut
@@ -44,46 +44,18 @@ POSE_BCAST_EVERY = 0.2  # seconds — smooth enough for the minimap, light on th
 _last_snapshot: dict[str, float] = {}
 SNAPSHOT_EVERY = 15.0  # seconds
 
-# Approach waypoints per table, in the SAVED SLAM MAP FRAME — copied verbatim from the sim's
-# food_delivery.py (DESTINATIONS), which is what the real robot's Nav2/AMCL actually navigates to.
-# The robot's heartbeat pose is published in this same map frame, so these line up with it (and
-# with restaurant.pgm). Used to score "which idle robot is nearest"; the robot navigates itself.
-TABLE_POS: dict[int, tuple[float, float]] = {
-    1: (8.730, 1.301),
-    2: (7.233, 0.314),
-    3: (8.741, -0.694),
-    4: (8.700, -3.152),
-    5: (7.257, -4.309),
-    6: (8.679, -5.178),
-}
-DOCK_POS = (0.0, 0.0)  # spawn/dock in the map frame; an idle robot's default position
-
-# ArUco marker positions per table in the map frame — the marker hangs at the table itself
-# (computed from food_delivery.get_marker_global_tf's world poses through the world→map
-# transform). This is where the physical table actually is, so the panel minimap draws the
-# table icons here; TABLE_POS above is only the robot's *approach* waypoint in front of it.
-TABLE_MARKER_POS: dict[int, tuple[float, float]] = {
-    1: (7.110, 1.343),
-    2: (8.890, 0.350),
-    3: (7.110, -0.650),
-    4: (7.110, -3.250),
-    5: (8.890, -4.250),
-    6: (7.110, -5.250),
-}
-
-# Approach heading per table, as a unit vector in the map frame (NORTH=+X, SOUTH=-X,
-# WEST=+Y, EAST=-Y), copied from food_delivery.py DESTINATIONS. The ArUco marker sits in
-# front of the robot (this direction) so it can read the table number; the physical table
-# is just beyond the marker, against the wall. The minimap uses this to draw the table icon
-# out at the wall edge instead of at the robot's approach waypoint.
-TABLE_HEADING: dict[int, tuple[float, float]] = {
-    1: (-1.0, 0.0),   # SOUTH
-    2: (1.0, 0.0),    # NORTH
-    3: (-1.0, 0.0),   # SOUTH
-    4: (-1.0, 0.0),   # SOUTH
-    5: (1.0, 0.0),    # NORTH
-    6: (-1.0, 0.0),   # SOUTH
-}
+# Restaurant geometry, in the SAVED SLAM MAP FRAME — loaded from the shared floorplan file that
+# the real robot bridge navigates by (services/floorplan.py). The robot's heartbeat pose is in the
+# same frame, so these line up with it and with restaurant.pgm.
+#   TABLE_POS        approach waypoint — used to score "which idle robot is nearest to the table";
+#                    the robot navigates itself, this module never speaks Nav2.
+#   TABLE_MARKER_POS where the table (its ArUco marker) physically is — the minimap icon.
+#   TABLE_HEADING    which way the robot faces on arrival, so the icon can be pushed out past the
+#                    marker to the table body.
+TABLE_POS: dict[int, tuple[float, float]] = floorplan.table_pos()
+DOCK_POS = floorplan.dock_pos()  # dock in the map frame; an idle robot's default position
+TABLE_MARKER_POS: dict[int, tuple[float, float]] = floorplan.table_marker_pos()
+TABLE_HEADING: dict[int, tuple[float, float]] = floorplan.table_heading()
 
 # What a robot is doing *while travelling* to the table, for the panel's robot board.
 _ACTIVITY = {

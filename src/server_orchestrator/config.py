@@ -25,6 +25,15 @@ class Settings(BaseSettings):
     # per-robot Brain DB under storage/db.
     db_path: Path = REPO_ROOT / "storage" / "db" / "orchestrator.db"
 
+    # Restaurant geometry: SLAM map + table/dock waypoints (services/floorplan.py). The default is
+    # the REAL robot's file — the very one the robot bridge navigates by, so the dispatcher's
+    # "nearest robot" scoring and the panel minimap can never drift from the robot's own waypoints.
+    # The Gazebo demo is still fully supported: point this at the sim floorplan to run the backend
+    # against the simulated restaurant instead —
+    #   ORCH_FLOORPLAN_PATH=assets/data/floorplan.sim.json   (or: make backend SIM=1)
+    # Relative paths resolve from the repo root.
+    floorplan_path: Path = REPO_ROOT / "robot_ws/src/real/ai_hw_bridge/config/floorplan.json"
+
     # Allowed CORS origins for the browser frontends. Dev servers normally hit the backend
     # through each app's same-origin Vite proxy (/api -> :8000) so CORS does not bite, but we
     # list every dev port (customer_ui 5173 · kiosk 5174 · panel 5175) so a direct

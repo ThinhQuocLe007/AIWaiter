@@ -1,7 +1,7 @@
 # Makefile - Convenience commands for AI Waiter project
 # Run 'make help' to see available commands
 
-.PHONY: help setup install update frontend menu kiosk panel backend reindex agent voice probe mockrobot build serve kill reset clean
+.PHONY: help setup install update frontend menu kiosk panel backend reindex agent voice probe mockrobot simbridge hwbridge build serve kill reset clean
 
 # Role-specific Python extras for the backend env (see docs/setup-deploy.md). Each machine
 # picks ONLY its role: fastapi/uvicorn live in `--extra server`, STT/TTS in `--extra voice`,
@@ -37,6 +37,8 @@ help:
 	@echo "  make voice      - Start edge voice device (Jetson / any mic-capable machine)"
 	@echo "  make probe      - Mic -> VAD -> Whisper only: nói vào mic, in ra text (không cần server)"
 	@echo "  make mockrobot  - Start a mock robot WS client (ID=robo-1 ARGS=...) to test the dispatcher"
+	@echo "  make simbridge  - Gazebo robot bridge (sim demo); make backend SIM=1 for the sim map"
+	@echo "  make hwbridge   - REAL robot bridge on the Jetson (RTAB-Map + Nav2 + ArUco)"
 	@echo "  make reindex    - Clean rebuild of FAISS + BM25 + centroid artifacts"
 	@echo "  make reset      - Wipe demo data: clear orders/seatings, free all tables (backend must be running)"
 	@echo "  make kill       - Stop all dev servers (backend 8000/8100, frontends 5173-5175, voice)"
@@ -110,8 +112,17 @@ serve:
 	@echo "Serving production build on http://0.0.0.0:4173"
 	@cd src/frontends/customer_ui && npm run preview -- --host 0.0.0.0 --port 4173
 
+# Orchestrator backend. Defaults to the REAL robot's floorplan (map + table waypoints read from
+# the file the robot itself navigates by). For the Gazebo demo, run the same backend against the
+# sim restaurant instead:  make backend SIM=1
+SIM ?=
 backend:
+ifeq ($(SIM),)
 	@uv run uvicorn src.server_orchestrator.main:app --reload --host 0.0.0.0 --port 8000
+else
+	@ORCH_FLOORPLAN_PATH=assets/data/floorplan.sim.json \
+	uv run uvicorn src.server_orchestrator.main:app --reload --host 0.0.0.0 --port 8000
+endif
 
 # Clean rebuild of the embedding artifacts (FAISS + BM25 + router centroids) from scratch using the
 # current EMBEDDING_MODEL in .env. Wipes the old files first so nothing stale survives a model/dim
@@ -149,6 +160,8 @@ probe: $(VENV_PY)
 
 # Mock robot WS client — stands in for a real Jetson robot to test the dispatcher end-to-end.
 # Override id/position: make mockrobot ID=robo-2 ARGS="--x 2.3 --y 0.5".
+# It drives to the waypoints of the REAL floorplan by default; against a `make backend SIM=1`
+# server run it with ORCH_FLOORPLAN_PATH=assets/data/floorplan.sim.json so both agree.
 ID ?= robo-1
 mockrobot:
 	@uv run python scripts/mock_robot.py --id $(ID) $(ARGS)
@@ -161,6 +174,17 @@ SERVER_HOST ?= 127.0.0.1:8000
 simbridge:
 	@cd robot_ws && . /opt/ros/humble/setup.sh && . install/setup.sh && \
 	ros2 run ai_sim_bridge task_bridge --ros-args \
+		-p server_host:=$(SERVER_HOST) -p robot_id:=$(ID)
+
+# REAL robot bridge (runs on the Jetson) — same dispatcher contract as simbridge, but motion is the
+# tarkbot stack: RTAB-Map localization + Nav2 + ArUco align, and the heartbeat carries the real
+# battery voltage. Bring localization and navigation up first (two terminals):
+#   ros2 launch tarkbot_robot rtabmap_localization.launch.py     # then set 2D Pose Estimate in RViz
+#   ros2 launch tarkbot_robot navigation.launch.py
+# Waypoints come from ai_hw_bridge/config/floorplan.json — the same file the backend reads.
+hwbridge:
+	@cd robot_ws && . /opt/ros/humble/setup.sh && . install/setup.sh && \
+	ros2 run ai_hw_bridge task_bridge --ros-args \
 		-p server_host:=$(SERVER_HOST) -p robot_id:=$(ID)
 
 # Reset all live demo data (orders, seatings, tables → free, robots → seed) via the running

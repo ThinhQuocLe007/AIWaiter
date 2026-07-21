@@ -1,0 +1,58 @@
+{
+  "_note": [
+    "FLOORPLAN CHO DEMO MÔ PHỎNG (Gazebo + TurtleBot4). Backend đọc file này khi chạy",
+    "ORCH_FLOORPLAN=assets/data/floorplan.sim.json (xem services/floorplan.py, Makefile: make backend SIM=1).",
+    "Số ở đây = đúng bộ số sim đang chạy, chép từ",
+    "robot_ws/src/sim/turtlebot4_python_tutorials/.../food_delivery.py (DESTINATIONS + get_marker_global_tf).",
+    "Bên sim KHÔNG đọc file này — code sim giữ nguyên hằng số của nó, không bị đụng tới.",
+    "Bản robot thật: robot_ws/src/real/ai_hw_bridge/config/floorplan.json"
+  ],
+  "map": {
+    "dir": "robot_ws/src/sim/turtlebot4_navigation/maps",
+    "image": "restaurant.pgm",
+    "yaml": "restaurant.yaml",
+    "fallback_dir": "robot_ws/src/sim/turtlebot4_navigation/maps"
+  },
+  "dock": {
+    "marker_id": 0,
+    "approach": { "x": 0.0, "y": 0.0, "yaw_deg": 0.0 }
+  },
+  "tables": [
+    {
+      "id": 1,
+      "marker_id": 1,
+      "approach": { "x": 8.73, "y": 1.301, "yaw_deg": 178.5 },
+      "marker": { "x": 7.11, "y": 1.343 }
+    },
+    {
+      "id": 2,
+      "marker_id": 2,
+      "approach": { "x": 7.233, "y": 0.314, "yaw_deg": 1.2 },
+      "marker": { "x": 8.89, "y": 0.35 }
+    },
+    {
+      "id": 3,
+      "marker_id": 3,
+      "approach": { "x": 8.741, "y": -0.694, "yaw_deg": 178.5 },
+      "marker": { "x": 7.11, "y": -0.65 }
+    },
+    {
+      "id": 4,
+      "marker_id": 4,
+      "approach": { "x": 8.7, "y": -3.152, "yaw_deg": -176.5 },
+      "marker": { "x": 7.11, "y": -3.25 }
+    },
+    {
+      "id": 5,
+      "marker_id": 5,
+      "approach": { "x": 7.257, "y": -4.309, "yaw_deg": 2.1 },
+      "marker": { "x": 8.89, "y": -4.25 }
+    },
+    {
+      "id": 6,
+      "marker_id": 6,
+      "approach": { "x": 8.679, "y": -5.178, "yaw_deg": -177.4 },
+      "marker": { "x": 7.11, "y": -5.25 }
+    }
+  ]
+}

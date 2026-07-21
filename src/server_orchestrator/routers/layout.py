@@ -2,9 +2,12 @@
 
 The minimap draws the **real saved SLAM map** (restaurant.pgm) as the backdrop and overlays the
 tables and the live robot on top. Everything is in the **saved SLAM map frame**: the table
-waypoints (from dispatcher.TABLE_POS, copied from the sim's food_delivery.py) and the robot's
-heartbeat pose are all in that frame, which is exactly the frame restaurant.yaml maps to image
-pixels — so the overlay lines up with the scanned walls without any recalibration.
+waypoints (from the shared floorplan file the robot itself navigates by — services/floorplan.py)
+and the robot's heartbeat pose are all in that frame, which is exactly the frame restaurant.yaml
+maps to image pixels — so the overlay lines up with the scanned walls without any recalibration.
+
+Which map file is served is decided by floorplan.map_files(): the real restaurant map once it has
+been recorded, otherwise the sim map as a stand-in.
 
 Frame → pixel transform (the frontend does the same with the metadata from GET /layout):
     px = (x - origin_x) / resolution
@@ -13,20 +16,14 @@ Frame → pixel transform (the frontend does the same with the metadata from GET
 
 from functools import lru_cache
 from io import BytesIO
-from pathlib import Path
 
 from fastapi import APIRouter, Response
 from PIL import Image
 
+from ..services import floorplan
 from ..services.dispatcher import DOCK_POS, TABLE_HEADING, TABLE_MARKER_POS
 
 router = APIRouter(tags=["layout"])
-
-# robot_ws map dir, resolved relative to the repo root (this file:
-# src/server_orchestrator/routers/layout.py -> parents[0..3] = routers/orchestrator/src/repo).
-_MAP_DIR = Path(__file__).resolve().parents[3] / "robot_ws/src/sim/turtlebot4_navigation/maps"
-_PGM = _MAP_DIR / "restaurant.pgm"
-_YAML = _MAP_DIR / "restaurant.yaml"
 
 TABLE_SIZE = 0.7  # metres, square footprint drawn at each table
 
@@ -39,18 +36,20 @@ TABLE_EDGE_OFFSET = 0.35  # metres past the marker, along the approach heading
 @lru_cache
 def _map_png() -> bytes:
     """The SLAM occupancy map (.pgm) re-encoded as PNG so a browser can render it. Cached."""
+    pgm, _ = floorplan.map_files()
     buf = BytesIO()
-    Image.open(_PGM).convert("L").save(buf, format="PNG")
+    Image.open(pgm).convert("L").save(buf, format="PNG")
     return buf.getvalue()
 
 
 @lru_cache
 def _map_meta() -> dict:
     """Map image size (from the PGM) + resolution/origin (from the YAML sidecar)."""
-    with Image.open(_PGM) as img:
+    pgm, yaml_path = floorplan.map_files()
+    with Image.open(pgm) as img:
         width, height = img.size
     resolution, origin_x, origin_y = 0.05, -1.12, -5.96  # fallbacks = restaurant.yaml defaults
-    for line in _YAML.read_text().splitlines():
+    for line in yaml_path.read_text().splitlines():
         line = line.strip()
         if line.startswith("resolution:"):
             resolution = float(line.split(":", 1)[1])

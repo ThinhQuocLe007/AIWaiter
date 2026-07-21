@@ -1,0 +1,77 @@
+{
+  "_note": [
+    "SINGLE SOURCE OF TRUTH cho toạ độ nhà hàng (map frame, mét). Trước đây bộ số này bị chép tay",
+    "ở 4 chỗ (food_delivery.DESTINATIONS, dispatcher.TABLE_POS/TABLE_MARKER_POS/TABLE_HEADING,",
+    "mock_robot.TABLE_POS, layout.py) — xem docs/guides/jetson-nav-merge-vi.md §3.1. Giờ mọi bên",
+    "đọc CHÍNH file này: bridge robot thật (ai_hw_bridge), backend (dispatcher + layout), mock robot.",
+    "Sửa ở đây là cả hệ thống đổi theo. Bên sim (turtlebot4_*) vẫn giữ số riêng, không đụng tới."
+  ],
+
+  "_note_map": [
+    "Map thật chưa vẽ xong (2026-07-21). `dir` là nơi sẽ đặt map thật; chừng nào chưa có file thì",
+    "backend tự rơi về `fallback_dir` (map sim) để minimap vẫn vẽ được.",
+    "Xuất map thật từ RTAB-Map:  ros2 run nav2_map_server map_saver_cli -f restaurant --ros-args -p map_subscribe_transient_local:=true",
+    "rồi copy restaurant.pgm + restaurant.yaml vào `dir`."
+  ],
+  "map": {
+    "dir": "robot_ws/src/real/tarkbot_robot/maps",
+    "image": "restaurant.pgm",
+    "yaml": "restaurant.yaml",
+    "fallback_dir": "robot_ws/src/sim/turtlebot4_navigation/maps"
+  },
+
+  "_note_coords": [
+    "TOẠ ĐỘ DƯỚI ĐÂY VẪN LÀ SỐ CỦA MAP SIM — placeholder cho tới khi đo lại trên map thật.",
+    "approach = điểm Nav2 chạy tới (robot đứng đây phục vụ), yaw_deg = hướng mũi robot khi tới nơi",
+    "(0 = +X map, 90 = +Y map). marker = vị trí mã ArUco/bàn thật, chỉ dùng để vẽ icon trên minimap.",
+    "marker_id = null nghĩa là KHÔNG có mã ArUco ở chỗ đó -> bridge chỉ chạy Nav2 tới waypoint,",
+    "bỏ qua bước xoay căn mã. Thực tế 2026-07-21: nhà hàng chỉ in 2 mã, ID 1 (bàn 1) và ID 6 (bàn 6);",
+    "dock và các bàn còn lại không có mã. Hai mã này cũng là 2 điểm DUY NHẤT mà RTAB-Map sửa được",
+    "pose bằng landmark (RGBD/MarkerDetection) -> đi ngang chúng là drift được kéo về.",
+    "Cách đo trên robot thật: lái robot tới chỗ muốn đặt waypoint rồi",
+    "  ros2 run tf2_ros tf2_echo map base_footprint",
+    "lấy translation x, y và yaw từ rotation."
+  ],
+  "dock": {
+    "marker_id": null,
+    "approach": { "x": 0.0, "y": 0.0, "yaw_deg": 0.0 }
+  },
+  "tables": [
+    {
+      "id": 1,
+      "marker_id": 1,
+      "approach": { "x": 8.73, "y": 1.301, "yaw_deg": 178.5 },
+      "marker": { "x": 7.11, "y": 1.343 }
+    },
+    {
+      "id": 2,
+      "marker_id": null,
+      "approach": { "x": 7.233, "y": 0.314, "yaw_deg": 1.2 },
+      "marker": { "x": 8.89, "y": 0.35 }
+    },
+    {
+      "id": 3,
+      "marker_id": null,
+      "approach": { "x": 8.741, "y": -0.694, "yaw_deg": 178.5 },
+      "marker": { "x": 7.11, "y": -0.65 }
+    },
+    {
+      "id": 4,
+      "marker_id": null,
+      "approach": { "x": 8.7, "y": -3.152, "yaw_deg": -176.5 },
+      "marker": { "x": 7.11, "y": -3.25 }
+    },
+    {
+      "id": 5,
+      "marker_id": null,
+      "approach": { "x": 7.257, "y": -4.309, "yaw_deg": 2.1 },
+      "marker": { "x": 8.89, "y": -4.25 }
+    },
+    {
+      "id": 6,
+      "marker_id": 6,
+      "approach": { "x": 8.679, "y": -5.178, "yaw_deg": -177.4 },
+      "marker": { "x": 7.11, "y": -5.25 }
+    }
+  ]
+}

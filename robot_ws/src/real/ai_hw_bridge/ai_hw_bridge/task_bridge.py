@@ -38,7 +38,7 @@ from tf2_ros import (
 
 import websocket  # websocket-client
 
-# Real-robot motion layer (Nav2 NavigateToPose + ArUco seam). Same names as the sim's
+# Real-robot motion layer (Nav2 NavigateToPose + ArUco align). Same names as the sim's
 # food_delivery so this file stays a near-verbatim copy of ai_sim_bridge.task_bridge.
 from ai_hw_bridge.hw_delivery import (
     ArucoTracker,
@@ -46,6 +46,7 @@ from ai_hw_bridge.hw_delivery import (
     CMD_VEL_TOPIC,
     DESTINATIONS,
     deliver_to,
+    load_floorplan,
     return_to_dock,
     startup_sequence,
 )
@@ -65,7 +66,10 @@ class TaskBridge:
         node.declare_parameter("server_host", "127.0.0.1:8000")
         node.declare_parameter("robot_id", "robo-1")
         node.declare_parameter("map_frame", "map")
-        node.declare_parameter("base_frame", "base_link")
+        # base_footprint, not base_link: that is the frame the EKF, RTAB-Map and the Nav2 costmaps
+        # all use on this robot (ekf.yaml base_link_frame, nav2_params robot_base_frame). Looking
+        # up base_link would still resolve through the URDF, but this is the pose Nav2 controls.
+        node.declare_parameter("base_frame", "base_footprint")
         node.declare_parameter("rate_hz", 5.0)  # heartbeat rate
         # Battery: the STM32 base (tarkbot robot_node) publishes pack VOLTAGE (std_msgs/Float32,
         # Volts) on `battery_topic`. The backend/panel expect a PERCENT (0-100) and the dispatcher
@@ -78,6 +82,15 @@ class TaskBridge:
         # Volts would read as e.g. "12%" < MIN_BATTERY and the dispatcher would never pick us.
         node.declare_parameter("battery_full_v", 12.6)
         node.declare_parameter("battery_empty_v", 10.5)
+        # Waypoints. Empty = the packaged config/floorplan.json, which is the SAME file the backend
+        # reads for its "nearest robot" scoring and the panel minimap — keep them in sync by
+        # editing that file, not by copying numbers here.
+        node.declare_parameter("floorplan_file", "")
+
+        floorplan_file = node.get_parameter("floorplan_file").value
+        loaded = load_floorplan(floorplan_file or None)
+        node.get_logger().info(
+            f"waypoints from {loaded}: {', '.join(sorted(DESTINATIONS)) or '(none!)'}")
 
         host = node.get_parameter("server_host").value
         self.robot_id = node.get_parameter("robot_id").value
@@ -243,8 +256,20 @@ class TaskBridge:
         self._release.clear()
         self._send({"type": "task_accepted", "task_id": task_id})
 
-        # Nav2 approach + ArUco align (align is a no-op until the marker pipeline is wired).
-        deliver_to(self._nav, dest_name, self._tracker, self._cmd_pub)
+        # Nav2 approach + ArUco align on the table's marker (skipped for tables whose marker is
+        # not printed yet — see floorplan.json).
+        if not deliver_to(self._nav, dest_name, self._tracker, self._cmd_pub):
+            # Never report `arrived` for a drive that failed: `arrived` is what binds the table's
+            # microphone to this robot, and binding a robot that is not at the table would send the
+            # guest's voice to an empty seat. The contract has no "task failed" frame, so close the
+            # task (it would otherwise sit IN_PROGRESS forever) and go home.
+            self._log().error(
+                f"task {task_id}: could not reach {dest_name} — closing task and returning to dock")
+            self._send({"type": "task_done", "task_id": task_id})
+            return_to_dock(self._nav, self._tracker, self._cmd_pub)
+            self._send({"type": "at_dock"})
+            return
+
         self._send({"type": "arrived", "task_id": task_id})
 
         if kind in ("go_to_table", "call"):

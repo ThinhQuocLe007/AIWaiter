@@ -1,3 +1,6 @@
+import os
+from glob import glob
+
 from setuptools import setup
 
 package_name = 'ai_hw_bridge'
@@ -10,6 +13,9 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        # Table/dock waypoints. The backend reads the copy in the source tree, the robot reads
+        # this installed copy — one file, so they cannot drift apart.
+        (os.path.join('share', package_name, 'config'), glob('config/*.json')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,

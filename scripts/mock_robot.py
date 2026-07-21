@@ -27,6 +27,8 @@ import asyncio
 import contextlib
 import json
 import math
+import os
+from pathlib import Path
 
 import websockets
 
@@ -35,17 +37,26 @@ DRIVE_SPEED = 0.7  # m/s fake travel speed (a table is ~5m away → a few second
 MOVE_STEP = 0.2  # seconds between pose updates while driving → smooth dot on the panel minimap
 ACTION_SECONDS = 3.0  # fake time doing the action at the table
 
-# Approach waypoints per table and the dock — in the saved SLAM map frame, mirroring the server's
-# dispatcher (src/server_orchestrator/services/dispatcher.py), which copies them from the sim's food_delivery.py.
+# Approach waypoints per table and the dock, in the saved SLAM map frame — read from the SAME
+# floorplan file the backend and the real robot bridge use (services/floorplan.py), so the fake
+# robot always drives to the same spots the panel draws. Kept as a plain JSON read (no pydantic)
+# so this script stays runnable on a machine with only `websockets` installed. Override with
+# ORCH_FLOORPLAN_PATH=... to mirror a backend running the sim floorplan.
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+_FLOORPLAN = Path(
+    os.environ.get(
+        "ORCH_FLOORPLAN_PATH", "robot_ws/src/real/ai_hw_bridge/config/floorplan.json"
+    )
+)
+if not _FLOORPLAN.is_absolute():
+    _FLOORPLAN = _REPO_ROOT / _FLOORPLAN
+
+_PLAN = json.loads(_FLOORPLAN.read_text(encoding="utf-8"))
 TABLE_POS = {
-    1: (8.730, 1.301),
-    2: (7.233, 0.314),
-    3: (8.741, -0.694),
-    4: (8.700, -3.152),
-    5: (7.257, -4.309),
-    6: (8.679, -5.178),
+    int(t["id"]): (float(t["approach"]["x"]), float(t["approach"]["y"]))
+    for t in _PLAN["tables"]
 }
-DOCK_POS = (0.0, 0.0)
+DOCK_POS = (float(_PLAN["dock"]["approach"]["x"]), float(_PLAN["dock"]["approach"]["y"]))
 
 
 async def heartbeat_loop(ws, state: dict, hang_after: float | None) -> None:
