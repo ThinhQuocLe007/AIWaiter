@@ -22,6 +22,13 @@ rtabmap:
     Mem/IncrementalMemory: 'false'
     Mem/InitWMWithAllNodes: 'true'      # load whole map -> visual relocalization works anywhere on the map
 
+    # ── ArUco pose correction (must match mapping config) ──
+    # Re-detecting a marker that is baked into the map adds a landmark constraint
+    # that pulls the robot pose back to the map -> corrects odometry/rtabmap drift.
+    RGBD/MarkerDetection: 'true'
+    Marker/Dictionary: '0'              # 0 = DICT_4X4_50 (same as mapping/sim)
+    Marker/Length: '0.15'              # marker side length in meters (measure real marker)
+
     # ── Pose-correction rate (raised vs mapping's 0.5 Hz so nav tracking is smooth, ~AMCL-like) ──
     Rtabmap/DetectionRate: '5.0'        # set '0' to run at sensor rate if CPU allows
 

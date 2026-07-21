@@ -43,6 +43,7 @@ setup(
             f'robot_node = {package_name}.robot_node:main',
             f'path_publisher = {package_name}.path_publisher:main',
             f'monitor_ekf = {package_name}.monitor_ekf:main',
+            f'aruco_debug = {package_name}.aruco_debug:main',
         ],
     },
 )

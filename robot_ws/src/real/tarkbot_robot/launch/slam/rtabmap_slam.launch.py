@@ -33,6 +33,14 @@ def generate_launch_description():
         'sync_queue_size': 50,
         'topic_queue_size': 50,
 
+        # ArUco marker detection: markers are added to the graph as landmarks
+        # so they get baked into the saved map (~/.ros/rtabmap.db) during mapping.
+        # Re-detecting them in localization corrects drift. Marker IDs must be
+        # non-zero/unique (id 0 is used internally as "invalid").
+        'RGBD/MarkerDetection': 'true',
+        'Marker/Dictionary': '0',        # 0 = DICT_4X4_50 (same as sim)
+        'Marker/Length': '0.15',         # marker side length in meters (measure real marker)
+
         # Optimize for 2D mapping using Lidar for occupancy grid
         'Grid/Sensor': '0',
         'Grid/RangeMax': '10.0',          # limit noisy far returns (room ~9.5 m) -> less ghosting
@@ -82,8 +90,16 @@ def generate_launch_description():
         arguments=['-d'] # Delete database on start for a fresh map
     )
 
+    # Visualization-only node: publishes /aruco_debug_image so you can confirm in
+    # RViz2 that markers are being seen (and thus baked into the map) while mapping.
+    aruco_debug_node = Node(
+        package='tarkbot_robot', executable='aruco_debug',
+        name='aruco_debug', output='screen',
+    )
+
     return LaunchDescription([
         ekf_launch,
         sensors_launch,
-        rtabmap_node
+        rtabmap_node,
+        aruco_debug_node,
     ])

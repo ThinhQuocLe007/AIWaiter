@@ -64,9 +64,20 @@ def generate_launch_description():
         ],
     )
 
+    # Visualization-only node: publishes /aruco_debug_image for RViz2.
+    # Pose correction is done inside RTAB-Map (RGBD/MarkerDetection); this node
+    # does not touch localization.
+    aruco_debug_node = Node(
+        package='tarkbot_robot',
+        executable='aruco_debug',
+        name='aruco_debug',
+        output='screen',
+    )
+
     return LaunchDescription([
         declare_rtabmap_params,
         ekf_launch,
         sensors_launch,
         rtabmap_node,
+        aruco_debug_node,
     ])
