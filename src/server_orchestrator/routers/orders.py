@@ -5,14 +5,18 @@ we persist the order + its line items, compute the total server-side (never trus
 total), mark the table as waiting-for-kitchen, and return the saved order.
 """
 
+import logging
+
 from fastapi import APIRouter, HTTPException
 
+from ..config import settings
 from ..services import dispatcher
 from ..data.db import get_conn
 from ..schemas import OrderCreate, OrderOut, OrderStatusUpdate, TableOut
 from ..services.sessions import ensure_active_session
 from ..realtime.connection_manager import manager
 
+log = logging.getLogger(__name__)
 router = APIRouter(tags=["orders"])
 
 
@@ -70,8 +74,12 @@ async def create_order(payload: OrderCreate) -> OrderOut:
     await manager.broadcast(
         "panel", {"type": "table.updated", "table": TableOut(**dict(table_row)).model_dump()}
     )
-    # The guest has ordered, so the robot that came to take the order can head back to the dock.
-    await dispatcher.release_robot_at_table(payload.table_id)
+    # The robot that came to take the order could head home now, but by default it stays parked at
+    # the table for the rest of the visit — it carries the table's microphone, and the guest is
+    # usually still talking (ordering more, asking for the bill). It is released when the bill is
+    # settled instead. See settings.release_robot_on_order.
+    if settings.release_robot_on_order:
+        await dispatcher.release_robot_at_table(payload.table_id)
     return order
 
 
@@ -118,5 +126,15 @@ async def update_order_status(order_id: int, payload: OrderStatusUpdate) -> Orde
     await manager.broadcast("panel", {"type": "order.updated", "order": order.model_dump()})
     # Kitchen marked the order ready → enqueue a deliver task to carry it to the table.
     if payload.status == "XONG":
-        await dispatcher.create_task("deliver", table_id=order.table_id, order_id=order_id)
+        # …unless a robot is already parked at that table (the default visit flow — see
+        # settings.release_robot_on_order). It is standing exactly where the food goes, and the
+        # dispatcher only assigns *idle* robots, so the task would sit PENDING until the guest pays.
+        serving = manager.table_robot(order.table_id)
+        if serving is None:
+            await dispatcher.create_task("deliver", table_id=order.table_id, order_id=order_id)
+        else:
+            log.info(
+                "order %s ready — robot %s is already serving table %s, no deliver task needed",
+                order_id, serving, order.table_id,
+            )
     return order

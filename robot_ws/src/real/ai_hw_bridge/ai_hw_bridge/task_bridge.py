@@ -12,8 +12,11 @@ Contract (same one scripts/mock_robot.py fakes and the dispatcher expects):
 
 Task lifecycle:
   * ``go_to_table`` / ``call`` — drive to the table, report ``arrived``, then WAIT
-    there until the server sends ``task.release`` (guest ordered / paid), then
-    ``task_done`` and head back to the dock.
+    there until the server sends ``task.release``, then ``task_done`` and head back to
+    the dock. Nothing else ends that wait: the robot holds the table's microphone while
+    it is parked, so it stays put for the whole visit and the server releases it when the
+    bill is settled (backend ``settings.release_robot_on_order`` flips that to "leave as
+    soon as the order is placed").
   * ``deliver`` — drive to the table, ``arrived``, pause a few seconds, ``task_done``,
     head back to the dock.
 
@@ -306,7 +309,9 @@ class TaskBridge:
             # guest's voice to an empty seat. The contract has no "task failed" frame, so close the
             # task (it would otherwise sit IN_PROGRESS forever) and go home.
             self._log().error(
-                f"task {task_id}: could not reach {dest_name} — closing task and returning to dock")
+                f"task {task_id}: could not reach {dest_name} — closing task and returning to dock. "
+                f"(visual_delivery already accepts a near-goal arrival, so this means Nav2 gave up "
+                f"far from the waypoint: check localization and the path, not the goal tolerances.)")
             self._send({"type": "task_done", "task_id": task_id})
             return_to_dock(self._nav, self._tracker, self._cmd_pub)
             self._send({"type": "at_dock"})

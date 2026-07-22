@@ -64,5 +64,14 @@ class Settings(BaseSettings):
     heartbeat_timeout_s: float = 30.0
     watchdog_interval_s: float = 5.0
 
+    # When does a robot standing at a table get to leave? Placing an order is the *earliest* honest
+    # answer (the reason it came is done) but it strands the guest mid-visit: the robot drives home
+    # and takes the table's microphone with it (dispatcher.on_done unbinds), so "gọi phục vụ" is the
+    # only way back. On this one-robot demo floor we keep it parked for the whole visit instead — it
+    # leaves when the bill is settled (payments → cancel_table_tasks). Set
+    # ORCH_RELEASE_ROBOT_ON_ORDER=1 for the multi-robot behaviour, where a freed robot matters more
+    # than an always-present one.
+    release_robot_on_order: bool = False
+
 
 settings = Settings()

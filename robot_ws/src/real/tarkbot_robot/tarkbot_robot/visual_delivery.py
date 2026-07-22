@@ -20,6 +20,13 @@ Two things differ from the sim on purpose:
    (``RGBD/MarkerDetection``). This tracker only does last-metre *visual alignment*
    (rotate until the marker is centred) and publishes no pose.
 
+3. **Arrival is time-boxed, because the goal checker is not tuned on this floor yet.** Nav2's
+   xy/yaw tolerances can leave the robot shuffling at the table forever, and the marker align can
+   chase a centre it never reaches — with a guest sitting there waiting to talk. So: parked within
+   ``GOAL_ACCEPT_RADIUS`` for ``GOAL_GRINDING_GRACE`` counts as arrived, and the whole marker phase
+   (settle + search + align) shares one ``MARKER_PHASE_BUDGET``. Whatever heading we have when the
+   budget runs out is the heading we serve from. Tighten these once the tolerances are tuned.
+
 Waypoints come from ``tarkbot_robot/config/floorplan.json`` (same file the backend reads).
 
 Run field test (localization + Nav2 already up)::
@@ -76,13 +83,25 @@ INITIAL_POSE_PUBLISH_COUNT = 5
 DETECT_MAX_AGE = 1.0        # a detection older than this is stale
 POST_NAV_SETTLE_TIMEOUT = 1.5
 
-SEARCH_ANGULAR_SPEED = 0.10  # rad/s (~6°/s) sweep speed when the marker is not in view
+# Nav2's goal checker (xy_goal_tolerance / yaw_goal_tolerance) is not tuned on this floor yet, so a
+# drive that physically parked the robot at the table can still come back ABORTED or time out while
+# it grinds at the last few centimetres. Anything this close to the approach waypoint — or that can
+# see the destination's marker — counts as arrived; the marker phase below squares up the heading.
+GOAL_ACCEPT_RADIUS = 0.8
+GOAL_GRINDING_GRACE = 10.0  # s parked inside that radius before we stop waiting on the goal checker
+
+# Hard cap on the WHOLE post-arrival marker phase (settle + search + align). The guest is waiting to
+# talk, and a half-aligned heading serves them fine — when the budget runs out we keep whatever
+# heading we have and report arrival. Raise it once the tolerances are tuned and align is trusted.
+MARKER_PHASE_BUDGET = 15.0
+
+SEARCH_ANGULAR_SPEED = 0.30  # rad/s (~17°/s) — a ±90° sweep fits inside MARKER_PHASE_BUDGET
 SEARCH_SWEEP_RAD = math.pi / 2  # bounded ±90° sweep instead of a full spin
 
 ALIGN_KP_ANG = 1.3
 ALIGN_MAX_ANG = 0.5
 ALIGN_CENTER_TOL = 0.02     # |err_x| under this = pointing at the marker
-ALIGN_TIMEOUT = 30.0
+ALIGN_TIMEOUT = 30.0        # ceiling on align alone; MARKER_PHASE_BUDGET usually bites first
 ALIGN_LOST_TIMEOUT = 3.5
 ALIGN_LOG_PERIOD = 1.0
 
@@ -303,6 +322,15 @@ def _stop(cmd_pub):
     cmd_pub.publish(Twist())
 
 
+def _robot_xy(tracker) -> tuple[float, float] | None:
+    """Robot position in the map frame, or None while TF is not available."""
+    try:
+        tf = tracker.tf_buffer.lookup_transform(MAP_FRAME, BASE_FRAME, rclpy.time.Time())
+        return float(tf.transform.translation.x), float(tf.transform.translation.y)
+    except Exception:  # noqa: BLE001 — TF gap; caller treats it as "cannot tell"
+        return None
+
+
 def _wait_for_localization(nav, tracker, timeout: float = STARTUP_TF_TIMEOUT) -> bool:
     """Block until RTAB-Map publishes map->base_footprint.
 
@@ -382,18 +410,38 @@ def startup_sequence(nav, tracker, cmd_pub, seed_dock_pose: bool = True):
     nav.info('[STARTUP] Nav2 ACTIVE — ready for tasks.')
 
 
-def _run_nav_goal(nav, position, yaw_deg: float, label: str) -> bool:
-    """Drive to (position, yaw) and block until Nav2 finishes. True on SUCCEEDED."""
+def _run_nav_goal(nav, tracker, position, yaw_deg: float, label: str) -> bool:
+    """Drive to (position, yaw) and block until Nav2 finishes. True if we got there.
+
+    "Got there" is SUCCEEDED *or* parked inside ``GOAL_ACCEPT_RADIUS`` for ``GOAL_GRINDING_GRACE``
+    with the controller still shuffling: with the goal checker untuned, Nav2 will happily spend the
+    whole ``NAV_GOAL_TIMEOUT`` chasing a yaw tolerance it cannot hit while sitting at the table.
+    """
     nav.clearAllCostmaps()  # RTAB-Map's static map + a fresh obstacle scan beat a stale costmap
     time.sleep(0.5)
     nav.goToPose(nav.pose(position, yaw_deg))
 
     deadline = time.time() + NAV_GOAL_TIMEOUT
+    close_since = None  # when we first got within GOAL_ACCEPT_RADIUS (None = not close now)
     while not nav.isTaskComplete():
-        if time.time() > deadline:
+        now = time.time()
+        if now > deadline:
             nav.warn(f'[{label}] Nav2 goal exceeded {NAV_GOAL_TIMEOUT:.0f}s — cancelling.')
             nav.cancelTask()
             return False
+
+        xy = _robot_xy(tracker)
+        if xy is not None and math.hypot(
+                xy[0] - position[0], xy[1] - position[1]) <= GOAL_ACCEPT_RADIUS:
+            close_since = close_since or now
+            if now - close_since > GOAL_GRINDING_GRACE:
+                nav.warn(f'[{label}] within {GOAL_ACCEPT_RADIUS:.2f}m for '
+                         f'{GOAL_GRINDING_GRACE:.0f}s and Nav2 is still working the goal '
+                         f'(xy/yaw tolerance not tuned) — cancelling, calling it arrived.')
+                nav.cancelTask()
+                return True
+        else:
+            close_since = None  # pushed back out (recovery / obstacle) — restart the grace clock
         time.sleep(0.1)
 
     result = nav.getResult()
@@ -403,17 +451,42 @@ def _run_nav_goal(nav, position, yaw_deg: float, label: str) -> bool:
     return False
 
 
-def _search_marker(nav, tracker, cmd_pub, marker_id) -> bool:
+def _near_goal(nav, tracker, position, marker_id, label: str) -> bool:
+    """Did we physically arrive even though Nav2 said otherwise?
+
+    Two independent yes-votes, either is enough: TF puts us inside ``GOAL_ACCEPT_RADIUS`` of the
+    approach waypoint, or the destination's marker is in view (detection has been running for the
+    whole drive). Both mean the guest is right there, whatever the untuned goal checker decided.
+    """
+    xy = _robot_xy(tracker)
+    if xy is not None:
+        dist = math.hypot(xy[0] - position[0], xy[1] - position[1])
+        if dist <= GOAL_ACCEPT_RADIUS:
+            nav.info(f'[{label}] Nav2 did not report success, but we are {dist:.2f}m from the '
+                     f'approach pose (≤{GOAL_ACCEPT_RADIUS:.2f}m) — accepting as arrived.')
+            return True
+        nav.warn(f'[{label}] {dist:.2f}m from the approach pose — too far to call it an arrival.')
+    if tracker.get_marker(marker_id) is not None:
+        nav.info(f'[{label}] marker {marker_id} is in view — accepting as arrived.')
+        return True
+    return False
+
+
+def _search_marker(nav, tracker, cmd_pub, marker_id, deadline: float) -> bool:
     """Bounded ±90° sweep to bring `marker_id` into view (fallback when it is not already in FOV)."""
     if tracker.get_marker(marker_id) is not None:
         return True
     nav.info(f'[Search] marker {marker_id} not visible — sweeping '
-             f'±{math.degrees(SEARCH_SWEEP_RAD):.0f}°.')
+             f'±{math.degrees(SEARCH_SWEEP_RAD):.0f}° ({deadline - time.time():.0f}s left).')
     twist = Twist()
     for direction, span in ((+1.0, SEARCH_SWEEP_RAD), (-1.0, 2 * SEARCH_SWEEP_RAD)):
         swept = 0.0
         last = time.time()
         while swept < span and rclpy.ok():
+            if time.time() > deadline:
+                _stop(cmd_pub)
+                nav.warn('[Search] out of marker-phase budget — giving up the sweep.')
+                return False
             if tracker.get_marker(marker_id) is not None:
                 _stop(cmd_pub)
                 nav.info(f'[Search] found marker {marker_id}.')
@@ -431,21 +504,25 @@ def _search_marker(nav, tracker, cmd_pub, marker_id) -> bool:
     return found
 
 
-def _visual_align(nav, tracker, cmd_pub, marker_id):
+def _visual_align(nav, tracker, cmd_pub, marker_id, deadline: float):
     """Rotate in place until the marker is horizontally centred.
 
     err_x -> 0 means the robot's heading points straight at the marker (and therefore at the
     table / dock behind it). Rotation only: obliqueness would need translation and is left to the
     approach waypoint, so it is logged but not driven.
+
+    Gives up at `deadline` (the shared marker-phase budget) with whatever heading it has reached —
+    a not-quite-centred robot still serves the guest, a robot still spinning does not.
     """
     nav.info(f'[Align] centering on marker {marker_id}.')
     twist = Twist()
     start = last_seen = time.time()
+    deadline = min(deadline, start + ALIGN_TIMEOUT)
     last_log = 0.0
     while rclpy.ok():
         now = time.time()
-        if now - start > ALIGN_TIMEOUT:
-            nav.warn(f'[Align] timeout ({ALIGN_TIMEOUT:.0f}s) — stopping.')
+        if now > deadline:
+            nav.warn('[Align] out of time — keeping the current heading and moving on.')
             break
 
         m = tracker.get_marker(marker_id)
@@ -479,7 +556,12 @@ def _visual_align(nav, tracker, cmd_pub, marker_id):
 
 
 def _acquire_and_align(nav, tracker, cmd_pub, marker_id, label):
-    """After a Nav2 arrival: settle, log the raw arrival error, then search + align."""
+    """After a Nav2 arrival: settle, log the raw arrival error, then search + align.
+
+    Everything here shares one ``MARKER_PHASE_BUDGET`` deadline. Whatever is unfinished when it
+    expires is abandoned — the caller reports arrival either way.
+    """
+    deadline = time.time() + MARKER_PHASE_BUDGET
     settle = time.time()
     while time.time() - settle < POST_NAV_SETTLE_TIMEOUT:
         if tracker.get_marker(marker_id) is not None:
@@ -498,10 +580,10 @@ def _acquire_and_align(nav, tracker, cmd_pub, marker_id, label):
         nav.info('[Align] disabled (ablation) — heading left as Nav2 delivered it.')
         return
 
-    if m is None and not _search_marker(nav, tracker, cmd_pub, marker_id):
+    if m is None and not _search_marker(nav, tracker, cmd_pub, marker_id, deadline):
         nav.warn(f'[{label}] could not acquire marker {marker_id} — skipping align.')
         return
-    _visual_align(nav, tracker, cmd_pub, marker_id)
+    _visual_align(nav, tracker, cmd_pub, marker_id, deadline)
 
 
 def _go(nav, tracker, cmd_pub, dest: dict, label: str) -> bool:
@@ -513,8 +595,8 @@ def _go(nav, tracker, cmd_pub, dest: dict, label: str) -> bool:
 
     tracker.set_correction_target(marker_id)
     try:
-        reached = _run_nav_goal(nav, position, yaw_deg, label)
-        if not reached:
+        reached = _run_nav_goal(nav, tracker, position, yaw_deg, label)
+        if not reached and not _near_goal(nav, tracker, position, marker_id, label):
             return False
         if marker_id is None:
             # Marker not printed for this destination yet — the Nav2 pose is the final pose.

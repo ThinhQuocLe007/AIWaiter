@@ -6,15 +6,16 @@ it walks the task lifecycle (accept → drive → arrive → serve → finish) i
 
 Serving is event-driven, not on a timer: for a `go_to_table` / `call` task the robot ARRIVES and
 then WAITS at the table (so you can talk to it via the voice device) until the server sends a
-`task.release` frame — which the dispatcher emits when the guest places an order (`POST /orders`)
-or pays (`/payments/verify`). Only then does it report `task_done` and drive back to the dock. A
-`deliver` task still auto-completes after dropping the food.
+`task.release` frame — which the dispatcher emits when the guest pays (`/payments/verify`), or
+already at `POST /orders` if the backend runs with `ORCH_RELEASE_ROBOT_ON_ORDER=1`. Only then does
+it report `task_done` and drive back to the dock. A `deliver` task still auto-completes after
+dropping the food.
 
 Run (backend must be up on :8000):
     uv run python scripts/mock_robot.py --id robo-1
 
 Typical demo: seat a table (kiosk) → this robot drives over and parks ("đang phục vụ") → talk to it
-on customer_ui → place an order or pay → it reports done and returns to the dock.
+on customer_ui → order → pay → it reports done and returns to the dock.
 
 The dispatcher is written to handle a fleet of N robots, but the demo seeds a single robot
 (robo-1). Pass a different --id only if you have added more robots to the seed.
