@@ -40,7 +40,8 @@
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
-import { verifyPayment } from '@/data/api'
+import { createPayment, verifyPayment } from '@/data/api'
+import { getStoredTableId } from '@/data/tableSession'
 import { formatPrice } from '@/utils/format'
 import TouchButton from '@/components/common/TouchButton.vue'
 
@@ -74,7 +75,15 @@ async function done() {
   paying.value = true
   error.value = null
   try {
-    if (paymentId) await verifyPayment(paymentId)
+    // Always settle server-side before clearing anything. We normally arrive with a paymentId in
+    // the query, but the voice path (stores/voice.ts) falls back to pushing this screen bare when
+    // its createPayment call failed — and a bare screen used to make this button a no-op: the guest
+    // saw "paid", while the backend still had the table DANG_PHUC_VU with its robot parked there
+    // forever (nothing calls cancel_table_tasks → no task.release). So open the payment now
+    // (idempotent, returns the existing row) and verify that. A failure throws and is shown below,
+    // with the cart left intact, rather than pretending the bill is settled.
+    const id = paymentId || (await createPayment(getStoredTableId())).id
+    await verifyPayment(id)
     cart.clearAll() // session settled: draft AND the "đã gửi bếp" list both go
     goHome()
   } catch (err) {

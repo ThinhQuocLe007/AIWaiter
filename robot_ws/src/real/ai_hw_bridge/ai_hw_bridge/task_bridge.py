@@ -13,10 +13,10 @@ Contract (same one scripts/mock_robot.py fakes and the dispatcher expects):
 Task lifecycle:
   * ``go_to_table`` / ``call`` — drive to the table, report ``arrived``, then WAIT
     there until the server sends ``task.release``, then ``task_done`` and head back to
-    the dock. Nothing else ends that wait: the robot holds the table's microphone while
-    it is parked, so it stays put for the whole visit and the server releases it when the
-    bill is settled (backend ``settings.release_robot_on_order`` flips that to "leave as
-    soon as the order is placed").
+    the dock. Nothing else ends that wait — no timer, no distance check. The server sends
+    that frame when the guest confirms an order (``POST /orders``) or settles the bill
+    (``/payments/verify``); until one of those lands the robot stays parked, holding the
+    table's microphone.
   * ``deliver`` — drive to the table, ``arrived``, pause a few seconds, ``task_done``,
     head back to the dock.
 
