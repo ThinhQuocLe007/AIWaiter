@@ -17,39 +17,47 @@
    1.6 Report Structure
 
 2. RELATED WORK & PROBLEM ANALYSIS
-   2.1 Overview: The Integrated AI Waiter Problem
-   2.2 Need 1: Physical Delivery to Dynamic Goals
-       2.2.1 Wheel Odometry and Sensor Fusion
-       2.2.2 SLAM and Map Building
-       2.2.3 Autonomous Navigation
-       2.2.4 Fiducial Marker Docking
-       2.2.5 Prior ROS2 Delivery Robot Research
-   2.3 Need 2: Vietnamese Voice Understanding on the Edge
-       2.3.1 Voice Activity Detection
-       2.3.2 Speech-to-Text for Vietnamese
-       2.3.3 Text-to-Speech for Vietnamese
-       2.3.4 Edge Deployment Constraints
-   2.4 Need 3: Informal Vietnamese Speech → Correct, Validated Actions
-       2.4.1 Prior Restaurant Dialogue Systems
-       2.4.2 Architectures for Controlling LLMs
-       2.4.3 Challenges Any Restaurant Agent Must Solve
-           (a) Intent Classification
-           (b) Post-Generation Validation
-   2.5 Need 4: Bridging Vietnamese Food Descriptions to Menu Knowledge
-       2.5.1 The Knowledge Problem and Standard RAG
-       2.5.2 Retrieval Approaches and Their Limitations
-       2.5.3 Beyond Retrieval — The Closed-Loop Pipeline
-   2.6 Need 5: Coordinating AI Decisions with Restaurant Operations
-       2.6.1 Multi-Robot Task Assignment
-       2.6.2 Dynamic Robot-Table Voice Binding
-       2.6.3 Telemetry, Liveness, and Fault Recovery
-       2.6.4 Real-Time Restaurant State Synchronization
-   2.7 Need 6: Multi-Role Web Interfaces for AI-Driven Restaurant Operations
-       2.7.1 Single-Page Application Frameworks — Comparison
-       2.7.2 Component Libraries and Build Tools
-       2.7.3 Real-Time Communication Patterns
-       2.7.4 Multi-Role SPA Architecture
-   2.8 Summary: Needs → Requirements Traceability
+    2.1 Overview: The Integrated AI Waiter Problem
+    2.2 Autonomous Mobile Robot
+        2.2.1 Wheel Odometry and Sensor Fusion
+        2.2.2 SLAM and Map Building
+        2.2.3 Autonomous Navigation
+        2.2.4 Fiducial Marker Docking
+        2.2.5 Prior ROS2 Delivery Robot Research
+    2.3 Vietnamese Voice Understanding
+        2.3.1 Voice Activity Detection
+        2.3.2 Speech-to-Text for Vietnamese
+        2.3.3 Text-to-Speech for Vietnamese
+    2.4 Conversational AI Agent
+        2.4.1 From General-Purpose LLM to Task-Oriented Agent
+        2.4.2 Agent Architectures — The Orchestration Layer
+        2.4.3 Large Language Models — The Reasoning Component
+        2.4.4 Intent Classification — The Routing Layer
+        2.4.5 Action Validation — The Safety Layer
+        2.4.6 Memory and State Management in Conversational Agents
+        2.4.7 Agent Planning, Tool Composition, and Domain Adaptation
+    2.5 Menu Knowledge Retrieval
+        2.5.1 The Knowledge Problem and Standard RAG
+        2.5.2 Embedding Models
+        2.5.3 Indexing and Search
+        2.5.4 Result Fusion
+        2.5.5 Beyond Retrieve→Generate: Rewriting, Evaluation, Context
+    2.6 Restaurant Operations & Fleet Management
+        2.6.1 Multi-Robot Task Assignment
+        2.6.2 Dynamic Robot-Table Voice Binding
+        2.6.3 Telemetry, Liveness, and Fault Recovery
+        2.6.4 Real-Time Restaurant State Synchronization
+     2.7 Multi-Role Web Interfaces for AI-Driven Restaurant Operations
+         2.7.1 Single-Page Application Frameworks — Comparison
+         2.7.2 Component Libraries
+         2.7.3 Build Tooling
+         2.7.4 Real-Time Communication Patterns
+         2.7.5 Multi-Role SPA Architecture
+     2.8 Edge Computing Platform
+         2.8.1 Jetson Orin Nano — Hardware & Software Stack
+         2.8.2 Sensor Interfaces
+         2.8.3 Prior Work on Jetson in Robotics
+    2.9 Summary: Needs → Requirements Traceability
 
 3. PROPOSED METHOD (I) — ROBOT CONTROL AND NAVIGATION
    3.1 System Requirements
@@ -109,6 +117,14 @@ Front Matter
 
 ## CHAPTER 1: INTRODUCTION
 
+> **Chapter requirements — this chapter answers:**
+> - What is this project? (1.1 Overview)
+> - Why is it worth doing? (1.2 Motivation)
+> - What specific, measurable targets must be hit? (1.3 Objectives)
+> - What is in scope and out of scope? (1.4 Scope)
+> - How was the work conducted? (1.5 Research Methodology)
+> - How is the rest of this report organized? (1.6 Report Structure)
+
 ### 1.1 Overview
 
 - Context: service robots in restaurants + LLM boom
@@ -153,27 +169,32 @@ Measurable targets (checked against Ch.5 results):
 
 ## CHAPTER 2: RELATED WORK & PROBLEM ANALYSIS
 
+> **Chapter requirements — this chapter answers:**
+> - What existing technologies address each need? (Survey)
+> - What does each do well, and what are its limits? (Strengths + weaknesses)
+> - If we USE an off-the-shelf component (VAD, STT, TTS, embedding model, LLM, frontend framework, etc.): what options exist, and which one fits our requirements? (Comparison table → Ch.4 selects from this table)
+> - If we BUILD something new (agent architecture, validator, RAG pipeline, fleet dispatcher, etc.): what prior approaches exist, and why are they insufficient? (Survey → identify research gap → Ch.4 proposes method)
+>
+> **Rules for Chapter 2:**
+> - No challenges (C1–C10 live in Ch.3/Ch.4). No proposed solutions. No "we did X" or "we built Y." No system design decisions.
+> - Each section does three things: (1) states the need and why it matters, (2) surveys prior work that has attempted to meet it, (3) ends with either a comparison table (for off-the-shelf selection) or a gap statement (for new design).
+> - The final summary (§2.9) maps each gap/selection to the system requirements in Ch.3 and Ch.4.
+
 > **Principle:** This chapter is organized around five unsolved needs — real problems the literature has not fully addressed. Each section does three things: (1) states the need and why it matters, (2) surveys prior work that has attempted to meet it, (3) analyzes why those attempts fell short, yielding a specific gap. No implementation details or design decisions appear here. The final summary (§2.7) maps each gap to the system requirements it motivates in Chapter 3 (navigation) and Chapter 4 (AI/backend/web), which are validated in Chapter 5.
 
 ---
 
 ### 2.1 Overview: The Integrated AI Waiter Problem
 
-- **The landscape:** service robots have been deployed commercially (Bear Servi, Pudu Bellabot, Keenon T-series, Alibaba Robot.He — §2.1.1 in detailed write-up). Conversational AI has advanced rapidly through large language models and voice interfaces (Wendy's FreshAI, Domino's AI, Vietnamese chatbots from Zalo/VinAI). These two fields have developed independently: commercial robots deliver food but are closed appliances with no conversational ability; conversational systems converse but do not act on the physical world.
-- **The integration gap at a high level:** no existing system combines Vietnamese voice understanding, AI-driven action (ordering, payment, recommendation), and physical robot delivery into a single operational system. The individual components exist; what does not exist is their integration into a deployable system where the AI agent directly drives restaurant operations and robot behavior.
-- **Five specific needs the field has not satisfied:**
-  1. **Dynamic goal navigation** — a robot must navigate to the right table at the right time, with navigation goals assigned by an external AI agent based on live restaurant events, not pre-set waypoints (§2.2)
-  2. **Vietnamese voice on the edge** — Vietnamese speech recognition, synthesis, and voice activity detection must operate reliably on edge hardware co-located with robot control, under real restaurant acoustic conditions (§2.3)
-  3. **Informal speech → correct action** — a conversational agent must convert informal, teencode-heavy Vietnamese utterances into deterministic, validated tool calls that affect restaurant state, without hallucinating dish names or violating the order process (§2.4)
-  4. **Vague descriptions → relevant items** — customers describe food by sensory experience ("món gì ấm bụng?", "ăn cay"), which shares zero lexical overlap with structured menu entries; retrieval must bridge this semantic gap, including rewriting queries before search and rephrasing results after (§2.5)
-  5. **AI decisions → synchronized operations** — multiple client roles (customer tablet, kitchen display, manager dashboard, robot fleet) must share a single real-time view of restaurant state, all driven by an AI agent's business events, without cloud dependency (§2.6)
-  6. **Multi-role web interfaces driven by AI events** — restaurant operations require distinct interfaces for each role (customer, kitchen, manager, kiosk) sharing a common real-time data layer; existing SPA frameworks, component libraries, and real-time communication patterns must be evaluated for this multi-role, AI-driven context (§2.7)
+- **The landscape:** service robots for food delivery have been deployed commercially at scale. Free-navigation platforms — Bear Robotics Servi (2017), Pudu Bellabot (2016), Keenon T-series (2010) — use LiDAR and RGB-D SLAM for autonomous navigation in restaurant environments, with Pudu reporting over 40,000 units deployed across 600+ cities. Track-based platforms — Alibaba Robot.He (Shanghai, 2018) — mount pod-shaped AGVs on fixed rails alongside tables, adapted from Cainiao warehouse logistics. Both categories reliably deliver food but are closed appliances: their interaction model is a touchscreen or pre-recorded greeting; they have no speech recognition, no natural language understanding, and no third-party AI integration possible. The software stack is proprietary — developers cannot add an LLM agent, a Vietnamese speech pipeline, or a custom fleet dispatcher. The robot does one thing (delivers) and cannot be extended to do anything else.
+
+- **The integration gap:** no existing system combines Vietnamese voice understanding, AI-driven action (ordering, payment, recommendation), and physical robot delivery into a single operational system. The individual components exist independently — navigation robots, speech pipelines, conversational models, retrieval systems, web interfaces — but have never been integrated into a deployable system where an AI agent directly drives restaurant operations and robot behavior. The following sections (§2.2–§2.8) survey each component category, identifying what prior work has achieved and where the integration gaps remain.
 
 ---
 
-### 2.2 Need 1: Physical Delivery to Dynamic Goals
+### 2.2 Autonomous Mobile Robot
 
-> *A robot must navigate from kitchen to table when ordered food is ready — but "which table" is not known until the AI agent decides. This section surveys how prior work handles robot navigation and goal assignment, and identifies the gap when goals are driven by external, AI-generated restaurant events.*
+> *A robot must navigate from kitchen to table when ordered food is ready — but "which table" is not known until the AI agent decides. This section surveys autonomous mobile robot technologies — odometry, SLAM, navigation, and fiducial marker docking — and identifies the gap: prior systems drive to pre-set waypoints, but none couple navigation goals dynamically to an external AI agent that assigns destinations based on live restaurant events.*
 
 #### 2.2.1 Wheel Odometry and Sensor Fusion
 
@@ -215,261 +236,323 @@ Measurable targets (checked against Ch.5 results):
 
 ---
 
-### 2.3 Need 2: Vietnamese Voice Understanding on the Edge
+### 2.3 Vietnamese Voice Understanding
 
-> *Vietnamese speech recognition, voice activity detection, and speech synthesis exist as standalone research areas. This section surveys each component and identifies the gap: no prior work has evaluated an integrated Vietnamese voice pipeline under combined restaurant acoustic conditions and edge hardware constraints, where STT/VAD/TTS must co-reside with robot control processes.*
+> *Vietnamese speech recognition, voice activity detection, and speech synthesis exist as standalone research areas. This section surveys each component: how it works, what existing methods exist, and what prior evaluations have been conducted. For each component, a comparison table is presented; the selection from these tables occurs in §4.4. The edge hardware that hosts these components is surveyed in §2.8.*
 
 #### 2.3.1 Voice Activity Detection
 
-- **The utterance boundary problem:** determining when speech starts and stops in a continuous audio stream. Critical for natural turn-taking.
-- **Energy threshold baseline:** RMS amplitude threshold. Fails in restaurant environments where ambient noise (60–70 dB) exceeds speech amplitude thresholds.
-- **Neural VAD:** Silero VAD (~1.5 MB, language-agnostic, CPU real-time) as the dominant open-source option. WebRTC VAD (Gaussian Mixture Model, less accurate in noise). Deep VAD (pyannote, NeMo) — higher accuracy but GPU-inference, unsuitable for always-on edge.
-- **Prior work:** Silero VAD evaluated on multilingual benchmarks in quiet conditions. WebRTC VAD tested on telephony speech.
-- **→ Gap:** VAD accuracy has been evaluated on clean speech corpora. No prior work has evaluated VAD under restaurant acoustic conditions — concurrent conversations, plate clatter, chair movement — where the configurable sensitivity threshold must balance false triggers (noise classified as speech) against missed utterances (speech classified as silence). The threshold calibrated in a quiet lab produces excessive false triggers in a dining room.
+Voice activity detection determines the boundaries of a spoken utterance in a continuous audio stream — when did the customer start speaking, and when did they stop? This is the first processing stage in the voice pipeline. Its output (a trimmed audio segment containing exactly one utterance) feeds directly into the STT model. If VAD cuts off speech prematurely, the STT model transcribes a truncated sentence; if VAD triggers on background noise, the pipeline processes restaurant clatter as if it were an order.
+
+Existing VAD approaches fall into three categories:
+
+- **Energy-threshold VAD.** Classifies any audio frame whose RMS amplitude exceeds a fixed threshold as speech. It is the simplest approach and works in quiet recording studios. In noisy environments, the threshold cannot discriminate between speech and non-speech sounds of similar amplitude — plate clatter and chair scrapes trigger false detections [2.3.1].
+
+- **Lightweight neural VAD.** Silero VAD (~1.5 MB, language-agnostic, CPU real-time) is the dominant open-source model. It classifies each audio frame based on learned spectral patterns rather than raw energy, exposing a configurable sensitivity threshold [2.3.2]. WebRTC VAD uses a Gaussian Mixture Model — lighter weight (~100 KB) but less accurate in noise [2.3.3]. Both run on CPU without GPU dependency, making them suitable for always-on edge deployment.
+
+- **Deep learning VAD.** Systems such as pyannote.audio and NVIDIA NeMo VAD achieve higher accuracy by using larger neural architectures, but require GPU inference [2.3.4]. On an edge device where GPU memory is shared with STT and robot control, always-on GPU inference is infeasible.
+
+| Model | Size | Inference | Accuracy (noisy) | Edge-Suitable | Prior Evaluation |
+|-------|------|-----------|-------------------|:---:|------------------|
+| Energy threshold | N/A | N/A | Poor | Yes | Not viable in noise [2.3.1] |
+| Silero VAD | ~1.5 MB | CPU, real-time | Good | Yes | Multilingual benchmarks, quiet conditions [2.3.2] |
+| WebRTC VAD | ~100 KB | CPU, real-time | Moderate | Yes | Telephony speech, quiet conditions [2.3.3] |
+| pyannote VAD | ~100 MB | GPU | High | No | Meeting/test corpora [2.3.4] |
+| NeMo VAD | ~200 MB | GPU | High | No | NVIDIA benchmarks [2.3.4] |
+
+Prior work has evaluated Silero VAD on multilingual telephone speech and meeting recordings in quiet or moderately noisy conditions. WebRTC VAD has been tested on telephony-quality speech. Neither has been benchmarked on Vietnamese speech corpora or under restaurant noise profiles. The available evaluation data covers general-domain speech; Vietnamese-specific VAD performance and restaurant-noise robustness are not characterized in existing benchmarks.
 
 #### 2.3.2 Speech-to-Text for Vietnamese
 
-- **Vietnamese-specific challenges for STT:**
-  - 6 tones carried by diacritics — a tone error changes word meaning entirely.
-  - Monosyllabic structure with compound words — "bún bò Huế" is 3 syllables but 1 lexical unit.
-  - Teencode and informal speech: "ad" (anh/chị), "ck" (chuyển khoản), "z" (vậy), "nhiêu" (bao nhiêu), "hông" (không). Absent from formal STT training corpora.
-  - Restaurant ambient noise degrades WER.
-  - STT is the break-point of the entire voice pipeline — if transcription is wrong, every downstream component (classifier, agent, order creation, payment) operates on corrupted input.
+Speech-to-text converts the audio segment isolated by VAD into Vietnamese text. The transcribed text is the input to every downstream component: the intent classifier, the agent's LLM, the validator, and the response generator all operate on this text. The accuracy of this stage determines the upper bound of the entire conversational pipeline.
 
-- **Available STT approaches:**
+Existing STT approaches for Vietnamese fall into two categories: on-device models and cloud services.
 
-  | Model / Service | Vietnamese | Edge Deployable | Offline | Latency (3s utterance) | VRAM | WER on VN (est.) |
-  |-----------------|:---:|:---:|:---:|:---:|:---:|:---:|
-  | Whisper tiny/base | Partial (multilingual) | Yes | Yes | ~200–400ms | ~0.5–1 GB | 20–30% |
-  | Whisper medium | Partial (multilingual) | Yes | Yes | ~800ms | ~1.5 GB | 15–20% |
-  | Whisper large-v3 | Partial (multilingual) | Borderline | Yes | ~1.5s | ~3 GB | 10–15% |
-  | PhoWhisper (Whisper fine-tuned on VN) | **Yes** | Yes (via faster-whisper) | Yes | ~800ms | ~1.5 GB | 10–15% |
-  | Google Cloud Speech-to-Text | **Yes** | No | No | ~200ms + network | 0 (cloud) | 5–8% |
-  | Viettel AI STT | **Yes** | No | No | ~200ms + network | 0 (cloud) | 5–8% |
-  | FPT.AI STT | **Yes** | No | No | ~200ms + network | 0 (cloud) | 5–8% |
+On-device models are built on the Whisper architecture, a Transformer-based encoder-decoder trained on 680,000 hours of multilingual web-scraped speech [2.3.5]. Whisper's Vietnamese capability is partial — Vietnamese was present in the training data but was not a primary target language. The model family scales across four sizes: tiny (39M parameters) through large-v3 (1.55B parameters). Larger models achieve lower word error rates but require proportionally more VRAM and inference time [2.3.6]. faster-whisper [2.3.7] is a reimplementation using CTranslate2 for optimized inference; with 8-bit quantization, it reduces latency by approximately 4× compared to the standard Whisper implementation and reduces VRAM usage by roughly half, making the medium-sized model deployable on edge hardware with approximately 1.5 GB of memory.
 
-  The fundamental trade-off: cloud services provide the lowest WER but require internet — unacceptable on a restaurant floor. On-device models (Whisper, PhoWhisper) are less accurate but operate offline. faster-whisper (CTranslate2-optimized, 8-bit quantization) reduces Whisper-family latency by ~4×.
+PhoWhisper [2.3.8] addresses the Vietnamese-specific limitation by fine-tuning Whisper on Vietnamese speech data. The fine-tuning achieves an estimated 5–10% word error rate improvement over the base multilingual Whisper, with the largest gains concentrated in tonal diacritics — the dimension where general multilingual models most underperform Vietnamese. PhoWhisper is compatible with faster-whisper's CTranslate2 backend, benefiting from the same latency and memory optimizations.
 
-- **Prior work:** PhoWhisper evaluated on Vietnamese speech benchmarks with WER improvements of 5–10% over base Whisper, particularly on tonal accuracy. Evaluations are on clean speech datasets in quiet environments with formal Vietnamese.
-- **→ Gap:** No prior work has evaluated Vietnamese STT in restaurant acoustic conditions — ambient noise at 60–70 dB, informal speech patterns, teencode, compound dish names — where the STT model's tendency to produce phonetically similar but semantically wrong transcriptions (e.g., "Ốt Hương" for "Ốc Hương") directly corrupts downstream agent behavior.
+Cloud services — Google Cloud Speech-to-Text, Viettel AI STT, FPT.AI STT [2.3.9]–[2.3.11] — offer dedicated Vietnamese speech recognition with estimated word error rates of 5–8% on clean speech. These services run on server-grade infrastructure with models trained on large Vietnamese corpora. Their primary limitation is the internet dependency: every utterance requires a network round-trip, introducing variable latency outside the system's control, and a WiFi outage renders the pipeline inoperable.
+
+| Model / Service | Vietnamese | Edge Deployable | Offline | Latency (3s utt.) | VRAM | Est. WER (clean VN) |
+|-----------------|:---:|:---:|:---:|:---:|:---:|:---:|
+| Whisper tiny | Partial (multilingual) | Yes | Yes | ~300ms | ~0.5 GB | 25–35% |
+| Whisper base | Partial (multilingual) | Yes | Yes | ~400ms | ~0.8 GB | 20–30% |
+| Whisper medium | Partial (multilingual) | Yes | Yes | ~800ms | ~1.5 GB | 15–20% |
+| PhoWhisper (medium, faster-whisper) | Yes | Yes | Yes | ~800ms | ~1.5 GB | 10–15% |
+| Whisper large-v3 | Partial (multilingual) | Borderline | Yes | ~1.5s | ~3 GB | 10–15% |
+| Google Cloud STT | Yes | No | No | ~200ms + RTT | 0 (cloud) | 5–8% |
+| Viettel AI STT | Yes | No | No | ~200ms + RTT | 0 (cloud) | 5–8% |
+| FPT.AI STT | Yes | No | No | ~200ms + RTT | 0 (cloud) | 5–8% |
+
+PhoWhisper has been evaluated on Vietnamese speech benchmarks — the VLSP (Vietnamese Language and Speech Processing) dataset and related academic corpora [2.3.12]. These benchmarks consist of read speech in quiet recording conditions with standard Northern or Southern Vietnamese pronunciation. Reported metrics include word error rate and character error rate, confirming the 5–10% improvement over base Whisper on Vietnamese. No benchmarks exist for Vietnamese STT under noisy conditions, informal speech patterns, or domain-specific vocabulary such as restaurant dish names.
 
 #### 2.3.3 Text-to-Speech for Vietnamese
 
-- **Available TTS approaches:**
+Text-to-speech converts the agent's Vietnamese text response into audible speech through the robot's speaker. TTS quality is measured on two dimensions: intelligibility (can the customer understand the words?) and naturalness (does the voice sound appropriate for a service context?). Latency must also fit within the overall voice interaction budget.
 
-  | Engine | Offline | Edge Deployable | Latency (per sent.) | VRAM | Naturalness | Vietnamese Voices |
-  |--------|:---:|:---:|:---:|:---:|:---:|:---:|
-  | Piper TTS (VITS architecture) | **Yes** | **Yes (CPU)** | ~500ms | ~200 MB | Moderate | 1 community-trained voice |
-  | edge-tts (Microsoft Azure) | No | No (cloud) | ~300ms + network | 0 (cloud) | High | Multiple neural voices |
-  | Google Cloud TTS | No | No (cloud) | ~200ms + network | 0 (cloud) | Very High | WaveNet voices |
+Existing TTS approaches for Vietnamese fall into the same two categories as STT: on-device models and cloud services.
 
-  The trade-off mirrors STT: cloud services offer higher naturalness but require internet. Piper TTS is the only offline, edge-deployable Vietnamese option.
+On-device TTS is represented by Piper TTS [2.3.13], which uses the VITS (Variational Inference with adversarial learning for end-to-end Text-to-Speech) architecture — a single-stage model that converts text directly to waveform without intermediate spectrogram generation. Piper provides one community-trained Vietnamese voice model (~200 MB), runs on CPU with approximately 500ms latency per sentence, and is the only offline, edge-deployable Vietnamese TTS option. Its naturalness is moderate: clearly synthetic but intelligible, with correct tone production for Vietnamese diacritics [2.3.14].
 
-- **Prior work:** Piper TTS evaluated on perceptual quality ratings for Vietnamese. Evaluation is on isolated sentences in quiet playback conditions.
-- **→ Gap:** TTS naturalness has been evaluated in quiet listening environments. No prior work has evaluated whether a moderate-quality TTS voice is adequate for short functional restaurant utterances — where the content (correct dish names, prices, order summaries) matters more than vocal performance — or how customers perceive a non-human Vietnamese voice in a service context. The barge-in interaction (customer interrupts TTS mid-sentence to correct an order) has also not been studied for Vietnamese restaurant scenarios.
+Cloud services — edge-tts (Microsoft Azure Neural TTS), Google Cloud TTS, vbee, FPT.AI TTS [2.3.15]–[2.3.17] — offer multiple Vietnamese neural voices (male, female, regional accents) with high naturalness. These are trained on studio-quality voice recordings using architectures such as WaveNet, FastSpeech, and VITS. Their limitation mirrors cloud STT: internet dependency for every sentence, variable network latency, and the assumption of server-grade infrastructure.
 
-#### 2.3.4 Edge Deployment Constraints
+| Engine | Offline | Edge Deployable | Latency (per sent.) | VRAM | Naturalness | Vietnamese Voices |
+|--------|:---:|:---:|:---:|:---:|:---:|:---:|
+| Piper TTS (VITS) | Yes | Yes (CPU) | ~500ms | ~200 MB | Moderate | 1 community-trained |
+| edge-tts (Azure) | No | No (cloud) | ~300ms + RTT | 0 (cloud) | High | Multiple neural |
+| vbee TTS | No | No (cloud) | ~300ms + RTT | 0 (cloud) | High | Multiple |
+| FPT.AI TTS | No | No (cloud) | ~300ms + RTT | 0 (cloud) | High | Multiple |
+| Google Cloud TTS | No | No (cloud) | ~200ms + RTT | 0 (cloud) | Very High | WaveNet voices |
 
-- **Jetson Orin Nano:** 1024-core Ampere GPU, 6-core ARM CPU, 8 GB LPDDR5 shared memory, 7–15 W power envelope.
-- **VRAM budget:** ROS2 navigation (~500 MB) + sensor drivers (~200 MB) + Silero VAD (<10 MB) + medium STT model (~1.5 GB) + Piper TTS (~200 MB) ≈ 2.5 GB. Remaining ~5.5 GB for OS, ROS2 data, overhead. Adequate for the voice pipeline. A 7B-parameter LLM requires 6–8 GB alone — cannot co-reside.
-- **Prior work on edge/server split:** distributed robotics architectures (cloud robotics, edge AI) establish the pattern of splitting compute between edge and server. Evaluated for English-language systems, not Vietnamese.
-- **→ Overall gap for §2.3:** The individual voice components exist. What does not exist is (a) evaluation of Vietnamese STT/VAD/TTS under combined restaurant acoustic conditions and Jetson edge hardware constraints, (b) an integrated pipeline where VAD→STT→Agent→TTS operates as a single threaded system with barge-in, and (c) a quantified VRAM budget analysis confirming that the pipeline co-resides with ROS2 robot control. These gaps motivate the voice pipeline architecture in §4.4.
+TTS quality is typically evaluated through Mean Opinion Score (MOS) studies where listeners rate speech samples on a 1–5 naturalness scale. Cloud neural voices consistently score in the 4.0–4.5 range; Piper's Vietnamese voice is estimated in the 2.5–3.5 range [2.3.14]. These evaluations were conducted in quiet listening environments with general-domain Vietnamese text (news sentences, conversational phrases). No MOS evaluations exist for Vietnamese restaurant-domain utterances or for TTS playback under restaurant ambient noise conditions.
 
 ---
 
-### 2.4 Need 3: From Informal Vietnamese Speech to Correct, Validated Actions
+---
 
-> *Vietnamese restaurant speech is informal, teencode-heavy, and context-dependent. An agent must understand it, decide on an action, and execute that action correctly — without hallucinating dish names or violating the order process. This section surveys prior approaches to building conversational agents and identifies why each fails to satisfy all three requirements simultaneously for Vietnamese.*
+### 2.4 Conversational AI Agent
 
-#### 2.4.1 Prior Restaurant Dialogue Systems — The Chatbot Ceiling
+Traces the evolution from general-purpose LLM to task-oriented agent: Transformers → post-hoc parsing → function calling → the six layers that govern LLM-tool interaction. The section surveys each layer in turn: architectures for orchestrating LLM-tool interaction, the LLM reasoning engine, intent classification, action validation, memory and state management, and planning with domain adaptation. Each subsection identifies what prior work has achieved and where documented limitations remain for Vietnamese task-oriented dialogue.
 
-- **Traditional NLU pipelines (Rasa, Dialogflow):** intent classification + slot filling → API call. Deployed for English, Chinese, Korean, Japanese restaurant ordering. Limitation: trained on formal corpora — Vietnamese informal variants ("ck", "z", "ad") are out-of-vocabulary. Slots handle fixed schemas but cannot represent open-ended queries ("món gì ấm bụng?").
-- **LLM-based chatbots (Zalo AI, VinAI):** understand Vietnamese conversationally, can answer menu questions. Limitation: dialogue ≠ transaction. The chatbot produces text; it cannot add to cart, create orders, or dispatch robots. The gap is architectural, not linguistic.
-- **Voice ordering (Wendy's FreshAI, Domino's AI):** LLM-based voice ordering integrated with POS. Limitation: English-only, cloud-dependent, stateless per transaction, no physical robot delivery.
-- **Physical delivery robots (§2.1):** deliver food but have no conversational AI.
-- **Comparison table:**
+#### 2.4.1 From General-Purpose LLM to Task-Oriented Agent
 
-  | System | Vietnamese | Tool Execution | Validation | Self-Hosted | Robot Dispatch |
-  |--------|:---:|:---:|:---:|:---:|:---:|
-  | Traditional NLU pipeline (Rasa, Dialogflow) | ✗ (needs VN retraining) | ✓ | ✗ | ✓ | ✗ |
-  | LLM chatbot (Zalo AI, VinAI) | ✓ | ✗ | ✗ | ✗ | ✗ |
-  | Voice ordering (Wendy's, Domino's) | ✗ | ✓ | ✗ | ✗ | ✗ |
-  | Physical delivery robots (§2.1) | ✗ | ✗ | ✗ | ✗ | ✓ |
+Establishes the conceptual trajectory: the Transformer architecture and scaling laws that produced LLMs, the limitation of text-only generation for transactional domains, the brittleness of post-hoc parsing, and the function-calling mechanism that made structured tool invocation a first-class API capability. Concludes that function calling provides the mechanism for action but the layers surrounding the LLM determine whether actions are safe. [Figure 2.7 — Function calling mechanism.]
 
-  No prior system checks more than two of the five dimensions.
+#### 2.4.2 Agent Architectures — The Orchestration Layer
 
-- **→ Gap:** No system combines Vietnamese language understanding, tool execution against a backend, deterministic validation of LLM outputs, self-hosted deployment, and physical robot delivery. This is the high-level gap. The following subsections decompose it into specific technical challenges.
+Surveys four architectural patterns documented in the agent literature: chain-based (LangChain LCEL — deterministic but rigid), autonomous reasoning loops (ReAct, AutoGPT — flexible but no termination guarantee, no process enforcement), graph-based (LangGraph — structural governance via topology, conditional edges, checkpointers, circuit breakers), and multi-agent (AutoGen, CrewAI, CAMEL — specialization at the cost of LLM-mediated coordination and attention dilution). Each pattern described with its documented strengths, limitations, and evaluation scope. [Figure 2.8 — Four architecture patterns. Table 2.4a — Architecture property comparison.] No architecture has been evaluated for Vietnamese task-oriented dialogue.
 
-#### 2.4.2 Architectures for Controlling LLMs
+#### 2.4.3 Large Language Models — The Reasoning Component
 
-- **Tool calling (function calling):** the shared mechanism across all architectures — the LLM outputs a structured invocation (tool name + typed arguments) instead of free text. Introduced by OpenAI, adopted by Anthropic, Ollama, LangChain. Tool calling provides the *mechanism* for action; the *architecture* governs how that mechanism is controlled.
-- **Chain-based (LangChain LCEL):** fixed linear DAG. Deterministic. No branching or recovery — incorrect routing at step 1 is unrecoverable.
-- **Autonomous reasoning loop (ReAct, AutoGPT):** LLM decides when to call tools and when to stop. Termination is emergent — no guarantee the loop ends. Business process enforcement (confirm after cart built, not before) is impossible because the LLM selects tool order.
-- **Graph-based (LangGraph):** declared state graph — typed nodes + conditional edges. Entry/exit are defined (termination is structural). Deterministic code between LLM nodes enables validation, circuit breaker, and state-machine enforcement.
-- **→ Gap:** No architecture inherently enforces the combination a restaurant agent requires — guaranteed bounded execution, deterministic validation between every LLM call and tool execution, and explicit state-machine enforcement of the ordering process. Tool calling provides the mechanism; the architecture must provide the governance. This gap motivates the graph-based agent design in §4.5.1.
+Surveys three categories of Vietnamese-capable LLMs: Vietnamese-specific models (PhoGPT — excellent language quality, no function calling), open-weight multilingual models (Qwen2.5, Llama 3, Gemma 2 — function calling via BFCL-benchmarked APIs, moderate Vietnamese quality), and commercial API models (GPT-4o, Claude, Gemini — best quality and tool-calling, cloud-dependent). Covers cross-cutting dimensions: context window capacities (4K to 1M tokens, bounded by "lost in the middle" findings) and token consumption of Vietnamese text. Surveys serving infrastructure: Ollama (single-GPU local serving), vLLM (concurrent throughput), llama.cpp (quantization trades quality for VRAM). [Table 2.4b — Function-calling and Vietnamese quality. Table 2.4c — Context window capacities.] The three documented properties have been evaluated independently but never jointly.
 
-#### 2.4.3 Challenges Any Restaurant Agent Must Solve
+#### 2.4.4 Intent Classification — The Routing Layer
 
-##### (a) Intent Classification in Informal Vietnamese Restaurant Speech
+Surveys five routing approaches: rule-based/SVM classifiers (Rasa, Dialogflow — fast, deterministic, but language-specific and stateless), lightweight neural classifiers (fastText, SetFit — subword robustness, still stateless), semantic centroid routing (embedding-space similarity — handles domain vocabulary, fails on teencode/context/multi-intent), LLM-based routing (handles all accuracy criteria, cost is latency and non-determinism; decomposition-only variant reduces LLM role but untested on Vietnamese), and state-augmented classification (dialogue state features improve context-dependent accuracy — demonstrated on English, not Vietnamese). [Figure 2.9 — Five routing approaches. Table 2.4d — Routing approach comparison.] The gap: no approach combines speed and determinism with Vietnamese-language handling — using an LLM only for utterance decomposition while a Vietnamese-aware, state-augmented classifier handles all other cases.
 
-- **The problem:** before executing any tool, the agent must determine what the customer wants. A 4-class decision: {ORDER, SEARCH, PAYMENT, CHAT}. Vietnamese restaurant speech introduces four domain-specific challenges:
-  - **(i) Teencode and informal Vietnamese:** "ck" (chuyển khoản), "z" (vậy), "ad" (anh/chị), "nhiêu" (bao nhiêu), "hông" (không) — absent from formal training corpora.
-  - **(ii) Context-dependent ambiguity:** "ok em" at order confirmation → ORDER; "ok em" at greeting → CHAT. Utterance text alone carries zero signal.
-  - **(iii) Multi-intent compounding:** "Cho 2 Ốc Hương rồi tính tiền luôn" = ORDER + PAYMENT. Single-label classifiers force one choice.
-  - **(iv) Domain vocabulary:** dish names ("Ốc Hương Xốt Trứng Muối") are out-of-distribution for general-domain embedding models.
+#### 2.4.5 Action Validation — The Safety Layer
 
-- **Prior classification approaches:**
+Surveys three approaches to preventing argument-level hallucination: constrained decoding (schema enforcement — syntax only, no semantic check), RAG grounding (injecting authoritative data into prompt — reduces error probability, no detection mechanism for remaining errors), and human-in-the-loop (eliminates all errors at the cost of autonomy). The structural insight: all three operate at generation time; none provides autonomous post-generation inspection against an authoritative source. [Figure 2.10 — Generation-time vs. post-generation validation. Table 2.4e — Validation approach properties.] An autonomous, deterministic, post-generation validator that inspects every tool call argument and blocks invalid calls has not been demonstrated.
 
-  | Approach | Handles Teencode? | Context-Aware? | Multi-Intent? | Domain Vocab? | Latency |
-  |----------|:---:|:---:|:---:|:---:|:---:|
-  | Traditional NLU (Rasa, SVM) | ✗ | ✗ | ✗ | ✗ (needs retraining) | ~5ms |
-  | Lightweight text classifiers (fastText, SetFit) | ✗ | ✗ | ✗ | ✗ (needs retraining) | ~2–10ms |
-  | Semantic centroid routing | ✗ | ✗ | ✗ | ✗ | ~15ms |
-  | LLM-based routing (few-shot) | ✓ | ✓ | ✓ | ✓ (via prompt) | ~1.8s |
-  | Trained classifier with context features (MLP) | ✓ (if in training data) | ✓ (via context features) | ✓ (can be trained) | ✓ (if in training data) | ~0.17ms |
+#### 2.4.6 Memory and State Management in Conversational Agents
 
-  Each prior approach fails on at least two challenges. The fundamental trade-off: LLM routing is general enough to handle all four but is slow (~1.8s) and non-deterministic. ML classifiers are fast and deterministic but brittle — they operate on text alone, blind to conversation state.
+Surveys four memory strategies: sliding window, periodic summarization (MemGPT), vector-based retrieval (MemoryBank), and hybrid approaches (LongMem). Documents the "lost in the middle" phenomenon and attention boundary preference as constraints on all strategies, tightened further by Vietnamese token consumption. Identifies the distinction between conversation history and application state (cart, order stage, search context) as a separation that general-purpose frameworks do not natively provide. Documents dialogue state tracking and LangGraph checkpointing as mechanisms for session-scoped persistence. [Figure 2.11 — Memory strategies and application state separation.] No prior work characterizes a memory architecture for Vietnamese conversations combining conversation history, persistent state, session isolation, and context window allocation.
 
-- **→ Gap:** No classification approach for Vietnamese restaurant speech simultaneously handles teencode, context-dependent utterances, multi-intent compounding, and domain vocabulary while maintaining sub-millisecond latency and deterministic output. This gap motivates the trained MLP classifier with context features in §4.5.2.
+#### 2.4.7 Agent Planning, Tool Composition, and Domain Adaptation
 
-##### (b) Post-Generation Validation — Preventing Hallucinated Tool Calls
+Covers three cross-cutting concerns. Tool composition: sequential, parallel, and conditional patterns; the documented gap between per-call tool selection accuracy and compositional correctness. Prompt engineering for domain adaptation: system prompts, few-shot examples, dynamic context injection, and DSPy optimization — techniques documented in the literature but untested on Vietnamese restaurant ordering. Cross-domain patterns: healthcare, customer service, and code generation agents sharing a validation-gated execution model (LLM proposes, deterministic code validates) that has not been formally characterized as a general architectural requirement. [Figure 2.12 — Tool composition patterns and domain adaptation stack.]
 
-- **The hallucination problem:** even with correct intent and correct worker, the LLM generating tool call arguments may fabricate dish names ("Pizza Hải Sản"), produce absurd quantities (999), or attempt invalid state transitions (confirm empty cart). Hallucination is inherent to probabilistic text generation.
-- **Restaurant stakes:** in a chatbot, hallucination is a UX annoyance. In a transactional agent, a hallucinated `add_cart` or `confirm_order` means wrong food cooked, wrong payment charged — measured in money and trust.
-- **Existing mitigations:**
-  - **Constrained decoding:** enforces valid JSON schema but cannot validate semantic correctness — `{"name": "Pizza Hải Sản"}` is valid JSON.
-  - **RAG:** reduces hallucination probability but does not eliminate it — the LLM may ignore retrieved context.
-  - **Human-in-the-loop:** eliminates risk but defeats autonomous operation.
-  - All are generation-time strategies — they constrain what the LLM can output. None validates *after* generation against an external source of truth.
-- **→ Gap:** No prior restaurant agent implements a deterministic post-generation validation layer that checks every LLM tool call argument against known-good data (menu items, price ranges, valid state transitions) *before* the call reaches external systems. This gap motivates the deterministic validator in §4.5.4.
-
-#### → Overall Gap for §2.4
-
-No prior system combines Vietnamese language support, an agent architecture enforcing bounded execution with deterministic inter-LLM validation, intent classification handling all four Vietnamese-specific challenges at sub-ms latency, and post-generation hallucination safety — all self-hosted. This gap motivates the full agent architecture in §4.5.
+Concludes with a synthesis of the integration gap: three paragraphs identifying (1) layer interdependence that prior evaluations do not capture, (2) Vietnamese linguistic properties that compound design constraints at every layer simultaneously, and (3) the validation-gated execution pattern that has not been combined with the other five layers for Vietnamese task-oriented dialogue.
 
 ---
 
-### 2.5 Need 4: Bridging Vietnamese Food Descriptions to Menu Knowledge
+### 2.5 Menu Knowledge Retrieval
 
-> *Customers describe what they want in sensory terms: "món gì ấm bụng cho ngày lạnh?" (what's warm and filling for a cold day?). Restaurant menus are structured by name, category, and price — not by the feeling a dish produces. Retrieval-augmented generation (RAG) is the standard technique for grounding LLMs in documents, but standard RAG fails when user queries share no lexical overlap with the target documents. This section surveys RAG approaches and identifies the gap: a closed-loop pipeline where the LLM actively rewrites the query before retrieval and rephrases the results after — both grounded in Vietnamese food-domain knowledge.*
+> *Retrieval-augmented generation (RAG) grounds LLM outputs in domain-specific documents. This section surveys the RAG pipeline bottom-up: why retrieval is needed and how the standard RAG architecture evolved from naive embedding→retrieve→generate to advanced modular pipelines (§2.5.1); the embedding models — dense (bi-encoders) and sparse (BM25) — that convert text into searchable representations, including the Vietnamese-specific preprocessing prerequisite of word segmentation (§2.5.2); how these representations are indexed and searched — dense vector indices (FAISS) and sparse inverted indices (§2.5.3); how results from multiple retrieval strategies are fused into a single ranking (§2.5.4); and pipeline extensions beyond the standard retrieve→generate paradigm — query rewriting, post-retrieval evaluation, and multi-turn search context (§2.5.5).*
 
 #### 2.5.1 The Knowledge Problem and Standard RAG
 
-- **Why LLMs need external knowledge:** training data is frozen, a specific restaurant's menu is not in it. Without retrieval, the LLM confidently describes dishes that do not exist.
-- **Standard RAG pipeline:** embed documents offline → retrieve top-k at query time → generate answer grounded in retrieved context.
-- **The standard RAG assumption:** the user's query maps directly to relevant documents. True for "Ốc Hương giá bao nhiêu?" (Ȩc Hương appears in menu). False for "món gì ấm bụng?" (zero keyword overlap with any dish).
+- **Why retrieval is necessary:** closed-book hallucination. LLM training data is frozen; domain-specific knowledge (a restaurant's menu) is absent. Without retrieval, the LLM fabricates plausible but incorrect domain facts.
+- **The evolution of the RAG architecture:**
+  - **Naive RAG:** the classic pipeline — embed documents offline via a sentence encoder, store in a vector index, at query time embed the query and retrieve top-k most similar documents, inject into the LLM prompt as grounding context (Lewis et al., 2020).
+  - **Advanced RAG:** improvements on the naive pipeline — chunk optimization (sliding window, semantic splitting), re-ranking retrieved documents for better precision, query expansion before retrieval.
+  - **Modular RAG:** the modern architecture pattern — retrieval, rewriting, evaluation, and generation are independent modules with configurable composition. This modularity enables per-domain optimization but introduces the challenge of coordinating modules that each operate on different assumptions about the query and documents.
+- **The retrieval assumption and its failure mode.** All RAG variants share one assumption: the query embedding lies close to relevant document embeddings in vector space. This holds when the query shares vocabulary with the target documents. It fails when the query describes information needs through terms absent from the document vocabulary — a retrieval failure that is structural (not a matter of index quality or encoder choice) because the query and documents occupy disconnected semantic regions.
+- **→ Gap.** The standard RAG pipeline — in all three variants, naive through modular — treats the LLM as a passive consumer of retrieved context: retrieval happens, then the LLM generates. No prior pipeline architecture gives the LLM an active role in controlling retrieval quality. The LLM does not decide which retrieval strategy to use, does not inspect the results, and does not adjust its approach when retrieval fails. This architectural gap — the absence of a control loop where the LLM acts as a retrieval quality controller with corrective feedback — is the fundamental limitation that §2.5.5 surveys. The Vietnamese-specific preprocessing concerns (diacritic sensitivity in embeddings, compound-word integrity in segmentation) compound this gap by making retrieval quality more variable and harder to guarantee without active quality control.
 
-#### 2.5.2 Retrieval Approaches and Their Limitations
+#### 2.5.2 Embedding Models
 
-- **Dense retrieval (FAISS + SentenceTransformer):** captures semantic similarity. Weak on exact keyword matching for proper names and rare dish names.
-- **Sparse retrieval (BM25):** strong for exact keyword matches. Weak for semantic understanding and vague descriptions.
-- **Hybrid fusion (RRF):** parallel dense + sparse → merge via Reciprocal Rank Fusion. RRF combines rankings without requiring comparable scores.
-- **Vietnamese-specific requirements:** word segmentation via `underthesea` — compound words ("bún bò Huế") must be single tokens for BM25. Embedding model must handle Vietnamese diacritics natively (general-domain multilingual models degrade on tonal languages).
-- **Prior work:** RAG applied to restaurant menus exists for English — retrieve relevant dishes, generate recommendation. The retrieve→generate pipeline assumes queries contain menu vocabulary. Vietnamese food-domain RAG has not been evaluated.
-- **→ Gap (standard RAG):** standard RAG fails when Vietnamese customers use sensory language. The retrieval problem is fundamentally one of **query-document mismatch** — not indexing quality.
+> *Embedding models convert text into representations that can be compared for relevance. Two paradigms exist: dense embeddings produce continuous vectors capturing semantic similarity; sparse embeddings produce high-dimensional term-weight vectors capturing exact lexical match. Vietnamese word segmentation is a prerequisite for both: text must be split into word-level tokens before representation. This section surveys all three — segmentation tools, dense embedding models, and sparse models — as off-the-shelf components. Comparison tables enable selection in Chapter 4.*
 
-#### 2.5.3 Beyond Retrieval — The Closed-Loop Pipeline
+- **Vietnamese word segmentation.** Vietnamese script places spaces between syllables, not between words. A compound like "bún bò Huế" is written as three space-separated tokens but is one lexical item. Without segmentation, both dense and sparse models represent per-syllable fragments rather than the compound unit.
+  - `underthesea` — CRF-based, trained on Vietnamese Treebank. ~97% accuracy (VLSP 2013), pure Python, ~50 MB.
+  - `VnCoreNLP` — Java-based pipeline with richer features (RNN, word embeddings). Higher accuracy than `underthesea` but requires Java runtime.
+  - `pyvi` — dictionary-based, pure Python. Lower accuracy, particularly weak on compound terms with ambiguous syllable boundaries.
+  - **Comparison table:** accuracy, compound-word handling, deployment requirements, limitations.
 
-- **Pre-retrieval: query rewriting.** Before retrieval, an LLM rewrites the customer's vague utterance into concrete search terms. "Món gì ấm bụng cho ngày lạnh?" → "cháo, lẩu, súp, món nước nóng". This is not keyword extraction — the LLM reasons about Vietnamese culinary categories. Prior work on query rewriting for RAG exists for English; Vietnamese food-domain rewriting has not been studied.
-- **Post-retrieval: result rephrasing.** After retrieval returns top-k dishes, an LLM evaluates which results match the original customer intent, selects the best, and rephrases them in natural Vietnamese. The LLM also detects empty results and responds appropriately ("Dạ, quán không có món đó ạ") rather than hallucinating. Prior work on LLM-as-evaluator for RAG exists; Vietnamese restaurant application does not.
-- **Multi-turn deduplication:** when a customer searches for "Ốc Hương" twice, the agent should recall it already returned those results. Requires search context persisting across turns — outside the standard stateless RAG pipeline.
-- **Prior work on closed-loop RAG:** self-reflective RAG, CRAG, Self-RAG propose LLM evaluation of retrieved documents. None has been applied to Vietnamese food-domain search where the bridge between sensory query and structured menu requires cultural knowledge of what constitutes "ấm bụng" in Vietnamese cuisine.
-- **→ Overall gap for §2.5:** No prior system combines (a) LLM-based query rewriting for Vietnamese food-domain vocabulary, (b) Vietnamese-specific hybrid retrieval with word-segmented BM25 and diacritic-aware embeddings, (c) LLM-based post-retrieval rephrasing that selects relevant items and detects empty results, and (d) multi-turn search context deduplication — forming a closed-loop rewrite→retrieve→rephrase pipeline. This gap motivates the knowledge retrieval tool in §4.6.
+- **Dense embedding models.** Sentence encoders that map text to continuous vectors for similarity-based search. Two categories:
+  - **Vietnamese-native bi-encoders** — `bkai-foundation-models/vietnamese-bi-encoder` (768-dim, PhoBERT-base, trained on Vietnamese sentence pairs including informal registers), `VoVanPhuc/sup-SimCSE-VietNamese-phobert-base` (SimCSE contrastive training on PhoBERT), `AITeamVN/Vietnamese_Embedding` (1024-dim, BART-based). Evaluated on Vietnamese STS and ViText2Vec benchmarks where they outperform multilingual alternatives, but retrieval-specific benchmarks are unreported.
+  - **Multilingual models** — `BAAI/bge-m3` (568M params, native dense+sparse+multi-vector retrieval, SOTA on MIRACL), `intfloat/multilingual-e5-large` (E5 contrastive recipe, top-ranked on cross-lingual retrieval), `paraphrase-multilingual-MiniLM-L12-v2` (384-dim compact baseline). Vietnamese diacritic handling is partial; compound-word boundaries are not recognized.
+  - **Comparison table:** dimension, Vietnamese-native, diacritic-aware, strengths (documented), limitations (documented).
+
+- **Sparse/keyword models.** Term-weighting models that rank documents by the frequency and distinctiveness of query terms they contain. BM25 (Robertson & Walker, 1994) is the standard, extending TF-IDF with document-length normalization. Its effectiveness depends on tokenization quality: if compound words are not segmented into single tokens, individual syllables match across unrelated documents. Sparse models capture exact keyword match with high precision; they are blind to semantic relationships — a query with zero vocabulary overlap with the document corpus returns zero results regardless of parameter tuning.
+  - **Comparison:** parameters (k1, b), tokenization dependency, strengths (exact match), limitations (vocabulary gap), Vietnamese-specific considerations.
+
+#### 2.5.3 Indexing and Search
+
+> *Once text is converted to representations (§2.5.2), those representations must be stored in a searchable index and queried efficiently. The indexing strategy is determined by the representation: dense vectors require a vector index supporting similarity search; sparse term-weight vectors require an inverted index. This section surveys both indexing approaches and their documented performance characteristics.*
+
+- **Dense vector indexing.** FAISS (Facebook AI Similarity Search, Johnson et al., 2017) is the standard library. Index types range from exact flat search (`IndexFlatL2` — exhaustive comparison, sufficient for small corpora) to approximate indices (`IndexIVFFlat`, `IndexHNSW` — sub-linear search for large-scale deployment). Distance metrics (cosine via L2 on normalized vectors, inner product, Euclidean) determine what "similar" means. The index stores both the vector and a reference to the original document for retrieval.
+- **Sparse inverted indexing.** An inverted index maps each vocabulary term to the list of documents containing it, with per-document term frequency and position data. At query time, BM25 scores are computed over the intersection of query terms and document postings lists. For Vietnamese, the term vocabulary depends on word segmentation quality — mis-segmented compound terms fragment the index, diluting term specificity.
+- **Comparison table:** index type (flat, IVF, HNSW), search complexity, distance metric, corpus scale suitability, memory footprint.
+
+#### 2.5.4 Result Fusion
+
+> *When multiple retrieval strategies produce separate ranked lists, those lists must be combined into a single ranking. Fusion methods address the incommensurability of scores from different retrievers (BM25 scores are unbounded; cosine similarities are bounded). This section surveys fusion techniques as off-the-shelf methods, with documented properties and limitations.*
+
+- **Reciprocal Rank Fusion (RRF).** Introduced by Cormack et al. (2009) for meta-search. Operates on document ranks, not scores: `score(d) = Σ 1/(k + rank_r(d))` with k=60. Eliminates score normalization entirely — ranking is invariant to score scale. Documents appearing in both result lists receive contributions from both; documents in only one list receive a single contribution.
+- **Linear combination.** Weighted sum of normalized scores: `score(d) = α × s₁(d)/‖s₁‖ + (1−α) × s₂(d)/‖s₂‖`. Requires score normalization per retriever and a domain-tuned weight α. Higher potential accuracy than RRF when α is well-calibrated; weights do not transfer across domains or document collections.
+- **Condorcet voting.** Pairwise comparison of all documents across retrieval lists. A document "beats" another if it is ranked higher in more retrieval lists. O(n²) comparison cost; no documented advantage over RRF for two-retriever fusion.
+- **Comparison table:** score normalization requirement, domain transfer, computational cost, handling of single-list documents.
+
+#### 2.5.5 Beyond Retrieve→Generate: Rewriting, Evaluation, Context
+
+> *The standard RAG pipeline — embed query, retrieve documents, generate — has no architectural position for intervening when retrieval quality is poor. Three classes of extensions have been proposed: pre-retrieval query transformation, post-retrieval result evaluation, and multi-turn context persistence. Each has been evaluated as a point solution on English benchmarks. None addresses the interaction between rewriting, retrieval, and evaluation in a single pipeline.*
+
+- **Pre-retrieval query rewriting.**
+  - HyDE (Gao et al., 2023): LLM generates a hypothetical relevant document, embeds it for retrieval instead of the raw query. Insight: LLM-generated text shares vocabulary with real documents even if factually incorrect. Limitation: unbounded generation — the LLM may fabricate terms absent from the corpus, pulling retrieval toward the hallucination.
+  - Step-Back Prompting (Zheng et al., 2023): LLM abstracts the query to a higher-level concept, retrieves against the abstraction. Reduces HyDE's hallucination risk but requires the LLM to correctly identify the appropriate abstraction level.
+  - Query2Doc (Wang et al., 2023): combines both — LLM generates a rewritten query and a hypothetical document. Two LLM calls per retrieval; documented latency barrier to real-time deployment.
+  - All three evaluated on English benchmarks (TREC DL, Web Questions) where the vocabulary gap is formal-question to formal-document. None evaluated on Vietnamese text where the LLM's domain knowledge — the associations that power rewriting — is less grounded.
+
+- **Post-retrieval evaluation.**
+  - Self-RAG (Asai et al., 2023): uses fine-tuned reflection tokens for relevance assessment. Fine-tuning requirement limits applicability to models where training infrastructure is available.
+  - CRAG (Yan et al., 2024): LLM scores each retrieved document for relevance at inference time (no fine-tuning). Adds one LLM call per retrieval. Evaluated on English QA; effectiveness depends on LLM's relevance assessment accuracy for the target language and domain.
+  - FLARE (Jiang et al., 2023): interleaves generation and retrieval — triggers new retrieval when LLM encounters uncertain tokens. Designed for long-form generation; computational cost unsuitable for latency-constrained settings.
+  - All three evaluated on English QA and fact-verification where relevance is objectively verifiable. None evaluated on domain-specific retrieval where relevance depends on structured metadata matching (ingredients, taste profile, preparation method).
+
+- **Multi-turn search context.** In conversational search, multiple queries occur within one dialogue session. Dialogue state tracking maintains per-session structured state for slot-filling but is not natively integrated with RAG retrieval. Memory-augmented RAG (MemoryBank, LongMem) persists retrieved context across sessions via vector databases for user modeling, not for within-session retrieval deduplication. No prior work addresses the entity resolution problem specific to multi-turn retrieval: determining whether a new utterance refers to a previously retrieved item and answering from memory rather than re-querying.
+
+- **→ Gap.** Each extension — rewriting, evaluation, context persistence — has been evaluated in isolation as a point improvement on the standard pipeline, on English benchmarks. No prior work connects them into a closed control loop where the LLM acts as a retrieval quality controller: (a) the LLM inspects the query and decides on a retrieval strategy (direct keyword lookup, semantic search, or rewritten query), (b) retrieval executes with quality gating — when all strategies produce noise, the pipeline rejects cleanly with empty results rather than feeding irrelevant documents to the LLM, (c) the LLM inspects the retrieved results, evaluates relevance against the original information need, and rephrases relevant items in natural language — detecting empty results and responding gracefully rather than hallucinating, and (d) the LLM maintains multi-turn context to determine whether a new utterance refers to a previously retrieved item and answers from memory rather than re-querying. The gap is not the absence of any individual extension, but the absence of a pipeline architecture where these extensions operate in a feedback loop with the LLM as the controller — deciding, evaluating, and adjusting — rather than as a passive downstream consumer of whatever retrieval returns.
+
+- **→ Overall Gap for §2.5.** The RAG literature provides individually mature components at each pipeline stage — embedding models, indexing methods, and fusion techniques — surveyed in §2.5.2–§2.5.4 as off-the-shelf selections. The single architectural gap identified is the absence of a retrieval architecture where the LLM functions as an active quality controller in a closed loop — not a passive consumer of retrieved documents. Prior extensions to the standard pipeline (query rewriting, post-retrieval evaluation, multi-turn context) exist as disconnected point solutions, each evaluated in isolation on English benchmarks. No prior work composes them into an architecture where: the LLM rewrites queries and routes to the appropriate retrieval strategy; retrieval results are gated for quality and rejected when all strategies fail; the LLM evaluates and rephrases relevant results against the original intent; and multi-turn context prevents redundant retrieval cycles. This closed-loop control architecture — where the LLM decides how to retrieve, inspects what was retrieved, and adjusts accordingly — is the research contribution addressed in §4.6.
 
 ---
 
-### 2.6 Need 5: Coordinating AI Decisions with Restaurant Operations
+### 2.6 Restaurant Operations & Fleet Management
 
-> *A restaurant operator needs: a customer tablet for ordering, a kitchen display for cooking, a manager dashboard for oversight, and a robot fleet for delivery — all seeing the same real-time state. An AI agent must drive this state through API calls, triggering robot navigation, kitchen display updates, and session lifecycle transitions. This section surveys existing systems for fleet management, restaurant operations, and real-time web infrastructure, and identifies the gap: no lightweight, self-contained system integrates all roles under a single AI-driven real-time state.*
+> *A restaurant operator needs a customer tablet for ordering, a kitchen display for cooking, a manager dashboard for oversight, and a robot fleet for delivery — all seeing the same real-time state. An AI agent must drive this state through API calls, triggering robot navigation, kitchen display updates, and session lifecycle transitions. This section surveys existing approaches for fleet management and restaurant operations, and identifies the gap: no lightweight, self-contained system integrates all roles under a single AI-driven real-time state.*
 
 #### 2.6.1 Multi-Robot Task Assignment
 
-- **Nearest-idle assignment:** assign task to the closest available robot. Simplest approach, works for short trips (3–5m kitchen→table).
-- **Auction-based and market-based:** robots bid on tasks based on state (battery, distance, queue). Prior work in warehouse AGV fleets (Amazon Kiva, Cainiao) where trips are 50–200m.
-- **Battery-aware filtering:** robots below charge threshold excluded from candidate pool.
-- **Prior fleet frameworks:** ROS2 OpenRMF (warehouse-scale, heavy deployment); Bear Universe/PuduCloud/Keenon Cloud (proprietary, manufacturer-locked).
-- **→ Gap:** Warehouse frameworks are disproportionate to restaurant scale (6 tables, 3–5 robots). Manufacturer portals are closed. Neither integrates with an external AI agent that triggers tasks based on live restaurant events (seating → dispatch, order ready → dispatch, payment → release). The open problem is lightweight multi-robot coordination where the task source is the AI agent, not a pre-computed schedule.
+The simplest assignment strategy is nearest-idle: assign the task to the closest available robot. For short trips (3–5m kitchen-to-table), this minimizes travel time and is computationally trivial. Auction-based and market-based approaches have robots bid on tasks based on state (battery, distance, queue depth), optimizing for fleet-wide efficiency at the cost of communication overhead [2.6.n]. These are deployed in warehouse AGV fleets — Amazon Kiva, Cainiao — where trip distances of 50–200m make route optimization worthwhile. Battery-aware filtering excludes robots below a charge threshold from the candidate pool.
+
+Existing fleet management frameworks include ROS2 OpenRMF, a warehouse-scale scheduler, and manufacturer portals such as Bear Universe, PuduCloud, and Keenon Cloud — each proprietary and locked to its vendor's hardware. Neither category integrates with an external AI agent that triggers tasks based on live restaurant events: a guest is seated → dispatch a go-to-table task; an order is marked ready → dispatch a delivery task; a session ends → return robot to dock.
+
+The gap is lightweight multi-robot coordination for restaurant scale (6 tables, 3–5 robots) where the task source is an AI agent responding to business events, not a pre-computed schedule.
 
 #### 2.6.2 Dynamic Robot-Table Voice Binding
 
-- **The voice binding problem:** robots are table-agnostic — any robot can serve any table. When a customer presses "Talk to AI" on their tablet, the system must know which robot's microphone to activate. The binding must be dynamic — established on arrival, released on departure.
-- **Prior approaches:** static binding (inflexible), broadcast-to-all (privacy concern), dynamic binding (standard pattern but not demonstrated for restaurant voice scenarios).
-- **→ Gap:** No prior restaurant fleet system implements dynamic table→robot→microphone binding where the binding is established on physical robot arrival and released on departure, routing both voice capture commands and voice reply playback to the correct robot's speaker.
+Robots are table-agnostic: any robot can serve any table. When a customer presses "Talk to AI" on the tablet at table 3, the system must route the microphone activation command to whichever robot is physically at table 3. This binding must be dynamic — established when the robot arrives at the table and released when it departs.
+
+Prior approaches include static binding (each robot permanently assigned to one table — inflexible, wastes idle robots), broadcast-to-all (all robots in range hear the command — privacy concern), and dynamic binding (established on physical arrival, released on departure — the standard pattern, but not demonstrated for restaurant voice scenarios with per-table microphone and speaker routing).
+
+The gap is dynamic table-to-robot-to-microphone binding where the binding is established on physical arrival at the table and released on departure, routing voice capture commands and voice reply playback to the correct robot's speaker — and surviving disconnection, where a new robot must rebind without the customer noticing.
 
 #### 2.6.3 Telemetry, Liveness, and Fault Recovery
 
-- **Telemetry:** RAM-only latest-value store for pose + battery (lock-free reads at 4+ Hz) vs. DB write-per-heartbeat (write contention). Hybrid approach: RAM for real-time, periodic DB snapshot (every 15s) for cold-start recovery.
-- **Liveness monitoring:** heartbeat watchdog — a hung process can maintain an open socket while producing no heartbeats. Standard pattern in robotics telemetry.
-- **Fault recovery:** offline robot → tasks requeued to PENDING, zombie connection closed, voice binding released. Prior work on fault-tolerant multi-robot task reassignment.
-- **→ Gap:** These patterns are known individually. No prior restaurant system composes them into a single lightweight dispatcher that simultaneously handles task assignment, voice binding, and fault recovery — all driven by restaurant business events rather than warehouse logistics.
+Robot telemetry (pose, battery, status) arrives at 4+ Hz per robot. Writing each heartbeat to a database creates write contention with order and payment transactions. Prior work on edge robotics telemetry establishes two patterns: RAM-only latest-value stores for high-frequency updates, where losing a single tick is harmless, and periodic database snapshots (every 15s) for cold-start recovery after server restart [2.6.n].
+
+Liveness monitoring uses a heartbeat watchdog: a process that maintains an open socket but produces no heartbeats is a zombie. The watchdog detects silence beyond a timeout (typically 30s), marks the robot offline, and triggers recovery — requeue its tasks, close its WebSocket, and release its voice binding. Fault-tolerant task reassignment is a standard pattern in multi-robot systems [2.6.n].
+
+These patterns are known individually. The gap is their composition into a single lightweight dispatcher that simultaneously handles task assignment, voice binding, and fault recovery — all driven by restaurant business events rather than warehouse logistics.
 
 #### 2.6.4 Real-Time Restaurant State Synchronization
 
-- **Restaurant management evolution:** traditional POS → KDS → QR-code menus. Each system serves one role with polling-based refresh (5–10s poll cycles). A new order appears on the kitchen display when the next poll hits, not when the order is created.
-- **WebSocket push vs. polling:** push delivers events as they occur. Role-based pub/sub routes events to the correct clients.
-- **Multi-role architecture:** 4+ client types (customer tablet, kitchen panel, manager dashboard, robot) sharing one real-time state. Each role subscribes to a different event subset — kitchen needs `order.created`; robot needs `task.assign`; tablet needs `voice.reply`.
-- **Session lifecycle:** a restaurant-specific business process (check-in → order → pay → release table) enforced as guarded state transitions, not just CRUD. Prior POS systems implement this as proprietary closed logic; no open API for external AI to drive.
-- **Prior work:** REST APIs for ordering exist. WebSocket hubs for real-time dashboards exist. Multi-role SPAs exist. The individual technologies are mature.
-- **→ Overall gap for §2.6:** No prior system integrates (a) lightweight multi-robot task assignment driven by AI agent events, (b) dynamic robot-table voice binding, (c) heartbeat-based liveness monitoring with automatic fault recovery, (d) role-based WebSocket state synchronization across 4+ client types, and (e) a session lifecycle state machine enforced by the backend — all in a self-contained single-server deployment with no cloud dependency. The components exist individually; their composition into a single system where an AI agent is the primary driver of all business events is the integration gap. This motivates the backend orchestrator architecture in §4.7 and fleet dispatcher in §4.7.
+Restaurant management software has evolved from standalone POS terminals to kitchen display systems (KDS) to QR-code ordering applications. Each generation serves one role and operates independently: a kitchen display learns about a new order on its next poll cycle (typically every 5–10 seconds). The customer ordering app does not know the kitchen's queue depth. The robot does not know the customer just paid. There is no shared real-time state across roles.
+
+WebSocket push replaces polling by delivering events as they occur. Role-based pub/sub routes events to the correct client subset: kitchen panel receives `order.created`; robot receives `task.assign`; customer tablet receives `voice.reply`. REST APIs and multi-role SPA architectures are individually mature technologies, and restaurant management platforms (Toast, Square, Lightspeed) implement real-time state propagation internally but do not expose it as a public API for an external AI agent to drive.
+
+The gap is a lightweight, self-contained system where: (a) an AI agent creates orders, updates cart state, and dispatches robots; (b) all client roles see these changes in real time via WebSocket push; (c) session lifecycle is enforced as guarded state transitions (check-in → order → pay → release); and (d) the entire system runs on a single server with no cloud dependency. This integration gap motivates the backend orchestrator architecture in §4.7.
 
 ---
 
-### 2.7 Need 6: Multi-Role Web Interfaces for AI-Driven Restaurant Operations
+### 2.7 Multi-Role Web Interfaces
 
-> *Restaurant automation requires distinct user interfaces for each operational role — customer ordering, kitchen order management, guest check-in, and fleet monitoring — all sharing a single source of real-time truth driven by AI agent events. This section surveys single-page application frameworks, component libraries, build tools, and real-time communication patterns, and identifies the gap: no prior restaurant system provides a multi-role SPA architecture where the AI agent is the primary driver of UI state across all roles.*
+> *Restaurant automation requires distinct user interfaces for each operational role — customer ordering, kitchen order management, guest check-in, and fleet monitoring — all sharing a single source of real-time truth driven by AI agent events. This section surveys single-page application frameworks, component libraries, build tools, and real-time communication patterns. The technologies are individually mature; the gap is their composition into a documented multi-role architecture where the AI agent is the primary driver of UI state.*
 
-#### 2.7.1 Single-Page Application Frameworks — Comparison
+#### 2.7.1 Single-Page Application Frameworks
 
-- **The SPA model for restaurant interfaces:** a single HTML page with client-side routing. Reactive component trees update in-place as data changes — no full-page reloads. This is the standard modern pattern for real-time dashboards, interactive ordering systems, and operational panels.
-- **Vue 3 (Composition API + TypeScript):** reactive data binding via `ref()` and `reactive()`. Pinia for cross-component state management. Vue Router for client-side navigation. First-class TypeScript support. Small runtime (~33 KB gzipped). Vietnamese-character rendering via Unicode standard support — no additional configuration needed. Ecosystem: Vite (build), PrimeVue (component library), Tabler Icons (icon set).
-- **React (hooks + JSX):** the dominant SPA framework by market share. Virtual DOM reconciliation. State management via Context API, Redux, or Zustand. Larger ecosystem (Next.js, Material UI, Ant Design). Trade-off: JSX mixes markup and logic in a way that can obscure the separation of concerns in complex multi-form interfaces; the learning curve for reactive state patterns (useEffect dependencies, stale closures) is higher than Vue's explicit reactivity.
-- **Angular (TypeScript + RxJS):** opinionated full framework with dependency injection, RxJS observables for async state, and a module-based architecture. Strongly typed, well-suited to enterprise teams. Trade-off: significantly heavier runtime, steep learning curve, verbose boilerplate for simple components — disproportionate overhead for restaurant interfaces where the business logic lives on the backend server, not in the browser.
-- **Comparison summary table (Vue 3 vs. React vs. Angular):** dimensions — reactivity model, TypeScript support, bundle size, Vietnamese i18n readiness, developer ramp-up time, suitability for multi-role SPA architecture with shared TypeScript types.
-- **Prior work:** all three frameworks have been used for restaurant ordering systems, dashboard applications, and real-time monitoring interfaces. No academic survey has compared them specifically for the multi-role, AI-driven restaurant context.
-- **→ Gap for frameworks:** The framework choice for a restaurant AI system is not arbitrary — the framework must support (a) multiple role-specific SPAs sharing a common TypeScript client library with types mirroring the backend Pydantic schemas, (b) real-time UI updates driven by WebSocket events from an AI agent, and (c) reactive Vietnamese text rendering for conversation transcripts, dish names, prices, and order summaries. No prior survey establishes selection criteria for this specific multi-role, AI-driven context.
+The single-page application (SPA) model — a single HTML page with client-side routing where reactive component trees update in-place as data changes — is the standard pattern for real-time dashboards, interactive ordering systems, and operational panels. Three frameworks dominate the SPA ecosystem.
+
+Vue 3 with Composition API and TypeScript provides reactive data binding via `ref()` and `reactive()`, Pinia for cross-component state management, Vue Router for client-side navigation, and first-class TypeScript support. Its runtime is approximately 33 KB gzipped. Vietnamese character rendering works through Unicode standard support with no additional configuration. The ecosystem includes Vite for builds, PrimeVue for components, and Tabler Icons.
+
+React with hooks and JSX is the dominant SPA framework by market share, using virtual DOM reconciliation. State management options include Context API, Redux, or Zustand. The larger ecosystem (Next.js, Material UI, Ant Design) and the complexity of reactive state patterns (useEffect dependencies, stale closures) give React a steeper learning curve than Vue for complex multi-form interfaces.
+
+Angular with TypeScript and RxJS is an opinionated full framework with dependency injection and module-based architecture. It is strongly typed and well-suited to enterprise teams, but its heavier runtime, steep learning curve, and verbose boilerplate for simple components make it disproportionate for restaurant interfaces where business logic resides on the backend server.
+
+All three frameworks have been used for restaurant ordering, dashboard, and monitoring interfaces. No academic survey has compared them specifically for the multi-role, AI-driven restaurant context where the selected framework must support multiple role-specific SPAs sharing a common TypeScript client library, real-time UI updates from WebSocket events originating from an AI agent, and reactive Vietnamese text rendering for conversation transcripts, dish names, and order summaries.
 
 #### 2.7.2 Component Libraries and Build Tools
 
-- **PrimeVue 4:** Vue 3-native component library with full TypeScript support. Provides data-intensive components — DataTable with sorting/filtering/pagination, Form components with validation, Card/Panel containers, Dialog/Overlay panels, Toast notifications, and Badge indicators — that map directly to restaurant UI needs: menu browsing (DataTable), order forms (Form + InputNumber), kitchen Kanban (Card layout), status badges (Badge for order states), and payment dialogs (Dialog).
-- **Vuetify 3 (Material Design):** opinionated Material Design Vue component library. Strong for admin dashboards and data-heavy panels. Trade-off: Material Design's visual language is not restaurant-native — the rigid grid system and elevation-based layering constrain the kind of responsive, touch-friendly menu browsing interface that restaurant tablets require. Heavier bundle weight than PrimeVue.
-- **Ant Design Vue:** enterprise-grade component library with comprehensive form and table components. Well-suited to data management interfaces (kitchen panel, fleet dashboard). Trade-off: component API complexity, larger bundle size, and a visual style optimized for enterprise back-office applications rather than customer-facing restaurant interfaces.
-- **Vite 8:** next-generation build tool with native ES module dev server — hot module replacement in <50ms regardless of project size. Production builds via Rollup with tree-shaking. Significantly faster than Webpack-based toolchains — relevant for a 3-app monorepo where each SPA must be built and served independently during development.
-- **Webpack (via Vue CLI):** the traditional Vue build toolchain. Slower dev server startup and HMR on large projects. Vite has largely superseded Webpack in the Vue ecosystem as of 2024.
-- **Prior work:** component library comparisons exist for general web development contexts. No evaluation exists for restaurant-specific UIs where the requirements are (a) Vietnamese text rendering with diacritic accuracy, (b) touch-friendly tablet interfaces with large tap targets, and (c) real-time data binding to WebSocket events from a backend orchestrator.
+PrimeVue 4 is a Vue 3-native component library with full TypeScript support. Its data-intensive components — DataTable with sorting, filtering, and pagination; Form components with validation; Card and Panel containers; Dialog and Overlay panels; Toast notifications; Badge indicators — map directly to restaurant UI needs: menu browsing via DataTable, order forms via Form and InputNumber, kitchen Kanban via Card layout, status badges for order states, and payment dialogs.
 
-#### 2.7.3 Real-Time Communication Patterns for Restaurant UIs
+Vuetify 3 (Material Design) is an opinionated component library strong for admin dashboards but constrained by Material Design's rigid grid system and elevation-based layering, which limit responsive, touch-friendly menu browsing. It also carries a heavier bundle weight than PrimeVue. Ant Design Vue is an enterprise-grade library with comprehensive form and table components, well-suited to data management interfaces (kitchen panel, fleet dashboard) but with a visual style optimized for enterprise back-office rather than customer-facing restaurant interfaces.
 
-- **Polling (REST-based refresh):** the traditional pattern in restaurant POS and KDS systems. The client sends an HTTP GET every N seconds (typically 5–10s) to check for state changes. A new order appears on the kitchen display 0–10 seconds late, averaged across poll cycles. Acceptable for a standalone KDS where a human cook looks at the screen periodically. Unacceptable for a voice-driven customer interaction where the agent's response and cart update must appear on the tablet immediately — a 5-second delay between "Cho 2 Ốc Hương" and seeing the cart update breaks the conversational flow.
-- **WebSocket push:** persistent full-duplex connection. The server pushes events to clients as they occur — `order.created`, `cart.updated`, `robot.position`. Role-based fan-out routes events to the correct client subset (kitchen panel receives `order.created`; customer tablet receives `voice.reply`; robot receives `task.assign`). Auto-reconnection with exponential backoff handles WiFi instability — standard pattern for real-time web applications.
-- **Server-Sent Events (SSE):** server-to-client streaming over HTTP. Lighter weight than WebSocket for server→client only traffic. Used by the agent brain to stream LLM-generated responses sentence-by-sentence to the voice pipeline and tablet. Not suitable for bidirectional communication (robot telemetry, tablet commands).
-- **Prior work on real-time restaurant systems:** restaurant management platforms (Toast, Square, Lightspeed) implement real-time state propagation internally but do not expose it as a public API. Academic work on real-time multi-role web systems exists for domains outside restaurants (hospital monitoring dashboards, logistics control panels, financial trading UIs). No prior system provides a documented WebSocket event catalog for restaurant operations where the event source is an AI agent rather than a human operator.
+Vite 8 is a next-generation build tool with a native ES module dev server providing hot module replacement in under 50ms. Production builds use Rollup with tree-shaking. It is significantly faster than Webpack-based toolchains — relevant for a 3-app monorepo where each SPA must be built and served independently during development. Webpack via Vue CLI, the traditional toolchain, is slower on dev server startup and HMR on large projects.
+
+Component library comparisons exist for general web development, but no evaluation covers restaurant-specific UIs requiring Vietnamese diacritic rendering accuracy, touch-friendly tablet interfaces with large tap targets, and real-time data binding to WebSocket events from a backend orchestrator.
+
+#### 2.7.3 Real-Time Communication Patterns
+
+Polling — the client sends an HTTP GET every N seconds — is the traditional pattern in restaurant POS and KDS systems. A new order appears on the kitchen display 0–10 seconds late, averaged across poll cycles. This is acceptable for a standalone KDS but unacceptable for voice-driven interaction where the agent's response and cart update must appear immediately.
+
+WebSocket push delivers events as they occur over a persistent full-duplex connection. Role-based pub/sub routes events to the correct client subset: the kitchen panel receives `order.created`, the robot receives `task.assign`, the customer tablet receives `voice.reply`. Auto-reconnection with exponential backoff handles WiFi instability.
+
+Server-Sent Events (SSE) provide server-to-client streaming over HTTP, lighter weight than WebSocket for unidirectional traffic. SSE is used to stream LLM-generated responses sentence-by-sentence to the voice pipeline and tablet. SSE is not suitable for bidirectional communication such as robot telemetry or tablet commands.
+
+Restaurant management platforms (Toast, Square, Lightspeed) implement real-time state propagation internally but do not expose documented WebSocket event catalogs for external AI agents. Academic work on real-time multi-role web systems exists for hospital monitoring, logistics control panels, and financial trading UIs, but not for restaurant operations where the event source is an AI agent.
 
 #### 2.7.4 Multi-Role SPA Architecture
 
-- **The multi-role SPA pattern:** instead of one monolithic application, multiple single-role SPAs — each serving one user type (guest, kitchen staff, manager) with role-specific UI and event subscriptions — sharing a common TypeScript client library for API calls, WebSocket connections, and type definitions. This is the standard pattern for systems where different user roles need different views of the same underlying data.
-- **Prior work:** multi-role SPA architectures have been documented for enterprise SaaS platforms (admin vs. customer vs. agent dashboards). No prior restaurant system implements this architecture where the shared state is driven by an AI agent — the agent creates orders (→ kitchen panel updates), modifies cart state (→ tablet updates), and dispatches robots (→ fleet dashboard updates), with all roles seeing the changes in real time.
-- **→ Overall gap for §2.7:** No prior restaurant system combines (a) a Vue 3-based multi-role SPA architecture with a shared TypeScript client library mirroring backend Pydantic schemas, (b) PrimeVue component selection justified by restaurant-specific UI requirements (Vietnamese text, touch-friendly interaction, data-intensive displays), (c) Vite-based build tooling for a multi-app monorepo, (d) role-based WebSocket pub/sub for real-time AI-driven state synchronization, and (e) SSE streaming for AI agent response delivery. The individual technologies — Vue 3, PrimeVue, Vite, WebSocket, SSE — are individually mature. Their composition into a multi-role, AI-driven restaurant interface architecture, and the framework selection criteria that justify that composition, has not been documented. This gap motivates the web interface architecture in §4.8.
+The multi-role SPA pattern deploys multiple single-role applications — each serving one user type with role-specific UI and event subscriptions — sharing a common TypeScript client library for API calls, WebSocket connections, and type definitions. This is the standard pattern when different user roles need different views of the same underlying data.
+
+Multi-role SPA architectures have been documented for enterprise SaaS platforms with admin, customer, and agent dashboards. No prior restaurant system implements this architecture where the shared state is driven by an AI agent: the agent creates orders (triggering kitchen panel updates), modifies cart state (triggering tablet updates), and dispatches robots (triggering fleet dashboard updates), with all roles seeing the changes in real time.
+
+The gap for §2.7 is a documented architecture and framework selection for a multi-role, AI-driven restaurant system combining Vue 3-based SPAs with a shared TypeScript client library mirroring backend schemas, PrimeVue component selection justified by restaurant-specific UI requirements, Vite-based build tooling for a multi-app monorepo, role-based WebSocket pub/sub for real-time state synchronization, and SSE streaming for AI agent response delivery. The technologies are individually mature; their composition and the criteria justifying their selection have not been documented. This gap motivates the web interface architecture in §4.8.
 
 ---
 
-### 2.8 Summary: Needs → Requirements Traceability
+### 2.8 Edge Computing Platform
 
-- **The six needs and what they demand of the proposed system:**
+> *The robot's computational platform is a purchased component — no custom hardware was developed. This section describes the NVIDIA Jetson Orin Nano: hardware specifications, the JetPack software stack, sensor interfaces, and prior deployment in academic robotics. The platform's resource constraints motivate the architectural decisions in Chapter 4.*
+
+#### 2.8.1 Jetson Orin Nano — Hardware & Software Stack
+
+- Hardware: 1024-core Ampere GPU + 32 Tensor Cores, 6 ARM cores, 8 GB unified memory, 7-15W. Unified memory = CPU/GPU share one pool; exceeding 8 GB triggers OOM killer.
+- Position in Jetson family: between AGX Orin (32 GB, 1999 USD) and discontinued Xavier NX. Orin Nano balances GPU capability, memory, and cost for a robot that runs navigation + voice but not the LLM.
+- Software stack: JetPack SDK = L4T (Ubuntu 22.04 ARM64) + CUDA 12.6 + cuDNN + TensorRT. Standard ROS2 Humble installs natively. CTranslate2 leverages GPU acceleration for faster-whisper.
+
+#### 2.8.2 Sensor Interfaces
+
+- RPLiDAR A2M8 (USB 2.0, 8 Hz scans), RealSense D435 (USB 3.0, 30 Hz RGB-D), MPU6050 IMU (I²C → STM32 → UART → Jetson), USB mic (16 kHz mono), Bluetooth speaker, 7" LCD (HDMI + USB touch).
+- All standard interfaces; contribution is concurrent operation of all sensors on one USB/I/O controller.
+
+#### 2.8.3 Prior Work on Jetson in Robotics
+
+- Extensively used for ROS2 SLAM, Nav2, sensor fusion. Well-documented for English-language edge AI. Vietnamese deployment understudied but libraries are language-agnostic.
+- No gap claimed here — hardware is off-the-shelf. The concurrent workload analysis (navigation + Vietnamese voice on one device) is addressed in §4.4.
+
+---
+
+### 2.9 Summary: Needs → Requirements Traceability
+
+- **The six needs, plus the edge platform, and what they demand of the proposed system:**
 
   | §   | Need | → Requirements | → Method | → Validated In |
   | --- | ---- | -------------- | -------- | -------------- |
   | 2.2 | Dynamic goal navigation — navigation targets assigned by AI agent, not pre-set, with ArUco business-context docking | §3.1 R1–R7 (navigation, docking, odometry) | §3.4–§3.7 (EKF, RTAB-Map, ArUco, Nav2 + dynamic goal coupling) | §5.2.1–§5.2.3 |
-  | 2.3 | Vietnamese voice on Jetson edge — integrated pipeline under restaurant noise + concurrent robot processes | §4.1 NFR latency, §4.4 architecture | §4.4 (VAD→STT→Agent→TTS threaded pipeline, barge-in) | §5.3.5, §5.4.4 |
-  | 2.4 | Informal speech → correct validated action — classifier handling teencode/context/multi-intent/domain-vocab + deterministic post-generation validation | §4.1 functional requirements, §4.5.1–§4.5.7 (agent architecture) | §4.5.2 (MLP classifier), §4.5.3 (tool-calling LLM), §4.5.4 (validator) | §5.3.1–§5.3.3 |
-  | 2.5 | Vague descriptions → relevant items — closed-loop rewrite→retrieve→rephrase for Vietnamese food domain | §4.1 menu search requirement, §4.6 | §4.6 (query rewriting, hybrid retrieval, result rephrasing, dedup) | §5.3.4 |
+  | 2.3 | Vietnamese voice on Jetson edge — component selection (VAD, STT, TTS) driven by restaurant deployment constraints | §4.1 NFR latency, §4.4 architecture | §4.4 (selected components: Silero VAD, PhoWhisper, Piper TTS; threaded pipeline, barge-in) | §5.4 |
+  | 2.4 | Conversational AI agent — classifier handling teencode/context/multi-intent/domain-vocab + deterministic post-generation validation | §4.1 functional requirements, §4.5.1–§4.5.7 (agent architecture) | §4.5.2 (MLP classifier with embedding from §2.5.2), §4.5.3 (tool-calling LLM — Qwen2.5 7B, surveyed §2.4.2), §4.5.4 (validator) | §5.3.1–§5.3.3 |
+  | 2.5 | Menu knowledge retrieval — closed-loop rewrite→retrieve→rephrase for Vietnamese food domain, driven by Vietnamese-specific embeddings (§2.5.2) | §4.1 menu search requirement, §4.6 | §4.6 (query rewriting, hybrid retrieval with embeddings from §2.5.2, result rephrasing, dedup) | §5.3.4 |
   | 2.6 | AI-driven restaurant operations — lightweight fleet dispatch with voice binding, multi-role real-time sync, session lifecycle | §4.1 concurrency/multi-role requirement, §4.7 | §4.7 (REST + WS hub, fleet dispatcher, session lifecycle) | §5.5, §5.6 |
-  | 2.7 | Multi-role web interfaces — no AI-driven Vue SPA architecture with shared TS client, role-based WS pub/sub, SSE streaming | §4.1 multi-role UI requirement, §4.8 | §4.8 (3 SPAs + shared client lib + WS event catalog) | §5.6 |
+  | 2.7 | Multi-role web interfaces — AI-driven Vue SPA architecture with shared TS client, role-based WS pub/sub, SSE streaming | §4.1 multi-role UI requirement, §4.8 | §4.8 (3 SPAs + shared client lib + WS event catalog) | §5.6 |
+  | 2.8 | Edge computing platform — Jetson Orin Nano hardware, software stack, and sensor interfaces (off-the-shelf) | §3.3 (robot hardware), §4.4.2 (edge/server split) | §4.4.2 (memory budget analysis leading to edge/server architecture) | §5.4.4 |
 
-- **The integration gap:** each need has been addressed individually in prior work — autonomous navigation (ROS2 delivery robots), Vietnamese speech (standalone STT/TTS/VAD), conversational agents (cloud chatbots), intent classification (NLU pipelines), menu retrieval (academic RAG), fleet management (warehouse frameworks), restaurant software (POS/KDS), and SPA web interfaces (Vue/React dashboards). No prior system has integrated all six into a single deployed system where the AI agent directly drives physical delivery and real-time UI state across all roles.
+- **The integration gap:** each need has been addressed individually in prior work — autonomous navigation (ROS2 delivery robots), Vietnamese speech (standalone STT/TTS/VAD), edge computing (Jetson deployments), conversational agents (cloud chatbots), intent classification (NLU pipelines), menu retrieval (academic RAG), fleet management (warehouse frameworks), restaurant software (POS/KDS), and SPA web interfaces (Vue/React dashboards). No prior system has integrated all into a single deployed system where the AI agent directly drives physical delivery and real-time UI state across all roles.
 
 ---
 
 ## CHAPTER 3: PROPOSED METHOD (I) — ROBOT CONTROL AND NAVIGATION
+
+> **Chapter requirements — this chapter answers:**
+> - What must the navigation system achieve? (3.1 Requirements — derived from Ch.2 Need 1 gap)
+> - What challenges make this hard? (3.2 Design Challenges C1–C4)
+> - What hardware are we working with? (3.3 Platform & Hardware)
+> - Per challenge: what method did we design or apply, and how does it address the challenge? (3.4–3.7)https://gemini.google.com/app/ca07af383ceb129c
+> - For off-the-shelf components used in navigation (RTAB-Map, Nav2, robot_localization EKF, ArUco): they were surveyed in Ch.2; this chapter describes how they are configured, integrated, and adapted for the restaurant domain.
+> - For components we designed (dynamic goal coupling, business-context ArUco docking): this chapter presents the design and its rationale.
 
 > *This chapter addresses Need 1 (dynamic goal navigation, §2.2). It follows the structure: system requirements derived from the gap (§3.1) → design challenges that make these requirements difficult (§3.2) → proposed method: how the system solves each challenge (§3.3–§3.7).*
 
@@ -541,6 +624,15 @@ No prior system combines Vietnamese language support, an agent architecture enfo
 
 ## CHAPTER 4: PROPOSED METHOD (II) — AI, BACKEND & WEB SYSTEM
 
+> **Chapter requirements — this chapter answers:**
+> - What must the software system achieve? (4.1 Requirements — derived from Ch.2 Needs 2–6)
+> - What challenges make this hard? (4.2 Design Challenges C5–C10)
+> - What is the overall architecture, and why these design decisions? (4.3)
+> - For each subsystem: based on the Ch.2 survey, what did we SELECT (off-the-shelf) or DESIGN (new)?
+>   - If selected from a Ch.2 comparison table: state what was selected and the selection rationale against our requirements.
+>   - If designed new: reference the Ch.2 research gap, present the proposed method, explain how it addresses its challenge.
+> - How do all subsystems fit together in deployment? (4.9)
+
 > *This chapter addresses Needs 2–6 (§2.3–§2.7). It follows the structure: system requirements derived from the gaps (§4.1) → design challenges (§4.2) → overall architecture and design rationale (§4.3) → per-component method: how each subsystem solves its challenges (§4.4–§4.8).*
 
 ### 4.1 System Requirements & Design Rationale
@@ -575,48 +667,214 @@ No prior system combines Vietnamese language support, an agent architecture enfo
 
 ### 4.3 Overall Software Architecture
 
-- **Three-tier topology:** Server tier (Agent brain + Orchestrator backend + Ollama LLMs + RAG indices), Robot tier (Voice pipeline + ROS2 navigation stack), Client tier (3 browser SPAs)
-- **Block diagram** (from `diagram.md` Fig 4.1): all components, protocols, and 4 main data flows:
-  - (a) Voice ordering at table: tablet "Talk to AI" → backend WS → Jetson mic armed → VAD→STT→Agent→TTS → text reply + UI action → tablet display
-  - (b) Order → kitchen display: agent confirms order → backend creates order row → WS `order.created` → kitchen panel updates Kanban
-  - (c) Manager monitoring: robot poses at 4+ Hz → RAM store → WS broadcast at 5 Hz → fleet dashboard minimap
-  - (d) Backend → robot navigation goals: order status → XONG → dispatcher assigns deliver task → WS `task.assign` → robot receives Nav2 goal
-- **Component responsibility map:** what runs where, what talks to what, over which protocol
-- **Design rationale addressing each challenge:**
-  - C5 (Vietnamese informality): MLP classifier with context features — frozen bi-encoder embedding (768-dim) + 10 conversation state features (order_stage, cart state, search history) → 778-dim input → 3-layer MLP → 0.17ms → deterministic
-  - C6 (VRAM budget): edge/server split — microphone+speaker on Jetson, LLM on server GPU. Audio → STT locally (text is ~100 bytes), text → server HTTP (negligible payload), response text → TTS locally
-  - C7 (probabilistic LLM): deterministic validator between every LLM call and tool execution — menu name resolution, off-menu detection, state consistency checks, circuit breaker (max 3 retries)
-  - C8 (sensory queries): closed-loop RAG — LLM rewrites vague query → hybrid retrieval (BM25 + FAISS + RRF fusion) → LLM evaluates and rephrases results
-  - C9 (state machine backend): single FastAPI + SQLite process, WAL mode, WebSocket fan-out by role, session lifecycle enforced with state transitions
-  - C10 (voice binding): dynamic bind/unbind on robot arrival/departure, watchdog (30s timeout), requeue on failure
+> *This section establishes the high-level architecture of the AI Waiter system: the hybrid edge/server topology, the design rationale for splitting perception from intelligence, the component responsibility map, the four primary data flows that constitute restaurant operation, the communication protocols between tiers, and the key architectural decisions. Each decision is traced back to the design challenge (C5–C10) it addresses.*
+
+#### 4.3.1 Hybrid Architecture — Perception on Edge, Intelligence on Server
+
+> *The system is not a monolithic application. It is a distributed system with a deliberate split: voice perception and robot motion run on the Jetson edge computer physically attached to the robot; LLM reasoning, agent orchestration, and business state run on a central x86 server with a dedicated GPU. This subsection explains what runs where and why the split was necessary.*
+
+- **The two-machine topology.** Two physical computers, one network (local WiFi):
+  - **Jetson Orin Nano (the body):** carries the microphone, speaker, LiDAR, camera, and motors. Runs the voice pipeline (VAD → STT → TTS) and ROS2 navigation (Nav2 + RTAB-Map + EKF). Does NOT run the LLM — it physically cannot fit.
+  - **x86 Server with NVIDIA GPU (the brain):** runs Ollama serving Qwen2.5 7B, the LangGraph agent brain, the FastAPI orchestrator backend, two SQLite databases (business ledger + conversation memory), and the FAISS+BM25 hybrid retrieval index.
+
+- **Why the split exists — the VRAM math.** The Jetson has 8 GB unified memory shared among all processes. ROS2 navigation (~500 MB) + sensor drivers (~200 MB) + voice pipeline STT model at float16 (~1.5 GB) + TTS model (~200 MB) already consumes ~2.5 GB. The LLM at float16 requires 6–8 GB. Co-locating the LLM would total ~9–10 GB — exceeding the Jetson's capacity. 4-bit quantization could reduce the LLM to ~4 GB but degrades Vietnamese output quality (tonal diacritics are the first to go under aggressive quantization). The solution is architectural, not compression-based: move the LLM to hardware with sufficient VRAM.
+
+- **Why not put everything on the server?** Because the microphone and speaker are physically on the robot — putting STT and TTS on the server would mean streaming raw 16 kHz audio (~100 KB per utterance) over WiFi each turn, adding network latency and making the voice pipeline dependent on WiFi stability. Running STT locally on the Jetson means the audio never leaves the robot — only the text transcript (~100 bytes) travels over the network. And if WiFi drops, voice capture + transcription complete locally; the text payload waits for reconnection.
+
+- **The split in terms of data volume.** The edge processes heavy data (audio, LiDAR scans, camera frames) and sends only lightweight structured outputs to the server (text transcripts, robot pose coordinates). The server processes lightweight inputs but heavy computation (LLM inference over 7B parameters, database transactions, WebSocket fan-out). This asymmetry — heavy sensing on the edge, heavy reasoning on the server — is the defining characteristic of the architecture.
+
+- **Protocol.** The Jetson maintains two persistent WebSocket connections to the server: `role=voice-device` (receives microphone gating commands: start/cancel listening) and `role=robot` (receives Nav2 goal assignments, sends pose/battery heartbeats). The voice pipeline also makes HTTP POST calls to the agent brain for STT transcript submission. Both connections share one `robot_id`, matching the physical robot identity at the orchestrator.
+
+#### 4.3.2 Client Tier — Roles and Responsibilities
+
+> *In addition to the two-machine compute split, the system serves three browser-based interfaces on the staff network, each with a distinct operational role. They share a common TypeScript library for REST and WebSocket communication.*
+
+- **Customer tablet** (`:5173`, `role=customer` via WebSocket). Runs on the 7-inch touchscreen at each table. Functions: menu browsing with 12 Vietnamese seafood categories, voice conversation mirror (see what the agent heard/said), cart synchronization (voice-ordered items appear in the visual cart), and VietQR mock payment screen. WebSocket events are filtered by `table_id` — each tablet sees only its own table's conversation.
+- **Kiosk** (`:5174`, REST only). Runs on a tablet at the restaurant entrance. Single-component Vue 3 SPA: table grid with real-time status, party size selector, one-button check-in. The seating action cascades through the orchestrator: marks table occupied, creates an active session, dispatches a robot to guide the party to the table.
+- **Management panel** (`:5175`, `role=panel` via WebSocket). Runs in the kitchen and manager's office. Four-component dashboard: Kitchen Kanban (three-column order board: Chờ Bếp → Đang Làm → Xong, forward-advance buttons), Fleet Board (per-robot status cards with battery, activity, last-seen time), Table Overview (per-table status with live session timers), and Minimap (SLAM floor plan overlay with live robot pose dots at 5 Hz).
+
+#### 4.3.3 Component Responsibility Map
+
+> *A complete inventory of what runs where, what each component is responsible for, and how components communicate. This table is the single point of reference for the architecture — every connection, protocol, and direction is specified.*
+
+| Component | Machine | Port/Protocol | Responsibility | Talks To (→ direction) |
+|-----------|---------|---------------|----------------|------------------------|
+| **Agent Brain** (LangGraph) | Server | 8100 / HTTP | Converts Vietnamese utterances into validated actions. 10-node graph: classifier router → 4 workers → validator → tools → state updater → state outcome → response generator. | → Ollama (LLM inference, localhost :11434) |
+| | | | | ← Voice device (receives POST /chat with transcript) |
+| | | | | → Orchestrator (POST /orders, /payments for tool execution) |
+| | | | | → Orchestrator (POST /voice/event for tablet mirroring) |
+| **Orchestrator** (FastAPI) | Server | 8000 / HTTP + WS | Central business state: REST API (20 endpoints, 10 routers), WebSocket hub (4 role-based channels), fleet dispatcher (task assignment and watchdog), session lifecycle manager, voice bridge (agent↔tablet↔robot relay). Manages two SQLite databases. | ← Agent (REST calls for orders, payments) |
+| | | | | →↔ Web clients (REST + WebSocket push) |
+| | | | | →↔ Robot (WebSocket: task assignment →, telemetry ←) |
+| | | | | → Voice device (WebSocket: start/cancel listening) |
+| **Ollama** | Server | 11434 / HTTP | Serves Qwen2.5 7B Instruct with three logical endpoints (router T=0.0, worker T=0.1, response T=0.3) sharing one loaded model. `keep_alive=-1` pins the model in GPU VRAM permanently. | ← Agent (LLM inference requests) |
+| **RAG Indices** | Server | In-process | FAISS dense index (768-dim, 217 dishes, Vietnamese bi-encoder embeddings) + BM25 sparse index (tokenized via `underthesea`, compound-word-aware). Fused via RRF (k=60). | ← Agent (search tool calls) |
+| **Voice Pipeline** | Jetson | Client (connects out) | VAD (Silero, CPU, ~2 MB) → STT (faster-whisper medium, PhoWhisper weights, GPU, ~1.5 GB) → TTS (Piper, CPU, ~200 MB; edge-tts fallback). Threaded: VAD thread → speech_queue → STT thread → text_queue → main loop. | ← Orchestrator (WS: start/cancel listening commands) |
+| | | | | → Agent (HTTP POST /chat with transcript) |
+| | | | | → Orchestrator (WS: receives TTS text via voice.reply flow) |
+| **ROS2 Navigation** | Jetson | In-process (ROS2) | EKF-fused odometry, RTAB-Map localization, Nav2 path planning + DWB control, ArUco marker detection. Covered in Chapter 3. | →↔ Orchestrator (WS: receives task.assign goals, sends task status + heartbeats) |
+| **Customer Tablet** | Browser | :5173 (dev) | Menu, voice mirror, cart sync, payment. `role=customer` WebSocket, filtered by table_id. | → Orchestrator (REST for orders, cart; POST /voice/listen) |
+| | | | | ← Orchestrator (WS: voice.heard, voice.reply, table.updated) |
+| **Kiosk** | Browser | :5174 (dev) | Table grid, party size selector, one-button check-in. REST only. | → Orchestrator (POST /seatings) |
+| **Panel** | Browser | :5175 (dev) | Kitchen Kanban, fleet board, table overview, minimap. `role=panel` WebSocket. | ← Orchestrator (WS: order.created/updated, table.updated, robot.updated, task events) |
+| | | | | → Orchestrator (REST: PATCH orders, PATCH tables, POST /admin/reset) |
+
+#### 4.3.4 Primary Data Flows
+
+> *The system executes four end-to-end data flows, each spanning multiple components and protocols. These flows are the operational backbone of the restaurant — every customer interaction, kitchen action, and robot movement traces one of these paths. Each flow is documented as a numbered sequence of steps with the responsible component, the action it takes, and the protocol used.*
+
+##### Flow (a) — Voice Ordering at Table
+
+> *This is the core customer interaction loop. A guest speaks Vietnamese; the system transcribes, understands, executes, validates, and responds — in spoken Vietnamese — with the tablet mirroring every step. Total duration from end-of-speech to start-of-reply: under 5 seconds.*
+
+| Step | Component | Action | Protocol |
+|------|-----------|--------|----------|
+| 1 | Customer Tablet | Guest presses "Talk to AI" → POST `/voice/listen {table_id}` | HTTP REST |
+| 2 | Orchestrator | Voice bridge resolves `table_id → robot_id` via dynamic binding | In-process |
+| 3 | Orchestrator | Sends `start_listening` to bound robot's `voice-device` WebSocket | WebSocket |
+| 4 | Jetson VAD | Silero VAD arms microphone, captures one utterance (1.5s silence timeout) | In-process (PyAudio) |
+| 5 | Jetson STT | faster-whisper medium transcribes audio → Vietnamese text (~800ms) | In-process (CTranslate2) |
+| 6 | Jetson Main | POSTs transcript to Agent Brain `/chat/stream {table_id, text}` | HTTP REST |
+| 7 | Agent | POSTs `voice.heard` to Orchestrator → tablet shows "thinking..." + transcript | HTTP REST → WS |
+| 8a | Agent Router | MLP classifier (768-dim embedding + 10 context features → 4-class, 0.17ms) | In-process |
+| 8b | Agent Worker | LLM (Qwen2.5 7B, T=0.1, tool_choice="any") selects tool + arguments | Ollama HTTP |
+| 8c | Agent Validator | Deterministic: resolves dish names against 217-item menu, checks state machine | In-process |
+| 8d | Agent Tools | Executes tool (cart CRUD in-memory, or HTTP to orchestrator for orders/payment) | In-process / HTTP |
+| 8e | Agent State | Merges results into AgentState, advances cart state machine, handles multi-intent queue | In-process |
+| 9 | Agent Response | Generates Vietnamese spoken reply (templates for deterministic outcomes, LLM for search/chat) | In-process / Ollama |
+| 10 | Agent | POSTs `voice.reply` (text, UI action, cart state, order confirmation) to Orchestrator | HTTP REST |
+| 11 | Orchestrator | Fans `voice.reply` to all `role=customer` WebSocket clients (tablet filters by table_id) | WebSocket |
+| 12 | Tablet | Displays AI response text bubble, syncs cart (`syncFromVoice`), executes UI action if set | In-process (Vue) |
+| 13 | Jetson TTS | Receives response text via SSE stream → Piper TTS plays sentence-by-sentence through speaker | In-process (Piper/edge-tts) |
+
+Key properties of this flow:
+- **Offline-capable at every step.** VAD+STT complete locally on Jetson (no network). TTS completes locally (Piper, no network). Only the LLM call (step 8b) requires the server. A WiFi drop between steps 6-8 leaves the transcript buffered; a Wi-Fi drop during TTS playback leaves the speaker silent but doesn't crash.
+- **Validation gates the LLM.** Step 8c runs after the LLM proposes (8b) but before tools execute (8d). A hallucinated dish name never reaches the cart or backend.
+- **The tablet mirrors, not drives.** The tablet does not touch the microphone. It is a display and signal device — it shows what the agent heard/said and syncs the visual cart from voice state. The microphone lives on the robot, controlled by the orchestrator.
+
+##### Flow (b) — Order to Kitchen Display
+
+> *When the agent confirms an order, the kitchen must know immediately — not on the next page refresh.*
+
+| Step | Component | Action | Protocol |
+|------|-----------|--------|----------|
+| 1 | Agent | `confirm_order` tool calls orchestrator POST `/orders` with serialized cart | HTTP REST |
+| 2 | Orchestrator | Inserts order + order_items into SQLite, status `CHO_BEP` | SQLite (WAL) |
+| 3 | Orchestrator | Emits `order.created` to all `role=panel` WebSocket connections | WebSocket |
+| 4 | Panel (KitchenBoard) | New order card appears in "Chờ Bếp" column with items, quantities, table name, elapsed timer | In-process (Vue) |
+| 5 | Kitchen Staff | Advances status: "Bắt đầu làm" → `PATCH /orders/{id} {status: DANG_LAM}` | HTTP REST |
+| 6 | Orchestrator | Emits `order.updated` → panel card moves to "Đang Làm" column | WebSocket |
+| 7 | Kitchen Staff | Marks complete: "Món xong ✓" → `PATCH /orders/{id} {status: XONG}` | HTTP REST |
+| 8 | Orchestrator | Emits `order.updated` → card moves to "Xong" column. **Creates `deliver` task** (triggers Flow d) | WebSocket + in-process |
+
+##### Flow (c) — Manager Monitoring (Fleet + Tables)
+
+> *The management panel maintains a live view of the restaurant floor — robot positions, table statuses, task progress — updated in real time without polling.*
+
+| Step | Component | Action | Frequency |
+|------|-----------|--------|-----------|
+| 1 | Robot (ROS2) | Sends `heartbeat` over WebSocket: `{robot_id, x, y, battery, status}` | 4+ Hz |
+| 2 | Orchestrator (fleet.py) | Updates RAM-only dict with latest pose + battery (lock-protected, no DB write) | Per heartbeat |
+| 3 | Orchestrator | Throttled broadcast: emits `robot.updated` to panel WebSocket | Max 5 Hz per robot |
+| 4 | Panel (MiniMap) | Renders robot pose dot on SLAM map overlay at live (x, y) coordinates | On event |
+| 5 | Panel (FleetBoard) | Updates robot card: status badge, activity label, battery percentage with color coding | On event |
+| 6 | Orchestrator | Periodic DB snapshot: writes current pose + battery to `robots` table for cold-start recovery | Every 15s |
+| — | Panel (TableOverview) | Receives `table.updated` events: seating, order confirmation, payment | On business event |
+| — | Panel (FleetBoard) | Receives `task.created` / `task.updated` events: dispatcher task lifecycle | On business event |
+
+**Why RAM telemetry, not database writes.** Writing 4+ Hz per robot to SQLite would create file-level write contention — a heartbeat write could delay a payment transaction. The RAM store (`fleet.py`, ~60 lines, thread-safe dict) absorbs sensor-frequency updates with zero I/O. The 15-second periodic snapshot provides cold-start recovery (after orchestrator restart) without competing with business transactions.
+
+##### Flow (d) — Business Events to Robot Navigation Goals
+
+> *The dispatcher translates three business events — a party is seated, food is ready, a guest presses the call button — into robot navigation tasks. The robot receives a Nav2 goal pose; the dispatcher manages the task lifecycle.*
+
+| Step | Triggering Business Event | Dispatcher Action | Robot Action |
+|------|--------------------------|-------------------|--------------|
+| 1 | Kiosk seating → `POST /seatings` | Creates `go_to_table` task (PENDING), calls `try_assign()` | — |
+| 2 | Order status → `XONG` (kitchen marks done) | Creates `deliver` task (PENDING), calls `try_assign()` | — |
+| 3 | Guest presses "Gọi Robot" → `POST /tables/{id}/call` | Creates `call` task (PENDING), calls `try_assign()` | — |
+
+`try_assign()` logic (runs on every task creation and robot state change):
+1. Query all PENDING tasks, ordered by `created_at` (FIFO).
+2. For each task, score all eligible robots: `status = idle` AND WebSocket alive AND battery ≥ 20%. Score = Euclidean distance from robot's live pose (RAM) to target table's waypoint.
+3. Select nearest robot. In a SQLite transaction: mark task `ASSIGNED`, mark robot `busy`, set `activity` label.
+4. Send `task.assign {task_id, kind, table_id}` to the robot's WebSocket.
+5. Robot responds: `task_accepted` → `IN_PROGRESS`, begins Nav2 navigation to goal.
+6. Robot arrives: sends `arrived` → dispatcher binds `table_id → robot_id` in voice bridge → tablet "Talk to AI" now routes to this robot's microphone.
+7. Task completes: robot sends `task_done` → dispatcher marks `DONE`, frees robot (`idle`), clears voice binding, calls `try_assign()` for next queued task.
+
+**Fault recovery.** The watchdog scans every 5 seconds: any robot with no heartbeat for >30s is marked offline, its current task is requeued to PENDING, its voice binding is cleared, and its zombie WebSocket is force-closed. If the orchestrator restarts: PENDING tasks survive in the database, robots reconnect as idle, periodic pose snapshots provide last-known positions, and `try_assign()` resumes.
+
+#### 4.3.5 Communication Protocol Summary
+
+> *Why each protocol was chosen for each communication path, with latency and reliability rationale.*
+
+| Communication Path | Protocol | Why This Protocol |
+|-------------------|----------|-------------------|
+| Agent → Ollama | HTTP (localhost) | Ollama's native protocol. Same-machine, negligible latency (~1ms). One process, multiple logical model instances sharing one loaded model. |
+| Agent → Orchestrator | HTTP (localhost) | Synchronous request/response for tool execution (create order, request payment). Fire-and-forget for voice event mirroring. Separate processes (ports 8100 vs 8000) prevent LLM inference from blocking WebSocket event delivery. |
+| Orchestrator → Web Clients | WebSocket (push) | Real-time state changes (order created, table updated, robot moved) must reach all clients in <50ms. Polling at 1 Hz generates hundreds of requests/minute, most returning unchanged data. WebSocket push: clients receive events only when state changes. |
+| Orchestrator → Robot | WebSocket (bidirectional) | Task assignment requires server-to-robot push (the robot doesn't poll for tasks). Telemetry requires robot-to-server push (the server doesn't poll robot sensors). Bidirectional WebSocket satisfies both with one persistent connection. |
+| Robot → Agent | HTTP (POST) | The voice transcript is a request/response pattern: send text, receive text. WebSocket would add framing overhead for what is inherently RPC. HTTP is simpler, stateless, and the agent brain doesn't need to maintain a persistent connection to every robot. |
+| Frontends → Orchestrator | HTTP (REST) | CRUD operations (seat a table, advance order status, fetch menu) are inherently request/response. REST with standard HTTP verbs and status codes maps cleanly to these operations. JSON payloads validated via Pydantic (backend) and TypeScript interfaces (frontend). |
+
+#### 4.3.6 Design Rationale — How the Architecture Addresses Each Challenge
+
+> *Each architectural decision is traced to the design challenge (C5–C10 from §4.2) it resolves. This table is the architecture's thesis statement: given these challenges, here is why the system is structured as it is.*
+
+| Challenge | Architectural Response | Where Detailed |
+|-----------|----------------------|----------------|
+| **C5 — Vietnamese informality** | MLP classifier with context features: frozen Vietnamese bi-encoder embedding (768-dim) + 10 conversation state features → 778-dim input → 3-layer MLP → 0.17ms → deterministic 4-class output. Handles teencode, context-dependent ambiguity, multi-intent, domain vocabulary — properties prior approaches trade against each other. | §4.5.2 |
+| **C6 — VRAM is zero-sum on the edge** | Edge/server split: microphone + speaker on Jetson (voice pipeline within 2.5 GB budget), LLM on server GPU (Qwen2.5 7B within 8 GB VRAM). Audio stays local — only text transcripts cross the network. | §4.3.1, §4.4.2 |
+| **C7 — Probabilistic LLM in a deterministic system** | Deterministic validator between every LLM call and tool execution: 5-level menu name resolution, off-menu detection, state consistency checks, circuit breaker (max 3 retries). Safety invariant: LLM → validate → action, never LLM → action. | §4.5.4 |
+| **C8 — Sensory queries don't match menu structure** | Closed-loop RAG: LLM rewrites vague query into concrete search terms → BM25+FAISS hybrid retrieval with RRF fusion → LLM evaluates and rephrases results in natural Vietnamese. "Ấm bụng" → "lẩu, súp, cháo, món nước nóng" → menu search → conversational reply. | §4.6 |
+| **C9 — Backend is a state machine the AI drives** | Single FastAPI + SQLite process: WAL mode for concurrent reads, RAM telemetry to avoid write contention, role-based WebSocket fan-out (not polling), session lifecycle enforced with guarded state transitions. | §4.7 |
+| **C10 — Robot-table voice binding must survive disconnection** | Dynamic bind/unbind on robot arrival/departure, watchdog (30s heartbeat timeout), automatic task requeue and voice rebind on disconnection. The customer never knows which robot is listening — the system abstracts over individual robots. | §4.7.4 |
 
 ---
 
 ### 4.4 Edge Voice Pipeline *(→ Need 2, §2.3)*
 
-> *How the Jetson processes spoken Vietnamese and produces spoken replies, under the constraints identified in §2.3 (restaurant noise, edge VRAM budget, co-located robot control).*
+> *Selects the STT, VAD, and TTS components from the comparison tables surveyed in §2.3, and presents the threaded pipeline architecture that integrates them. The Vietnamese-specific constraints that drove these selections — tonal diacritics, compound words, teencode, restaurant noise — are stated as design context below. These were not surveyed in Ch.2 (which surveys technology, not domain-specific challenges) and are presented here as the constraints the selected components must satisfy.*
 
-#### 4.4.1 Edge/Server Split Rationale
+#### 4.4.1 Vietnamese Voice Constraints (Design Context)
+
+The following constraints are inherent to Vietnamese restaurant speech processing and are not properties of any specific technology — they are the conditions under which the selected components must operate:
+
+- **Tonal diacritics.** Vietnamese has six tones carried by diacritic marks. The words "cá" (fish), "cà" (eggplant), "cả" (all), and "cạ" (to rub) differ only in tone. An STT model that correctly identifies segmental phonemes but misclassifies the tone produces a different dish name — ordering "cá kho tộ" vs. "cà kho tộ" is braised fish vs. braised eggplant.
+- **Monosyllabic structure with compound words.** "Bún bò Huế" is three syllables but one lexical unit (a specific noodle soup). STT models must recognize these as compounds, not as independent syllables.
+- **Teencode and informal speech.** Casual Vietnamese uses abbreviations absent from formal STT training corpora: "ad" (anh/chị), "ck" (chuyển khoản), "z" (vậy), "nhiêu" (bao nhiêu), "hông" (không). These are standard spoken Vietnamese in informal contexts, not errors.
+- **Restaurant ambient noise.** Concurrent conversations, kitchen sounds, plate and utensil contact produce sustained broadband noise at 60–70 dB. STT accuracy degrades in noise; VAD must discriminate speech from this noise profile without excessive false triggers.
+- **STT as the pipeline break-point.** A transcription error propagates through every downstream component — classifier, LLM, validator, response generator — all operate on corrupted input. No downstream intelligence can fully recover from an STT error that changes a dish name.
+
+#### 4.4.2 Edge/Server Split Rationale
 
 - Addressing C6 (VRAM budget): microphone and speaker on Jetson → STT and TTS models are GPU-light (~1.5 GB + 200 MB) → run on Jetson's CUDA cores. LLM (Qwen2.5 7B, ~6–8 GB) runs on server GPU.
 - Local STT avoids network round-trip latency for audio upload. Text transcript (~100 bytes) is a negligible payload compared to raw audio (~100 KB).
 - Protocol: Jetson connects to orchestrator WebSocket as `role=voice-device`. The tablet→voice flow: Customer presses "Talk to AI" → `POST /voice/listen` → orchestrator WS forwards `start_listening` to bound voice device → Jetson arms microphone. After agent produces text output → `POST /voice/event` → orchestrator WS mirrors to tablet.
 
-#### 4.4.2 Threaded Pipeline Architecture
+#### 4.4.3 Component Selection from §2.3 Survey
+
+- Based on the comparison tables in §2.3, the following components are selected for this system:
+  - **VAD:** Silero VAD — language-agnostic, ~1.5 MB, CPU real-time, configurable sensitivity threshold. Selected over WebRTC (lower accuracy in noise) and GPU-based options (infeasible on edge).
+  - **STT:** PhoWhisper medium via faster-whisper — Vietnamese fine-tuned Whisper with CTranslate2 8-bit quantization. Selected over cloud services (offline requirement) and base Whisper (lower tonal accuracy).
+  - **TTS:** Piper TTS (primary, offline, Vietnamese VITS model) with edge-tts (Azure fallback for x86 development). Selected over cloud-only TTS services (offline requirement).
+
+#### 4.4.4 Threaded Pipeline Architecture
 
 - **VAD thread:** captures microphone in 512-sample chunks, resamples to 16 kHz. Silero VAD classifies each frame as speech/silence. Configurable sensitivity threshold tuned for restaurant noise. Gate-controlled: only active between `start_listening` and utterance completion.
 - **STT thread:** receives complete utterance audio via `speech_queue`. Runs faster-whisper medium with `language=vi`, `beam_size=5`. PhoWhisper weights for improved tonal accuracy. Output transcript → `text_queue`.
 - **Main loop:** pops transcript → HTTP POST to agent brain `/chat` → receives response JSON → dispatches to TTS → signals ready for next utterance.
 - **Single-utterance mode:** pipeline captures exactly one utterance per `start_listening`, then auto-idles. Prevents continuous eavesdropping.
 
-#### 4.4.3 Barge-In Mechanism
+#### 4.4.5 Barge-In Mechanism
 
 - TTS playback is sentence-by-sentence (aligned with agent SSE output).
 - During TTS playback, VAD thread runs concurrently in monitoring mode.
 - If VAD detects new speech → playback interrupted mid-sentence → new utterance captured and processed.
 - Enables natural turn-taking — customer can interrupt to correct an order.
 
-#### 4.4.4 TTS Strategy
+#### 4.4.6 TTS Strategy
 
 - **Primary:** Piper TTS (local, Vietnamese voice, CPU, ~500ms/sentence). Offline on Jetson.
 - **Fallback:** edge-tts (Azure Vietnamese Neural voices). Used when Piper unavailable or on x86 dev machines.
@@ -624,9 +882,9 @@ No prior system combines Vietnamese language support, an agent architecture enfo
 
 ---
 
-### 4.5 Conversational Agent *(→ Need 3, §2.4)*
+### 4.5 Conversational AI Agent *(→ §2.4)*
 
-> *The intellectual core of the software contribution. How the agent converts informal Vietnamese utterances into deterministic, validated actions — addressing C5 (Vietnamese informality) and C7 (probabilistic LLM in a deterministic system). Every utterance flows through five stages: Understanding → Decision → Validation → Execution → Response. The graph topology enforces the restaurant ordering state machine (from §2.4.2 architecture gap).*
+> *The intellectual core of the software contribution. How the agent converts informal Vietnamese utterances into deterministic, validated actions — addressing C5 (Vietnamese informality) and C7 (probabilistic LLM in a deterministic system). Every utterance flows through five stages: Understanding → Decision → Validation → Execution → Response. The graph topology enforces the restaurant ordering state machine (from §2.5.3 architecture gap).*
 
 #### 4.5.1 Agent Execution Model
 
@@ -655,11 +913,11 @@ No prior system combines Vietnamese language support, an agent architecture enfo
 
 #### 4.5.2 Stage I — Understanding: Intent Classification
 
-> Addressing C5: Vietnamese informality.
+> Addressing C5: Vietnamese informality. The embedding model used for the classifier's 768-dimensional input is the same `bkai-foundation-models/vietnamese-bi-encoder` surveyed in §2.5.2.
 
 - **Intent taxonomy:** {ORDER, SEARCH, PAYMENT, CHAT}. ORDER_CONFIRM merged at router level; distinction handled downstream by order state machine.
 - **MLP classifier architecture (778-dim → 0.17ms → deterministic):**
-  - **Embedding:** `bkai-foundation-models/vietnamese-bi-encoder` (768-dim, L2-normalized). Vietnamese-specific bi-encoder trained on Vietnamese sentence pairs.
+  - **Embedding:** `bkai-foundation-models/vietnamese-bi-encoder` (768-dim, L2-normalized). Vietnamese-specific bi-encoder trained on Vietnamese sentence pairs (§2.5.2).
   - **Context features (10-dim):** order_stage one-hot (5-dim), has_cart, cart_size_norm, has_search_context, search_context_size_norm, utterance_length_norm.
   - **Network:** 3-layer MLP: 778 → 256 → ReLU → Dropout(0.2) → 64 → ReLU → Dropout(0.2) → 4. Softmax output.
   - **Training:** 3,712 synthetically generated Vietnamese utterances across 4 intents with per-utterance context features. 80/20 stratified split. CrossEntropyLoss with class weights. Adam (lr=1e-3, weight_decay=1e-4). Early stopping (patience=10). Embeddings precomputed offline — CPU training in ~2 minutes.
@@ -722,7 +980,7 @@ No prior system combines Vietnamese language support, an agent architecture enfo
 
 #### 4.5.7 Prompt Architecture
 
-> *The system uses zero fine-tuning — all model adaptation is through prompting. The prompt architecture is a first-class design element.*
+> *The system uses zero fine-tuning — all model adaptation is through prompting (§2.4.2 justifies this choice). The prompt architecture is a first-class design element.*
 
 - **System prompts (7 files, all Vietnamese):** each LLM-calling node has its own prompt defining role, reasoning protocol, output format, constraints.
 - **Few-shot examples:** static JSON loaded at boot, injected at runtime.
@@ -731,7 +989,7 @@ No prior system combines Vietnamese language support, an agent architecture enfo
   - (Router prompt unused by MLP classifier — fallback path only)
 - **Skill documents:** `hospitality.md` (Vietnamese restaurant service etiquette), `menu_grounding.md` (menu-as-ground-truth rules), `no_service_response.md` (domain boundary).
 - **Dynamic context injection:** last 2 conversation turns into prompts for context awareness; "ĐÃ BIẾT" section for search deduplication; validator `feedback` into retry prompts.
-- **Per-stage model configuration:**
+- **Per-stage model configuration (all Qwen2.5 7B via Ollama, surveyed in §2.4.2):**
 
   | Stage | Model | Temperature | Key Configuration |
   |-------|-------|-------------|-------------------|
@@ -743,7 +1001,7 @@ No prior system combines Vietnamese language support, an agent architecture enfo
 
 ---
 
-### 4.6 Knowledge Retrieval Pipeline *(→ Need 4, §2.5)*
+### 4.6 Knowledge Retrieval Pipeline *(→ §2.5)*
 
 > *Addressing C8 (sensory queries don't match menu structure). A closed-loop pipeline: the LLM rewrites the customer's vague query into concrete search terms before retrieval, a hybrid BM25+FAISS+RRF retriever searches the menu, and the LLM rephrases the results in natural Vietnamese after retrieval.*
 
@@ -776,7 +1034,7 @@ No prior system combines Vietnamese language support, an agent architecture enfo
 
 ---
 
-### 4.7 Backend Orchestrator & Real-Time Systems *(→ Need 5, §2.6)*
+### 4.7 Backend Orchestrator & Real-Time Systems *(→ §2.6, §2.7)*
 
 > *Addressing C9 (state machine backend) and C10 (robot-table voice binding). How the server coordinates restaurant operations — REST API, WebSocket hub, fleet dispatcher, session lifecycle, and voice bridge — all in a single self-contained FastAPI process.*
 
@@ -819,7 +1077,7 @@ No prior system combines Vietnamese language support, an agent architecture enfo
 
 ---
 
-### 4.8 Web Interfaces *(→ Need 5, §2.6 — multi-role real-time synchronization)*
+### 4.8 Web Interfaces *(→ §2.7)*
 
 > *Three single-page applications sharing a common TypeScript library. Each app has a specific role in the restaurant service flow.*
 
@@ -857,6 +1115,13 @@ No prior system combines Vietnamese language support, an agent architecture enfo
 ---
 
 ## CHAPTER 5: EXPERIMENTS AND RESULTS
+
+> **Chapter requirements — this chapter answers:**
+> - How was evaluation conducted? (5.1: hardware setup, datasets, metrics definitions)
+> - For each §1.3 objective and each Ch.2 need: what was tested, what were the results, do the results meet the target?
+> - Per experiment: goal → dataset → methodology → metrics → results → analysis → ablation (where applicable)
+> - What is the failure budget? Which component contributed the most failures? (5.7)
+> - Do the aggregate results confirm the system design proposed in Ch.3–Ch.4? (5.7 traceability)
 
 > *Each experiment validates one or more requirements from §3.1 and §4.1, which trace back to needs identified in Chapter 2. Structure per experiment: goal → dataset → methodology → metrics → results → analysis → ablation.*
 
@@ -1107,6 +1372,11 @@ Table mapping each Ch.2 need → requirement → experiment → key result:
 ---
 
 ## CHAPTER 6: CONCLUSION AND FUTURE WORKS
+
+> **Chapter requirements — this chapter answers:**
+> - What was achieved? Tick each §1.3 objective against Ch.5 results. (6.1 Conclusion)
+> - What are the known limitations of the current system? (6.2 Limitations)
+> - What should be done next? (6.3 Future Works)
 
 ### 6.1 Conclusion
 
