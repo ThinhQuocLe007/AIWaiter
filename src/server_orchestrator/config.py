@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     # against the simulated restaurant instead —
     #   ORCH_FLOORPLAN_PATH=assets/data/floorplan.sim.json   (or: make backend SIM=1)
     # Relative paths resolve from the repo root.
-    floorplan_path: Path = REPO_ROOT / "robot_ws/src/real/ai_hw_bridge/config/floorplan.json"
+    floorplan_path: Path = REPO_ROOT / "robot_ws/src/real/tarkbot_robot/config/floorplan.json"
 
     # Allowed CORS origins for the browser frontends. Dev servers normally hit the backend
     # through each app's same-origin Vite proxy (/api -> :8000) so CORS does not bite, but we

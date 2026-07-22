@@ -4,22 +4,18 @@
   <name>ai_hw_bridge</name>
   <version>0.1.0</version>
   <description>AI Waiter — REAL-robot bridge: speaks the dispatcher robot contract over the backend
-  WS hub (role=robot) and drives the tarkbot Nav2 stack (RTAB-Map localization). Mirror of
-  src/sim/ai_sim_bridge, but motion runs on the real robot (nav2_simple_commander + ArUco align)
-  instead of Gazebo/TurtleBot4.</description>
+  WS hub (role=robot) and drives the tarkbot Nav2 stack via tarkbot_robot.visual_delivery
+  (RTAB-Map localization + ArUco last-metre align). Mirror of src/sim/ai_sim_bridge.</description>
   <maintainer email="ducduy9304@gmail.com">ducduy</maintainer>
   <license>Apache 2.0</license>
 
+  <!-- Bridge-only deps: WS frames, the battery topic, and the TF lookup for heartbeat pose.
+       Everything that MOVES the robot (Nav2, ArUco, camera, waypoints) is tarkbot_robot's. -->
   <depend>rclpy</depend>
   <depend>tf2_ros</depend>
   <depend>geometry_msgs</depend>
-  <!-- real motion drives Nav2 through the simple commander (NavigateToPose action) -->
-  <exec_depend>nav2_simple_commander</exec_depend>
-  <!-- last-metre ArUco align (detection only — pose correction lives inside RTAB-Map) -->
-  <depend>sensor_msgs</depend>
-  <exec_depend>cv_bridge</exec_depend>
-  <exec_depend>python3-opencv</exec_depend>
-  <exec_depend>python3-numpy</exec_depend>
+  <depend>std_msgs</depend>
+  <exec_depend>tarkbot_robot</exec_depend>
   <!-- websocket-client (python). rosdep key python3-websocket; else pip install websocket-client -->
   <exec_depend>python3-websocket</exec_depend>
 

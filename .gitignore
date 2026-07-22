@@ -86,6 +86,12 @@ data/sqlite/
 data/samples/
 **/pretrained_models/
 
+# Project-Specific: RTAB-Map map databases
+# Hundreds of MB each, and the robot localizes on its own copy at ~/.ros/rtabmap.db anyway. What
+# the repo DOES track is the small 2D grid exported from it (maps/restaurant.pgm + .yaml) — the
+# floor the panel minimap draws. Re-export with `make map` after re-scanning the restaurant.
+robot_ws/src/real/tarkbot_robot/maps/*.db
+
 # Project-Specific: Audio Input Assets
 # Audio files (.wav) are extremely large and should not be checked into Git
 inputs/audio/**/*.wav

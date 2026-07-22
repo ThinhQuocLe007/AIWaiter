@@ -8,10 +8,12 @@
   ],
 
   "_note_map": [
-    "Map thật chưa vẽ xong (2026-07-21). `dir` là nơi sẽ đặt map thật; chừng nào chưa có file thì",
-    "backend tự rơi về `fallback_dir` (map sim) để minimap vẫn vẽ được.",
-    "Xuất map thật từ RTAB-Map:  ros2 run nav2_map_server map_saver_cli -f restaurant --ros-args -p map_subscribe_transient_local:=true",
-    "rồi copy restaurant.pgm + restaurant.yaml vào `dir`."
+    "Map THẬT đã xuất (2026-07-22) từ ~/.ros/rtabmap.db — chính database mà RTAB-Map localize lên,",
+    "nên minimap của panel và pose heartbeat của robot cùng một frame, không cần hiệu chỉnh gì.",
+    "Quét lại nhà hàng xong thì xuất lại:  make map   (rtabmap-export --map, xem Makefile).",
+    "`fallback_dir` (map sim) chỉ dùng khi restaurant.pgm/.yaml chưa tồn tại — lúc đó minimap vẽ",
+    "sàn sim mà toạ độ lại là sàn thật, tức là sai; có file thật rồi thì không bao giờ rơi vào nhánh đó.",
+    "File .db không commit (vài trăm MB, xem .gitignore); chỉ .pgm + .yaml được theo dõi."
   ],
   "map": {
     "dir": "robot_ws/src/real/tarkbot_robot/maps",
@@ -21,57 +23,42 @@
   },
 
   "_note_coords": [
-    "TOẠ ĐỘ DƯỚI ĐÂY VẪN LÀ SỐ CỦA MAP SIM — placeholder cho tới khi đo lại trên map thật.",
-    "approach = điểm Nav2 chạy tới (robot đứng đây phục vụ), yaw_deg = hướng mũi robot khi tới nơi",
-    "(0 = +X map, 90 = +Y map). marker = vị trí mã ArUco/bàn thật, chỉ dùng để vẽ icon trên minimap.",
-    "marker_id = null nghĩa là KHÔNG có mã ArUco ở chỗ đó -> bridge chỉ chạy Nav2 tới waypoint,",
-    "bỏ qua bước xoay căn mã. Thực tế 2026-07-21: nhà hàng chỉ in 2 mã, ID 1 (bàn 1) và ID 6 (bàn 6);",
-    "dock và các bàn còn lại không có mã. Hai mã này cũng là 2 điểm DUY NHẤT mà RTAB-Map sửa được",
-    "pose bằng landmark (RGBD/MarkerDetection) -> đi ngang chúng là drift được kéo về.",
-    "Cách đo trên robot thật: lái robot tới chỗ muốn đặt waypoint rồi",
-    "  ros2 run tf2_ros tf2_echo map base_footprint",
-    "lấy translation x, y và yaw từ rotation."
+    "Demo quy ước 2026-07-21: ArUco ID 1 = bàn phục vụ (Table 1); ArUco ID 6 = dock (khách về).",
+    "Bàn 2–5 (số sim placeholder) đã bỏ: map mới chỉ dùng dock + Table 1. Thêm bàn = đo pose_record rồi thêm vào `tables`.",
+    "Web vẫn có 6 bàn: bàn nào chưa khảo sát thì bridge chạy tới Table 1 (param `default_table`),",
+    "còn id bàn thật vẫn giữ nguyên ở server — đó là thứ bind tablet + mic của khách.",
+    "approach = điểm Nav2 chạy tới, yaw_deg = hướng mũi. marker = vị trí THẬT của mã (icon minimap + căn ảnh).",
+    "",
+    "QUAN TRỌNG — approach KHÔNG phải chỗ bạn đậu robot lúc đo. Nó là điểm nằm trên PHÁP TUYẾN của mã,",
+    "cách mã `standoff` mét, mũi quay vào mã. Phải vậy thì robot mới đứng vuông góc với mã: visual_align",
+    "chỉ XOAY tại chỗ (err_x -> 0), không bao giờ khử được độ xéo (marker_yaw) — độ vuông góc phải nằm sẵn",
+    "trong waypoint này. Bộ số cũ chép thẳng pose robot lúc khảo sát nên approach == marker và robot tới nơi",
+    "đứng xéo ~20°; xem docs/guides/jetson-nav-merge-vi.md.",
+    "",
+    "Cách đo:  ros2 launch tarkbot_robot pose_survey.launch.py   (thêm standoff:=0.6 nếu muốn đứng gần hơn)",
+    "Đậu robot ở đâu cũng được miễn thấy rõ mã, chờ [SURVEY 15] với spread < 2 cm, copy dòng [PASTE …]."
+  ],
+  "_note_dock": [
+    "Đo 2026-07-22 bằng pose_survey (standoff 0.8 m): spread 0.0 cm, view_yaw +0.02 rad, range 0.51 m,",
+    "3 lần đọc liên tiếp lệch nhau ~1 mm. Số cũ (approach == marker == (-2.251, -2.348), yaw -66.0) là pose",
+    "robot chép tay — lệch vị trí thật ~32 cm, chính là nguyên nhân robot về dock đứng xéo."
   ],
   "dock": {
-    "marker_id": null,
-    "approach": { "x": 0.0, "y": 0.0, "yaw_deg": 0.0 }
+    "marker_id": 6,
+    "approach": { "x": -2.417, "y": -2.069, "yaw_deg": -65.2 },
+    "marker": { "x": -2.081, "y": -2.795 }
   },
+  "_note_tables": [
+    "Table 1 đo 2026-07-22 bằng pose_survey (standoff 0.8 m): spread 0.2 cm, view_yaw +0.02 rad,",
+    "range 0.49 m, 5 lần đọc liên tiếp lệch nhau ~1 mm. Số cũ (approach == marker == (0.394, 1.919),",
+    "yaw -57.9) là pose robot chép tay — lệch vị trí thật ~0.42 m."
+  ],
   "tables": [
     {
       "id": 1,
       "marker_id": 1,
-      "approach": { "x": 8.73, "y": 1.301, "yaw_deg": 178.5 },
-      "marker": { "x": 7.11, "y": 1.343 }
-    },
-    {
-      "id": 2,
-      "marker_id": null,
-      "approach": { "x": 7.233, "y": 0.314, "yaw_deg": 1.2 },
-      "marker": { "x": 8.89, "y": 0.35 }
-    },
-    {
-      "id": 3,
-      "marker_id": null,
-      "approach": { "x": 8.741, "y": -0.694, "yaw_deg": 178.5 },
-      "marker": { "x": 7.11, "y": -0.65 }
-    },
-    {
-      "id": 4,
-      "marker_id": null,
-      "approach": { "x": 8.7, "y": -3.152, "yaw_deg": -176.5 },
-      "marker": { "x": 7.11, "y": -3.25 }
-    },
-    {
-      "id": 5,
-      "marker_id": null,
-      "approach": { "x": 7.257, "y": -4.309, "yaw_deg": 2.1 },
-      "marker": { "x": 8.89, "y": -4.25 }
-    },
-    {
-      "id": 6,
-      "marker_id": 6,
-      "approach": { "x": 8.679, "y": -5.178, "yaw_deg": -177.4 },
-      "marker": { "x": 7.11, "y": -5.25 }
+      "approach": { "x": 0.243, "y": 2.276, "yaw_deg": -58.6 },
+      "marker": { "x": 0.660, "y": 1.593 }
     }
   ]
 }

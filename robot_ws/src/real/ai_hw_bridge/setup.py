@@ -13,9 +13,10 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        # Table/dock waypoints. The backend reads the copy in the source tree, the robot reads
-        # this installed copy — one file, so they cannot drift apart.
-        (os.path.join('share', package_name, 'config'), glob('config/*.json')),
+        # All-in-one launch (localization + Nav2 + this bridge). It lives here rather than in
+        # tarkbot_robot because it starts an ai_hw_bridge node, and ai_hw_bridge is the package
+        # that already depends on tarkbot_robot — not the other way round.
+        (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,

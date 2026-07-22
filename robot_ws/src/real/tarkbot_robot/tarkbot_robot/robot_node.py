@@ -235,7 +235,10 @@ class TarkbotRobotNode(Node):
         else:
             cal_status = "(RAW)"
 
-        self.get_logger().info(
+        # debug, not info: this fires on EVERY serial frame (~50 Hz) and buries the output of
+        # whatever node you actually launched for. Re-enable per run with
+        #   --ros-args --log-level tarkbot_robot_node:=debug
+        self.get_logger().debug(
             f"DECODE -> Vol:{vol_v:6.2f}V  Gyz:{gyro_z_rad_s:+.5f}rad/s {cal_status} "
             f"|  vel(vx,vy,w)=({sensor_data.velocity.linear_x:+.3f}, "
             f"{sensor_data.velocity.linear_y:+.3f}, {sensor_data.velocity.angular_z:+.3f})"

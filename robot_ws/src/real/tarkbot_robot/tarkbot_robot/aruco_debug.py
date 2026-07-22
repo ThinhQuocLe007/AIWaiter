@@ -77,6 +77,7 @@ class ArucoDebugNode(Node):
 
         self._min_period = 1.0 / PUBLISH_RATE_HZ if PUBLISH_RATE_HZ > 0 else 0.0
         self._last_proc = self.get_clock().now()
+        self._last_ids: list[int] | None = None  # log only when the visible set changes
 
         self.create_subscription(
             CameraInfo, CAMERA_INFO_TOPIC, self._camera_info_cb, qos_profile_sensor_data)
@@ -138,8 +139,15 @@ class ArucoDebugNode(Node):
                             cv2.aruco.drawAxis(
                                 frame, self.camera_matrix, self.dist_coeffs,
                                 rvec, tvec, axis_len)
-            self.get_logger().info(
-                f'Detected ArUco IDs: {[int(x[0]) for x in ids]}')
+            # Only on CHANGE — logging every frame at camera rate drowns the console
+            # (the annotated image on /aruco_debug_image is the real per-frame view).
+            id_list = sorted({int(x[0]) for x in ids})
+            if id_list != self._last_ids:
+                self.get_logger().info(f'Detected ArUco IDs: {id_list}')
+                self._last_ids = id_list
+        elif self._last_ids is not None:
+            self.get_logger().info('ArUco IDs: none in view')
+            self._last_ids = None
 
         try:
             debug_msg = self.bridge.cv2_to_imgmsg(frame, encoding='bgr8')

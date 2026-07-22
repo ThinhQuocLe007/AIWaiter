@@ -202,15 +202,20 @@ Tắt: server `make kill` · Jetson `Ctrl-C` từng terminal.
 
 ---
 
-## 7. Phần này KHÁC gì bản có nav đầy đủ
+## 7. Nav đã ghép xong — bản này chạy được cả phần di chuyển
 
-| Thành phần | Bản này (test voice/web) | Bản đầy đủ (nav merge sau) |
-|---|---|---|
-| Robot client `role=robot` | `ai_hw_bridge` — battery thật, **motion STUB** (`arrived` fire ngay) | `ai_hw_bridge` — nav owner thay STUB bằng Nav2 + ArUco |
-| Vị trí robot (x,y) | Trống (chưa localization) | Từ TF `map→base_link` (RTAB-Map + EKF) |
-| Chấm minimap | Không có | Có, chạy theo robot |
-| Robot có chạy tới bàn | Không (đứng yên) | Có |
+Runbook này viết khi motion còn là STUB (robot đứng yên, `arrived` fire ngay). Giờ nav đã merge:
+`ai_hw_bridge/task_bridge` chạy motion thật qua `tarkbot_robot.visual_delivery` (RTAB-Map + Nav2 +
+căn ArUco chặng cuối), heartbeat có cả pin thật lẫn pose `map → base_footprint`, và chấm robot
+trên minimap chạy trên **map thật** của nhà hàng.
 
-`ai_hw_bridge` (`robot_ws/src/real/`) hiện đóng vai **thay `make mockrobot`**: gửi pin thật + tạo binding
-để test được vòng voice/web mà chưa cần nav. Khi nav merge xong, chỉ cần điền waypoint + thay 2 hàm
-STUB `deliver_to`/`return_to_dock` trong `hw_delivery.py` bằng Nav2 thật.
+Thay **cả T1 (`robot_node`) lẫn T2 (`task_bridge`)** ở bước ② bằng một lệnh dựng cả stack — nó bật
+sẵn base driver, đừng chạy `robot_node` riêng nữa (hai instance tranh cổng serial). Đậu robot ở
+dock (ArUco 6) trước khi bật:
+
+```bash
+make hwstack SERVER_HOST=<ip-server>:8000 ID=robo-1
+```
+
+Runbook đầy đủ cho bản có nav: **[real-robot-demo-runbook-vi.md](real-robot-demo-runbook-vi.md)**.
+Lý do thiết kế: [jetson-nav-merge-vi.md §7](jetson-nav-merge-vi.md).

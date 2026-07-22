@@ -29,11 +29,19 @@ def generate_launch_description():
         pkg_share, 'config', 'rtabmap_localization_params.yaml')
 
     rtabmap_params_file = LaunchConfiguration('rtabmap_params_file')
+    rtabmap_log_level = LaunchConfiguration('rtabmap_log_level')
 
     declare_rtabmap_params = DeclareLaunchArgument(
         'rtabmap_params_file',
         default_value=default_rtabmap_params,
         description='RTAB-Map localization parameter file')
+    # RTAB-Map prints one 'Rate=… delay=…' line per iteration — at Rtabmap/DetectionRate 5.0
+    # that is 5 lines/s, which buries every other node. 'warn' keeps the errors and the
+    # relocalization failures, drops the per-cycle telemetry.
+    declare_rtabmap_log_level = DeclareLaunchArgument(
+        'rtabmap_log_level',
+        default_value='info',
+        description='ROS log level for the rtabmap node (info | warn | error)')
 
     ekf_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -53,6 +61,8 @@ def generate_launch_description():
         name='rtabmap',
         output='screen',
         parameters=[rtabmap_params_file],
+        arguments=['--ros-args', '--log-level',
+                   ['rtabmap:=', rtabmap_log_level]],
         remappings=[
             # RGB-D camera topics — SAME as mapping (rtabmap_slam.launch.py) so the map's
             # visual data can be used to relocalize.
@@ -76,6 +86,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         declare_rtabmap_params,
+        declare_rtabmap_log_level,
         ekf_launch,
         sensors_launch,
         rtabmap_node,

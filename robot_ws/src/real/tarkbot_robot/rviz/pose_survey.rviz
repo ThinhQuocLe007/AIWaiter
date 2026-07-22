@@ -1,14 +1,12 @@
+# Survey view for `pose_record`: map + TF + lidar to judge localization, plus the
+# annotated camera image so you can see the marker actually decoding before trusting
+# a [PASTE] line. Deliberately lighter than nav2_navigation.rviz — no costmaps/plans,
+# because Nav2 is not running during a survey.
 Panels:
   - Class: rviz_common/Displays
     Name: Displays
-  - Class: rviz_common/Selection
-    Name: Selection
-  - Class: rviz_common/Tool Properties
-    Name: Tool Properties
   - Class: rviz_common/Views
     Name: Views
-  - Class: nav2_rviz_plugins/Navigation 2
-    Name: Navigation 2
 Visualization Manager:
   Class: ""
   Displays:
@@ -51,7 +49,7 @@ Visualization Manager:
       Name: TF
       Show Arrows: true
       Show Axes: true
-      Show Names: false
+      Show Names: true
       Value: true
     - Alpha: 1
       Class: rviz_default_plugins/Map
@@ -84,110 +82,28 @@ Visualization Manager:
         Value: /scan
       Use Fixed Frame: true
       Value: true
-    - Alpha: 1
-      Class: rviz_default_plugins/LaserScan
-      Color: 255; 128; 0
-      Color Transformer: FlatColor
-      Decay Time: 0
-      Enabled: true
-      Name: Depth Scan
-      Size (Pixels): 3
-      Size (m): 0.01
-      Style: Points
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Best Effort
-        Value: /scan_depth
-      Use Fixed Frame: true
-      Value: true
-    - Alpha: 1
-      Autocompute Intensity Bounds: true
-      Autocompute Value Bounds:
-        Max Value: 10
-        Min Value: -10
-        Value: true
-      Axis: Z
-      Channel Name: intensity
-      Class: rviz_default_plugins/PointCloud2
-      Color Transformer: RGB8
-      Decay Time: 0
-      Enabled: true
-      Name: RealSense PointCloud
-      Position Transformer: XYZ
-      Size (Pixels): 2
-      Size (m): 0.01
-      Style: Flat Squares
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Best Effort
-        Value: /camera/camera/depth/color/points
-      Use Fixed Frame: true
-      Value: true
-    - Alpha: 0.3
-      Class: rviz_default_plugins/Map
-      Color Scheme: costmap
-      Enabled: true
-      Name: Global Costmap
-      Topic:
-        Depth: 1
-        Durability Policy: Transient Local
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /global_costmap/costmap
-      Value: true
-    - Alpha: 0.5
-      Class: rviz_default_plugins/Map
-      Color Scheme: costmap
-      Enabled: true
-      Name: Local Costmap
-      Topic:
-        Depth: 1
-        Durability Policy: Transient Local
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /local_costmap/costmap
-      Value: true
-    - Alpha: 1
-      Buffer Length: 1
-      Class: rviz_default_plugins/Path
-      Color: 255; 0; 0
-      Enabled: true
-      Line Style: Lines
-      Line Width: 0.03
-      Name: Global Plan
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /plan
-      Value: true
-    - Alpha: 1
-      Buffer Length: 1
-      Class: rviz_default_plugins/Path
-      Color: 0; 12; 255
-      Enabled: true
-      Line Style: Lines
-      Line Width: 0.03
-      Name: Local Plan
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /local_plan
-      Value: true
-    # aruco_debug's annotated stream — watch the marker decode during the last-metre align.
+    # pose_record's own annotated stream (drawn markers + PnP axes). Separate topic from
+    # aruco_debug's /aruco_debug_image so the two nodes never fight over one publisher.
     - Class: rviz_default_plugins/Image
       Enabled: true
       Max Value: 1
       Median window: 5
       Min Value: 0
-      Name: ArUco Debug
+      Name: ArUco (pose_record)
+      Normalize Range: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Value: /pose_record_debug
+      Value: true
+    - Class: rviz_default_plugins/Image
+      Enabled: false
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Name: ArUco (aruco_debug)
       Normalize Range: true
       Topic:
         Depth: 5
@@ -195,7 +111,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Best Effort
         Value: /aruco_debug_image
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/Odometry
       Enabled: true
       Keep: 1
@@ -222,7 +138,9 @@ Visualization Manager:
     - Class: rviz_default_plugins/MoveCamera
     - Class: rviz_default_plugins/Select
     - Class: rviz_default_plugins/FocusCamera
+    # Measure: click two points to check a surveyed distance against a tape measure.
     - Class: rviz_default_plugins/Measure
+    # Seeds RTAB-Map when the robot starts somewhere the map does not recognise.
     - Class: rviz_default_plugins/SetInitialPose
       Topic:
         Depth: 5
@@ -237,7 +155,6 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /clicked_point
-    - Class: nav2_rviz_plugins/GoalTool
   Value: true
   Views:
     Current:
@@ -251,7 +168,11 @@ Visualization Manager:
       Y: 0
     Saved: ~
 Window Geometry:
+  Displays:
+    collapsed: false
   Height: 900
-  Width: 1400
+  Width: 1500
   X: 50
   Y: 50
+  ArUco (pose_record):
+    collapsed: false

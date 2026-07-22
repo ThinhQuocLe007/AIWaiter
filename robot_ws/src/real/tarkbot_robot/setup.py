@@ -24,8 +24,11 @@ setup(
             glob(os.path.join('launch/navigation', '*.launch.py'))),
         ('share/' + package_name + '/launch/slam',
             glob(os.path.join('launch/slam', '*.launch.py'))),
+        # *.yaml = EKF / Nav2 / RTAB-Map tuning; floorplan.json = table + dock waypoints (the
+        # backend reads the copy in the source tree, visual_delivery this installed one — one
+        # file, so they cannot drift apart).
         ('share/' + package_name + '/config',
-            glob(os.path.join('config', '*.yaml'))),
+            glob(os.path.join('config', '*.yaml')) + glob(os.path.join('config', '*.json'))),
         ('share/' + package_name + '/rviz',
             glob(os.path.join('rviz', '*.rviz'))),
         ('share/' + package_name + '/urdf',
@@ -44,6 +47,8 @@ setup(
             f'path_publisher = {package_name}.path_publisher:main',
             f'monitor_ekf = {package_name}.monitor_ekf:main',
             f'aruco_debug = {package_name}.aruco_debug:main',
+            f'pose_record = {package_name}.pose_record:main',
+            f'deliver_test = {package_name}.deliver_test:main',
         ],
     },
 )

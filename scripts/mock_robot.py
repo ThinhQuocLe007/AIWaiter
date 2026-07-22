@@ -45,7 +45,7 @@ ACTION_SECONDS = 3.0  # fake time doing the action at the table
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _FLOORPLAN = Path(
     os.environ.get(
-        "ORCH_FLOORPLAN_PATH", "robot_ws/src/real/ai_hw_bridge/config/floorplan.json"
+        "ORCH_FLOORPLAN_PATH", "robot_ws/src/real/tarkbot_robot/config/floorplan.json"
     )
 )
 if not _FLOORPLAN.is_absolute():

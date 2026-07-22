@@ -87,7 +87,7 @@ Giờ **chỉ sửa một file**:
 
 | Chế độ | File | Ai đọc |
 |---|---|---|
-| Robot thật | [`ai_hw_bridge/config/floorplan.json`](../../robot_ws/src/real/ai_hw_bridge/config/floorplan.json) | bridge robot thật (qua package share) + backend + mock robot |
+| Robot thật | [`tarkbot_robot/config/floorplan.json`](../../robot_ws/src/real/tarkbot_robot/config/floorplan.json) | `visual_delivery` (qua package share) + backend + mock robot |
 | Mô phỏng | [`assets/data/floorplan.sim.json`](../../assets/data/floorplan.sim.json) | backend khi chạy `make backend SIM=1` |
 
 Trong đó: `map.dir` (map thật, tự rơi về map sim nếu chưa có file), `dock`, và mỗi bàn có
@@ -237,48 +237,60 @@ Nav + localization của tarkbot đã merge, và bridge robot thật đã code x
 | Localization: EKF (odom bánh + gyro Z) + RTAB-Map (lidar + RGB-D + ArUco landmark) | ✅ có |
 | Nav2 (DWB, costmap fuse `/scan` + `/scan_depth`) | ✅ có |
 | Bridge `ai_hw_bridge/task_bridge` — WS, heartbeat pin thật (Volt→%), vòng đời task | ✅ có |
-| Motion thật trong `hw_delivery.py` — Nav2 `goToPose` + căn ArUco chặng cuối | ✅ code xong, **chưa chạy thử** |
+| Motion thật trong `tarkbot_robot/visual_delivery.py` — Nav2 `goToPose` + căn ArUco chặng cuối | ✅ có |
 | Toạ độ gộp một nguồn (§3.1) | ✅ xong |
-| Map thật cho minimap | ⬜ **đang chờ vẽ** — backend tạm dùng map sim |
-| Waypoint đo trên map thật | ⬜ số trong `floorplan.json` vẫn là số sim |
-| Mã ArUco dán ở bàn | ⬜ đang in **2 mã: ID 1 (bàn 1) + ID 6 (bàn 6)**; dock và bàn 2–5 không có mã |
+| Map thật cho minimap | ✅ `maps/restaurant.pgm` xuất từ `~/.ros/rtabmap.db` (`make map`) |
+| Waypoint đo trên map thật | ✅ dock + bàn 1 đo bằng `pose_survey` (2026-07-22), sai số ~1 mm |
+| Mã ArUco dán ở bàn | ✅ **2 mã: ID 1 (bàn 1) + ID 6 (dock)** — các bàn khác chưa khảo sát |
+
+**Sàn demo hiện tại chỉ có một bàn.** Web vẫn cho khách ngồi bàn 1–6; bàn nào không có waypoint
+riêng thì bridge chạy tới **bàn 1 (ArUco 1)** — param `default_table` của `task_bridge`, đặt `0`
+để từ chối thay vì thay thế. Đây chỉ là đích **vật lý**: server vẫn giữ nguyên id bàn thật, và đó
+mới là thứ bind tablet + mic của khách. Khảo sát thêm bàn (`pose_survey`) rồi thêm vào
+`floorplan.json` là bàn đó tự có đích riêng, không phải sửa code.
+
+Ranh giới package (đừng để lẫn lại): **`tarkbot_robot` = mọi thứ làm robot chạy** (driver, EKF,
+Nav2, RTAB-Map, ArUco, `visual_delivery`, `floorplan.json`); **`ai_hw_bridge` = chỉ lớp nói chuyện
+với backend** (WebSocket, heartbeat, vòng đời task) cộng launch gộp `ai_waiter.launch.py`.
 
 Khác biệt cố ý so với bản sim, đừng "sửa lại cho giống":
 
-* **Không bơm `/initialpose`.** RTAB-Map tự relocalize trên database đã lưu; bridge chỉ *chờ* TF
-  `map -> base_footprint` xuất hiện. Lần đầu vẫn phải đặt "2D Pose Estimate" trong RViz.
+* **`/initialpose` bơm ở pose dock, không phải RViz.** Quy ước demo: lúc khởi động robot luôn đậu
+  ở dock (ArUco 6), nên `startup_sequence` tự bơm pose đó rồi chờ TF `map -> base_footprint`.
+  "2D Pose Estimate" trong RViz chỉ còn là đường lui khi robot khởi động ở chỗ khác.
 * **ArUco ở bridge KHÔNG sửa pose.** Việc đó nằm trong RTAB-Map (`RGBD/MarkerDetection`) dưới dạng
-  ràng buộc landmark của đồ thị. Tracker trong `hw_delivery.py` chỉ dùng để xoay căn giữa mã ở
+  ràng buộc landmark của đồ thị. Tracker trong `visual_delivery.py` chỉ dùng để xoay căn giữa mã ở
   chặng cuối, và chỉ bật lúc đang có task (đỡ CPU).
-* `waitUntilNav2Active(localizer='robot_localization')` — cách nói với nav2_simple_commander
-  "localization ở đây không phải AMCL", để nó khỏi chờ AMCL lifecycle + `/initialpose`.
-* Chỗ nào `marker_id: null` (không có mã — dock và bàn 2–5) thì bridge chạy Nav2 tới waypoint là
-  xong, không tìm/căn mã. Chỉ bàn 1 (ID 1) và bàn 6 (ID 6) có bước căn ảnh, và cũng chỉ hai chỗ đó
+* **Không gọi `waitUntilNav2Active()`** — kể cả `localizer='robot_localization'`: nó chờ một
+  lifecycle service mà stack này không hề expose. Thay vào đó gate bằng TF `map -> base_footprint`
+  + `_waitForNodeToActivate('bt_navigator')`.
+* Chỗ nào `marker_id: null` (bàn chưa in mã) thì bridge chạy Nav2 tới waypoint là xong, không
+  tìm/căn mã. Hiện chỉ bàn 1 (ID 1) và dock (ID 6) có bước căn ảnh, và cũng chỉ hai chỗ đó
   RTAB-Map mới kéo được pose về bằng landmark.
 * **Lúc quét map (`rtabmap_slam.launch.py`) phải dán sẵn 2 mã và cho camera nhìn thấy chúng**, vì
   landmark chỉ dùng lại được nếu nó đã nằm trong database map. Dán mã sau khi quét xong = mã vô dụng
   với localization (bridge vẫn căn ảnh được, nhưng RTAB-Map không sửa pose).
 * Cạnh mã in ra phải đúng **0.15 m**, khớp `Marker/Length` trong `rtabmap_localization_params.yaml`
-  (và `MARKER_LENGTH` trong `aruco_debug.py`, `MARKER_SIZE` trong `hw_delivery.py`). Từ điển
+  (và `MARKER_LENGTH` trong `aruco_debug.py`, `MARKER_SIZE` trong `visual_delivery.py`). Từ điển
   **DICT_4X4_50**. In sai cỡ thì PnP ra khoảng cách sai theo tỉ lệ.
 * Nav2 chạy tới nơi thất bại thì **không** gửi `arrived` — vì `arrived` là thứ bind mic của bàn vào
   robot; báo `arrived` khi robot không ở đó = tiếng khách gửi tới ghế trống. Bridge đóng task rồi
   về dock.
 
-### Thứ tự chạy thử (mỗi bước tách riêng một tầng)
+### Chạy demo end-to-end
+
+Thứ tự đầy đủ, chỗ dừng kiểm tra và bảng gỡ rối nằm ở
+**[real-robot-demo-runbook-vi.md](real-robot-demo-runbook-vi.md)** — tóm tắt: đậu robot ở dock
+(ArUco 6) → `make backend` trên server → `make hwstack SERVER_HOST=<ip>:8000 ID=robo-1` trên Jetson.
+
+Tách từng tầng khi cần bắt lỗi (mỗi lệnh một terminal):
 
 ```bash
-# 1) Trên robot — localization, rồi đặt 2D Pose Estimate trong RViz
-ros2 launch tarkbot_robot rtabmap_localization.launch.py
-# 2) Trên robot — Nav2
+ros2 launch tarkbot_robot rtabmap_localization.launch.py   # chỉ localization
 ros2 launch tarkbot_robot navigation.launch.py use_rviz:=true
-# 3) Trên server — backend (mặc định = floorplan robot thật)
-make backend
-# 4) Trên robot — bridge
-make hwbridge SERVER_HOST=<ip-server>:8000 ID=robo-1
-# 5) Kiểm tra không cần voice: kiosk seat bàn 1 -> panel phải hiện "task N arrived (table 1)",
-#    chấm robot trên minimap chạy, pin hiện số thật.
-# 6) Ghép voice: make voice trên Jetson với VOICE_ROBOT_ID = robo-1.
+make hwbridge SERVER_HOST=<ip-server>:8000 ID=robo-1       # chỉ bridge
+ros2 launch tarkbot_robot deliver_test.launch.py           # motion, không cần web
+ros2 topic echo /bat_vol                                   # đo pin thật để chỉnh Volt→%
 ```
 
 Demo mô phỏng vẫn nguyên: `make backend SIM=1` + `make simbridge`.

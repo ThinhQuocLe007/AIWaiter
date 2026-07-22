@@ -1,7 +1,7 @@
 # Makefile - Convenience commands for AI Waiter project
 # Run 'make help' to see available commands
 
-.PHONY: help setup install update frontend menu kiosk panel backend reindex agent voice probe mockrobot simbridge hwbridge build serve kill reset clean
+.PHONY: help setup install update frontend menu kiosk panel backend reindex agent voice probe mockrobot simbridge hwbridge hwstack map build serve kill reset clean
 
 # Role-specific Python extras for the backend env (see docs/setup-deploy.md). Each machine
 # picks ONLY its role: fastapi/uvicorn live in `--extra server`, STT/TTS in `--extra voice`,
@@ -38,7 +38,9 @@ help:
 	@echo "  make probe      - Mic -> VAD -> Whisper only: nói vào mic, in ra text (không cần server)"
 	@echo "  make mockrobot  - Start a mock robot WS client (ID=robo-1 ARGS=...) to test the dispatcher"
 	@echo "  make simbridge  - Gazebo robot bridge (sim demo); make backend SIM=1 for the sim map"
-	@echo "  make hwbridge   - REAL robot bridge on the Jetson (RTAB-Map + Nav2 + ArUco)"
+	@echo "  make hwstack    - REAL robot, all-in-one on the Jetson: localization + Nav2 + bridge"
+	@echo "  make hwbridge   - REAL robot bridge only (localization + Nav2 already running)"
+	@echo "  make map        - Re-export the minimap floor from the RTAB-Map database"
 	@echo "  make reindex    - Clean rebuild of FAISS + BM25 + centroid artifacts"
 	@echo "  make reset      - Wipe demo data: clear orders/seatings, free all tables (backend must be running)"
 	@echo "  make kill       - Stop all dev servers (backend 8000/8100, frontends 5173-5175, voice)"
@@ -176,16 +178,38 @@ simbridge:
 	ros2 run ai_sim_bridge task_bridge --ros-args \
 		-p server_host:=$(SERVER_HOST) -p robot_id:=$(ID)
 
-# REAL robot bridge (runs on the Jetson) — same dispatcher contract as simbridge, but motion is the
-# tarkbot stack: RTAB-Map localization + Nav2 + ArUco align, and the heartbeat carries the real
-# battery voltage. Bring localization and navigation up first (two terminals):
-#   ros2 launch tarkbot_robot rtabmap_localization.launch.py     # then set 2D Pose Estimate in RViz
+# REAL robot, ALL-IN-ONE (one terminal on the Jetson): RTAB-Map localization → Nav2 → the
+# dispatcher bridge. This is what a web demo run uses. Park the robot at the DOCK (ArUco 6) before
+# starting — the bridge seeds /initialpose there itself, so no "2D Pose Estimate" in RViz.
+#   make hwstack SERVER_HOST=100.66.165.221:8000 ID=robo-1
+# Waypoints come from tarkbot_robot/config/floorplan.json — the same file the backend reads.
+# Demo floor: Table 1 = ArUco 1, dock = ArUco 6; a guest seated at any other table is served at
+# Table 1 (the server keeps their real table id). Nav2 is forward-only (min_vel_x=0).
+hwstack:
+	@cd robot_ws && . /opt/ros/humble/setup.sh && . install/setup.sh && \
+	ros2 launch ai_hw_bridge ai_waiter.launch.py \
+		server_host:=$(SERVER_HOST) robot_id:=$(ID)
+
+# Just the bridge — for when localization and Nav2 are already up in their own terminals:
+#   ros2 launch tarkbot_robot rtabmap_localization.launch.py
 #   ros2 launch tarkbot_robot navigation.launch.py
-# Waypoints come from ai_hw_bridge/config/floorplan.json — the same file the backend reads.
+# Field-test the motion with no web at all: ros2 launch tarkbot_robot deliver_test.launch.py
 hwbridge:
 	@cd robot_ws && . /opt/ros/humble/setup.sh && . install/setup.sh && \
 	ros2 run ai_hw_bridge task_bridge --ros-args \
 		-p server_host:=$(SERVER_HOST) -p robot_id:=$(ID)
+
+# Re-export the floor the panel minimap draws (restaurant.pgm + .yaml) straight from the RTAB-Map
+# database the robot localizes on — same graph, so the minimap and the robot's heartbeat pose can
+# never disagree. Run on the Jetson after re-scanning the restaurant, then commit the two files
+# (the .db itself is gitignored). Grid/* mirror rtabmap_localization_params.yaml.
+RTABMAP_DB ?= $(HOME)/.ros/rtabmap.db
+MAP_DIR := robot_ws/src/real/tarkbot_robot/maps
+map:
+	@. /opt/ros/humble/setup.sh && rtabmap-export --map --opt 2 \
+		--output restaurant --output_dir $(MAP_DIR) \
+		--Grid/Sensor 0 --Grid/RangeMax 12.0 --Grid/RayTracing true $(RTABMAP_DB)
+	@echo "  -> $(MAP_DIR)/restaurant.pgm + .yaml — restart 'make backend' to pick it up"
 
 # Reset all live demo data (orders, seatings, tables → free, robots → seed) via the running
 # backend. Panels reload instantly (WS 'reset' event); kiosk reflects on its next table poll.

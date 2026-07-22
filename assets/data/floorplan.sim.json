@@ -5,7 +5,7 @@
     "Số ở đây = đúng bộ số sim đang chạy, chép từ",
     "robot_ws/src/sim/turtlebot4_python_tutorials/.../food_delivery.py (DESTINATIONS + get_marker_global_tf).",
     "Bên sim KHÔNG đọc file này — code sim giữ nguyên hằng số của nó, không bị đụng tới.",
-    "Bản robot thật: robot_ws/src/real/ai_hw_bridge/config/floorplan.json"
+    "Bản robot thật: robot_ws/src/real/tarkbot_robot/config/floorplan.json"
   ],
   "map": {
     "dir": "robot_ws/src/sim/turtlebot4_navigation/maps",
