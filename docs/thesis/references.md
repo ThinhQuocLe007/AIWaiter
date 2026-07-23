@@ -256,6 +256,89 @@ peer-reviewed hospitality-technology source is preferable to trade press for thi
 
 ---
 
+### §2.5 Menu Knowledge Retrieval
+
+> **STATUS — NOT YET WRITTEN.** No entries exist for the keys cited in §2.5.
+
+---
+
+### §2.6 Backend Orchestration & Fleet Management
+
+> **STATUS — NOT YET WRITTEN.** No entries exist for the keys cited in §2.6.
+
+---
+
+### §2.7 Multi-Role Web Interfaces
+
+> **STATUS — NOT YET WRITTEN.** No entries exist for the keys cited in §2.7.
+
+---
+
+### §2.8 Edge Computing Platform
+
+> **STATUS — DRAFTED 23-Jul-2026, ALL ENTRIES UNVERIFIED.** Keys [2.8.1]–[2.8.18] below are
+> placeholders naming the *kind* of source required. None has been confirmed against the actual
+> document. Vendor datasheets ([2.8.1]–[2.8.5], [2.8.12]–[2.8.16]) are the priority: §2.8.4's
+> comparison table is built on them and every quantitative cell in it is currently unverified.
+>
+> **Quantitative claims in §2.8.4 requiring datasheet confirmation before submission:**
+> memory bandwidth per board; TOPS figures per accelerator; power envelopes; and all indicative
+> prices, which are single-unit figures, volatile, and quoted without a date. Each must either
+> acquire a dated vendor citation or be removed. The *relative ordering* of the bandwidth column
+> carries the argument in §2.8.2 and is the most important thing to confirm.
+
+**[2.8.1]** *Unverified* — NVIDIA Corporation, "NVIDIA Jetson Orin Nano Developer Kit," product data sheet / module data sheet. *(Source for: GPU and CPU configuration, 8 GB LPDDR5, unified memory architecture, power modes, memory bandwidth.)*
+
+**[2.8.2]** *Unverified* — NVIDIA Corporation, "Jetson modules comparison," product family documentation. *(Source for: Table 2.8a and Table 2.8b Jetson rows — AGX Orin, Orin NX, Orin Nano, Xavier NX memory, bandwidth, TOPS, and pricing.)*
+
+**[2.8.3]** *Unverified* — NVIDIA Corporation, "JetPack SDK documentation," including Linux for Tegra (L4T) release notes for the deployed version. *(Source for: Ubuntu 22.04 ARM64 base, CUDA version, ROS2 Humble native installation.)*
+
+**[2.8.4]** *Unverified* — NVIDIA Corporation, CUDA / cuDNN / TensorRT developer documentation. *(Source for: the accelerated inference stack and TensorRT's role as an optimizing compiler.)*
+
+**[2.8.5]** *Unverified* — USB Implementers Forum, USB 2.0 and USB 3.x specifications, or an equivalent survey of embedded sensor bus characteristics. *(Source for: Table 2.8c bus bandwidth characteristics.)*
+
+**[2.8.6]** *Unverified* — A survey or representative deployment paper covering ROS2 SLAM and navigation on Jetson hardware. **No candidate identified.**
+
+**[2.8.7]** *Unverified* — A representative paper reporting vision workloads (object detection, fiducial marker recognition) on Jetson in a robotics context. **No candidate identified.**
+
+**[2.8.8]** *Unverified* — A paper or technical report measuring optimized speech recognition inference on Jetson-class hardware. **No candidate identified.** *(Supports the claim that real-time transcription on this board class is documented.)*
+
+**[2.8.9]** *Unverified* — Supporting citation for the claim that combined navigation-plus-speech deployments report per-subsystem measurements in isolation. **No candidate identified.** *(This key supports a negative claim about the literature and is the hardest to source; consider rephrasing the claim as an observation about the surveyed set [2.8.6]–[2.8.8] rather than citing a source for an absence.)*
+
+**[2.8.10]** *Unverified* — S. Williams, A. Waterman, and D. Patterson, "Roofline: An insightful visual performance model for multicore architectures," *Communications of the ACM*, 2009. *(Source for: arithmetic intensity and the memory-bound / compute-bound distinction underpinning §2.8.2.)*
+
+**[2.8.11]** *Unverified* — R. Pope et al., "Efficiently scaling Transformer inference," in *Proc. MLSys*, 2023. *(Source for: autoregressive decoding being memory-bandwidth-bound. An alternative or additional citation on KV-cache-bound decoding may serve equally well.)*
+
+**[2.8.12]** *Unverified* — Rockchip, "RK3588 technical reference manual" or product datasheet. *(Source for: NPU TOPS rating, supported precision, memory configuration.)*
+
+**[2.8.13]** *Unverified* — Hailo Technologies, "Hailo-8 / Hailo-8L datasheet." *(Source for: TOPS rating and supported operator classes for the discrete-accelerator row of Table 2.8a.)*
+
+**[2.8.14]** *Unverified* — Raspberry Pi Ltd, "Raspberry Pi 5 product brief." *(Source for: CPU, memory type and bandwidth, power envelope, absence of a neural accelerator.)*
+
+**[2.8.15]** *Unverified* — Intel Corporation, "Intel Processor N100 product specifications." *(Source for: memory configuration and bandwidth, TDP, integrated graphics.)*
+
+**[2.8.16]** *Unverified* — Vendor documentation for the NPU compilation toolchains referenced in §2.8.2 (Rockchip RKNN Toolkit and/or Hailo Dataflow Compiler). *(Source for: the operator support matrix and quantisation calibration requirements.)*
+
+**[2.8.17]** *Unverified* — Reserved. *(Allocated for a citation supporting the INT8 quantisation accuracy-degradation claim for tonal languages in §2.8.2, should one be found. **No candidate identified** — the draft currently states this as a risk requiring empirical characterisation rather than as an established result, which is the defensible form if no source is located.)*
+
+**[2.8.18]** *Unverified* — Reserved for the deployed Jetson Orin Nano firmware/JetPack version actually in use, to be recorded from the device. *(This one is confirmable directly: read it off the board.)*
+
+**[2.8.19]** *Unverified* — B. Kehoe, S. Patil, P. Abbeel, and K. Goldberg, "A survey of research on cloud robotics and automation," *IEEE Trans. Automation Science and Engineering*, 2015. *(Source for: cloud robotics as the field treating delegation of robot computation to networked infrastructure — §2.8.2.)*
+
+**[2.8.20]** *Unverified* — M. Waibel et al., "RoboEarth," *IEEE Robotics and Automation Magazine*, 2011. *(Source for: shared knowledge bases across robot fleets. An alternative early cloud-robotics system may substitute.)*
+
+**[2.8.21]** *Unverified* — P. Mach and Z. Becvar, "Mobile edge computing: A survey on architecture and computation offloading," *IEEE Communications Surveys & Tutorials*, 2017. *(Source for: computation offloading decision criteria — latency, energy, bandwidth — in §2.8.2. This is the citation the gap statement argues against: it supplies resource-optimisation criteria, not functional ones.)*
+
+**[2.8.22]** *Unverified* — Reserved. *(Allocated for a citation on the physical attack surface of unattended edge/IoT devices, supporting the data-residence consideration in §2.8.2. **No candidate identified.** The draft deliberately states this qualitatively and does not present a formal threat model; if no source is located, the paragraph stands as a design consideration rather than a literature-backed claim, which is the intended weight.)*
+
+---
+
+### §2.9 Summary
+
+> No external citations; §2.9 is a traceability matrix over the preceding sections.
+
+---
+
 ## Notes and Outstanding Corrections
 
 ### Corrections in the §2.1 draft — APPLIED 22-Jul-2026

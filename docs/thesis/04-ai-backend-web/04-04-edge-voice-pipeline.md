@@ -11,7 +11,7 @@ The system accepts spoken Vietnamese and replies in spoken Vietnamese. Voice cap
 
 ### 4.4.1 Edge/Server Split Rationale
 
-The voice pipeline is split across two physical machines, driven by hardware constraints and latency budgets.
+The voice pipeline is split across two physical machines. Three kinds of consideration fix the boundary: hardware constraints, latency budgets, and — independently of both — which machine each piece of state belongs on.
 
 **Why voice I/O on the Jetson edge?** Speech input/output hardware (microphone, speaker) is physically on the robot, making the Jetson the natural compute point. Three considerations support this choice:
 
@@ -22,6 +22,8 @@ The voice pipeline is split across two physical machines, driven by hardware con
 3. **STT survives temporary WiFi drops.** Voice capture (VAD + microphone) and transcription (faster-whisper) complete locally on the Jetson. The text transcript is a tiny payload that can be POSTed when WiFi recovers. If the server-side LLM is temporarily unreachable, the voice pipeline still captures and transcribes the utterance — the agent call can be retried.
 
 **Why the LLM agent on the server?** The LLM (Qwen2.5 7B, ~6–8 GB VRAM in float16) requires server-grade GPU memory. Running it on the Jetson Orin Nano would require aggressive 4-bit quantization with significant quality degradation, particularly for Vietnamese (which is already underrepresented in training data). The HTTP text round-trip (Jetson → server → Jetson) adds ~2–4s total, but this is dominated by LLM inference (1–2s), not network transfer of text payloads (<50ms on local WiFi).
+
+**Why the business state on the server, independently of memory.** The memory argument above would be answered by a larger board; the following considerations would not, and they place the same components on the same side of the line (§2.8.2). The robot is a physically exposed device operating unattended in a space open to the public, whereas the server is not — so the menu, prices, order and payment state, and conversation transcripts are held authoritatively on the server, and the robot keeps only transient working state. In the implementation this is a property of where code runs rather than a policy layered on top: transcript logging is invoked only from the agent process (`server.py:195`, `server.py:279`, writing to `storage/conversations/` server-side), the edge device's logging is stdout-only with no file handler (`edge_voice/log.py`), and the robot role's dependency set (`--extra voice`) does not install the agent, database, or retrieval packages at all. A robot removed from the floor therefore yields transient audio, transcripts in flight, and navigation state — not the restaurant's data. Two operational consequences follow from the same placement: with several robots serving one establishment, centralized state cannot diverge between them (§4.7.4), and a change to the agent, the menu, or the prompts is deployed once rather than once per robot.
 
 **Protocol.** The edge voice device connects to the orchestrator WebSocket as `role=voice-device&robot_id=<id>` (`main.py:64`). The tablet-to-voice flow traverses three components:
 

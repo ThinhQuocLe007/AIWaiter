@@ -11,9 +11,9 @@
 ## CHAPTER 2 — RELATED WORK & PROBLEM ANALYSIS
 
 > **Note for the reviewer — how to read this chapter.** Each section is one of two kinds:
-> - **[USE]** — a survey of mature, off-the-shelf tools; it ends in a *comparison table*, and Chapter 4 selects one. It makes no research claim. Sections: **§2.3, §2.7, §2.8**.
+> - **[USE]** — a survey of mature, off-the-shelf tools; it ends in a *comparison table*, and Chapter 4 selects one. It makes no research claim. Sections: **§2.3, §2.7**.
 > - **[BUILD]** — a survey of prior approaches showing why none fits, ending in a *gap statement* that Chapter 4 answers. These carry the contribution. Sections: **§2.4, §2.5, §2.6**.
-> - **[MIXED]** — off-the-shelf components plus one integration contribution: **§2.2** (mature navigation stack + AI-assigned goals). §2.1 frames the problem; §2.9 is the traceability matrix.
+> - **[MIXED]** — off-the-shelf components plus one integration contribution: **§2.2** (mature navigation stack + AI-assigned goals) and **§2.8** (off-the-shelf board + the placement of computation between vehicle and infrastructure). §2.1 frames the problem; §2.9 is the traceability matrix.
 
 - 2.1 Overview: Automation of the Restaurant Service Loop
   - 2.1.1 Service Robots in the Restaurant Industry
@@ -56,9 +56,13 @@
   - 2.7.4 Real-Time Communication Patterns
   - 2.7.5 Multi-Role Interfaces and the Origin of Events
 - 2.8 Edge Computing Platform
-  - 2.8.1 The Jetson Orin Nano — Hardware and Software Stack
-  - 2.8.2 Sensor Interfaces
-  - 2.8.3 Prior Work on Jetson in Robotics
+  - 2.8.1 The Workload Aboard a Service Robot
+  - 2.8.2 Placement of Computation: Onboard, Offboard, and the Split
+  - 2.8.3 Accelerator Classes: GPU, NPU, and the TOPS Metric
+  - 2.8.4 The Jetson Orin Nano — Hardware and Software Stack
+  - 2.8.5 Platform Comparison
+  - 2.8.6 Sensor Interfaces
+  - 2.8.7 Prior Work on Jetson in Robotics
 - 2.9 Summary: Needs → Requirements Traceability
   - 2.9.1 Gap-to-Requirement Traceability
   - 2.9.2 What Prior Systems Cover vs. What This Thesis Integrates

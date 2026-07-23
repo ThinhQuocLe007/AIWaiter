@@ -23,7 +23,7 @@ The following table maps each need identified in this chapter to the system requ
 | 2.5 | Menu knowledge retrieval — closed-loop rewrite→retrieve→rephrase for Vietnamese food domain, driven by Vietnamese-specific embeddings | §4.1 menu search requirement, §4.6 | §4.6 (query rewriting, Vietnamese-specific hybrid retrieval, result rephrasing, multi-turn dedup) | §5.3.4 |
 | 2.6 | AI-driven restaurant operations — lightweight fleet dispatch with voice binding, multi-role real-time sync, session lifecycle | §4.1 concurrency/multi-role requirement, §4.7 | §4.7 (REST API, WS hub with role-based pub/sub, fleet dispatcher, session lifecycle, SQLite) | §5.5, §5.6 |
 | 2.7 | Multi-role web interfaces — AI-driven Vue SPA architecture with shared TS client, role-based WS pub/sub, SSE streaming | §4.1 multi-role UI requirement, §4.8 | §4.8 (3 SPAs + shared client library + WS event catalog) | §5.6 |
-| 2.8 | Edge computing platform — Jetson Orin Nano unified-memory constraint determining edge/server split | §4.1 NFR self-hosted, §4.4.1, §4.9 | §4.4.1 (edge/server split architecture), §4.9 (deployment topology) | §5.4.4 |
+| 2.8 | Edge computing platform — accelerator class satisfying general-purpose programmability, decode bandwidth, and native fp16; 8 GB unified-memory ceiling determining the edge/server split | §4.1 NFR self-hosted, §4.4.1, §4.9 | §4.4.1 (edge/server split architecture), §4.9 (deployment topology) | §5.4.4 |
 
 ---
 

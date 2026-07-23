@@ -86,12 +86,13 @@
        4.6.2 Hybrid Retrieval
        4.6.3 Result Rephrasing
        4.6.4 Multi-Turn Search Context
-   4.7 Backend Orchestrator               → Need 5, C9, C10
-       4.7.1 REST API
-       4.7.2 WebSocket Hub
-       4.7.3 Session Lifecycle
-       4.7.4 Fleet Management
-       4.7.5 Database Schema
+    4.7 Backend Orchestrator               → Need 5, C9, C10
+        4.7.1 REST API
+        4.7.2 WebSocket Hub
+        4.7.3 Session Lifecycle
+        4.7.4 Fleet Management
+        4.7.5 Voice Bridge
+        4.7.6 Database Schema
 4.8 Web Interfaces                     → Need 6
 4.9 Deployment Topology
 
@@ -504,25 +505,65 @@ The gap for §2.7 is a documented architecture and framework selection for a mul
 
 ---
 
-### 2.8 Edge Computing Platform
+### 2.8 Edge Computing Platform — [MIXED]
 
-> *The robot's computational platform is a purchased component — no custom hardware was developed. This section describes the NVIDIA Jetson Orin Nano: hardware specifications, the JetPack software stack, sensor interfaces, and prior deployment in academic robotics. The platform's resource constraints motivate the architectural decisions in Chapter 4.*
+> *The robot's computational platform is a purchased component — no custom hardware was developed and no comparative procurement study preceded the purchase. This section is therefore written as a **constraint-satisfaction check performed after the fact**: it derives the computational requirements the workload imposes, examines which classes of embedded accelerator satisfy them, describes the NVIDIA Jetson Orin Nano and its software stack, and surveys prior deployment in academic robotics. The platform's resource constraints motivate the architectural decisions in Chapter 4.*
+>
+> **Framing note (revised 23-Jul-2026).** Earlier drafts recorded "no gap claimed here — hardware is off-the-shelf," and the draft written from it opened by declining to compare alternatives. That conflicted with the chapter's [USE] classification. The first revision made §2.8 a full [USE] section but introduced **two faults**: (a) it defined requirements `R-E1–R-E4` inside Chapter 2, creating a fourth requirement namespace alongside §3.1 R1–R7, §4.1 R1–R6/NFR1–5, and §4.2 C5–C10 — and requirements belong to §4.1, not the survey chapter; (b) it derived those requirements from "the LLM does not run on this board (§4.4.1)" while §4.4.1 justifies that placement by §2.8's memory ceiling — **a circular dependency**.
+>
+> Both are fixed by making §2.8 **[MIXED]** and putting *placement* before *hardware*. §2.8.2 now establishes the vehicle/infrastructure split on grounds independent of the board (cloud-robotics + offloading literature); §2.8.3 onward then asks what board hosts the resulting onboard workload. Dependency is one-way. §2.8.1 describes *workload characteristics*, never numbered requirements, and says so explicitly.
+>
+> **Never imply boards were evaluated in advance**, and **never let the memory ceiling be the sole justification for the split** — that framing reduces the architecture to a budget artifact and invites "so a 16 GB board would have changed your design?"
 
-#### 2.8.1 Jetson Orin Nano — Hardware & Software Stack
+#### 2.8.1 The Workload Aboard a Service Robot
 
-- Hardware: 1024-core Ampere GPU + 32 Tensor Cores, 6 ARM cores, 8 GB unified memory, 7-15W. Unified memory = CPU/GPU share one pool; exceeding 8 GB triggers OOM killer.
-- Position in Jetson family: between AGX Orin (32 GB, 1999 USD) and discontinued Xavier NX. Orin Nano balances GPU capability, memory, and cost for a robot that runs navigation + voice but not the LLM.
-- Software stack: JetPack SDK = L4T (Ubuntu 22.04 ARM64) + CUDA 12.6 + cuDNN + TensorRT. Standard ROS2 Humble installs natively. CTranslate2 leverages GPU acceleration for faster-whisper.
+- Descriptive, not normative. Two workload families: perception/motion from §2.2 (RGB-D graph SLAM, Nav2 costmaps, EKF, ArUco — CPU-bound, concurrent, hard-real-time in practice); speech from §2.3 (VAD, Whisper-family recogniser, TTS). The third family — the LLM — is deferred to §2.8.2 as an open placement question, **not** asserted absent.
+- Why *medium* and not smaller: WER degradation below medium falls disproportionately on tonal diacritics (§2.3). The model size is what makes the platform argument load-bearing — state it, it is the point of attack.
+- Four workload characteristics, **unnumbered and unlabelled** (no R-E namespace): general-purpose accelerator not fixed-function; memory bandwidth for autoregressive decode; native fp16 without mandatory quantisation; vendor-supported ROS2 on the host architecture. Plus battery/chassis constraints.
+- Closes by stating explicitly that these are workload characteristics, that requirements live in §4.1, and that the selection is made in §4.9.
 
-#### 2.8.2 Sensor Interfaces
+#### 2.8.2 Placement of Computation: Onboard, Offboard, and the Split — [BUILD]
 
-- RPLiDAR A2M8 (USB 2.0, 8 Hz scans), RealSense D435 (USB 3.0, 30 Hz RGB-D), MPU6050 IMU (I²C → STM32 → UART → Jetson), USB mic (16 kHz mono), Bluetooth speaker, 7" LCD (HDMI + USB touch).
-- All standard interfaces; contribution is concurrent operation of all sensors on one USB/I/O controller.
+- **The missing Ch2 section.** Before this revision, Chapter 2 had *no* coverage of computation offloading, cloud robotics, or thin-edge architectures — so the edge/server split, a Ch4 contribution, had no related work to stand on and was supported only by the 8 GB ceiling.
+- Field: **cloud robotics** [Kehoe et al. survey; RoboEarth] + **mobile edge computing / computation offloading** [Mach & Becvar].
+- Three positions surveyed with strength+limitation each: fully onboard (no network dependence; capability permanently bounded by the vehicle, upgrades replicated per vehicle); fully offboard (max capability, min vehicle cost; connectivity failure *stops* rather than degrades — a safety matter when motion control is across the link); split (what the literature recommends).
+- Literature's offload criteria are **latency, energy, bandwidth** — resource optimisation.
+- Three further considerations it treats only incidentally, **all independent of vehicle compute capacity**: (i) **data residence** — a service robot is physically exposed and unattended in a public space; business data resident on it shares that exposure; (ii) **fleet consistency** — replicated state diverges, a menu updated on 3 of 4 robots is a pricing error (§2.6); (iii) **update surface** — one server vs. N vehicles.
+- **Keep (i) qualitative and understated — deliberate.** No formal threat model, no attack enumeration. Stated as a design consideration; `references.md` [2.8.22] records that this weight is intentional. Verified in code: `log_turn` is called only from `agent_brain/server.py` (server-side), edge logging is stdout-only with no FileHandler, robot needs little beyond `ORCH_AGENT_URL` — so "the vehicle holds no authoritative state" is checkable, not aspirational.
+- **→ Gap.** Both literatures frame placement as resource optimisation. Neither characterises a split drawn on *functional* grounds — a boundary placed so the vehicle holds no authoritative state or business data at all, keeping only undelegatable perception/motion plus transcription that must survive an outage. Answered in §4.4.1.
 
-#### 2.8.3 Prior Work on Jetson in Robotics
+#### 2.8.3 Accelerator Classes: GPU, NPU, and the TOPS Metric
 
-- Extensively used for ROS2 SLAM, Nav2, sensor fusion. Well-documented for English-language edge AI. Vietnamese deployment understudied but libraries are language-agnostic.
-- No gap claimed here — hardware is off-the-shelf. The concurrent workload analysis (navigation + Vietnamese voice on one device) is addressed in §4.4.
+- **This is the examiner-facing subsection.** It answers the standard objection: "an NPU board gives more TOPS per dollar — why a Jetson?"
+- TOPS measures dense INT8 convolution throughput (high arithmetic intensity). Autoregressive Transformer decoding has arithmetic intensity ≈ 1 → **memory-bandwidth-bound, not compute-bound** [roofline; Pope et al.]. Bandwidth predicts decode latency; TOPS does not.
+- Operator set: embedded NPUs target statically shaped INT8 CNNs. Decoding needs dynamic sequence length, growing KV cache, beam search. Encoder-decoder ASR under beam search is unsupported in production NPU toolchains; community ports run encoder on NPU and fall back to CPU for the decoder — the part that dominates latency.
+- Precision: most fixed-function accelerators are INT8-only with no fp16 fallback → quantisation is mandatory, not optional. Risk concentrated on tonal diacritics; **state as a risk requiring empirical characterisation, not as an established result** (no source located).
+- Toolchain tax: vendor graph compiler, per-op support matrix, calibration. A GPU runs the unmodified upstream runtime; an NPU requires a port that must be re-entered on every model change.
+- Conclusion: the required property is *not* throughput. It is general-purpose programmability + bandwidth + native fp16 — exactly the three properties the best TOPS-per-dollar classes lack.
+
+#### 2.8.4 Jetson Orin Nano — Hardware & Software Stack
+
+- Hardware: 1024-core Ampere GPU + 32 Tensor Cores, 6 ARM cores, 8 GB unified memory, 7-15W. Unified memory = CPU/GPU share one pool; exceeding 8 GB triggers OOM killer — failure is abrupt, not gradual, and on a robot the large allocations belong to perception and motion.
+- Software stack: JetPack SDK = L4T (Ubuntu 22.04 ARM64) + CUDA + cuDNN + TensorRT. ROS2 Humble installs natively from vendor binaries.
+- **TensorRT is available but unused — say so deliberately.** The recogniser runs on CTranslate2, which performs its own fusion/quantisation and addresses CUDA directly. Justification: tuned kernels already exist for this architecture, and TensorRT's larger payoff on this board class accrues to LLM inference, which does not happen here. Note as future work (§6.3), do not claim as an optimization performed.
+
+#### 2.8.5 Platform Comparison
+
+- **Table 2.8a** — candidate platform *classes* against the §2.8.1 workload characteristics: Raspberry Pi 5; Pi 5 + discrete NN accelerator; RK3588 SBC; Intel N100 mini-PC; **Jetson Orin Nano**; Jetson Orin NX; Jetson AGX Orin. Columns: accelerator, memory bandwidth, half precision, ASR runtime path, ROS2 support, power, indicative cost.
+- **Table 2.8b** — Jetson family positioning (retained from the earlier draft).
+- Three observations: (i) no-GPU boards cannot host the recogniser at all — a statement about the workload, not their capability; (ii) **the N100 mini-PC is the closest competitor and is conceded, not dismissed** — mature INT8 CPU kernels make it viable for a voice-only edge node, weaker for one that must also perceive; the margin is empirical and this chapter does not settle it; (iii) boards ≥16 GB could host the LLM locally — be precise about what that would change: it removes the *memory* argument only, and leaves §2.8.2's three capacity-independent considerations untouched. **Do not write that a larger board would have reversed the design.** The claim is that the ceiling and the design agree — weaker than the ceiling causing the design, and much more robust.
+- Cost at scale: a fleet amortises one server across many robots → per-robot BOM governs, so the smallest sufficient board is correct at scale, not a prototype compromise. The follow-up ("why keep STT on the robot at all?") is answered in §4.4.1 on network-dependence / audio-bandwidth / locality grounds, not cost.
+- **All quantitative cells are `*Unverified*` pending vendor datasheets.** Prices are indicative single-unit USD, volatile, undated. See `references.md` §2.8.
+
+#### 2.8.6 Sensor Interfaces
+
+- RPLiDAR A2M8 (USB 2.0, 8 Hz scans), RealSense D435 (USB 3.0, 30 Hz RGB-D), MPU6050 IMU (I²C → STM32 → UART → Jetson), USB mic (16 kHz mono), Bluetooth speaker, 7" LCD (HDMI + USB touch). Device specifics belong to §3.3; §2.8.5 records the aggregate only (Table 2.8c).
+- Depth camera dominates — the sole reason USB 3.0 is a requirement. Beyond bandwidth the aggregate raises a *scheduling* question, not a capacity one.
+
+#### 2.8.7 Prior Work on Jetson in Robotics
+
+- Extensively used for ROS2 SLAM, Nav2, sensor fusion; speech workloads separately documented. Suitability for either category alone is not in question.
+- The gap is the *combination*: published work measures each subsystem in isolation, leaving the concurrent resident footprint on a unified-memory board uncharacterised. Answered by measurement in §5.4.4.
 
 ---
 
@@ -538,7 +579,7 @@ The gap for §2.7 is a documented architecture and framework selection for a mul
   | 2.5 | Menu knowledge retrieval — closed-loop rewrite→retrieve→rephrase for Vietnamese food domain, driven by Vietnamese-specific embeddings (§2.5.2) | §4.1 menu search requirement, §4.6 | §4.6 (query rewriting, hybrid retrieval with embeddings from §2.5.2, result rephrasing, dedup) | §5.3.4 |
   | 2.6 | AI-driven restaurant operations — lightweight fleet dispatch with voice binding, multi-role real-time sync, session lifecycle | §4.1 concurrency/multi-role requirement, §4.7 | §4.7 (REST + WS hub, fleet dispatcher, session lifecycle) | §5.5, §5.6 |
   | 2.7 | Multi-role web interfaces — AI-driven Vue SPA architecture with shared TS client, role-based WS pub/sub, SSE streaming | §4.1 multi-role UI requirement, §4.8 | §4.8 (3 SPAs + shared client lib + WS event catalog) | §5.6 |
-  | 2.8 | Edge computing platform — Jetson Orin Nano hardware, software stack, and sensor interfaces (off-the-shelf) | §3.3 (robot hardware), §4.4.2 (edge/server split) | §4.4.2 (memory budget analysis leading to edge/server architecture) | §5.4.4 |
+  | 2.8 | Edge computing platform — accelerator class satisfying general-purpose programmability, decode bandwidth, and native fp16; 8 GB unified-memory ceiling determining the edge/server split | §3.3 (robot hardware), §4.4.1 (edge/server split) | §4.4.1 (memory budget analysis leading to edge/server architecture) | §5.4.4 |
 
 - **The integration gap:** each need has been addressed individually in prior work — autonomous navigation (ROS2 delivery robots), Vietnamese speech (standalone STT/TTS/VAD), edge computing (Jetson deployments), conversational agents (cloud chatbots), intent classification (NLU pipelines), menu retrieval (academic RAG), fleet management (warehouse frameworks), restaurant software (POS/KDS), and SPA web interfaces (Vue/React dashboards). No prior system has integrated all into a single deployed system where the AI agent directly drives physical delivery and real-time UI state across all roles.
 
@@ -879,6 +920,7 @@ The following constraints are inherent to Vietnamese restaurant speech processin
 - **Primary:** Piper TTS (local, Vietnamese voice, CPU, ~500ms/sentence). Offline on Jetson.
 - **Fallback:** edge-tts (Azure Vietnamese Neural voices). Used when Piper unavailable or on x86 dev machines.
 - Selection: attempt Piper first → health check → fall back to edge-tts.
+- **Per-stage voice modulation:** the TTS playback rate and pitch are adjusted based on conversation context — rate +10% during cart drafting (energetic confirmation), rate −5% during order confirmation (deliberate, careful), and pitch +2 Hz after payment completion (warm closing). These modulations provide non-verbal cues that reinforce the conversational stage without the agent stating transitions explicitly.
 
 ---
 
@@ -894,19 +936,27 @@ The following constraints are inherent to Vietnamese restaurant speech processin
   - Task state: `table_id`, `active_cart`, `order_stage`, `search_context` (across turns)
   - Routing state: `current_intents`, `routing_meta` (intents queue for multi-intent iteration)
   - Inter-node contract: `is_valid`, `feedback`, `loop_count`, `unavailable_items`, `ambiguous_items`, `last_tool`, `delegate_reason`, `intent_queries` (per-turn)
-  - Output: `ui_action`, `order_confirmed`, `response_context` (per-turn)
+   - Output: `ui_action`, `order_confirmed`, `response_context` (per-turn)
+   - Anti-repetition: `shown_dishes` — dishes already recommended in prior search turns within this session; prevents redundant recommendations when the customer repeats a query
 - **Graph execution flow:**
   ```
-  START → router ──→ [intent worker] ──→ tools ──→ validator
-                       ↑                        │
-                       │              ┌─────────┤
-                       │              │ pass    │ retry
-                       │              ▼         ▼
-                       └── state_updater ←──── tools
-                              │
-                              │ queue empty
-                              ▼
-                        state_outcome → response_node → END
+  START
+    │
+    ▼
+  classifier_router
+    │
+    ├──→ order_worker ──→ validator ──(pass)──→ tools ──→ state_updater ──┐
+    │        ↑ retry(feedback)          (≥3 fails)→ state_outcome          │
+    │        └──────────────────────────────────────────────┘     more intents?
+    │                                                             (loop to worker)
+    │
+    ├──→ search_worker ──→ validator ──(pass)──→ tools ──→ state_updater (same loop)
+    │
+    ├──→ payment_dispatch ──→ validator ──(pass)──→ tools ──→ state_updater
+    │
+    └──→ chat_worker ──→ state_outcome (bypasses validator + tools)
+
+  state_updater ──(done)──→ state_outcome ──→ response_node ──→ END
   ```
 - **Conversation memory:** compiled with LangGraph `SqliteSaver`. `thread_id = orchestrator_session_id`. Persistent fields survive across turns; ephemeral fields reset each turn in `state_outcome`.
 - **How the graph addresses C5 (informality) and C7 (hallucination):** the router handles classification under informality (§4.5.2). The validator intercepts every tool call before execution (§4.5.4). The graph topology ensures correct function even when classification is imperfect — failed validation loops back with corrective feedback, and the circuit breaker guarantees termination.
@@ -977,6 +1027,8 @@ The following constraints are inherent to Vietnamese restaurant speech processin
 - **Template-based responses (deterministic):** order confirmations, payment prompts, cart echoes, error/recovery messages, retry apologies, empty search results. Pre-written Vietnamese templates.
 - **LLM-based responses (Qwen2.5 7B, T=0.3):** search results in natural Vietnamese, off-menu suggestions with alternatives, free-form chat. LLM receives typed `ResponseContext` → paraphrases into conversational Vietnamese.
 - **SSE streaming:** LangGraph executes synchronously in `ThreadPoolExecutor` → produces `ResponseContext` → async generator wraps → yields SSE events. Sentence splitting via `re.split(r"[.!?]\s", buffer)`.
+- **Grounding guard (`_ground_reply`):** for LLM-generated search responses, the output is verified post-generation against the actual retrieved dishes. If the LLM's response names dishes absent from the retrieval results, the response is replaced with a deterministic listing of the actual results. This prevents hallucinated recommendations — the agent cannot recommend a dish the retriever did not find.
+- **Sentence sanitization (`_sanitize_sentence`):** Qwen2.5 occasionally produces CJK (Chinese/Japanese/Korean) contamination or residual markdown in Vietnamese output. A regex filter strips non-Vietnamese characters and markdown formatting before TTS playback, ensuring the spoken output is clean Vietnamese.
 
 #### 4.5.7 Prompt Architecture
 
@@ -1017,8 +1069,8 @@ The following constraints are inherent to Vietnamese restaurant speech processin
 - **BM25 (sparse):** Vietnamese word segmentation via `underthesea.word_tokenize()`. Compound words ("bún bò Huế") become single tokens. Keyword matching on rewritten query.
 - **FAISS (dense):** SentenceTransformer embedding → top-k by cosine similarity. Diacritic-aware Vietnamese bi-encoder for semantic matching.
 - **RRF fusion:** `score(d) = Σ 1/(60 + rank_d)`. Parallel BM25 + FAISS (raw k=10 each) → fused ranking.
-- **Dual-lane gatekeeper:** semantic lane (top FAISS cosine ≥ 0.35) OR lexical lane (query keyword appears in top document text). Both fail → return empty.
-- **Metadata post-filters:** price range, diet_type, category.
+- **Metadata post-filters before fusion:** price range, diet_type, and category filters are applied to raw BM25 and vector results independently before fusion, ensuring that out-of-constraint items never reach the final ranking. This avoids a common RAG failure mode where a top-ranked vector result (semantically strong but filtered by metadata) crowds out relevant results in the fused ranking.
+- **Empty-result handling:** when BM25 returns zero matches and no FAISS result exceeds the score threshold (0.3), the retriever returns empty. The search worker's `delegate` escape hatch then routes to the CHAT worker for a graceful "not found" response rather than forcing a hallucinated match.
 
 #### 4.6.3 Result Rephrasing
 
@@ -1067,7 +1119,17 @@ The following constraints are inherent to Vietnamese restaurant speech processin
 - **Watchdog:** scans every 5s. No heartbeat for >30s → mark offline → requeue tasks → close WS → release voice binding.
 - **Dynamic voice binding (addressing C10):** on robot arrival at table → `bind_table_robot(table_id, robot_id)`. All voice commands from that table route to that robot's voice device. On release/disconnect → binding cleared. Watchdog releases stale bindings.
 
-#### 4.7.5 Database Schema
+#### 4.7.5 Voice Bridge
+
+> *The voice bridge is the architectural glue between the AI agent, the robot's physical microphone/speaker, and the customer tablet. It does not process audio — it routes commands and responses through the correct path based on the dynamic table-to-robot binding established on arrival.*
+
+- **Agent → Tablet mirroring (`POST /voice/event`):** the agent sends structured voice events to the orchestrator — `voice.heard` (user's transcript + thinking indicator), `voice.reply` (AI text response + cart state + UI action), `voice.progress` (SSE streaming progress). The orchestrator fans these to all `role=customer` WebSocket connections, filtered by `table_id`. The tablet is a passive viewer — it displays what the agent heard and said, and mirrors the voice-driven cart state, but never controls the microphone.
+- **Tablet → Robot microphone (`POST /voice/listen`):** when the customer presses "Talk to AI" on the tablet, the voice bridge resolves `table_id → robot_id` via the dynamic binding established at robot arrival (§4.7.4), then sends `start_listening` to the bound robot's `voice-device` WebSocket. This indirection allows any robot serving any table — the customer never specifies a robot.
+- **Cancel and mute (`POST /voice/cancel`, `/voice/mute`):** mid-turn cancel immediately aborts microphone capture and TTS playback. Mute toggles speaker output without affecting the conversation — useful when the table is discussing among themselves.
+- **Session reset (`POST /voice/new-chat`):** forwards to the agent's `/reset` endpoint, wiping the LangGraph checkpoint for the current session's `thread_id`. Cancels any in-flight turn to prevent stale transcript processing. The customer gets a clean slate without affecting the business session (orders and payments persist in the orchestrator database).
+- **Cart synchronization (`POST /voice/cart`):** when the customer manually edits the cart via the tablet touch screen (adding/removing items by touch rather than voice), the voice bridge pushes the hand-edited cart to the agent's `/cart` endpoint, updating the LangGraph checkpoint so subsequent voice commands operate on the correct cart state.
+
+#### 4.7.6 Database Schema
 
 - SQLite, raw SQL via `sqlite3` (no ORM). WAL mode for concurrent reads during writes.
 - 8 business tables: `tables`, `sessions`, `dishes`, `orders`, `order_items`, `robots`, `tasks`, `payments`
