@@ -18,12 +18,12 @@ The following table maps each need identified in this chapter to the system requ
 | §   | Need | → Requirements | → Method | → Validated In |
 | --- | ---- | -------------- | -------- | -------------- |
 | 2.2 | Dynamic goal navigation — navigation targets assigned by AI agent, not pre-set, with ArUco business-context docking | §3.1 R1–R7 (navigation, docking, odometry) | §3.4 (EKF odometry), §3.5 (RTAB-Map), §3.6 (ArUco docking), §3.7 (Nav2 + dynamic goal coupling) | §5.2.1–§5.2.4 |
-| 2.3 | Vietnamese voice on Jetson edge — component selection (VAD, STT, TTS) driven by restaurant deployment constraints | §4.1 NFR latency, §4.4 architecture | §4.4 (selected components: Silero VAD, PhoWhisper, Piper TTS; threaded pipeline, barge-in) | §5.4.1–§5.4.4 |
+| 2.3 | Vietnamese voice on Jetson edge — component selection (VAD, STT, TTS) driven by restaurant deployment constraints | §4.1 NFR latency, §4.4 architecture | §4.4 (selected components: selected VAD, STT, and TTS components; threaded pipeline, barge-in) | §5.4.1–§5.4.4 |
 | 2.4 | Conversational AI agent — classifier handling teencode/context/multi-intent/domain-vocab + deterministic post-generation validation | §4.1 functional requirements, §4.5.1–§4.5.7 (agent architecture) | §4.5.2 (MLP classifier), §4.5.3 (tool-calling LLM), §4.5.4 (validator), §4.5.5 (state machine) | §5.3.1–§5.3.3 |
 | 2.5 | Menu knowledge retrieval — closed-loop rewrite→retrieve→rephrase for Vietnamese food domain, driven by Vietnamese-specific embeddings | §4.1 menu search requirement, §4.6 | §4.6 (query rewriting, Vietnamese-specific hybrid retrieval, result rephrasing, multi-turn dedup) | §5.3.4 |
 | 2.6 | AI-driven restaurant operations — lightweight fleet dispatch with voice binding, multi-role real-time sync, session lifecycle | §4.1 concurrency/multi-role requirement, §4.7 | §4.7 (REST API, WS hub with role-based pub/sub, fleet dispatcher, session lifecycle, SQLite) | §5.5, §5.6 |
 | 2.7 | Multi-role web interfaces — AI-driven Vue SPA architecture with shared TS client, role-based WS pub/sub, SSE streaming | §4.1 multi-role UI requirement, §4.8 | §4.8 (3 SPAs + shared client library + WS event catalog) | §5.6 |
-| 2.8 | Edge computing platform — Jetson Orin Nano VRAM budget analysis determining edge/server split | §4.1 NFR self-hosted, §4.4.1, §4.9 | §4.4.1 (edge/server split architecture), §4.9 (deployment topology) | §5.4.4 |
+| 2.8 | Edge computing platform — Jetson Orin Nano unified-memory constraint determining edge/server split | §4.1 NFR self-hosted, §4.4.1, §4.9 | §4.4.1 (edge/server split architecture), §4.9 (deployment topology) | §5.4.4 |
 
 ---
 
@@ -45,6 +45,6 @@ The comparison below positions this work against the landscape surveyed in this 
 
 ### 2.9.3 The Integration Gap
 
-Each individual technology component — EKF, RTAB-Map, Nav2, ArUco, Silero VAD, Whisper/PhoWhisper, Piper TTS, LangGraph, FAISS, BM25, SQLite, FastAPI, Vue 3, Vite, WebSocket — is a mature, well-documented tool with established prior work. The contribution of this thesis is not the invention of any single component. It is the integration of these components into a deployed system where each component's output feeds the next in a pipeline that spans spoken Vietnamese to robot wheel movement, with deterministic safety mechanisms at every interface between probabilistic AI and real-world state.
+Each individual technology component — EKF, RTAB-Map, Nav2, ArUco, Silero VAD, Whisper via CTranslate2, Piper TTS, LangGraph, FAISS, BM25, SQLite, FastAPI, Vue 3, Vite, WebSocket — is a mature, well-documented tool with established prior work. The contribution of this thesis is not the invention of any single component. It is the integration of these components into a deployed system where each component's output feeds the next in a pipeline that spans spoken Vietnamese to robot wheel movement, with deterministic safety mechanisms at every interface between probabilistic AI and real-world state.
 
 The six needs identified in this chapter — dynamic goal navigation, Vietnamese voice on the edge, conversational agent with validation, knowledge retrieval for sensory queries, AI-driven restaurant operations, and multi-role web interfaces — together define the system that Chapters 3 and 4 propose, and that Chapter 5 validates.

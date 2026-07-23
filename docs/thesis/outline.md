@@ -17,7 +17,7 @@
    1.6 Report Structure
 
 2. RELATED WORK & PROBLEM ANALYSIS
-    2.1 Overview: The Integrated AI Waiter Problem
+    2.1 Overview: Automation of the Restaurant Service Loop
     2.2 Autonomous Mobile Robot
         2.2.1 Wheel Odometry and Sensor Fusion
         2.2.2 SLAM and Map Building
@@ -172,7 +172,7 @@ Measurable targets (checked against Ch.5 results):
 > **Chapter requirements — this chapter answers:**
 > - What existing technologies address each need? (Survey)
 > - What does each do well, and what are its limits? (Strengths + weaknesses)
-> - If we USE an off-the-shelf component (VAD, STT, TTS, embedding model, LLM, frontend framework, etc.): what options exist, and which one fits our requirements? (Comparison table → Ch.4 selects from this table)
+> - If we USE an off-the-shelf component (VAD, STT, TTS, embedding model, LLM, frontend framework, etc.): what options exist, and what distinguishes them? (Comparison table → Ch.3/Ch.4 selects from this table. The **selection criteria themselves belong to Ch.3/Ch.4**, not here — Ch.2 reports what the options *are* and what the literature does and does not establish about them; it does not state our requirements, walk the elimination, or resolve the trade-off.)
 > - If we BUILD something new (agent architecture, validator, RAG pipeline, fleet dispatcher, etc.): what prior approaches exist, and why are they insufficient? (Survey → identify research gap → Ch.4 proposes method)
 >
 > **Rules for Chapter 2:**
@@ -184,7 +184,7 @@ Measurable targets (checked against Ch.5 results):
 
 ---
 
-### 2.1 Overview: The Integrated AI Waiter Problem
+### 2.1 Overview: Automation of the Restaurant Service Loop
 
 - **The landscape:** service robots for food delivery have been deployed commercially at scale. Free-navigation platforms — Bear Robotics Servi (2017), Pudu Bellabot (2016), Keenon T-series (2010) — use LiDAR and RGB-D SLAM for autonomous navigation in restaurant environments, with Pudu reporting over 40,000 units deployed across 600+ cities. Track-based platforms — Alibaba Robot.He (Shanghai, 2018) — mount pod-shaped AGVs on fixed rails alongside tables, adapted from Cainiao warehouse logistics. Both categories reliably deliver food but are closed appliances: their interaction model is a touchscreen or pre-recorded greeting; they have no speech recognition, no natural language understanding, and no third-party AI integration possible. The software stack is proprietary — developers cannot add an LLM agent, a Vietnamese speech pipeline, or a custom fleet dispatcher. The robot does one thing (delivers) and cannot be extended to do anything else.
 
