@@ -1,7 +1,7 @@
 ## 4.6 Robot Dispatch & Fleet Management
 
 > **Status:** draft
-> **Cross-refs:** §4.5 for orchestrator and WebSocket hub, §4.5.5 for session lifecycle, Chapter 3 for ROS2 navigation
+> **Cross-refs:** §4.7 for orchestrator and WebSocket hub, §4.7.2 for session lifecycle, Chapter 3 for ROS2 navigation
 > **Source:** `src/server_orchestrator/services/dispatcher.py` (469 lines), `fleet.py` (60 lines)
 > **Figures needed:** Fig 4.6 (task lifecycle state diagram: PENDING → ASSIGNED → IN_PROGRESS → DONE)
 

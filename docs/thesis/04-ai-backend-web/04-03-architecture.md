@@ -1,199 +1,189 @@
-## 4.2 Overall Software Architecture
+## 4.3 Software System Architecture
 
-> **Status:** draft
-> **Cross-refs:** see §4.1 for requirements, §4.3–§4.8 for component details
-> **Figures needed:** Fig 4.2 (three-tier block diagram), Fig 4.3 (voice ordering data flow sequence)
+A restaurant runs as a loop: a guest is seated, orders, waits, is served, and pays. The
+software in this chapter turns that loop into something a robot and the staff can run
+together, with the customer speaking to the robot instead of to a waiter. Many pieces are
+needed to make that work, and they do not all live in the same place. Before opening any one
+of them, it helps to see the whole shape first: what pieces exist, where each one runs, and
+how a spoken order travels through them. That whole-system view is what this section gives,
+and it is the map that the rest of the chapter fills in one piece at a time.
 
----
+The system runs on two computers and three browser apps. The robot carries an NVIDIA Jetson.
+A central desktop server carries an x86 processor and one graphics card. The staff and
+customers use three web apps: a tablet at each table, a kiosk at the entrance, and a
+management panel in the kitchen. Everything talks over the restaurant's own WiFi, so the
+system keeps working when the internet is down. Figure 4.1 shows the whole layout.
 
-### 4.2.1 Three-Tier Topology
+![Figure 4.1. System Architecture Overview](../images/Figure1.svg)
 
-The system is organized into three physical tiers connected over a local WiFi network, with Netbird VPN providing a secure overlay for off-site server scenarios.
+*Figure 4.1. System Architecture Overview: the three-tier layout (server, robot, staff
+browsers) and the type of connection on each link. The inside of the agent and the search
+index is left to later sections. (drawn by the group)*
 
-**Tier 1 — Central Server** (x86 PC with NVIDIA GPU). This machine runs all intelligence: the conversational agent (LangGraph StateGraph with Ollama LLM inference), the backend orchestrator (FastAPI REST API and WebSocket hub), the hybrid RAG retrieval system (FAISS + BM25 indices over 217 menu items), and two SQLite databases (business ledger and conversation memory). All components on this tier communicate via localhost HTTP. The GPU requirement is driven by the LLM: Qwen2.5 7B requires approximately 6–8 GB VRAM, pinned in memory with `keep_alive=-1` to eliminate cold-start latency between turns.
+### 4.3.1 Topology and Responsibilities
 
-**Tier 2 — Robot** (Jetson Orin Nano 8GB). This machine handles all physical interaction: voice input/output (microphone capture, Silero VAD, faster-whisper STT, Piper/edge-tts TTS), ROS2 autonomous navigation (covered in Chapter 3), and sensor processing (RPLiDAR A2M8, Intel RealSense D435, MPU6050 IMU). The Jetson maintains two persistent WebSocket connections to the server — one as `role=voice-device` for receiving microphone gating commands, one as `role=robot` for receiving navigation tasks and reporting telemetry — sharing a single `robot_id` for routing.
+The work of the system divides into two kinds, and that divide decides what runs where. Some
+work is bound to the robot's body and its senses, and it has to run on the robot. Other work
+is bound to thought and to shared records, and it belongs on the server.
 
-**Tier 3 — Staff Devices** (browsers on laptops/tablets). Three single-page applications serve distinct roles: a customer-facing tablet on the table (menu browsing, voice conversation mirror, cart, payment), a kiosk at the entrance (guest check-in, table selection), and a management panel in the kitchen (order Kanban board, robot fleet dashboard, table overview, SLAM minimap). All three share a common frontend library for REST/WebSocket communication and TypeScript type definitions.
+On the robot runs everything tied to the robot's own hardware. It reads the sensors, the
+LiDAR, the depth camera, and the inertial unit, and fuses them into an estimate of where the
+robot is. It holds the map and keeps the robot located on it. It plans a path to the next
+table and follows that path while steering around obstacles. It records sound at the
+microphone, decides when the customer is speaking, turns that speech into text, and plays the
+reply through the speaker. Two things force all of this onto the robot, and neither is about
+memory. First, each part is wired to hardware that sits on the robot: the motors, the sensors,
+the microphone, and the speaker. Second, driving the wheels and holding a position is a
+real-time loop that reads a sensor and corrects the motors many times a second, and sending
+that loop out over WiFi and back would add a delay that breaks it. The raw data is heavy as
+well, a steady stream of camera frames, laser scans, and audio, so it is cheaper to reduce it
+to a small result on the robot than to ship it across the network.
 
----
+On the server runs everything that is not tied to one robot's body. The language model and the
+agent that reasons over the customer's request run here. So do the business records, meaning
+the tables, sessions, orders, and payments, and the menu together with its search. None of
+these belong to a particular robot; they are common to every table and every robot in the
+restaurant, so they live once, in one place, where they stay consistent. Table 4.1 sets out
+the whole division and the reason for each side.
 
-### 4.2.2 Block Diagram
+*Table 4.1. Where each job runs, and the constraint that fixes its place.*
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                    TIER 1 — CENTRAL SERVER                        │
-│                                                                  │
-│  ┌─────────────────────────┐    ┌────────────────────────────┐  │
-│  │   AGENT BRAIN (:8100)   │    │   ORCHESTRATOR (:8000)     │  │
-│  │                         │    │                            │  │
-│  │  LangGraph StateGraph   │◄──►│  FastAPI REST (10 routers) │  │
-│  │  Hybrid Router (2-tier) │    │  WebSocket Hub (4 roles)   │  │
-│  │  4 Domain Workers       │    │  Fleet Dispatcher          │  │
-│  │  Deterministic Validator│    │  Voice Bridge              │  │
-│  │  7 Tools + ToolNode     │    │  Session Manager           │  │
-│  │  Response Node (SSE)    │    │                            │  │
-│  └───────────┬─────────────┘    └──────────┬─────────────────┘  │
-│              │                             │                     │
-│  ┌───────────▼─────────────┐    ┌─────────▼───────────────────┐ │
-│  │  checkpoints.db         │    │  orchestrator.db (8 tables) │ │
-│  │  (conversation memory)  │    │  (business ledger)          │ │
-│  └─────────────────────────┘    └─────────────────────────────┘ │
-│                                                                  │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │  Ollama: Qwen2.5 7B Instruct (3 endpoints, same model)   │   │
-│  │  Router T=0.0  │  Worker T=0.1  │  Response T=0.3        │   │
-│  ├──────────────────────────────────────────────────────────┤   │
-│  │  RAG: FAISS (768-dim) + BM25 (k1=1.2,b=0) + RRF (k=60) │   │
-│  │  217 dishes × 12 categories from menu.json               │   │
-│  └──────────────────────────────────────────────────────────┘   │
-└──────────────────────┬───────────────────┬───────────────────────┘
-                       │ Netbird / WiFi    │ Netbird / WiFi
-         ┌─────────────▼──────────┐  ┌─────▼────────────────────────┐
-         │ TIER 2 — ROBOT         │  │ TIER 3 — STAFF DEVICES        │
-         │ (Jetson Orin Nano)     │  │ (browsers)                    │
-         │                        │  │                               │
-         │ ┌────────────────────┐ │  │  Customer Tablet  :5173       │
-         │ │ Voice Pipeline     │ │  │  ┌─ Vue 3 + PrimeVue         │
-         │ │ Mic→VAD→Whisper→TTS│ │  │  │─ WS role=customer          │
-         │ │ WS voice-device    │ │  │  │─ Menu, Cart, Voice Mirror  │
-         │ └────────────────────┘ │  │  └────────────────────────────┤
-         │                        │  │                               │
-         │ ┌────────────────────┐ │  │  Kiosk  :5174                 │
-         │ │ ROS2 Navigation    │ │  │  ┌─ Vue 3                    │
-         │ │ RTAB-Map + Nav2    │ │  │  │─ REST only                 │
-         │ │ EKF + ArUco        │ │  │  │─ Table grid, Check-in      │
-         │ │ WS robot           │ │  │  └────────────────────────────┤
-         │ └────────────────────┘ │  │                               │
-         │                        │  │  Panel  :5175                 │
-         │ Sensors:               │  │  ┌─ Vue 3                    │
-         │ RPLiDAR A2M8, D435,    │  │  │─ WS role=panel             │
-         │ MPU6050, Hall encoders │  │  │─ Kitchen Kanban, Fleet,    │
-         │                        │  │  │  Table Overview, Minimap  │
-         └────────────────────────┘  │  └────────────────────────────┤
-                                     └──────────────────────────────┘
-```
+| Job | Runs on | Why it must be there |
+|-----|---------|----------------------|
+| Motor control and wheel odometry | Robot | Wired to the motors; needs real-time timing next to them |
+| Sensing and localization (LiDAR, camera, IMU, map) | Robot | The sensors are on the robot; the raw data is heavy and reduced locally |
+| Navigation, path planning, and obstacle avoidance | Robot | Closes a real-time loop with the sensors and motors |
+| Voice capture and playback | Robot | The microphone and speaker are on the robot; keeps audio off the network |
+| Language model and agent | Server | Too large for the robot's memory, and tied to no robot's body |
+| Business records (tables, sessions, orders, payments) | Server | Shared state; one source of truth for every table and robot |
+| Menu and its search | Server | Shared, updated in one place, used by every robot |
 
----
+One job in the table could, in principle, run on either side: the language model. It is wired
+to no sensor and closes no control loop, so nothing about the robot's hardware pins it in
+place, and it would even be simpler to keep it on the robot, since then the request would
+never leave the machine. What rules this out is memory, and the robot does not start empty. Before this chapter adds
+anything, it already runs the navigation and localization built in Chapter 3, and that
+software holds part of the 8 GB. Table 4.2 breaks down what it uses.
 
-### 4.2.3 Component Responsibility Map
+*Table 4.2. Memory the robot's navigation and localization already use (the Chapter 3 stack).*
 
-| Component | Location | Port/Protocol | Talks to | Over |
-|-----------|----------|---------------|----------|------|
-| **Agent Brain** | Server | 8100 / HTTP | Orchestrator (REST), Ollama (localhost), Voice Device (receives POST /chat) | HTTP |
-| **Orchestrator** | Server | 8000 / HTTP + WS | Agent (REST), All WebSocket clients, SQLite DBs | HTTP, WS |
-| **Ollama** | Server | 11434 / HTTP | Agent Brain (ChatOllama) | localhost HTTP |
-| **Voice Pipeline** | Robot (Jetson) | N/A (client only) | Orchestrator (WS voice-device), Agent (POST /chat) | WS + HTTP |
-| **ROS2 Nav2** | Robot (Jetson) | N/A (client only) | Orchestrator (WS robot) | WS |
-| **Customer Tablet** | Staff device | 5173 / HTTP (dev) | Orchestrator (WS customer + REST /api) | WS + HTTP |
-| **Kiosk** | Staff device | 5174 / HTTP (dev) | Orchestrator (REST /api) | HTTP |
-| **Panel** | Staff device | 5175 / HTTP (dev) | Orchestrator (WS panel + REST /api) | WS + HTTP |
+| ROS component | Approx. memory |
+|---------------|---------------:|
+| ROS 2 core and DDS middleware | ~0.2 GB |
+| Sensor drivers (LiDAR, depth camera, IMU) | ~0.5 GB |
+| Localization on the prebuilt map (RTAB-Map) | ~2.0 GB |
+| Navigation (Nav2 planners, costmaps, behaviour trees) | ~0.7 GB |
+| Odometry fusion (EKF) and ArUco docking | ~0.3 GB |
+| **Used by the Chapter 3 stack** | **~3.7 GB** |
+| **Free of the 8 GB** | **~4.3 GB** |
 
----
+That leaves about 4 GB free, and it is into this 4 GB, not the whole board, that the work of
+this chapter must fit. The voice pipeline comes first, since the robot has to hear and speak on
+its own, so speech recognition, voice-activity detection, and speech synthesis all run here and
+take a further share of that space. Even setting them aside, a language model able to
+understand informal Vietnamese and follow the ordering steps reliably needs more than the four
+gigabytes that remain, and a model squeezed under that limit is small and heavily compressed,
+which costs the accuracy the agent depends on. The 4 GB is not truly spare either: it is the
+headroom the navigation stack needs at its peak, when costmaps rebuild or the localizer closes
+a loop, and a model that claimed it would starve the work that must never stall. So the
+language model runs on the server, where it has room to be as capable as the task needs.
 
-### 4.2.4 Primary Data Flows
+Three more reasons support the same choice, and none of them depends on memory:
 
-The system executes four main data flows, described here at the architecture level. Each flow's internal logic is detailed in the referenced sections.
+- **Speed.** Only small messages cross the WiFi, a line of text or a set of coordinates, never
+  audio or video. A transcript is about a hundred bytes where the raw audio it replaces is
+  about a hundred kilobytes, so the network step is tiny and adds almost no delay.
+- **Safety of the data.** The robot stands out on the floor, where it can be knocked, damaged,
+  or taken, so nothing lasting is kept on it. Every order, payment, session, and conversation
+  lives on the server, and a robot that is lost or switched off carries no customer data with
+  it and can be replaced at once.
+- **Consistency across the fleet.** One model on one server serves every robot the same way,
+  so their behaviour does not drift apart, and an improvement is installed once on the server
+  rather than on each robot in turn.
 
-**Flow (a) — Voice Ordering at Table** (see §4.3, §4.4)
+The memory limit and these three reasons point the same way; a larger board would ease only the
+first of them.
 
-This is the core customer interaction loop. Steps:
+The server itself runs two programs. The agent takes a Vietnamese sentence and turns it into a
+checked action: it works out what the customer wants, picks the operation to run, checks that
+operation against the menu and the current order, runs it, and writes the spoken reply. The
+language model it calls is served on the same machine by Ollama, which keeps the model
+loaded in the graphics card so that no request waits for it to start. The orchestrator
+keeps the business consistent: it answers the web apps, pushes live updates to every screen,
+hands delivery jobs to robots, and stores the tables, sessions, orders, and payments. Behind
+it sit two small databases, one for the business records and one for the conversation history,
+each a single file that needs no separate database server.
 
-1. Guest presses "Talk to AI" on the tablet → `POST /voice/listen {table_id}` → Orchestrator resolves `table_id → robot_id` via the voice bridge → sends `start_listening` to the Jetson's `voice-device` WebSocket.
-2. Jetson arms the microphone. Silero VAD detects speech boundaries and captures one utterance. faster-whisper (PhoWhisper weights, `language=vi`, `beam_size=5`) transcribes the audio to Vietnamese text.
-3. The transcript is POSTed to Agent Brain `/chat` or `/chat/stream` with `table_id`.
-4. Agent Brain immediately posts `voice.heard` to Orchestrator `POST /voice/event`, which fans the transcript to the tablet WebSocket so the customer sees what was heard.
-5. The LangGraph agent processes the utterance through five stages: router classifies intent → worker decides on a tool call → tools execute → validator inspects results → state updates → response generated. If the action is `confirm_order`, the tool POSTs to Orchestrator `/orders`.
-6. Agent Brain posts `voice.reply` (response text, UI action, cart state, order confirmation) to Orchestrator `POST /voice/event`, which fans to the tablet WebSocket.
-7. The response text is streamed back to the Jetson for TTS playback (Piper or edge-tts, sentence by sentence, aligned with SSE).
+The two programs run as separate processes on purpose. The agent is slow: one reasoning step
+takes seconds, and it stops while it runs. The orchestrator's own work, reading records and
+updating screens, takes milliseconds. Keeping them apart means a slow reasoning step never
+freezes the kitchen screen, and either program can be restarted without bringing down the
+other. They pass messages to each other inside the one machine, which costs almost nothing.
 
-**Flow (b) — Order to Kitchen Display** (see §4.5, §4.7)
+### 4.3.2 Messages Between Components
 
-When `confirm_order` creates an order via `POST /orders`, the Orchestrator:
+The three web apps share one small library of communication and data code, so they always
+agree with the server on formats. Two kinds of message travel between the apps and the server.
+Commands and first page loads, such as placing an order or seating a party, use an ordinary
+request-and-reply call: the app asks, the server answers. Live changes, such as a new order
+appearing or a robot moving, are pushed the other way: the server sends them to the screens
+that care, the moment they happen, instead of the screen asking again and again. Pushing is
+what makes the system feel live. The kitchen sees an order the moment it is confirmed, and the
+manager watches the robots move without refreshing. The robot keeps two open connections to
+the server: one carries the command to start and stop listening, the other carries navigation
+jobs out and position and battery reports back.
 
-1. Inserts the order and order items into `orchestrator.db` with status `CHO_BEP` (awaiting kitchen).
-2. Emits `order.created` to all `role=panel` WebSocket connections.
-3. The management panel's Kitchen Kanban board displays the new order in the "Chờ Bếp" column with per-item details and elapsed time.
-4. Kitchen staff advances the order: Chờ Bếp → Đang Làm → Xong via `PATCH /orders/{id}`.
-5. When status reaches `XONG`, the Orchestrator's dispatcher creates a `deliver` task and assigns it to the nearest idle robot via WebSocket `task.assign`.
+Two example flows show the whole system working together. The first is a spoken order. The
+second is a delivery.
 
-**Flow (c) — Manager Monitoring** (see §4.6, §4.7)
+Figure 4.2 follows a spoken order. The customer taps "Talk to AI" on the tablet. The server
+finds which robot is at that table and tells it to listen. The robot records the sentence and
+turns it into text (about 800 ms), then sends the text to the agent. The agent at once shows
+the customer what it heard, with a "đang suy nghĩ" note, while it works. It reads the request,
+checks the action, runs it, and writes the reply. The reply is sent back one sentence at a
+time; the robot speaks each sentence as it arrives, and the tablet shows the finished reply
+and the updated cart. Three things are worth noticing. The recording, the transcription, and
+the speaking all happen on the robot, so no audio ever crosses the WiFi. The check on the
+action sits between the model and the cart, so nothing reaches the cart unchecked. The tablet
+only shows the conversation; it never controls the microphone.
 
-The management panel maintains live situational awareness through WebSocket events:
+![Figure 4.2. Voice Ordering Sequence](../images/Figure7.svg)
 
-- `robot.updated`: robot position (x, y) and battery level, refreshed at 5 Hz from RAM telemetry store. Drives the minimap animation and fleet board battery gauges.
-- `table.updated`: table status changes (TRONG → DANG_PHUC_VU → DA_THANH_TOAN). Drives the table overview.
-- `task.created` / `task.updated`: dispatcher task lifecycle. Drives the fleet board activity descriptions.
-- REST endpoints (`GET /robots`, `GET /tables`, `GET /tasks`) provide initial state on panel load; WebSocket provides subsequent live updates.
+*Figure 4.2. Voice Ordering Sequence: a spoken order travelling from the tablet, through the
+server and the robot's voice pipeline, to the agent and back to the speaker. Recording,
+transcription, and speech all happen on the robot; only text crosses the WiFi. (drawn by the
+group)*
 
-**Flow (d) — Backend to Robot Navigation Goals** (see §4.6, Chapter 3)
+Figure 4.3 follows a delivery. When the agent confirms an order, the server saves it and
+pushes it to the kitchen board, where a card appears in the "Chờ Bếp" (waiting) column. The
+kitchen moves the card along, from Chờ Bếp to Đang Làm (cooking) to Xong (done), and each move
+updates the board. When the order is done, the server creates a delivery job, hands it to the
+nearest free robot with enough battery, sends that robot to the table, and links the table's
+voice to that robot when it arrives. When the delivery finishes, the robot is freed and the
+link is released. The path from the agent's decision to the robot's wheels runs entirely on
+pushed events; nothing polls, and no person carries the order from screen to screen.
 
-The dispatcher translates business events into robot navigation tasks:
+![Figure 4.3. Order-to-Delivery Sequence](../images/Figure11a.svg)
 
-1. Business event occurs (guest seated → `go_to_table`; order ready → `deliver`; guest presses call button → `call`).
-2. Dispatcher creates a PENDING task in `orchestrator.db`.
-3. `try_assign()` picks the nearest idle robot (live WebSocket connection + battery ≥ 20% + Euclidean distance to table waypoint). Robot receives `task.assign` via WebSocket with target waypoint coordinates.
-4. Robot's ROS2 Nav2 stack receives the goal, navigates autonomously (covered in Chapter 3), and reports progress: `task_accepted` → `arrived` → `task_done`.
-5. On arrival, the dispatcher binds `table_id → robot_id` in the voice bridge, enabling subsequent voice commands from that table to route to the correct robot's microphone.
+*Figure 4.3. Order-to-Delivery Sequence: one AI decision (confirm order) travelling through
+the kitchen board, the delivery dispatcher, and the robot's navigation to a real delivery.
+(drawn by the group)*
 
----
+Each connection uses the kind of message that fits it, listed in Table 4.3. Commands and page
+loads go over HTTP, where a reply is expected. Live updates are pushed over WebSocket. The one
+two-way WebSocket to each robot carries jobs out and reports back on a single open connection.
 
-### 4.2.5 Communication Protocol Summary
+*Table 4.3. Type of connection on each link, and why.*
 
-| Communication Path | Protocol | Pattern | Purpose |
-|-------------------|----------|---------|---------|
-| Agent → Orchestrator | HTTP REST | Synchronous request/response | Order creation, payment, session queries |
-| Agent → Orchestrator | HTTP REST | Fire-and-forget | Voice event mirroring (hears, replies) |
-| Orchestrator → Web Clients | WebSocket | Server push (pub/sub) | Real-time state updates |
-| Orchestrator → Robot | WebSocket | Bidirectional | Task assignment + telemetry |
-| Robot → Agent | HTTP REST | Synchronous request/response | Voice utterance → agent processing |
-| Robot → Orchestrator | WebSocket | Heartbeat | Telemetry (pose, battery) |
-| Frontends → Orchestrator | HTTP REST | Request/response | CRUD operations, initial state loads |
-| Frontends → Orchestrator | WebSocket | Server push (receive only) | Live updates, voice mirroring |
-| Agent → Ollama | HTTP REST | Synchronous (localhost) | LLM inference |
-| All → All | Netbird VPN | Encrypted overlay | Secure connectivity across network boundaries |
+| Link | Connection | Why |
+|------|-----------|-----|
+| Agent to language model | HTTP, same machine | Native protocol, no network, almost no delay |
+| Agent and orchestrator | HTTP, same machine | Ask-and-answer for actions, fire-and-forget for voice events |
+| Voice device to agent | HTTP request | Send the text, get the reply back; holds no state |
+| Orchestrator to web apps | WebSocket | Live push; asking again and again would add 5–10 s of lag |
+| Orchestrator and robot | WebSocket | Two-way: jobs out, position and status in, one open connection |
+| Web apps to orchestrator | HTTP request | Create, read, update, and delete map cleanly onto HTTP |
 
-**Why WebSocket for real-time, not polling?** A restaurant has multiple state-changing events per minute (order created, table status changed, robot position updated at 5 Hz). Polling every client at 1 Hz would generate hundreds of requests per minute, most returning unchanged data. WebSocket push eliminates this overhead: clients receive events only when state changes, with <50ms propagation latency on local WiFi.
-
-**Why separate Agent and Orchestrator processes?** The agent performs CPU/GPU-bound LLM inference (blocking operations taking 0.3–2.2s per turn). The orchestrator handles sub-millisecond database operations and real-time WebSocket fan-out. Running them as separate processes (ports 8100 and 8000) prevents LLM inference from blocking WebSocket event delivery. They communicate via localhost HTTP, which adds negligible overhead (~1ms) compared to LLM inference time.
-
-**Why HTTP between Agent and Orchestrator, not in-process?** A shared Python process would couple the agent's LangGraph dependency tree to the orchestrator's FastAPI event loop. Separate processes allow independent scaling, debugging, and restart. The Orchestrator can continue serving web clients and dispatching robots even if the Agent is restarting.
-
----
-
-### 4.2.6 Service Dependency Graph
-
-```
-Ollama (must be running first)
-    │
-    ▼
-Agent Brain (:8100) ───depends on───► Ollama (LLM inference)
-    │                                  Orchestrator (:8000) (order/payment/session APIs)
-    │
-    ▼
-Orchestrator (:8000) ───depends on───► SQLite (orchestrator.db)
-    │                                  Agent (voice event mirroring)
-    │
-    ├──► Voice Pipeline (Jetson) ───depends on───► Orchestrator (WS commands)
-    │                                              Agent (POST /chat)
-    │
-    ├──► ROS2 Nav2 (Jetson) ───depends on───► Orchestrator (WS tasks)
-    │
-    └──► Web Frontends (:5173-5175) ───depends on───► Orchestrator (REST + WS)
-```
-
-Startup order enforced by `make backend` → `make agent` → `make voice` → `make frontend`. Ollama must be running before the Agent starts (warmup ping at agent startup verifies this). The Orchestrator is independent of the Agent for core functionality (menu browsing, manual ordering, table management) and degrades gracefully if the Agent is unavailable.
-
----
-
-### 4.2.7 Key Architectural Decisions
-
-Four foundational decisions shape the entire architecture. Each is stated here with rationale; the implementation consequences appear throughout §4.3–§4.8.
-
-**Decision 1: SQLite, not PostgreSQL.** SQLite is a single-file embedded database requiring zero administration — no server process, no configuration, no user management. At restaurant scale (dozens of orders per hour, not thousands per second), SQLite's single-writer concurrency model is not a bottleneck. ACID transactions guarantee correctness for multi-step operations (seat → create session → dispatch robot). The database file can be backed up by copying a single file. This decision trades horizontal scalability (which a restaurant does not need) for operational simplicity (which a restaurant deployment requires).
-
-**Decision 2: RAM telemetry, not database writes at sensor frequency.** Robot heartbeats arrive at 4+ Hz per robot (pose and battery). Writing each heartbeat to SQLite would create write contention and unnecessary I/O. Instead, the latest pose and battery are stored in a thread-safe Python dictionary (`fleet.py`), updated lock-free. A periodic snapshot writes to the database every 15 seconds for cold-start recovery. This decision was validated in testing: SQLite write latency under concurrent access would bottleneck the dispatcher's nearest-robot scoring loop.
-
-**Decision 3: Synchronous LangGraph execution wrapped in async SSE.** LangGraph's `SqliteSaver` checkpointer is synchronous (it uses `sqlite3`, which is not async-safe). But FastAPI's event loop should not be blocked by multi-second LLM inference. The solution: the LangGraph graph executes synchronously inside a `ThreadPoolExecutor`, producing a typed response context. An async generator wraps this result and yields Server-Sent Events to the HTTP client. This avoids blocking the event loop while maintaining compatibility with LangGraph's synchronous checkpointer.
-
-**Decision 4: Self-hosted Ollama, not cloud API.** Cloud LLM APIs (OpenAI, Anthropic, Google) require internet connectivity per turn, incur per-token API costs, and transmit customer voice data off-premises. Ollama runs Qwen2.5 7B locally on the server's GPU with `keep_alive=-1` (model stays in VRAM). This provides: (a) no internet dependency — the restaurant WiFi can fail and voice ordering still works; (b) zero marginal cost per utterance; (c) data stays on-premises; (d) bounded latency with no external network variability. The trade-off is upfront hardware cost (a server with GPU) and model quality (7B parameters vs. cloud models with 70B+ parameters), which is acceptable for a task-oriented dialogue system with a limited domain.
+The result is that the system never polls. Commands travel over HTTP and get an answer. Live
+changes are pushed the moment they occur. A time-critical event reaches its screen in well
+under a tenth of a second.

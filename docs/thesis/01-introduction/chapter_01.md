@@ -1,7 +1,7 @@
 ## CHAPTER 1: INTRODUCTION
 
 > **Status:** draft v1
-> **Cross-refs:** §2.1 (overview of existing restaurant automation), §3.1, §4.1 (system requirements), §5 (validation)
+> **Cross-refs:** §2.1 (overview of existing restaurant automation), §3.2, §4.1 (system requirements), §5 (validation)
 > **Figures needed:** Fig 1.1 — example commercial restaurant service robot for context (cite source)
 
 ---

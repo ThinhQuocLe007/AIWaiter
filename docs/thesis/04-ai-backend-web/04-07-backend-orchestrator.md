@@ -1,7 +1,7 @@
 ## 4.5 Backend Orchestrator — FastAPI + SQLite + WebSocket
 
 > **Status:** draft
-> **Cross-refs:** §4.2 for architecture overview, §4.3.5 for agent-orchestrator integration, §4.6 for fleet management, §4.7 for web interfaces
+> **Cross-refs:** §4.2 for architecture overview, §4.5.5 for agent-orchestrator integration, §4.6 for fleet management, §4.7 for web interfaces
 > **Source:** `src/server_orchestrator/main.py` (61 lines), `data/db.py` (188 lines), `realtime/connection_manager.py` (135 lines), `realtime/ws.py` (81 lines), `routers/` (9 routers)
 > **Figures needed:** Fig 4.5 (database ERD — 8 tables with foreign key relationships)
 
@@ -40,7 +40,7 @@ The orchestrator exposes 20 endpoints across 10 routers, mounted at startup via 
 
 1. Verify the table exists and is `TRONG` (empty). Return 409 Conflict if occupied (race-condition protection for concurrent kiosk check-ins).
 2. Update table status to `DANG_PHUC_VU`, set `party_size`, record `seated_at` timestamp.
-3. Create an `ACTIVE` session row in the sessions table — this session ID will be the party's financial grouping and the agent's `thread_id` for conversation memory (§4.3.1.4).
+3. Create an `ACTIVE` session row in the sessions table — this session ID will be the party's financial grouping and the agent's `thread_id` for conversation memory (§4.5.5).
 4. Broadcast `table.updated` to all panel and customer WebSocket clients.
 5. Create a `go_to_table` task, which triggers the dispatcher to find the nearest idle robot and send it to the table.
 
@@ -141,7 +141,7 @@ A session represents one party's entire visit: seating → ordering → payment 
 
 **Session ID as the integration seam.** The session ID is the critical identifier that links three subsystems:
 - **Database:** Groups orders and payments (financial ledger).
-- **Agent:** Key for LangGraph conversation memory (`thread_id = session_id`, §4.3.1.4).
+- **Agent:** Key for LangGraph conversation memory (`thread_id = session_id`, §4.5.5).
 - **Orchestrator:** Target for agent tool calls (`table_id` routes to the correct session).
 
 When payment closes a session, all three subsystems reset simultaneously — the ledger is closed, the conversation memory is archived, and the table is freed.

@@ -1,6 +1,6 @@
 ## 2.1 Overview: Automation of the Restaurant Service Loop
 
-> **Cross-refs:** §2.2–§2.8 (each need in depth), §2.9 (summary and requirement traceability), §3.1, §4.1 (requirements)
+> **Cross-refs:** §2.2–§2.8 (each need in depth), §2.9 (summary and requirement traceability), §3.2, §4.1 (requirements)
 > **Citations:** [2.1.1]–[2.1.25]; final numbering assigned when all Ch.2 references are merged.
 
 ---

@@ -4,7 +4,7 @@
 >
 > **Section type: [MIXED].** §2.8.3–§2.8.5 are a [USE] survey of off-the-shelf boards ending in a comparison table, from which §4.9 selects. §2.8.2 is a [BUILD] survey: the placement of computation between vehicle and infrastructure is a design question, and it ends in a gap statement that §4.4.1 answers.
 >
-> **Cross-refs:** §2.2 (navigation stack), §2.3 (voice pipeline components and their footprints), §2.6 (fleet orchestration), §3.3 (robot hardware setup — wiring and component specifications), §4.4 (edge/server workload split), §5.4.4 (edge performance measurement)
+> **Cross-refs:** §2.2 (navigation stack), §2.3 (voice pipeline components and their footprints), §2.6 (fleet orchestration), §3.4 (robot hardware setup — wiring and component specifications), §4.4 (edge/server workload split), §5.4.4 (edge performance measurement)
 > **Citations:** [2.8.1]–[2.8.22]; final numbering assigned when all Ch.2 references are merged. Bibliographic entries for this section are pending — see `references.md`.
 > **Figures and tables:** keyed section-scoped (`Table 2.8a`, …). Flatten to sequential chapter numbering on merge.
 
@@ -139,7 +139,7 @@ A note on cost at scale, since the figures above are single-unit prices and the 
 
 ### 2.8.6 Sensor Interfaces
 
-Sensors reach the board over standard buses, and the specifications of the individual devices belong with the platform description in §3.3 rather than here. What is worth recording at this level is the aggregate: several devices reporting concurrently at different rates over a small number of controllers.
+Sensors reach the board over standard buses, and the specifications of the individual devices belong with the platform description in §3.4 rather than here. What is worth recording at this level is the aggregate: several devices reporting concurrently at different rates over a small number of controllers.
 
 **Table 2.8c** — Sensor classes and their interface characteristics on this class of board [2.8.5].
 

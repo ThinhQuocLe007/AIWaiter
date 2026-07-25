@@ -69,18 +69,19 @@
   - 2.9.3 The Integration Gap
 
 ## CHAPTER 3 — PROPOSED METHOD (I): ROBOT CONTROL AND NAVIGATION
-- 3.1 System Requirements
-- 3.2 Design Challenges (C1–C4)
-- 3.3 Robot Platform & Hardware Setup
-- 3.4 Wheel Odometry and EKF Sensor Fusion
-- 3.5 Map Building with RTAB-Map
-- 3.6 Localization and ArUco-Based Docking
-- 3.7 Autonomous Navigation & Dynamic Goal Assignment
+- 3.1 System Overview *(shared with Chapter 4)*
+- 3.2 System Requirements
+- 3.3 Design Challenges (C1–C4)
+- 3.4 Robot Platform & Hardware Setup
+- 3.5 Wheel Odometry and EKF Sensor Fusion
+- 3.6 Map Building with RTAB-Map
+- 3.7 Localization and ArUco-Based Docking
+- 3.8 Autonomous Navigation & Dynamic Goal Assignment
 
 ## CHAPTER 4 — PROPOSED METHOD (II): AI, BACKEND & WEB SYSTEM
-- 4.1 System Requirements & Design Rationale
+- 4.1 AI System Requirements
 - 4.2 Design Challenges (C5–C10)
-- 4.3 Overall Software Architecture
+- 4.3 Software System Architecture
 - 4.4 Edge Voice Pipeline
 - 4.5 Conversational Agent
   - 4.5.1 Execution Model (LangGraph StateGraph)

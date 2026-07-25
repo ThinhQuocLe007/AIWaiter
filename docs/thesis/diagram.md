@@ -1,1235 +1,1004 @@
-# Thesis Diagrams — AI Waiter Robot (Ch.4)
+# Thesis Diagrams — AI Waiter Robot
 
-> All diagrams in PlantUML. Render via `plantuml` or plantuml.com.
 > Caption format: `Figure X.Y — [Description] *(drawn by the group)*`
 
----
+## Rendering
 
-## Figure 4.1 — Overall System Architecture
+All diagrams are PlantUML. Render every figure in this file to `docs/thesis/images/` with:
 
-> **Build this by hand** (draw.io / Figma / Illustrator). This is the first thing examiners see in Ch.4.
-> The PlantUML below is a reference blueprint — not the final visual. Produce a cleaner hand-drawn version.
-
-### Layout Spec
-
-**3 horizontal tiers.** Tier 1 is the largest (~55% height). Tier 2 spans full width in two columns. Tier 3 is the VPN overlay.
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│  TIER 1 — CENTRAL SERVER (x86 PC + NVIDIA GPU)                   │
-│  [Ollama runs here. FastAPI on :8000. Agent on :8100.]           │
-│                                                                  │
-│  ┌───────────────────┐  ┌──────────────────┐  ┌───────────────┐ │
-│  │  Agent Brain      │  │  Orchestrator    │  │  LLM + RAG    │ │
-│  │  (Port 8100)      │  │  (Port 8000)     │  │  (Ollama)     │ │
-│  │                   │  │                  │  │               │ │
-│  │  LangGraph        │  │  FastAPI REST    │  │  Qwen2.5 7B   │ │
-│  │  · MLP Classifier │◄─┤  · /menu         │─►│  × 2 models   │ │
-│  │  · 4 Workers      │  │  · /orders       │  │  (worker,     │ │
-│  │  · Validator      │  │  · /payments     │  │   response)   │ │
-│  │  · 7 Tools        │──┤  · /tables       │  │               │ │
-│  │  · Response Node  │  │  · /robots       │  │  FAISS Index  │ │
-│  │                   │  │  · /tasks        │  │  217 dishes   │ │
-│  │  SSE Streaming    │  │  · /voice/event  │  │  · BM25       │ │
-│  │                   │  │  · /voice/listen │  │  · Dense      │ │
-│  │                   │  │  · /voice/cancel │  │  · RRF Fusion │ │
-│  │                   │  │                  │  │               │ │
-│  │  (LangGraph       │  │  WebSocket Hub   │  │               │ │
-│  │   StateGraph      │  │  · panel         │  │               │ │
-│  │   + checkpointer) │  │  · customer      │  │               │ │
-│  │                   │  │  · robot         │  │               │ │
-│  │                   │  │  · voice-device  │  │               │ │
-│  │                   │  │                  │  │               │ │
-│  │                   │  │  Fleet +         │  │               │ │
-│  │                   │  │  Dispatcher      │  │               │ │
-│  └───────┬───────────┘  └────────┬─────────┘  └───────┬───────┘ │
-│          │                       │                     │        │
-│          │    POST /chat ───────►│                     │        │
-│          │◄─── REST (CRUD) ──────│                     │        │
-│          │───────────────────────┼────────────────────►│        │
-│          │         search() tool │   ChatOllama        │        │
-│          │                       │                     │        │
-│  ┌───────┴───────────────────────┴─────────────────────┴──────┐ │
-│  │                    SQLite (2 databases)                     │ │
-│  │  orchestrator.db        │        checkpoints.db             │ │
-│  │  · tables, sessions,    │        · LangGraph state          │ │
-│  │    orders, payments,    │        · thread_id = session_id   │ │
-│  │    robots, tasks, dishes│        · conversation memory      │ │
-│  └────────────────────────────────────────────────────────────┘ │
-└───────────────────────────┬──────────────────────────────────────┘
-                            │
-                    ┌───────┴────────┐
-                    │  Netbird VPN   │
-                    │  (overlay mesh)│
-                    └───┬────────┬───┘
-        ┌───────────────┘        └───────────────┐
-        │                                        │
-┌───────▼──────────────┐              ┌──────────▼──────────────┐
-│ TIER 2 — ROBOT       │              │ TIER 2 — RESTAURANT     │
-│ Jetson Orin Nano 8GB │              │ STAFF DEVICES           │
-│                       │              │                         │
-│  ┌─────────────────┐  │              │  ┌───────────────────┐  │
-│  │ Voice Pipeline  │  │              │  │ Kiosk (Check-in)  │  │
-│  │ Mic → SileroVAD │  │              │  │ Vue 3 SPA         │  │
-│  │  → PhoWhisper   │  │              │  │ · Table grid      │  │
-│  │  → Piper TTS    │  │              │  │ · Party size      │  │
-│  └────────┬────────┘  │              │  │ · POST /seatings  │  │
-│           │           │              │  └───────────────────┘  │
-│  ┌────────▼────────┐  │              │                         │
-│  │ ROS2 Nav2 Stack │  │              │  ┌───────────────────┐  │
-│  │ · RTAB-Map      │  │              │  │ Customer Tablet   │  │
-│  │ · Nav2 planner  │  │              │  │ Vue 3 + PrimeVue  │  │
-│  │ · EKF odometry  │  │              │  │ · Menu browsing   │  │
-│  │ · ArUco docking │  │              │  │ · Voice mirror    │  │
-│  └────────┬────────┘  │              │  │ · Cart + Payment  │  │
-│           │           │              │  └───────────────────┘  │
-│  ┌────────▼────────┐  │              │                         │
-│  │ Sensors         │  │              │  ┌───────────────────┐  │
-│  │ · RPLiDAR A2M8  │  │              │  │ Panel (Kitchen +  │  │
-│  │ · Realsense D435│  │              │  │ Fleet Dashboard)  │  │
-│  │ · MPU6050 (IMU) │  │              │  │ · Kanban orders   │  │
-│  │ · Hall encoders │  │              │  │ · Robot minimap   │  │
-│  └─────────────────┘  │              │  │ · Table status    │  │
-│                       │              │  └───────────────────┘  │
-│  WS: voice-device     │              │                         │
-│  WS: robot            │              │  WS: customer           │
-│                       │              │  WS: panel              │
-└───────────────────────┘              └─────────────────────────┘
+```bash
+export PLANTUML_JAR=/path/to/plantuml.jar     # https://plantuml.com/download
+python scripts/render_diagrams.py             # all figures -> SVG
+python scripts/render_diagrams.py --only 4 12 # just those
+python scripts/render_diagrams.py --check     # validate syntax + legibility, write nothing
 ```
 
-### Arrows & Protocols
+Filenames are stable (`Figure4.svg`, `Figure12a.svg`, …) so re-rendering updates in place and the
+thesis document's figure references never break.
 
-| From | To | Protocol | What Flows |
-|------|----|----------|------------|
-| Agent | Orchestrator | REST (internal) | Agent POSTs voice events, reads session info |
-| Agent | Ollama | ChatOllama API | 2 model calls: worker (T=0.1), response (T=0.3); classifier is MLP (deterministic, no LLM) |
-| Agent | FAISS/BM25 | In-process | `search()` tool queries hybrid retriever (~15 ms) |
-| Orchestrator | Robot WS | WebSocket | `task.assign`, `task.release` → robot; `heartbeat`, `arrived`, `task_done` ← robot |
-| Orchestrator | Voice WS | WebSocket | `start_listening`, `cancel_listening` → Jetson mic |
-| Orchestrator | Tablet WS | WebSocket | `voice.heard`, `voice.reply` (with cart, stage, UI action) |
-| Orchestrator | Panel WS | WebSocket | `order.created/updated`, `table.updated`, `robot.updated`, `task.created` |
-| Tablet | Orchestrator | REST | `GET /menu`, `POST /orders`, `POST /payments` |
-| Tablet | Orchestrator | REST | `POST /voice/listen`, `POST /voice/cancel` |
-| Kiosk | Orchestrator | REST | `POST /seatings`, `GET /tables` |
-| Panel | Orchestrator | REST | `GET /orders`, `GET /robots`, `PATCH /orders`, `GET /layout` |
-| Jetson → Agent | REST | `POST /chat/stream` (via voice_device.py main loop) |
-| Agent → Tablet | Via Orchestrator | Voice mirror: `POST /voice/event` → fan-out to `role=customer` WS |
+### The legibility floor
 
-### Color Palette Suggestion
-
-| Element | Color | Hex |
-|---------|-------|-----|
-| Central Server box | Light blue | `#E3F2FD` border `#1976D2` |
-| Agent Brain | Blue | `#BBDEFB` |
-| Orchestrator | Teal | `#B2DFDB` |
-| Ollama + RAG | Purple | `#E1BEE7` |
-| SQLite cylinders | Gray | `#ECEFF1` |
-| Robot box | Light green | `#E8F5E9` border `#388E3C` |
-| Staff device boxes | Light orange | `#FFF3E0` border `#F57C00` |
-| VPN cloud | Yellow | `#FFF9C4` |
-| Arrows | Dark gray | `#37474F` with protocol labels in `#D32F2F` |
-
-### Numbered Data Flow Overlay
-
-Add 7 small numbered circles tracing the voice ordering flow:
+A diagram is laid out at its natural size and then *shrunk* to fit the page, so what the examiner
+reads is the figure's font size **times the fit scale** — not the font size you set. The script
+computes that number against a 15 × 22 cm A4 text block and **fails below 8 pt**:
 
 ```
-① Guest taps "Talk to AI" on tablet
-② POST /voice/listen → resolves table_id → robot_id → Jetson mic
-③ VAD captures speech → PhoWhisper STT → transcript
-④ POST /chat/stream → Agent: MLP classify → worker → validator → tools
-⑤ Order stored via POST /orders (confirm_order tool)
-⑥ Panel WS receives order.created → kitchen Kanban updates
-⑦ Voice reply + cart + UI action → tablet WS → TTS plays
+FAIL Figure12a: too dense: 9.6 pt at A4 width (need >= 10.0)
 ```
 
-### Suggested Tools
+Raising `defaultFontSize` does **not** fix a dense figure: the whole canvas grows with the text and
+the ratio is unchanged. The three things that do work, in order of effect:
 
-- **draw.io** (diagrams.net) — free, good for block diagrams with database cylinders, icons
-- **Figma** — better typography and gradient fills, more "impressive" final look
-- **Excalidraw** — hand-drawn feel can look clean if done well (but less precise)
-- Export as **SVG** then embed in LaTeX/Word for sharp rendering at any scale
+1. **Split the figure** — the only fix for a genuinely overloaded one (Figure 5 went 2.8 → 11.1/8.9 pt this way).
+2. **Move notes into the caption** — in-figure `note` blocks are prose; they belong under the figure. Worth ~1–1.5 pt.
+3. **Shorten the widest labels** — in sequence diagrams the width is set by the longest message label, so one verbose self-message can cost a point on its own.
+
+Use `--min-pt 10` when a figure needs to survive being printed at half-column width.
+
+**Two more traps** (both cost real time before this file was verified):
+
+1. **Graphviz.** PlantUML shells out to `dot` for every non-sequence diagram; without it you get
+   `Cannot run program "/opt/local/bin/dot"` and an error image. Either `sudo apt install graphviz`
+   or use PlantUML's built-in layout engine — `-Playout=smetana`, which is what the script passes,
+   so no Graphviz install is needed.
+2. **PlantUML reports syntax errors with exit code 0**, by rendering an image that says
+   "Syntax Error?". A build that "succeeds" can still be broken, which is how Figures 2 and 3 sat
+   marked ✅ while neither actually rendered. `--check` greps the output for that marker and exits
+   non-zero, so use it before submitting.
+
+Every figure below was validated with `--check` on 2026-07-25: **17/17 render clean, all ≥ 9.2 pt.**
+Figures carry **no in-diagram `title`** — the rendered SVG is titleless and the figure is named only
+by the document caption; `render_diagrams.py` derives each filename from the `## Figure N` heading.
 
 ---
 
-### Reference PlantUML (for structure, not to render)
+## Diagram Inventory
+
+| # | Figure | Where | Type | Eff. pt |
+|---|--------|-------|------|--------:|
+| 1 | System Architecture Overview | Ch.4 §4.3 | Deployment block | 9.8 |
+| 2 | Agent Brain Component Overview | Ch.4 §4.5 | Block diagram | 13.7 |
+| 3 | Agent StateGraph topology | Ch.4 §4.5.1 | Directed graph | 10.4 |
+| 4 | Intent Classification (MLP + rewriter) | Ch.4 §4.5.2 | Pipeline + NN | 15.3 |
+| 5a | Validator control flow | Ch.4 §4.5.4 | Flowchart | 11.7 |
+| 5b | Menu resolution cascade | Ch.4 §4.5.4 | Flowchart | 9.2 |
+| 6 | Hybrid Retrieval Pipeline | Ch.4 §4.6 | Pipeline | 12.4 |
+| 7 | Voice Ordering Sequence | Ch.4 §4.3 | Sequence | 10.3 |
+| 8 | Edge Voice Pipeline (threads/queues) | Ch.4 §4.4 | Pipeline + threading | 11.2 |
+| 9 | Cart / Order Stage Machine | Ch.4 §4.5.5 | State machine | 19.1 |
+| 10a | Database Schema — business ledger | Ch.4 §4.7.6 | ERD | 9.3 |
+| 10b | Database Schema — fleet tables | Ch.4 §4.7.6 | ERD | 19.7 |
+| 11a | Order-to-Delivery Sequence | Ch.4 §4.3 | Sequence | 11.7 |
+| 11b | Session Lifecycle | Ch.4 §4.7.3 | Sequence | 9.4 |
+| 12a | Task Lifecycle + Robot States | Ch.4 §4.7.4 | State machine | 14.2 |
+| 12b | Dynamic Voice Binding | Ch.4 §4.7.4 | State machine | 10.6 |
+| 13 | WebSocket Hub (four roles) | Ch.4 §4.7.2 | Component | 13.4 |
+
+**17 figures, all Chapter 4.** "Eff. pt" is the label size once the figure is scaled into a 15 cm
+A4 text block — the size the examiner actually reads. `render_diagrams.py --check` enforces a
+floor of 8 pt and fails the build below it.
+
+> **Chapters 2, 3 and 5 have no figures yet.** The outline names Figures 2.7–2.12 explicitly
+> (function calling, agent architecture patterns, routing approaches, validation timing, memory
+> strategies, tool composition) and Ch.3 needs the TF tree, hardware wiring, EKF predict-update
+> cycle, ArUco docking and Nav2 goal lifecycle. Ch.5 needs result plots, which are blocked on
+> running the experiments. Track that gap separately — this file covers Ch.4 only.
+
+> **All figures below were re-derived from the code on 2026-07-23.** Every constant, threshold,
+> node name and edge condition is traceable to a source file (cited under each figure). See the
+> **[Fact Sheet](#fact-sheet--verified-constants)** at the bottom for the numbers to quote in prose.
+
+---
+
+## Figure 2 — Agent Brain: Component Overview
+
+> Ch.4 §4.5. Source: [graph.py](../../src/agent_brain/agent/graph.py), [agent/nodes/](../../src/agent_brain/agent/nodes/).
+>
+> **Caption:** *The three stages of one turn and the external systems each depends on. The four
+> intent workers are drawn as one block here because at this altitude they are interchangeable —
+> their differing topology (retries, delegation, the multi-intent loop) is Figure 3.*
 
 ```plantuml
 @startuml
 !theme plain
-skinparam componentStyle rectangle
 skinparam backgroundColor #FFFFFF
-skinparam defaultFontSize 12
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam nodesep 18
+skinparam ranksep 24
+skinparam padding 2
+skinparam roundCorner 6
+skinparam ArrowColor #37474F
+skinparam ArrowFontSize 12
+skinparam componentStyle rectangle
 
-title Figure 4.1 — Overall System Architecture
+rectangle "User utterance\n(Vietnamese text)" as USER #FFFFFF
 
-package "CENTRAL SERVER (x86 + NVIDIA GPU)" as Server #LightBlue {
-  
-  package "Agent Brain (port 8100)" as AgentBox #BBDEFB {
-    [LangGraph StateGraph\n10 nodes] as Graph
-    [MLP Classifier\n(4 intents, 97.4%)] as Classifier
-    [4 Workers\n(order/search/pay/chat)] as Workers
-    [ToolNode\n7 tools] as ToolNode
-    [Deterministic\nValidator] as Validator
-    [Response Node\n(SSE streaming)] as Response
-    database "checkpoints.db\n(conversation memory)" as CheckDB
-  }
-  
-  package "Orchestrator (port 8000)" as OrchBox #B2DFDB {
-    [REST API\n10 routers, 20 EP] as API
-    [WebSocket Hub\n4 roles] as WSHub
-    [Dispatcher\n+ Fleet (RAM)] as Dispatcher
-    [Voice Bridge\nPOST /voice/*] as VoiceBridge
-    database "orchestrator.db\n(business ledger)" as OrchDB
-  }
-  
-  package "LLM + RAG (Ollama)" as LLMBox #E1BEE7 {
-    [Worker LLM\nQwen2.5 7B\ntemp=0.1] as WLLM
-    [Response LLM\nQwen2.5 7B\ntemp=0.3] as RespLLM
-    [FAISS Dense\n+ BM25 Sparse\n+ RRF Fusion] as RAG
-  }
-  
-  Graph --> Classifier
-  Classifier --> Workers
-  Workers --> Validator
-  Validator --> ToolNode
-  ToolNode --> Response
-  
-  API --> OrchDB
-  Graph --> CheckDB
-  WSHub --> Dispatcher
-  
+rectangle "CLASSIFY\nIntent Classifier (MLP)\n+ rewriter fallback" as ROUTER #E3F2FD
+
+package "EXECUTE" as EX #F5F5F5 {
+  rectangle "Intent workers\nORDER · SEARCH · PAYMENT · CHAT" as WORKERS #F3E5F5
+  rectangle "Deterministic Validator" as VALIDATOR #FBE9E7
+  rectangle "Tool Node" as TOOLS #E8F5E9
 }
 
-package "ROBOT — Jetson Orin Nano" as RobotBox #LightGreen {
-  [Silero VAD] as VAD
-  [PhoWhisper STT] as STT
-  [Piper TTS (primary)\nedge-tts (fallback)] as TTS
-  [ROS2 Nav2\nRTAB-Map + EKF\n+ ArUco Docking] as ROS2
-  [Sensors\nA2M8 LiDAR, D435\nMPU6050, Encoders] as Sensors
-}
+rectangle "RESPOND\nResponse Generator" as RESPONSE #E0F2F1
+rectangle "Vietnamese reply\n+ cart + UI action" as REPLY #FFFFFF
 
-package "STAFF DEVICES" as StaffBox #LightYellow {
-  [Kiosk\nTable check-in] as Kiosk
-  [Customer Tablet\nMenu + Voice + QR] as Tablet
-  [Panel\nKitchen + Fleet] as Panel
-}
+cloud "Ollama\nQwen2.5-Instruct" as LLM #E1BEE7
+database "RAG index\nFAISS + BM25" as RAG #BBDEFB
+rectangle "Orchestrator\nREST :8000" as API #B2DFDB
 
-' Internal server arrows
-AgentBox --> LLMBox : ChatOllama\n(worker + response)
-ToolNode --> RAG : search()
+USER --> ROUTER
+ROUTER --> WORKERS
+WORKERS --> VALIDATOR
+VALIDATOR --> TOOLS
+TOOLS --> RESPONSE
+RESPONSE --> REPLY
 
-' Server → Clients
-OrchBox --> RobotBox : WS (robot, voice-device)
-OrchBox --> Tablet : WS (customer) + REST
-OrchBox --> Kiosk : REST + WS
-OrchBox --> Panel : WS (panel) + REST
-
-' Voice flow
-VAD --> STT : audio segment
-STT --> AgentBox : transcript\nPOST /chat/stream
-Response --> VoiceBridge : voice event
-VoiceBridge --> Tablet : voice.reply\n+ cart + action
-Response --> TTS : text\n(SSE sentences)
-
-' Robot task flow
-Dispatcher --> ROS2 : task.assign
-ROS2 --> Dispatcher : heartbeat, arrived
-Sensors --> ROS2 : /scan, /camera, /imu
+WORKERS -right-> LLM : tool choice\n+ phrasing
+TOOLS -right-> RAG   : search
+TOOLS -right-> API   : orders /\npayments
 
 @enduml
 ```
 
----
+| Block | Role | Calls LLM? |
+|-------|------|:---:|
+| **Intent Classifier** | MLP over a shared 768-d embedding + 10-d dialogue-state features -> ORDER / SEARCH / PAYMENT / CHAT. Rewriter LLM only on low confidence or a multi-clause utterance. | No* |
+| **ORDER Worker** | LLM picks a cart action or `confirm_order`. | Yes |
+| **SEARCH Worker** | LLM picks `search()` or `delegate()`. | Yes |
+| **PAYMENT Dispatch** | Deterministic — always emits `request_payment`. | No |
+| **CHAT Worker** | Pure function — builds context from search history + cart. | No |
+| **Validator** | 5-level menu resolution + per-tool preconditions. Max 3 retries, then a circuit breaker. | No |
+| **Tool Node** | Executes validated calls: in-memory cart, RAG search, REST for orders/payments. | No |
+| **Response Generator** | Templates for deterministic outcomes, LLM stream for search results and chat. | Partial |
 
-## Figure 4.2 — Conversational Agent: 5-Stage Pipeline
-
-> **Build this by hand.** This is the conceptual overview — the examiner sees this first in §4.5, before diving into the graph topology (§4.3), classifier architecture (§4.4), or validator (§4.5). It establishes the 5-stage mental model: Understanding → Decision → Validation → Execution → Response.
-
-### Layout Spec (vertical pipeline, 5 boxes, left-to-right flow)
-
-```
- ┌──────────────────────────────────────────────────────────────────┐
- │                           AgentState (shared typed state)         │
- └──────────────────────────────────────────────────────────────────┘
- 
- User utterance (Vietnamese text)
-        │
-        ▼
- ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
- ┃  STAGE I — UNDERSTANDING                                         ┃
- ┃  Intent Classification                                           ┃
- ┃                                                                  ┃
- ┃  Utterance → word segmentation → bi-encoder (768-dim)            ┃
- ┃  + context features (10-dim) → MLP (778→256→64→4)                ┃
- ┃  → {ORDER, SEARCH, PAYMENT, CHAT}                                ┃
- ┃  Latency: <1 ms · Deterministic · 97.4% accuracy                 ┃
- ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-                              │ intent(s)
-                              ▼
- ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
- ┃  STAGE II — DECISION                                             ┃
- ┃  Tool-Calling LLM (Qwen2.5 7B, T=0.1, num_ctx=16384)             ┃
- ┃                                                                  ┃
- ┃  ORDER  → {add_cart, remove_cart, clear_cart, confirm_order}     ┃
- ┃  SEARCH → {search, delegate}                                     ┃
- ┃  PAYMENT → request_payment  (deterministic, no LLM)              ┃
- ┃  CHAT   → builds ChatResponseContext  (pure function, no LLM)    ┃
- ┃  Latency: ~1-3 s (LLM calls) · Delegation escape hatch           ┃
- ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-                              │ tool call(s)
-                              ▼
- ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
- ┃  STAGE III — VALIDATION                                          ┃
- ┃  Deterministic Validator (pure Python, no LLM)                   ┃
- ┃                                                                  ┃
- ┃  5-level menu name resolution:                                   ┃
- ┃    exact match → prefix match → ambiguous? → modifier strip      ┃
- ┃    → off-menu with nearest suggestion                             ┃
- ┃  State checks: cart consistency, order stage gating              ┃
- ┃  Circuit breaker: max 3 retries with corrective feedback         ┃
- ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-                              │ validated tool calls
-                              ▼
- ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
- ┃  STAGE IV — EXECUTION                                            ┃
- ┃  Tools + State Management                                        ┃
- ┃                                                                  ┃
- ┃  In-memory: add_cart, remove_cart, clear_cart                    ┃
- ┃  Backend API: confirm_order → POST /orders                       ┃
- ┃             request_payment → POST /payments                     ┃
- ┃             verify_payment → POST /payments/verify               ┃
- ┃  RAG: search → FAISS + BM25 + RRF                                ┃
- ┃  Cart state machine: IDLE → DRAFTING → AWAIT_CONF → CONFIRMED    ┃
- ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-                              │ ResponseContext (typed struct)
-                              ▼
- ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
- ┃  STAGE V — RESPONSE                                              ┃
- ┃  Output Generation                                                ┃
- ┃                                                                  ┃
- ┃  Typed dispatch: templates (orders, payments, errors)            ┃
- ┃                + LLM (search results, free-form chat, T=0.3)     ┃
- ┃  Grounding guard: post-gen check against retrieved dishes        ┃
- ┃  CJK sanitizer: strips non-Vietnamese characters                 ┃
- ┃  SSE streaming: sentence-level → TTS playback                    ┃
- ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-        │
-        ▼
-  Vietnamese spoken reply → Piper TTS → speaker
-  + JSON: {ui_action, cart, order_confirmed}
-```
-
-### Color Zones
-
-| Stage | Color | Hex |
-|-------|-------|-----|
-| Understanding | Blue | `#E3F2FD` |
-| Decision | Purple | `#F3E5F5` |
-| Validation | Red/Orange | `#FBE9E7` |
-| Execution | Green | `#E8F5E9` |
-| Response | Teal | `#E0F2F1` |
+\* The rewriter LLM runs only for low-confidence or multi-clause utterances (see Figure 4).
 
 ---
 
-## Figure 4.3 — LangGraph Agent StateGraph
+## Figure 3 — Agent StateGraph: Control-Flow Topology
 
-> **Build this by hand.** Full-page diagram showing the 10-node StateGraph topology. Replaces the old "3-stage" diagram — the correct flow is: MLP classifier → worker → validator → tools → state_updater → (loop or) state_outcome → response_node.
+> Ch.4 §4.5.1. Source: [graph.py](../../src/agent_brain/agent/graph.py) (`_build_workflow`).
+>
+> **Caption:** *The LangGraph `StateGraph`. ORDER, SEARCH and PAYMENT are drawn as one composite
+> because their edges are identical — each is entered from the classifier or from the multi-intent
+> loop, validated, and retried on the same conditions. Ten nodes are reachable at runtime; an
+> eleventh (`router`, the semantic + keyword hybrid) remains registered as a rollback but is
+> bypassed by `START -> classifier_router`.*
 
-### Layout Spec (top-down with 3 lanes)
+```plantuml
+@startuml
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam nodesep 18
+skinparam ranksep 24
+skinparam padding 2
+skinparam roundCorner 6
+skinparam ArrowColor #37474F
+skinparam ArrowFontSize 12
 
+state "START" as START
+state "Intent Classifier (MLP)" as CLASSIFIER #E3F2FD
+
+state "Tool worker\n(one per queued intent)" as WORKER #F3E5F5 {
+  state "ORDER" as OW #F3E5F5
+  state "SEARCH" as SW #F3E5F5
+  state "PAYMENT" as PAY #F3E5F5
+}
+
+state "CHAT Worker" as CW #F3E5F5
+state "Validator" as VAL #FBE9E7
+state "Tool Node" as TOOLS #E8F5E9
+state "State Updater" as UPD #E8F5E9
+state "State Outcome" as SO #E0F2F1
+state "Response Node" as RESP #E0F2F1
+state "END" as END
+
+START --> CLASSIFIER
+CLASSIFIER --> WORKER : ORDER · SEARCH · PAYMENT
+CLASSIFIER --> CW     : CHAT
+
+WORKER --> VAL          : non-delegate tool call
+WORKER -[dotted]-> UPD  : only delegate()
+WORKER -[dotted]-> CW   : no tool call\n(misrouted question)
+
+VAL --> TOOLS            : is_valid
+VAL --> WORKER           : retry (loop < 3)
+VAL -[dotted]-> SO       : loop >= 3\n(circuit breaker)
+
+TOOLS --> UPD
+UPD --> WORKER : intent queue\nnot empty
+UPD --> SO     : intent queue empty
+
+CW --> SO
+SO --> RESP
+RESP --> END
+@enduml
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                     AgentState (TypedDict)                       │
-│  messages │ active_cart │ order_stage │ current_intents │        │
-│  shown_dishes │ search_context │ is_valid │ loop_count │ ...    │
-│  (shared typed state flows through every node)                   │
-└────────────────────────────┬────────────────────────────────────┘
-                             │
-┌────────────────────────────┼────────────────────────────────────┐
-│  LANE 1: CLASSIFY          │                                    │
-│                            ▼                                    │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │              MLP Classifier Node                          │  │
-│  │                                                           │  │
-│  │  Utterance → [bi-encoder 768-dim] + [10 context features] │  │
-│  │           → 778-dim → MLP(256→64→4) → {intent, conf}     │  │
-│  │                                                           │  │
-│  │  Fast path (≥0.7 conf): single intent                     │  │
-│  │  Rewriter path (<0.7 conf or multi-clause): decompose     │  │
-│  │  → per-fragment classify → merged intent queue            │  │
-│  │                                                           │  │
-│  │  Latency: <1 ms (MLP) or ~2 s (with rewriter LLM)        │  │
-│  │  Accuracy: 97.4% (holdout), 95.6% (45-case eval)         │  │
-│  └───────────────────────┬──────────────────────────────────┘  │
-│                          │ current_intents = [ORDER, PAYMENT]  │
-│                          ▼                                      │
-├─────────────────────────────────────────────────────────────────┤
-│  LANE 2: EXECUTE (per intent, sequential)                       │
-│                                                                 │
-│   ┌──────────┐  ┌──────────┐  ┌────────────┐  ┌──────────┐    │
-│   │  ORDER   │  │  SEARCH  │  │  PAYMENT   │  │   CHAT   │    │
-│   │  Worker  │  │  Worker  │  │  Dispatch  │  │  Worker  │    │
-│   │          │  │          │  │(determin.) │  │(pure fn) │    │
-│   │ LLM call │  │ LLM call │  │            │  │          │    │
-│   │ T=0.1    │  │ T=0.1    │  │ emits      │  │ builds   │    │
-│   │ tool_cho-│  │ tool_cho-│  │ request_   │  │ ChatResp-│    │
-│   │ ice=any  │  │ ice=any  │  │ payment    │  │ onseCont-│    │
-│   │ 5 tools  │  │ 2 tools  │  │            │  │ ext      │    │
-│   └────┬─────┘  └────┬─────┘  └─────┬──────┘  └────┬─────┘    │
-│        │             │              │               │         │
-│        └─────────────┼──────────────┘               │         │
-│                      ▼                              │         │
-│        ┌─────────────────────────┐                  │         │
-│        │   Deterministic         │◄── retry (≤3×) ──┘         │
-│        │   Validator (no LLM)    │                             │
-│        │                         │                             │
-│        │  · Menu name resolution │                             │
-│        │  · Off-menu detection   │                             │
-│        │  · Ambiguity detection  │                             │
-│        │  · Cart consistency     │                             │
-│        │  · Modifier stripping   │                             │
-│        └───────────┬─────────────┘                             │
-│                    │ is_valid=True              circuit breaker │
-│                    ▼                              (loop ≥3)    │
-│        ┌─────────────────────────┐               ──→ state_    │
-│        │   ToolNode (7 tools)    │                  outcome    │
-│        │                         │                             │
-│        │  search() → RAG         │                             │
-│        │  add/remove/clear_cart  │                             │
-│        │  confirm_order → REST   │                             │
-│        │  request_payment → REST │                             │
-│        │  verify_payment → REST  │                             │
-│        │  delegate()             │                             │
-│        └───────────┬─────────────┘                             │
-│                    │ ToolMessage                                │
-│                    ▼                                            │
-│        ┌─────────────────────────┐                             │
-│        │   State Updater         │                             │
-│        │  · Update active_cart   │                             │
-│        │  · Set UI action        │                             │
-│        │  · Advance order_stage  │                             │
-│        │  · Update shown_dishes  │                             │
-│        │  · Pop intent queue     │◄─────────────────────┐      │
-│        └───────────┬─────────────┘                      │      │
-│                    │                                    │      │
-│         queue empty? ──── yes ─────▶ (proceed)         │      │
-│                    │                                    │      │
-│                    no ───→ route to next worker ────────┘      │
-│                                                                 │
-├─────────────────────────────────────────────────────────────────┤
-│  LANE 3: RESPOND                                                │
-│                                                                 │
-│   ┌─────────────────────────┐                                   │
-│   │   State Outcome         │                                   │
-│   │  · Build typed          │                                   │
-│   │    ResponseContext      │                                   │
-│   │  · Reset per-turn       │                                   │
-│   │    ephemeral fields     │                                   │
-│   └───────────┬─────────────┘                                   │
-│               │                                                 │
-│               ▼                                                 │
-│   ┌─────────────────────────┐                                   │
-│   │   Response Node         │                                   │
-│   │                         │                                   │
-│   │  Templates (deterministic│                                  │
-│   │    confirm, error, etc) │                                   │
-│   │                         │                                   │
-│   │  OR                     │                                   │
-│   │                         │                                   │
-│   │  LLM stream (search     │                                   │
-│   │    results, free chat)  │                                   │
-│   │  T=0.3                  │                                   │
-│   │  → _ground_reply()      │                                   │
-│   │  → _sanitize_sentence() │                                   │
-│   │  → SSE sentence stream  │                                   │
-│   └─────────────────────────┘                                   │
-│               │                                                 │
-│               ▼                                                 │
-│        Vietnamese AIMessage                                     │
-│        + JSON: ui_action, stage, cart                           │
-└─────────────────────────────────────────────────────────────────┘
-```
+
 
 ### Edge Routing Table
 
-| From → To | Condition |
-|-----------|-----------|
-| Classifier → ORDER Worker | `intent == ORDER \|\| ORDER_CONFIRM` |
-| Classifier → SEARCH Worker | `intent == SEARCH` |
-| Classifier → PAYMENT Dispatch | `intent == PAYMENT` |
-| Classifier → CHAT Worker | `intent == CHAT` or empty queue |
-| Worker → Validator | LLM produced non-delegate tool call |
-| Worker → CHAT Worker | LLM produced only `delegate()` (escape hatch) |
-| Validator → ToolNode | `is_valid == True` |
-| Validator → Same Worker | `is_valid == False` AND `loop_count < 3` (retry with `feedback`) |
-| Validator → State Outcome | `loop_count >= 3` (circuit breaker) |
-| ToolNode → State Updater | Tool execution complete |
-| State Updater → Next Worker | Intent queue not empty after pop |
-| State Updater → State Outcome | Intent queue empty (all intents processed) |
-| CHAT Worker → State Outcome | Direct (bypasses validator + tools) |
-| State Outcome → Response Node | Unconditional |
-| Response Node → END | Unconditional |
+| From → To | Condition | Code |
+|-----------|-----------|------|
+| START → Classifier | Unconditional | `add_edge(START, "classifier_router")` |
+| Classifier → ORDER Worker | `current_intents[0] ∈ {ORDER, ORDER_CONFIRM}` | `INTENT_TO_WORKER` |
+| Classifier → SEARCH Worker | `current_intents[0] == SEARCH` | `INTENT_TO_WORKER` |
+| Classifier → PAYMENT Dispatch | `current_intents[0] == PAYMENT` | `INTENT_TO_WORKER` |
+| Classifier → CHAT Worker | `current_intents[0] == CHAT` **or** queue empty | `DEFAULT_WORKER` |
+| ORDER/SEARCH Worker → Validator | at least one **non-`delegate`** tool call (stray `delegate` calls are stripped) | `_route_if_tool_call` |
+| ORDER/SEARCH Worker → **State Updater** | LLM produced **only** `delegate()` → pop the intent, advance the queue | `_route_if_tool_call` |
+| ORDER Worker → CHAT Worker | **no** tool call at all *and* head intent ∈ {ORDER, ORDER_CONFIRM} — a question misrouted to ORDER | `_route_if_tool_call` |
+| Other worker → State Updater | no tool call, any other intent (defensive; unreachable under `tool_choice="any"`) | `_route_if_tool_call` |
+| PAYMENT Dispatch → Validator | Unconditional (deterministic node, always emits `request_payment`) | `payment_dispatch_node` |
+| Validator → Tool Node | `is_valid == True` **and** `loop_count < 3` | `_route_after_validator` |
+| Validator → Same Worker | `is_valid == False` AND `loop_count < 3` — retry with `feedback` injected as a `ToolMessage` | `_route_after_validator` |
+| Validator → State Outcome | `loop_count >= 3` (circuit breaker; checked **before** `is_valid`) | `_route_after_validator` |
+| Tool Node → State Updater | Unconditional | `add_edge("tools", "state_updater")` |
+| State Updater → Next Worker | Intent queue not empty after pop (multi-intent loop) | `_route_after_updater` |
+| State Updater → State Outcome | Intent queue empty | `_route_after_updater` |
+| CHAT Worker → State Outcome | Unconditional (leaf node, no tool calls) | `add_edge` |
+| State Outcome → Response Node | Unconditional | `add_edge` |
+| Response Node → END | Unconditional | `add_edge` |
 
-### Special Paths
+### Two things the drawing hides (state them plainly in prose)
 
-- **Multi-intent loop:** curved dashed arrow from State Updater back to the appropriate worker, labeled "intent queue not empty"
-- **Retry loop:** dashed arrow from Validator back to Worker, labeled "feedback, max 3×"
-- **Circuit breaker:** dashed arrow from Validator to State Outcome, labeled "loop ≥ 3 → apology response"
-- **Delegate path:** ORDER/SEARCH Worker → CHAT Worker when the LLM calls `delegate(reason)`
+1. **Eleven nodes are registered, ten are live.** `hybrid_router_node` (`"router"`) is still wired
+   into the graph as a rollback path — semantic centroids + keyword detector — but `START` goes
+   straight to `classifier_router`, so it is unreachable at runtime. Say "ten active nodes; an
+   eleventh remains as a documented rollback" rather than claiming ten exist.
+2. **The validator can grow the intent queue.** When one LLM turn emits both a cart tool and
+   `confirm_order`, the validator strips `confirm_order` and appends `ORDER_CONFIRM` back onto
+   `current_intents` (with `intent_queries["ORDER_CONFIRM"] = "Xác nhận đơn hàng"`). The cart
+   mutation therefore executes first and the confirmation re-enters the ORDER worker on the next
+   loop, so the guest is never billed for a cart the tool node has not yet committed. This is the
+   `_with_confirm_revisit` path in `deterministic_validator_node`.
 
-### Color Zones
+### Three layers, one turn
 
-| Lane | Color | Contains |
-|------|-------|----------|
-| **Classify** | Blue (`#E3F2FD`) | MLP Classifier node with context features breakdown |
-| **Execute** | Green (`#E8F5E9`) | 4 Workers → Validator → ToolNode → State Updater, multi-intent loop |
-| **Respond** | Orange (`#FFF3E0`) | State Outcome → Response → output |
-
-### Footnotes
-
-- "SQLite Checkpointer: `thread_id = session_id`" at bottom-left
-- "Circuit breaker: max 3 retry loops per turn" at bottom-right
-- Latency annotations: "<1 ms" (classifier), "~1-3 s" (LLM calls), "~2-4 s" (total turn)
+| Layer | Nodes | Purpose |
+|-------|-------|---------|
+| **Classify** | Intent Classifier | Determine what the user wants (ORDER / SEARCH / PAYMENT / CHAT) |
+| **Execute** | 4 Workers → Validator → Tool Node → State Updater | Per-intent LLM decisions, deterministic validation, tool execution, state updates. Loops for multi-intent utterances and retries. |
+| **Respond** | State Outcome → Response Node | Build typed response context, generate output (templates or LLM stream). |
 
 ---
 
-### Reference PlantUML
+## Figure 1 — System Architecture Overview
+
+> Ch.4 §4.3. The first diagram examiners see: the three-tier deployment and the protocol on every
+> seam. Source: whole-system topology (`pyproject.toml` extras, `.env.template`, `Makefile`).
+>
+> **Caption:** *Three tiers on one LAN. The central server runs the agent, the orchestrator (the
+> only database writer), and a local Ollama + hybrid-RAG; two SQLite files hold the business ledger
+> and conversation memory. The Jetson runs only perception (VAD · STT · TTS) and ROS2 navigation —
+> the LLM never runs on the robot. Browsers are thin clients. Numbered seams trace the four flows:
+> (1) voice ordering, (2) order → kitchen, (3) backend → robot goals, (4) manager monitoring. Live
+> robot telemetry and the Ollama/RAG split are deliberately omitted at this altitude — at Figure 1
+> the reader needs "the agent calls a local LLM and a local index," not the internals (Figures 6,
+> 12a).*
 
 ```plantuml
 @startuml
+' ── print profile (see "Rendering" at the top of this file) ──
 !theme plain
 skinparam backgroundColor #FFFFFF
-skinparam defaultFontSize 11
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam nodesep 18
+skinparam ranksep 24
+skinparam padding 2
+skinparam roundCorner 6
+skinparam ArrowColor #37474F
+skinparam ArrowFontSize 12
+skinparam NoteBackgroundColor #FFFDE7
+skinparam NoteFontSize 11
+skinparam componentStyle rectangle
+skinparam linetype ortho
 
-title Figure 4.3 — LangGraph StateGraph (10 nodes)
-
-package "CLASSIFY" as S1 #E3F2FD {
-  state "MLP Classifier\n778-dim → 4-class\n<1 ms, 97.4% acc" as classifier
-  state "Rewriter\n(multi-intent\ndecompose)" as rewriter
-  classifier --> rewriter : low conf or\nmulti-clause
+package "TIER 1 — Central Server" #E3F2FD {
+  component "Agent Brain\n:8100 · LangGraph" as AGENT #BBDEFB
+  component "Orchestrator\n:8000 · REST + WS\nONLY DB writer" as ORCH #B2DFDB
+  component "Ollama\n+ Hybrid RAG" as OLLAMA #E1BEE7
+  database "orchestrator.db" as DB #ECEFF1
+  database "checkpoints.db" as CKPT #ECEFF1
 }
 
-package "EXECUTE" as S2 #E8F5E9 {
-  state "ORDER Worker\nLLM: T=0.1\ntool_choice=any\n5 CRUD tools" as ow
-  state "SEARCH Worker\nLLM: T=0.1\ntool_choice=any\nsearch + delegate" as sw
-  state "PAYMENT Dispatch\nDeterministic\nno LLM call" as pd
-  state "CHAT Worker\nPure function\nno LLM, no tool" as cw
-  
-  state "Validator\n5-level menu res.\nno LLM" as val
-  state "ToolNode\n7 tools\nsearch, cart CRUD,\nconfirm, pay, verify" as tools
-  state "State Updater\nupdate cart/stage\npop intent queue\nshown_dishes" as upd
+package "TIER 2 — Robot (Jetson)" #E8F5E9 {
+  component "Voice device\nVAD · STT · TTS" as VOICE #C8E6C9
+  component "ROS2 · Nav2\nRTAB-Map · ArUco" as NAV #C8E6C9
 }
 
-package "RESPOND" as S3 #FFF3E0 {
-  state "State Outcome\nbuild ResponseContext\nreset per-turn fields" as so
-  state "Response Node\ntemplate or LLM stream\n+ grounding guard\n+ CJK sanitizer\n→ SSE sentences" as resp
+package "TIER 3 — Browsers" #FFF3E0 {
+  component "tablet" as TABLET #FFE0B2
+  component "kiosk" as KIOSK #FFE0B2
+  component "panel" as PANEL #FFE0B2
 }
 
-state "START" as s
-state "END" as e
+cloud "Netbird VPN" as VPN #FFF9C4
 
-' Stage 1
-s --> classifier
+AGENT --> OLLAMA : LLM + search
+AGENT --> CKPT   : memory
+AGENT --> ORCH   : REST seam
+ORCH  --> DB     : SQL
 
-' Worker routing (from classifier and rewriter)
-classifier --> ow : ORDER / CONFIRM
-classifier --> sw : SEARCH
-classifier --> pd : PAYMENT
-classifier --> cw : CHAT
-rewriter --> ow : per-fragment
-rewriter --> sw : per-fragment
-rewriter --> pd : per-fragment
-rewriter --> cw : per-fragment
+VOICE --> VPN
+NAV   --> VPN
+VPN --> AGENT : (1) POST /chat/stream
+VPN --> ORCH  : (3) WS robot
 
-' Tool workers → validator
-ow --> val : has tool call
-sw --> val : has tool call
-pd --> val : has tool call
-
-' Escape hatches
-ow --> cw : only delegate
-sw --> cw : only delegate
-cw --> so : (bypass)
-
-' Validator routing
-val --> tools : is_valid
-val --> ow : retry (≤3) with feedback
-val --> so : circuit breaker (≥3)
-
-' Tools → updater
-tools --> upd
-
-' Updater → next worker (multi-intent loop) or outcome
-upd --> ow : more intents
-upd --> sw : more intents
-upd --> pd : more intents
-upd --> so : intent queue empty
-
-' Finalize
-so --> resp
-resp --> e
-
-note right of upd
-  **Multi-intent loop:**
-  pops front of current_intents[]
-  → remaining intents → back to worker
-  → empty → proceed to response
-end note
-
-note bottom of val
-  **Validator guards:**
-  · 5-level menu name resolution
-  · Off-menu detection + suggestion
-  · Ambiguity detection (e.g. 11 "Oc Huong")
-  · Cart state consistency checks
-  · Modifier stripping ("it cay", "khong hanh")
-  · Max 3 retry → circuit breaker
-end note
+TABLET --> ORCH : (1) WS customer
+KIOSK  --> ORCH : REST
+PANEL  --> ORCH : (2)(4) WS panel
 
 @enduml
 ```
 
+The four numbered seams — (1) voice ordering, (2) order → kitchen, (3) backend → robot goals,
+(4) manager monitoring — are the edge labels in the diagram; §4.3 walks each one. The omissions are
+deliberate design altitude, not gaps: live robot telemetry (`fleet.py`, RAM) is a detail of
+Figure 12a, and Ollama + RAG are one block because the reader here needs "a local LLM and a local
+index," not the split.
+
 ---
 
-## Figure 4.4 — MLP Classifier Architecture
+## Figure 4 — Two-Stage Intent Classification (MLP + rewriter fallback)
 
-> **Build this by hand.** Replaces the old "Two-Tier Hybrid Router" — the active router is now a trained MLP classifier, not semantic centroids + SLM fallback.
-
-### Layout Spec (horizontal pipeline)
-
-```
-  User utterance
-       │
-       ▼
-  ┌──────────────┐    ┌──────────────────┐
-  │ Word         │    │ Context Features │
-  │ Segmentation │    │ (10-dim)         │
-  │ (underthesea)│    │                  │
-  └──────┬───────┘    │ order_stage (5)  │
-         │            │ has_cart         │
-         ▼            │ cart_size        │
-  ┌──────────────┐    │ has_search_ctx   │
-  │ Bi-Encoder   │    │ search_size      │
-  │ bkai-...     │    │ utterance_length │
-  │ 768-dim      │    └────────┬─────────┘
-  │ L2-norm'd    │             │
-  └──────┬───────┘             │
-         │                     │
-         └──────────┬──────────┘
-                    │ concat
-                    ▼
-            ┌───────────────┐
-            │  778-dim      │
-            └───────┬───────┘
-                    │
-                    ▼
-            ┌───────────────┐
-            │ Linear: 256   │
-            │ ReLU          │
-            │ Dropout(0.2)  │
-            └───────┬───────┘
-                    │
-                    ▼
-            ┌───────────────┐
-            │ Linear: 64    │
-            │ ReLU          │
-            │ Dropout(0.2)  │
-            └───────┬───────┘
-                    │
-                    ▼
-            ┌───────────────┐
-            │ Linear: 4     │
-            │ Softmax       │
-            └───────┬───────┘
-                    │
-       ┌────────────┼────────────┐
-       ▼            ▼            ▼
-    ORDER        SEARCH       PAYMENT       CHAT
-   (0.92)       (0.05)       (0.02)       (0.01)
-```
-
-### Training Details (as annotation boxes)
-
-```
-┌─────────────────────────────────┐
-│ Training Config                 │
-│ · 3,712 synthetic utterances    │
-│ · 80/20 stratified split        │
-│ · CrossEntropyLoss (weighted)   │
-│ · Adam (lr=1e-3, wd=1e-4)      │
-│ · Early stopping (patience=10)  │
-│ · Batch size: 64, Epochs: 50    │
-│ · GPU-free training (~2 min)    │
-└─────────────────────────────────┘
-
-┌─────────────────────────────────┐
-│ Inference Pipeline              │
-│ 1. word_segment(utterance)      │
-│ 2. encode → 768-dim embedding   │
-│ 3. extract 10 context features  │
-│ 4. StandardScaler → normalize   │
-│ 5. concat → 778-dim vector      │
-│ 6. model.forward → softmax      │
-│ 7. argmax + confidence          │
-│                                 │
-│ Latency: <1 ms (deterministic)  │
-│ Checkpoint: saved/model.pt      │
-└─────────────────────────────────┘
-```
-
-### Accuracy (annotation)
-
-```
-┌──────────────────────────────────────┐
-│ Results                              │
-│ · 97.4% on holdout test (39 cases)   │
-│ · 95.6% on 45-case eval set          │
-│ · Fast path (≥0.7 conf): ~85% of    │
-│   utterances skip the rewriter       │
-│ · Rewriter path (<0.7 or multi-      │
-│   clause): ~15% of utterances        │
-└──────────────────────────────────────┘
-```
+> Ch.4 §4.5.2. Source: [classifier/model.py](../../src/training_semantic_router/classifier/model.py),
+> [features.py](../../src/training_semantic_router/classifier/features.py),
+> [predict.py](../../src/training_semantic_router/classifier/predict.py),
+> [classifier_router_node.py](../../src/agent_brain/agent/nodes/classifier_router_node.py).
+>
+> **Caption:** *Routing runs on the same 768-d embedding the retriever already computes, so the
+> fast path adds only an MLP forward pass. Architecture: `778 → 256 → 64 → 4` (ReLU, dropout 0.2,
+> softmax); only the 10-d context features are standardised, not the embedding. The gate passes
+> when confidence ≥ 0.70 and no clause-boundary marker (`rồi · và · thì · xong · với lại`) is
+> present; otherwise a few-shot rewriter LLM splits the utterance into fragments that are
+> re-classified into a multi-intent queue. Failure is contained: a missing checkpoint, an import
+> error or an inference exception all fall back to `intent = CHAT` at confidence 0.0 — the turn
+> degrades to conversation rather than crashing.*
 
 ```plantuml
 @startuml
+' ── print profile (see "Rendering" at the top of this file) ──
 !theme plain
 skinparam backgroundColor #FFFFFF
-skinparam defaultFontSize 11
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam nodesep 18
+skinparam ranksep 24
+skinparam padding 2
+skinparam roundCorner 6
+skinparam ArrowColor #37474F
+skinparam ArrowFontSize 12
+skinparam componentStyle rectangle
 
-title Figure 4.4 — MLP Classifier Architecture
+rectangle "Utterance" as U #FFFFFF
+rectangle "Dialogue state" as S #FFFFFF
+
+package "Feature extraction" #F5F5F5 {
+  rectangle "Word\nsegmentation" as SEG #FFF3E0
+  rectangle "Bi-encoder\n(shared, 768-d)" as ENC #E3F2FD
+  rectangle "Context\nfeatures" as CTX #E3F2FD
+}
+
+rectangle "MLP classifier\n778 → 4 · softmax" as MLP #BBDEFB
+rectangle "Confidence\ngate" as GATE #FBE9E7
+rectangle "Fast path\n(no LLM)" as FAST #E8F5E9
+rectangle "Rewriter LLM\n→ fragments" as REW #F3E5F5
+rectangle "Re-classify\nfragments" as PF #F3E5F5
+rectangle "Multi-intent\nqueue" as MULTI #E8F5E9
+
+U --> SEG
+SEG --> ENC
+S --> CTX
+ENC --> MLP
+CTX --> MLP
+MLP --> GATE
+GATE --> FAST : pass
+GATE --> REW  : fail
+REW --> PF
+PF --> MULTI
+
+@enduml
+```
+
+### The 10-d context vector
+
+| Dim | Feature | Encoding |
+|----:|---------|----------|
+| 0–4 | `order_stage` one-hot | `IDLE, BUILDING, AWAITING_CONFIRMATION, CONFIRMED, MODIFYING` |
+| 5 | `has_cart` | binary |
+| 6 | `cart_size` | `min(n, 10) / 10` |
+| 7 | `has_search_context` | binary |
+| 8 | `search_context_size` | `min(n, 20) / 20` |
+| 9 | `utterance_length` | `min(len, 200) / 200` |
+
+> **Report this honestly.** The runtime `OrderStage` literal is only
+> `IDLE | DRAFTING | AWAITING_CONFIRMATION | CONFIRMED`, and `update_state_node` only ever writes
+> `IDLE`, `AWAITING_CONFIRMATION` or `CONFIRMED`. `DRAFTING` is remapped to `BUILDING` on the way
+> in, and `MODIFYING` is never produced at all — so **dims 1 and 4 are constant zero in
+> production**. The effective context vector is 8-dimensional. Either say so in §4.5.2 (it is a
+> defensible design margin for future stages) or trim the head and retrain; do not present all ten
+> dims as active.
+
+### Why two stages instead of one LLM router
+
+| | Single LLM router | MLP + conditional rewriter (this work) |
+|---|---|---|
+| Latency, typical turn | one full LLM generation | one 778→256→64→4 forward pass (sub-millisecond after encode) |
+| LLM calls per turn | 1 always | 0 on the fast path, 1 only when the gate fails |
+| Determinism | sampling-dependent | argmax over a fixed network |
+| Multi-intent | prompt-dependent | explicit fragment decomposition + per-fragment argmax |
+
+The encoder is the shared `encode_queries()` used by the retriever, so the fast path adds **one**
+embedding forward pass to a turn that was going to embed the query anyway — the classifier itself
+is nearly free. This is the argument to make in §4.5.2, and it is the reason the 0.70 threshold
+matters: it is the dial that trades LLM calls for routing recall.
+
+---
+
+## Figure 5a — Deterministic Validator: control flow
+
+> Ch.4 §4.5.4. Source: [deterministic_validator_node.py](../../src/agent_brain/agent/nodes/deterministic_validator_node.py).
+>
+> **Caption:** *Validator control flow. Per-tool preconditions are listed in Table 4.x; the menu
+> resolution cascade invoked by `add_cart` is expanded in Figure 5b. Errors are returned to the
+> worker as `ToolMessage` feedback, and three consecutive failures trip the circuit breaker.*
+
+```plantuml
+@startuml
+' ── print profile (see "Rendering" at the top of this file) ──
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam nodesep 18
+skinparam ranksep 24
+skinparam padding 2
+skinparam roundCorner 6
+skinparam ArrowColor #37474F
+skinparam ArrowFontSize 12
+skinparam NoteBackgroundColor #FFFDE7
+skinparam NoteFontSize 11
 
 start
-:User utterance (Vietnamese);
+:tool calls from worker LLM;
 
-fork
-  :Word segmentation\n(underthesea);
-fork again
-  :Extract context features\n(10-dim)\norder_stage, has_cart,\ncart_size, has_search,\nsearch_size, utt_len;
-end fork
-
-:Bi-encoder embedding\nbkai-foundation-models/\nvietnamese-bi-encoder\n768-dim, L2-normalized;
-
-:Context features →\nStandardScaler;
-
-:Concatenate\n768 + 10 = 778-dim;
-
-:MLP Forward\n778 → 256 → ReLU → Drop(0.2)\n→ 64 → ReLU → Drop(0.2)\n→ 4 → Softmax;
-
-if (Confidence ≥ 0.7\nAND no multi-clause?) then (yes)
-  :Single intent selected;
-else (no)
-  :Invoke rewriter node\n(Qwen2.5 7B, T=0.0)\nmulti-intent decomposition;
-  :Per-fragment classify\n→ merge intent queue;
+if (confirm_order AND a cart tool\nin the SAME message?) then (yes)
+  :strip confirm_order;
+  :re-queue ORDER_CONFIRM\n(cart mutation runs first);
 endif
 
-:Output: {intent, confidence,\nall_probs};
+:apply per-tool preconditions\n(Table 4.x);
 
-stop
+if (tool == add_cart?) then (yes)
+  :resolve each item\nagainst the menu\n(Figure 5b);
+  :cart-state repair;
+endif
 
-@enduml
-```
-
----
-
-## Figure 4.5 — Deterministic Validator: 5-Level Menu Resolution
-
-> **Build this by hand.** Flowchart. This is a major contribution claim in §4.5.4 — the validator catches hallucinated tool call arguments before they reach external systems.
-
-### Layout Spec (vertical flowchart)
-
-```
-  Tool call argument (dish name string)
-              │
-              ▼
-    ╔═════════════════════╗
-    ║ LEVEL 1: Exact      ║──── yes ──→ name → is_valid=True
-    ║ Normalize + match   ║
-    ║ against 217 names   ║
-    ╚════════╤════════════╝
-             │ no
-             ▼
-    ╔═════════════════════╗
-    ║ LEVEL 2: Prefix      ║── single ──→ resolved name → is_valid=True
-    ║ Partial utterances   ║
-    ║ "Oc Huong" → "Oc     ║── multiple ──→ ambiguous_items → request clarification
-    ║ Huong Xot Trung Muoi"║
-    ╚════════╤════════════╝
-             │ no match
-             ▼
-    ╔═════════════════════╗
-    ║ LEVEL 3: Substring   ║──── yes ──→ auto-resolved → is_valid=True
-    ║ Contained in any     ║
-    ║ menu name?           ║
-    ╚════════╤════════════╝
-             │ no match
-             ▼
-    ╔═════════════════════╗
-    ║ LEVEL 4: Modifier    ║──────────→ strip + retry from Level 1
-    ║ Strip "it cay",      ║
-    ║ "khong hanh",        ║
-    ║ "(size)", etc.       ║
-    ╚════════╤════════════╝
-             │ still no match after stripping
-             ▼
-    ╔═════════════════════╗
-    ║ LEVEL 5: Off-menu    ║
-    ║ Jaccard similarity   ║
-    ║ to find nearest name ║──→ unavailable_items + nearest suggestion
-    ║ threshold ≥ 0.3      ║──→ is_valid=False → feedback → retry worker
-    ╚═════════════════════╝
-
-  Additional checks (applied per tool call):
-    · remove_cart: verify name exists in active_cart (subset match)
-    · clear_cart: reject if cart already empty
-    · confirm_order: enforce stage == AWAITING_CONFIRMATION + non-empty cart
-    · request_payment: ensure table_id present
-    · Additive-turn detection: keywords "thêm", "nữa" → restore cart before add
-    · Mixed-turn handling: cart tools + confirm → strip confirm, re-route
-```
-
-```plantuml
-@startuml
-!theme plain
-skinparam backgroundColor #FFFFFF
-skinparam defaultFontSize 11
-
-title Figure 4.5 — Validator: 5-Level Menu Name Resolution
-
-start
-:Tool call argument\n(dish name string);
-
-:Normalize: lowercase +\nstrip Vietnamese diacritics\n(Unicode NFD decomposition);
-
-if (Level 1: Exact match\nagainst 217 menu names?) then (yes)
-  #palegreen:is_valid = True\nkind = "exact";
-else (no)
-  if (Level 2: Prefix match?\n"Oc Huong" → ...Xot Trung Muoi?) then (single)
-    #palegreen:is_valid = True\nkind = "single";
-  elseif (multiple matches)
-    #lightyellow:ambiguous_items\n→ request clarification;
-    :is_valid = False;
-  else (no prefix)
-    if (Level 3: Substring\ncontained in menu name?) then (yes)
-      #palegreen:is_valid = True\nkind = "substring";
-    else (no)
-      :Level 4: Strip modifiers\n("it cay", "khong hanh",\n"(size)", comma suffix);
-      :Re-resolve from Level 1;
-      if (Still unresolved?) then (yes)
-        :Level 5: Jaccard similarity\nfind_nearest_menu_name()\nthreshold ≥ 0.3;
-        #pink:is_valid = False\nunavailable_items +\nnearest suggestion;
-      else (no)
-        #palegreen:is_valid = True;
-      endif
-    endif
+if (errors?) then (no)
+  :is_valid = True;
+  stop
+else (yes)
+  :loop_count += 1;
+  :ToolMessage feedback\nper tool call;
+  if (loop_count >= 3?) then (yes)
+    :CIRCUIT BREAKER\nstate_outcome -> apologise;
+    stop
+  else (no)
+    :is_valid = False\n-> back to the worker;
+    stop
   endif
 endif
 
-if (is_valid?) then (yes)
-  :Return to ToolNode;\nexecute tool call;
-else (no)
-  :Return to Worker with feedback;\nretry (max 3 loops);
-endif
-
-stop
-
 @enduml
 ```
 
+### Per-tool preconditions (Table 4.x — the "apply preconditions" step above)
+
+| Tool | Checks | On failure |
+|---|---|---|
+| `add_cart` | every item resolves (Figure 5b); `quantity > 0` | item dropped → off-menu / ambiguous list |
+| `remove_cart` | name resolves against the **cart**, not the menu; `quantity` clamped to `[1, in_cart]`; a quantity covering the whole line collapses to "drop the line" | error → retry |
+| `clear_cart` | cart is not already empty | error → retry |
+| `confirm_order` | `order_stage == AWAITING_CONFIRMATION`; cart non-empty; **`args["items"]` overwritten from the server-side cart** | error → retry |
+| `request_payment` / `verify_payment` | `table_id` injected from session state | error → retry |
+
+**Cart-state repair** fixes two LLM failure modes that no precondition can express: an additive turn
+("thêm 1 chả giò") where the model silently *dropped* the existing cart — the previous items are
+restored; and items copied out of conversation context that the guest never actually said in this
+turn — those are stripped.
+
 ---
 
-## Figure 4.6 — Hybrid RAG Pipeline
+## Figure 5b — Menu resolution cascade
 
-> **Build this by hand.** Shows the rewrite→retrieve→fuse→filter→rephrase closed loop.
-
-### Layout Spec (pipeline, left-to-right)
-
-```
-  Customer query ("Món gì ấm bụng cho ngày lạnh?")
-       │
-       ▼
-  ┌───────────────────────────────────────────┐
-  │  Query Rewriting (LLM)                    │
-  │  "ấm bụng ngày lạnh" → "cháo, lẩu, súp, │
-  │  món nước nóng"                           │
-  └────────────────────┬──────────────────────┘
-                       │ rewritten terms
-          ┌────────────┴────────────┐
-          ▼                         ▼
-  ┌───────────────┐        ┌───────────────┐
-  │  BM25 Sparse  │        │  FAISS Dense  │
-  │               │        │               │
-  │ underthesea   │        │ bkai bi-enc.  │
-  │ segmentation  │        │ 768-dim       │
-  │ "bún bò Huế"  │        │ semantic      │
-  │ = 1 token     │        │ similarity    │
-  │               │        │               │
-  │ raw k=15      │        │ raw k=15      │
-  └───────┬───────┘        └───────┬───────┘
-          │                        │
-          ▼                        ▼
-  ┌───────────────────────────────────────────┐
-  │  Metadata Pre-Filters                      │
-  │  Applied independently to each lane:       │
-  │  max_price, min_price, diet_type, category │
-  └────────────────────┬──────────────────────┘
-                       │
-                       ▼
-  ┌───────────────────────────────────────────┐
-  │  RRF Fusion                                │
-  │  score(d) = Σ 1/(60 + rank_r(d))           │
-  │  → unified ranking                         │
-  └────────────────────┬──────────────────────┘
-                       │
-                       ▼
-  ┌───────────────────────────────────────────┐
-  │  Score Threshold (0.3)                     │
-  │  Below threshold AND no BM25 hits?         │
-  │  → retriever returns empty                 │
-  │  → search_worker calls delegate()          │
-  │  → CHAT worker: "Dạ, quán không có ạ"     │
-  └────────────────────┬──────────────────────┘
-                       │ (results exist)
-                       ▼
-  ┌───────────────────────────────────────────┐
-  │  Result Rephrasing (LLM)                   │
-  │  "Dạ, cho ngày lạnh quán có Lẩu Cá Tầm,  │
-  │   Cháo Hải Sản, và Súp Cua ạ."            │
-  └───────────────────────────────────────────┘
-```
-
-### Multi-Search: comma-split (annotation)
-
-```
-  Query with commas: "ốc, tôm, cua"
-  → split: ["ốc", "tôm", "cua"]
-  → 3 parallel searches → deduplicated by dish name
-  → merged top-6
-```
+> Ch.4 §4.5.4. Source: [menu_utils.py](../../src/agent_brain/utils/menu_utils.py) (`resolve_menu_name`,
+> `find_nearest_menu_name`).
+>
+> **Caption:** *Five-level resolution of a customer-spoken dish name, applied per item by
+> `add_cart`. Only the first two levels put an item in the cart; ambiguity produces a clarifying
+> question rather than a rejection or a guess.*
 
 ```plantuml
 @startuml
+' ── print profile (see "Rendering" at the top of this file) ──
 !theme plain
 skinparam backgroundColor #FFFFFF
-skinparam defaultFontSize 11
-
-title Figure 4.6 — Hybrid RAG Pipeline
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam nodesep 18
+skinparam ranksep 24
+skinparam padding 2
+skinparam roundCorner 6
+skinparam ArrowColor #37474F
+skinparam ArrowFontSize 12
 
 start
-:Customer query\n("Món gì ấm bụng ngày lạnh?");
+:spoken name\n(case + diacritics folded);
 
-:Query Rewriting (LLM)\n→ concrete search terms\n"cháo, lẩu, súp, món nước nóng";
-
-fork
-  :**BM25 (Sparse)**\nunderthesea tokenize\ncompound-word-aware\nraw k=15;
-fork again
-  :**FAISS (Dense)**\nbkai bi-encoder\n768-dim, diacritic-aware\nraw k=15;
-end fork
-
-:Metadata pre-filters\n(price, diet, category)\nper lane independently;
-
-:RRF Fusion\nscore(d) = Σ 1/(60+rank_r(d))\n→ unified ranking;
-
-if (Score ≥ 0.3 OR BM25 has hits?) then (yes)
-  :Top-k results (k=5);
-  :Result Rephrasing (LLM)\nevaluate relevance, select,\nrephrase in Vietnamese;
-else (no)
-  :Return empty;\nsearch_worker → delegate()\n→ "Không có món đó ạ";
+if (exact match?) then (yes)
+  #C8E6C9:accept\n→ into cart;
+  stop
 endif
 
+if (one prefix /\nsubstring match?) then (yes)
+  #C8E6C9:auto-resolve\n→ into cart;
+  stop
+endif
+
+if (two or more\ncandidates?) then (yes)
+  #FFF9C4:ambiguous\n→ ask variant;
+  stop
+endif
+
+if (strip trailing\nmodifier?) then (yes)
+  :retry clean name;
+  if (resolves?) then (yes)
+    #C8E6C9:modifier → note\n→ into cart;
+    stop
+  endif
+endif
+
+:Jaccard nearest\nneighbour;
+#FFCDD2:unavailable\n+ suggestion;
 stop
 
 @enduml
 ```
 
+**Level 4 patterns** (`_MODIFIER_PATTERNS`): a trailing `(...)`, `, ...` or `- ...` is peeled off
+the name and re-attached as a special request — so "Ốc Hương Xốt Bơ Tỏi (không cay)" resolves to the
+menu item with `special_requests = "không cay"` instead of failing as off-menu.
+
+**Level 5 threshold** is deliberately conservative at Jaccard `≥ 0.30`: "Bia Corona" → "Bia 333"
+(1/3 ≈ 0.33) is suggested, "Pizza" → nothing. An unhelpful suggestion is worse for the guest than an
+honest "we don't have that", so the floor errs toward silence.
+
+### What this buys the thesis
+
+The claim to make in §4.5.4 is **not** "the validator catches LLM mistakes" — it is that three
+classes of error are made *structurally impossible* rather than statistically unlikely:
+
+| Guarantee | Mechanism | Failure it removes |
+|---|---|---|
+| No off-menu item can reach the kitchen | 5-level resolution; unresolved names never enter the cart | LLM hallucinating a dish |
+| No bill can disagree with the cart | `confirm_order.args["items"]` is **overwritten** from server-side `active_cart` | LLM re-listing stale/invented quantities |
+| No confirmation without a shown cart | `order_stage == AWAITING_CONFIRMATION` precondition | LLM skipping the read-back step |
+
+Ambiguity is treated as a *conversational* outcome, not an error: "Ốc Hương" matching 11 sauces
+produces a clarifying question, not a rejection and not a silent guess. That distinction —
+**ambiguous ≠ invalid** — is the part worth a paragraph.
+
 ---
 
-## Figure 4.7 — Voice Ordering End-to-End Sequence
+## Figure 6 — Hybrid Retrieval Pipeline
 
-> **Build this by hand.** UML sequence diagram for the core user-facing flow (§4.3.4 Flow a). 5 lifelines, 13 numbered steps.
-
-### Layout Spec
-
-```
-  Customer    Customer     Orchestrator    Robot        Agent
-  (guest)     Tablet       (server)        (Jetson)     Brain        Ollama
-    │            │             │              │            │            │
-    │ ① Press    │             │              │            │            │
-    │ "Talk to   │             │              │            │            │
-    │  AI"       │             │              │            │            │
-    │───────────►│             │              │            │            │
-    │            │ ② POST      │              │            │            │
-    │            │ /voice/listen│             │            │            │
-    │            │ {table_id}   │              │            │            │
-    │            │─────────────►│              │            │            │
-    │            │              │ ③ resolve    │            │            │
-    │            │              │ table→robot  │            │            │
-    │            │              │──────────────┤            │            │
-    │            │              │ ③ WS:        │            │            │
-    │            │              │ start_listening           │            │
-    │            │              │─────────────►│            │            │
-    │ ④ Speak    │              │              │            │            │
-    │ "Cho 2 Oc  │              │              │            │            │
-    │  Huong"    │              │              │ VAD arm    │            │
-    │            │              │              │ (1.5s sil. │            │
-    │            │              │              │  timeout)  │            │
-    │            │              │              │            │            │
-    │            │              │              │ ⑤ STT      │            │
-    │            │              │              │ PhoWhisper │            │
-    │            │              │              │ ~800ms     │            │
-    │            │              │              │            │            │
-    │            │              │              │ ⑥ POST     │            │
-    │            │              │              │ /chat/stream│           │
-    │            │              │              │ {text}─────►│            │
-    │            │              │◄── ⑦ POST ───│            │            │
-    │            │              │ /voice/event│             │            │
-    │            │◄──⑧ WS: ────│ voice.heard │             │            │
-    │            │ voice.heard │ (transcript)│             │            │
-    │            │              │              │            │ ⑧ MLP      │
-    │            │              │              │            │ classify   │
-    │            │              │              │            │ <1ms       │
-    │            │              │              │            │            │
-    │            │              │              │            │ ⑨ Worker   │
-    │            │              │              │            │ LLM call──►│
-    │            │              │              │            │ ⑨ Qwen2.5 │
-    │            │              │              │            │ T=0.1      │
-    │            │              │              │            │ ~2s        │
-    │            │              │              │            │◄───────────│
-    │            │              │              │            │            │
-    │            │              │              │            │ ⑩ Validator│
-    │            │              │              │            │ add_cart   │
-    │            │              │              │            │ → pass     │
-    │            │              │              │            │            │
-    │            │              │◄── ⑪ POST ───│            │            │
-    │            │              │ /voice/event│             │            │
-    │            │◄──⑫ WS: ────│ voice.reply │             │            │
-    │            │ voice.reply │ + cart sync │             │            │
-    │ ⑫ Tablet  │ + UI action │              │            │            │
-    │ shows AI   │              │              │            │            │
-    │ reply +    │              │           ⑬ WS: voice.reply text       │
-    │ cart update│              │─────────────►│ ⑬ TTS     │            │
-    │            │              │              │ Piper play │            │
-    │ ⑫ Hear     │              │              │ ~500ms/sent│            │
-    │ "Dạ có     │              │              │            │            │
-    │  Ốc Hương" │              │              │            │            │
-```
-
-### Timing Annotations (along bottom)
-```
-  │←────── ~500ms button→WS ──────│← ~800ms STT ──│← ~50ms POST ──│← ~2-3s agent ──│← ~1s TTS ──│
-  │◄──────────────────────── Total: ~4-6 seconds ────────────────────────────────►│
-```
+> Ch.4 §4.6. Source: [hybrid_retriever.py](../../src/agent_brain/services/retriever/hybrid_retriever.py),
+> [fusion/rrf.py](../../src/agent_brain/services/retriever/fusion/rrf.py),
+> [indices/bm25.py](../../src/agent_brain/services/retriever/indices/bm25.py),
+> [filters.py](../../src/agent_brain/services/retriever/filters.py),
+> [search_tool.py](../../src/agent_brain/agent/tools/search_tool.py).
+>
+> **Caption:** *Two lanes run in parallel (`ThreadPoolExecutor`): lexical BM25 (`k1=1.2, b=0`,
+> indexed over name/title/taste/tags) and semantic FAISS cosine over the shared 768-d bi-encoder,
+> each returning its top-15. Metadata filters (price, diet, category) drop non-menu docs. The
+> dual-lane gatekeeper admits a result only if the top vector score ≥ 0.35 **or** a query token hits
+> the top-1 lexical docs; otherwise it returns empty ("Không tìm thấy món ăn phù hợp.") rather than
+> the least-bad matches. Survivors are fused by RRF (`k=60` — rank, not score), deduped by dish
+> name, and cut to top-6.*
 
 ```plantuml
 @startuml
+' ── print profile (see "Rendering" at the top of this file) ──
 !theme plain
 skinparam backgroundColor #FFFFFF
-skinparam defaultFontSize 11
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam nodesep 18
+skinparam ranksep 24
+skinparam padding 2
+skinparam roundCorner 6
+skinparam ArrowColor #37474F
+skinparam ArrowFontSize 12
+skinparam componentStyle rectangle
 
-title Figure 4.7 — Voice Ordering Sequence
+rectangle "search(query,\nprice range)" as Q #FFFFFF
+rectangle "Comma split\n→ sub-queries" as SPLIT #FFF3E0
 
-participant "Guest" as G
-participant "Customer\nTablet" as T order 1
-participant "Orchestrator\n:8000" as O order 2
-participant "Robot\n(Jetson)" as R order 3
-participant "Agent Brain\n:8100" as A order 4
-participant "Ollama\nQwen2.5 7B" as LLM order 5
+package "Lane A — lexical" #F5F5F5 {
+  rectangle "Tokenize" as TOKA #E8F5E9
+  rectangle "BM25" as BM25 #E8F5E9
+  rectangle "top-15" as TOPA #E8F5E9
+}
 
-G -> T : ① Press "Talk to AI"
-T -> O : ② POST /voice/listen\n{table_id}
-O -> O : ③ Resolve\ntable_id → robot_id
-O -> R : ③ WS: start_listening
-R -> R : ④ VAD arm mic\ncapture utterance
+package "Lane B — semantic" #F5F5F5 {
+  rectangle "Bi-encoder\n(768-d)" as TOKB #E3F2FD
+  rectangle "FAISS\ncosine" as FAISS #E3F2FD
+  rectangle "top-15" as TOPB #E3F2FD
+}
 
-G -> R : ④ Speak "Cho 2 Oc Huong"
-R -> R : ⑤ STT (PhoWhisper)\n~800ms
-R -> A : ⑥ POST /chat/stream\n{text: "Cho 2 Oc Huong"}
-A -> O : ⑦ POST /voice/event\nvoice.heard
-O -> T : ⑧ WS: voice.heard\n(transcript)
-T -> T : ⑧ Show thinking...
+rectangle "Metadata filter\n(price · diet · category)" as FILT #FFF9C4
+rectangle "Gatekeeper\n(else empty)" as GATE #FBE9E7
+rectangle "RRF fusion" as RRF #F3E5F5
+rectangle "Dedupe\n→ top-6" as TOPK #F3E5F5
+rectangle "SearchResponse" as OUT #E0F2F1
 
-A -> A : ⑧ MLP Classify\n<1ms → ORDER
-A -> LLM : ⑨ Worker LLM call\nT=0.1, tool_choice=any
-LLM --> A : tool: add_cart("Oc Huong", 2)
-A -> A : ⑩ Validator\nmenu resolution → pass
-A -> A : Execute add_cart\n→ in-memory cart
-A -> A : State updater\necho cart
-A -> O : ⑪ POST /voice/event\nvoice.reply + cart + UI action
-O -> T : ⑫ WS: voice.reply\n+ cart + action
-T -> T : ⑫ Show reply + cart
-O -> R : ⑬ WS: voice.reply text
-R -> R : ⑬ TTS (Piper)\n~500ms/sentence
-
-G <- R : ⑬ Hear "Da co Oc Huong a."
-
-note right of A
-  Total turn latency:
-  STT (~800ms) + agent (~2s)
-  + TTS (~1s) ≈ ~4s end-to-end
-end note
+Q --> SPLIT
+SPLIT --> TOKA
+SPLIT --> TOKB
+TOKA --> BM25
+BM25 --> TOPA
+TOKB --> FAISS
+FAISS --> TOPB
+TOPA --> FILT
+TOPB --> FILT
+FILT --> GATE
+GATE --> RRF : approved
+GATE --> OUT : empty
+RRF --> TOPK
+TOPK --> OUT
 
 @enduml
 ```
 
+### Two parameter choices to justify in prose
+
+**`b = 0` in BM25** disables document-length normalisation deliberately. Menu documents are short
+and near-uniform in length, so a length penalty adds noise without discriminating between them.
+
+**RRF fuses ranks, not scores.** BM25 scores are unbounded and cosine similarity lives in `[-1, 1]`;
+combining them directly would require calibrating one lane against the other, and that calibration
+would have to be re-tuned whenever the encoder or the corpus changed. Rank fusion sidesteps the
+problem entirely — this is the reason to prefer it here, and it is worth one sentence in §4.6.
+
+### The gatekeeper is the contribution — say so
+
+Plain RRF always returns *something*: with a top-k cut and no floor, an out-of-domain query
+("cho tôi cái pizza") still yields the six least-bad menu items, and the response LLM will happily
+recommend them. The dual-lane gatekeeper is what makes "we don't serve that" reachable:
+
+- **Semantic lane** admits paraphrase ("món nào ăn đỡ ngán?") that shares no tokens with the menu.
+- **Lexical lane** admits rare proper nouns ("Bia 333") that a general-domain encoder embeds poorly.
+- **Neither fires** ⇒ genuinely out of domain ⇒ empty result, and the validator's off-menu path
+  produces an apology plus a Jaccard-nearest suggestion instead of a hallucinated recommendation.
+
+Two lanes run in a `ThreadPoolExecutor(max_workers=2)`, so hybrid retrieval costs roughly the
+latency of the slower lane, not their sum.
+
 ---
 
-## Figure 4.8 — Cart State Machine
+## Figure 7 — Voice Ordering Sequence (end-to-end, one turn)
+
+> Ch.4 §4.3. Source: [edge_voice/main.py](../../src/edge_voice/main.py),
+> [routers/voice.py](../../src/server_orchestrator/routers/voice.py),
+> [agent_brain/server.py](../../src/agent_brain/server.py).
 
 ```plantuml
 @startuml
+' ── print profile (see "Rendering" at the top of this file) ──
 !theme plain
 skinparam backgroundColor #FFFFFF
-skinparam defaultFontSize 12
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam nodesep 18
+skinparam ranksep 24
+skinparam padding 2
+skinparam roundCorner 6
+skinparam ArrowColor #37474F
+skinparam ArrowFontSize 12
+skinparam NoteBackgroundColor #FFFDE7
+skinparam NoteFontSize 11
 
-title Figure 4.8 — Cart State Machine
+actor Guest
+participant "tablet" as TAB
+participant "Orchestrator" as ORCH
+participant "Voice device\n(Jetson)" as JET
+participant "Agent Brain" as AG
 
-[*] --> IDLE
+Guest -> TAB : press "nói chuyện"
+TAB -> ORCH : POST /voice/listen
+ORCH -> ORCH : table → robot
+alt no robot bound / mic offline
+  ORCH --> TAB : no_device
+else bound
+  ORCH -> JET : WS start_listening
+  JET -> JET : arm one utterance
+  Guest -> JET : speaks
+  JET -> JET : VAD → speech_queue
+  JET -> JET : STT → text_queue
+  JET -> AG : POST /chat/stream
 
-IDLE --> DRAFTING : add_cart
-DRAFTING --> DRAFTING : add / remove
-DRAFTING --> AWAITING_CONFIRMATION : agent echoes cart
-AWAITING_CONFIRMATION --> DRAFTING : add / remove
-AWAITING_CONFIRMATION --> CONFIRMED : confirm_order\n→ POST /orders
-CONFIRMED --> IDLE : verify_payment\n→ POST /payments/verify
-DRAFTING --> IDLE : clear_cart
-AWAITING_CONFIRMATION --> IDLE : clear_cart
+  AG -> ORCH : voice.heard
+  ORCH -> TAB : WS: user bubble
 
-note right of AWAITING_CONFIRMATION
-  Cart touches at this stage
-  loop back to DRAFTING:
-  cart re-echoed to customer
-end note
+  AG -> AG : graph: classify →\nvalidate → tools
+
+  loop per sentence
+    AG --> JET : SSE: sentence
+    JET -> JET : TTS + play
+    JET --> Guest : speech
+  end
+  AG --> JET : SSE: done
+
+  AG -> ORCH : voice.reply
+  ORCH -> TAB : WS: AI bubble + cart
+end
 
 @enduml
 ```
 
+**The latency argument for §4.3:** the reply is spoken **sentence-by-sentence as it is generated**,
+not after the full generation completes. Time-to-first-audio is one sentence of LLM output plus one
+TTS synthesis, independent of the total reply length. That is the whole reason for the SSE seam
+between the agent and the Jetson, and it is measurable — quote time-to-first-audio, not total
+turn time, in Ch.5.
+
 ---
 
-## Figure 4.9 — Task Lifecycle & Voice Binding
+## Figure 8 — Edge Voice Pipeline (threads, queues, gating)
 
-> Combines fleet dispatcher task states with robot state side-effects and dynamic voice binding.
+> Ch.4 §4.4. Source: [perception/vad_silero.py](../../src/edge_voice/perception/vad_silero.py),
+> [perception/stt_phowhisper.py](../../src/edge_voice/perception/stt_phowhisper.py),
+> [perception/queues.py](../../src/edge_voice/perception/queues.py),
+> [output/tts_engine.py](../../src/edge_voice/output/tts_engine.py).
+>
+> **Caption:** *Three daemon threads decouple capture, transcription, and dialogue so each stage
+> runs while the next utterance is already being gathered; two bounded queues are the only coupling.
+> Constants (Fact Sheet): Silero threshold 0.5 over 32 ms frames, 1.5 s end-of-utterance, bounded
+> queues of 10 (drop-newest), faster-whisper `medium` at `beam_size=5`. Note the STT is OpenAI
+> Whisper-medium via CTranslate2 — not VinAI PhoWhisper, despite the class name (see the naming
+> note below). The listen gate arms for exactly one utterance; barge-in lets guest speech interrupt
+> playback.*
 
 ```plantuml
 @startuml
+' ── print profile (see "Rendering" at the top of this file) ──
 !theme plain
 skinparam backgroundColor #FFFFFF
-skinparam defaultFontSize 12
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam nodesep 18
+skinparam ranksep 24
+skinparam padding 2
+skinparam roundCorner 6
+skinparam ArrowColor #37474F
+skinparam ArrowFontSize 12
+skinparam componentStyle rectangle
 
-title Figure 4.9 — Task Lifecycle & Voice Binding
+package "Thread 1 — VAD (daemon)" #E8F5E9 {
+  rectangle "Mic capture\n16 kHz mono" as MIC #C8E6C9
+  rectangle "Silero VAD" as VAD #C8E6C9
+  rectangle "Listen gate\n(one utterance)" as GATE #FBE9E7
+  rectangle "Accumulate\nutterance" as ACC #C8E6C9
+}
 
-state "PENDING\ntask created" as PENDING
-state "ASSIGNED\nrobot picked" as ASSIGNED
-state "IN_PROGRESS\nrobot accepted" as IN_PROGRESS
-state "DONE\ntask complete" as DONE
-state "CANCELLED\ntable ended/paid" as CANCELLED
+queue "speech_queue" as SQ #FFF9C4
 
-[*] --> PENDING : create_task(kind,\ntable_id)
+package "Thread 2 — STT (daemon)" #E3F2FD {
+  rectangle "faster-whisper\nmedium (vi)" as STT #BBDEFB
+}
 
-PENDING --> ASSIGNED : try_assign()\nnearest idle robot\n(battery ≥ 20%, WS alive)
+queue "text_queue" as TQ #FFF9C4
 
-ASSIGNED --> IN_PROGRESS : robot → task_accepted\nrobot: idle → busy
+package "Thread 3 — asyncio main loop" #F3E5F5 {
+  rectangle "WS client" as WS #E1BEE7
+  rectangle "Turn task\n(cancellable)" as TURN #E1BEE7
+  rectangle "POST /chat\n→ SSE" as SSE #E1BEE7
+}
 
-IN_PROGRESS --> DONE : robot → task_done\nrobot: busy → returning\n→ at_dock → idle
+package "StreamingPlayer" #E0F2F1 {
+  rectangle "Piper TTS (local)\n→ edge-tts fallback" as TTS #B2DFDB
+  rectangle "Playback" as SPK #B2DFDB
+}
 
-PENDING --> CANCELLED : table ended / paid
-ASSIGNED --> CANCELLED : table ended / paid
-
-DONE --> [*]
-CANCELLED --> [*]
-
-note right of PENDING
-  Task kinds:
-  go_to_table | deliver | call
-  
-  Events that create tasks:
-  · POST /seatings → go_to_table
-  · Order status XONG → deliver
-  · POST /tables/{id}/call → call
-end note
-
-note right of ASSIGNED
-  Robot selection:
-  idle + WS live + battery ≥ 20%
-  → nearest Euclidean
-    to target table
-end note
-
-note right of IN_PROGRESS
-  Sub-states:
-  navigating → arrived → serving
-  
-  On arrived:
-  · bind_table_robot(id, robot_id)
-  · WS → customer: robot.arrived
-  · Voice bridge active:
-    tablet button → this robot's mic
-end note
-
-note right of DONE
-  On task_done:
-  · unbind voice (at_dock)
-  · robot: returning → idle
-  · try_assign() for next task
-end note
-
-' Voice binding lifecycle (side-bar)
-state "Voice: unbound" as UNBOUND
-state "Voice: bound\ntable↔robot" as BOUND
-
-UNBOUND --> BOUND : robot arrived\nat table
-BOUND --> UNBOUND : task_done\nor watchdog timeout
-
-' Watchdog
-state "Watchdog\n(5s tick)" as WDOG
-WDOG --> BOUND : robot silent > 30s\n→ mark offline\n→ requeue task\n→ force unbind
+MIC --> VAD
+VAD --> GATE
+GATE --> ACC : armed
+GATE --> MIC : idle
+ACC --> SQ
+SQ --> STT
+STT --> TQ
+TQ --> TURN
+WS --> TURN : start / cancel
+TURN --> SSE
+SSE --> TTS : per sentence
+TTS --> SPK
+SPK ..> VAD : barge-in
 
 @enduml
 ```
 
+### Naming correction you must make before submitting
+
+The class is called `PhoWhisperSTT`, but it loads
+`faster_whisper.WhisperModel("medium")` — that is **OpenAI Whisper medium via CTranslate2**, not
+VinAI's PhoWhisper. `docs/thesis/outline.md` §2.3.2 reviews PhoWhisper as prior work, so a reader
+will assume you deployed it. Pick one and be consistent:
+
+- **Report what runs**: say "Whisper-medium, CTranslate2/faster-whisper backend, `language="vi"`,
+  `beam_size=5`" and cite PhoWhisper in Ch.2 only as an alternative you evaluated or rejected. This
+  is the honest, zero-work option — and Ch.5 can compare the two.
+- **Or actually swap the model** and keep the name.
+
+Either way, rename the class/file; a viva question about "which Vietnamese ASR model did you use"
+against a file named `stt_phowhisper.py` that loads Whisper is a bad five minutes. The same care
+applies to TTS: Piper (local, offline) is preferred and edge-tts (**cloud**, Microsoft) is the
+fallback — an offline-capable claim depends on which one was actually running during evaluation.
+
 ---
 
-## Figure 4.10 — Database Schema (ERD)
+## Figure 9 — Cart / Order Stage Machine
+
+> Ch.4 §4.5.5. Source: [schemas/order.py](../../src/agent_brain/schemas/order.py),
+> [nodes/update_state_node.py](../../src/agent_brain/agent/nodes/update_state_node.py),
+> [graph.py](../../src/agent_brain/agent/graph.py) (`set_cart`).
+>
+> **Caption:** *The validator refuses `confirm_order` from any stage other than
+> `AWAITING_CONFIRMATION`, and that edge is the only way into `CONFIRMED`. "The guest saw the cart
+> before being billed" is therefore a property of the graph, not a request made in a prompt.
+> `DRAFTING` is declared in the `OrderStage` literal but never written by any node — `add_cart`
+> goes straight to `AWAITING_CONFIRMATION` — so it is drawn as reserved, not as a live state.*
 
 ```plantuml
 @startuml
+' ── print profile (see "Rendering" at the top of this file) ──
 !theme plain
 skinparam backgroundColor #FFFFFF
-skinparam defaultFontSize 11
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam nodesep 18
+skinparam ranksep 24
+skinparam padding 2
+skinparam roundCorner 6
+skinparam ArrowColor #37474F
+skinparam ArrowFontSize 12
+skinparam NoteBackgroundColor #FFFDE7
+skinparam NoteFontSize 11
 
-title Figure 4.10 — Database Schema — orchestrator.db
+state "IDLE" as IDLE #E0F2F1 : cart empty
+state "AWAITING_\nCONFIRMATION" as AWAIT #FFF9C4 : cart read back\nto the guest
+state "CONFIRMED" as CONF #C8E6C9 : sent to kitchen\n(order row exists)
 
-entity "tables" {
-  * id : INTEGER
+[*] --> IDLE : new session
+
+IDLE --> AWAIT : add_cart
+IDLE --> AWAIT : tablet sync (+/−)
+
+AWAIT --> AWAIT : add_cart /\nremove_cart
+AWAIT --> IDLE : last item removed
+AWAIT --> IDLE : clear_cart
+AWAIT --> CONF : confirm_order
+
+CONF --> AWAIT : add_cart\n(order more)
+CONF --> [*]   : verify_payment
+
+@enduml
+```
+
+| Transition | Trigger | Side effect |
+|---|---|---|
+| `IDLE → AWAITING_CONFIRMATION` | `add_cart` returns a non-empty cart, **or** the tablet pushes a hand-edited draft | — |
+| `AWAITING_CONFIRMATION` (self) | `add_cart` / `remove_cart` leaving the cart non-empty | `cart_touched = True` |
+| `→ IDLE` | `remove_cart` takes the last item, or `clear_cart` | `clear_cart` also resets `shown_dishes` |
+| `→ CONFIRMED` | `confirm_order` | `POST /orders`; `order_confirmed = True` |
+| `CONFIRMED → AWAITING_CONFIRMATION` | `add_cart` — ordering more within the same visit | — |
+| `CONFIRMED → [*]` | `verify_payment` | session `CLOSED`, table freed, thread retired |
+
+### Two per-turn flags that are not stages (needed for §4.5.5 and §4.8)
+
+`order_stage` is **sticky** — it survives unrelated search and chat turns. So the tablet cannot use
+it to decide when to redraw. Two booleans, reset at the top of every turn, carry that signal:
+
+| Flag | Set when | The tablet does |
+|---|---|---|
+| `cart_touched` | `add_cart` / `remove_cart` / `clear_cart` actually changed the cart | mirror the agent's cart into its draft |
+| `order_confirmed` | `confirm_order` succeeded **this turn** | move the draft into "đã gửi bếp", once |
+
+Without `cart_touched`, every later turn replays a stale cart and silently undoes the guest's manual
+`+`/`−` on the touch screen. This is a genuine two-writer problem (voice and touch edit one cart)
+and `POST /cart` → `update_state(as_node="response_node")` is the resolution: last writer wins, with
+the tablet's whole draft replacing — never merging into — the agent's.
+
+---
+
+## Figure 10a — Database Schema: business ledger
+
+> Ch.4 §4.7.6. Source: [data/db.py](../../src/server_orchestrator/data/db.py).
+>
+> **Caption:** *Business half of `orchestrator.db`. The session — one party's whole visit — is the
+> unit of the ledger: orders and the single merged payment hang off it. Fleet tables are in
+> Figure 10b.*
+
+```plantuml
+@startuml
+' ── print profile (see "Rendering" at the top of this file) ──
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam nodesep 18
+skinparam ranksep 24
+skinparam padding 2
+skinparam roundCorner 6
+skinparam ArrowColor #37474F
+skinparam ArrowFontSize 12
+skinparam NoteBackgroundColor #FFFDE7
+skinparam NoteFontSize 11
+hide circle
+skinparam linetype ortho
+
+entity "tables" as T #E3F2FD {
+  * id : INTEGER <<PK>>
+  --
   name : TEXT
   capacity : INTEGER
-  status : TEXT
+  status : TEXT  -- TRONG | DANG_PHUC_VU | DA_THANH_TOAN
   current_order_id : INTEGER
   party_size : INTEGER
   seated_at : TEXT
 }
 
-entity "sessions" {
-  * id : INTEGER
-  table_id : INTEGER <<FK>>
-  status : TEXT
+entity "sessions" as S #FFF9C4 {
+  * id : INTEGER <<PK>>
+  --
+  * table_id : INTEGER <<FK>>
+  status : TEXT  -- ACTIVE | CLOSED
   party_size : INTEGER
   started_at : TEXT
   ended_at : TEXT
 }
 
-entity "orders" {
-  * id : INTEGER
+entity "orders" as O #E8F5E9 {
+  * id : INTEGER <<PK>>
+  --
   session_id : INTEGER <<FK>>
-  table_id : INTEGER <<FK>>
-  status : TEXT
+  * table_id : INTEGER <<FK>>
+  status : TEXT  -- CHO_BEP | DANG_LAM | XONG
   total : REAL
   created_at : TEXT
 }
 
-entity "order_items" {
-  * id : INTEGER
-  order_id : INTEGER <<FK>>
+entity "order_items" as OI #E8F5E9 {
+  * id : INTEGER <<PK>>
+  --
+  * order_id : INTEGER <<FK>>
   dish_id : INTEGER
   name : TEXT
   qty : INTEGER
@@ -1238,178 +1007,490 @@ entity "order_items" {
   status : TEXT
 }
 
-entity "payments" {
-  * id : INTEGER
-  session_id : INTEGER <<FK>>
+entity "payments" as P #FBE9E7 {
+  * id : INTEGER <<PK>>
+  --
+  * session_id : INTEGER <<FK>>
   method : TEXT
   amount : REAL
-  status : TEXT
+  status : TEXT  -- PENDING | PAID
   txn_ref : TEXT
   qr_url : TEXT
   paid_at : TEXT
 }
 
-entity "dishes" {
-  * id : INTEGER
+entity "dishes" as D #F3E5F5 {
+  * id : INTEGER <<PK>>
+  --
   name : TEXT
   price : REAL
   category : TEXT
   available : INTEGER
 }
 
-entity "robots" {
-  * id : TEXT
-  name : TEXT
-  status : TEXT
-  battery : REAL
-  x : REAL
-  y : REAL
-  current_task_id : INTEGER
-  activity : TEXT
+T  ||--o{ S  : "many visits over time,\nat most ONE ACTIVE"
+S  ||--o{ O  : "one visit, many orders"
+O  ||--|{ OI
+S  ||--o| P  : "ONE gộp payment\nper session"
+D  ..o{ OI   : "denormalised by\nname + price at order time"
+
+@enduml
+```
+
+---
+
+## Figure 10b — Database Schema: fleet tables
+
+> Ch.4 §4.7.6. Source: [data/db.py](../../src/server_orchestrator/data/db.py).
+>
+> **Caption:** *Fleet half of `orchestrator.db`. `tables` is repeated from Figure 10a as the join
+> point. `battery`/`x`/`y` on `robots` are a ~15 s snapshot for cold start only — the authoritative
+> live values are held in RAM (`fleet.py`) and overlaid by `GET /robots` (Figure 12a).*
+
+```plantuml
+@startuml
+' ── print profile (see "Rendering" at the top of this file) ──
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam nodesep 18
+skinparam ranksep 24
+skinparam padding 2
+skinparam roundCorner 6
+skinparam ArrowColor #37474F
+skinparam ArrowFontSize 12
+hide circle
+
+entity "tables" as T #E3F2FD {
+  * id : INTEGER <<PK>>
+  --
+  (see Figure 10a)
 }
 
-entity "tasks" {
-  * id : INTEGER
-  kind : TEXT
-  table_id : INTEGER <<FK>>
-  order_id : INTEGER <<FK>>
-  robot_id : TEXT <<FK>>
+entity "robots" as R #E1BEE7 {
+  * id : TEXT <<PK>>
+  --
+  name : TEXT
   status : TEXT
+  ' idle | busy | returning | offline
+  battery : REAL   <<snapshot>>
+  x : REAL         <<snapshot>>
+  y : REAL         <<snapshot>>
+  current_task_id : INTEGER
+}
+
+entity "tasks" as TK #E1BEE7 {
+  * id : INTEGER <<PK>>
+  --
+  kind : TEXT
+  ' go_to_table | deliver | call
+  table_id : INTEGER
+  order_id : INTEGER
+  robot_id : TEXT
+  status : TEXT
+  ' PENDING | ASSIGNED
+  ' | IN_PROGRESS | DONE
   created_at : TEXT
   updated_at : TEXT
 }
 
-sessions }|--|| tables
-orders }|--|| sessions
-orders }|--|| tables
-order_items }|--|| orders
-order_items }|--|| dishes
-payments }|--|| sessions
-tasks }|--|| tables
-tasks }|--|| robots
-tasks }|--|| orders
+T ||--o{ TK : "robot jobs\nfor this table"
+R ||--o{ TK : "assigned to"
 
 @enduml
 ```
 
+**The design decision to defend in §4.7.6** is the *session* as the unit of the ledger, not the
+order. A party orders several times across one visit but receives one merged bill, so `payments`
+hangs off `sessions` (not `orders`), and `amount = SUM(orders of the session)` is computed
+server-side. The same key doubles as the agent's conversation `thread_id`, which is what makes
+memory isolation between consecutive guests automatic rather than a cleanup job (Figure 11b).
+
+Three stores, split by data nature — worth a table in the report:
+
+| Store | Holds | Why not the others |
+|---|---|---|
+| `orchestrator.db` (SQLite) | durable business ledger | must survive restart, needs transactions |
+| `checkpoints.db` (LangGraph) | conversation memory, keyed by session | different lifetime and access pattern; wiped per guest |
+| RAM (`fleet.py`) | pose/battery at several Hz | a file-lock write per heartbeat would contend with order/payment transactions on the same DB |
+
 ---
 
-## Figure 4.11 — WebSocket Hub: Four Role Types
+## Figure 11a — Order-to-Delivery Sequence
+
+> Ch.4 §4.3. Source: [routers/orders.py](../../src/server_orchestrator/routers/orders.py),
+> [services/dispatcher.py](../../src/server_orchestrator/services/dispatcher.py).
+>
+> **Caption:** *How one AI decision becomes a physical delivery. `confirm_order` persists the order
+> (the orchestrator is the only writer); the kitchen advances it `Chờ Bếp → Đang Làm → Xong`, each
+> step pushed to the panel; reaching `Xong` creates a deliver task; the dispatcher assigns the
+> nearest idle robot (battery ≥ 20%), which navigates, arrives, is voice-bound to the table
+> (Figure 12b), and reports done. REST on agent→orchestrator and kitchen→orchestrator; WebSocket for
+> orchestrator→panel push and orchestrator↔robot.*
 
 ```plantuml
 @startuml
+' ── print profile (see "Rendering" at the top of this file) ──
 !theme plain
 skinparam backgroundColor #FFFFFF
-skinparam defaultFontSize 12
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam nodesep 18
+skinparam ranksep 24
+skinparam padding 2
+skinparam roundCorner 6
+skinparam ArrowColor #37474F
+skinparam ArrowFontSize 12
 
-title Figure 4.11 — WebSocket Hub — Four Role Types
+participant "Agent Brain" as AG
+participant "Orchestrator" as ORCH
+participant "Panel\n(kitchen)" as PANEL
+participant "Dispatcher" as DISP
+participant "Robot" as ROB
 
-component "Orchestrator\n/ws endpoint" as Hub
+AG -> ORCH : confirm_order\nPOST /orders
+ORCH -> ORCH : INSERT order
+ORCH -> PANEL : order.created
+PANEL -> PANEL : card "Chờ Bếp"
 
-package "role=customer" #E8F5E9 {
-  [Tablet T1..T6\nfiltered by table_id] as Cust
-}
+PANEL -> ORCH : PATCH → Đang Làm
+ORCH -> PANEL : order.updated
 
-package "role=panel" #FFF3E0 {
-  [Kitchen Dashboard\norder queue]\nas Panel1
-  [Fleet Dashboard\nrobot minimap]\nas Panel2
-}
-
-package "role=robot" #BBDEFB {
-  [Robot R1..R3\nbidirectional\ntask.assign ←\nheartbeat →] as Robot
-}
-
-package "role=voice-device" #F3E5F5 {
-  [Robot Mic R1..R3\nserver→client only\nstart_listening →\ncancel_listening →] as Voice
-}
-
-Cust -- Hub
-Panel1 -- Hub
-Panel2 -- Hub
-Robot -- Hub
-Voice -- Hub
-
-Robot <..> Voice : same robot_id\n→ dynamic table binding\nvia connection_manager
-
-note right of Hub
-  **Event catalog:**
-  order.created | order.updated
-  table.updated | robot.updated
-  task.created  | task.updated
-  voice.heard   | voice.reply
-  
-  **Voice bridge flow:**
-  1. Tablet → POST /voice/listen {table_id}
-  2. resolve table_id → robot_id
-  3. WS → voice-device: start_listening
-  4. Jetson captures, transcribes, posts to agent
-  5. Agent → POST /voice/event
-  6. WS → customer: voice.reply + cart + action
-end note
+PANEL -> ORCH : PATCH → Xong
+ORCH -> DISP : create deliver task
+DISP -> DISP : try_assign()\n(nearest idle)
+DISP -> ROB : task.assign
+ROB --> DISP : task_accepted
+ROB -> ROB : Nav2 → table
+ROB --> DISP : arrived
+DISP -> ORCH : bind table ↔ robot
+ROB --> DISP : task_done
+DISP -> DISP : free robot,\nclear binding
 
 @enduml
 ```
 
 ---
 
-## Table 4.1 — Response Generation Decision Table
+## Figure 11b — Session Lifecycle (and conversation-memory isolation)
 
-| ResponseContext | Condition | Method | Notes |
-|-----------------|-----------|--------|-------|
-| **Order** | Ambiguous items | Template | List all variants, ask customer to clarify |
-| | Off-menu with suggestion | LLM stream | polite Vietnamese rewrite with alternatives |
-| | Off-menu without suggestion | Template | Apology, item not available |
-| | Status = error | Template | Generic error message |
-| | tool = confirm_order | Template | Order confirmation with ID |
-| | tool = remove_cart | Template | Removed reply + cart echo |
-| | tool = clear_cart | Template | Cleared confirmation |
-| | Default (add_cart success) | Template | Cart echo, ask for confirmation |
-| **Search** | Error | Template | Apology |
-| | No results | Template | "Không có món đó ạ" |
-| | Results exist | LLM stream | List results naturally + _ground_reply() check |
-| **Payment** | Any | Template | Amount + VietQR prompt or error |
-| **Chat** | delegate: "xem lai" | Template | Cart echo (review order) |
-| | Greeting detected | Template | Greeting |
-| | Thanks detected | Template | Thanks |
-| | Default | LLM stream | Free-form chat with curated memory + _ground_reply() |
-| **Retry** | Loop ≥ 3 | Template | Apology, ask to repeat |
+> Ch.4 §4.7.3. Source: [services/sessions.py](../../src/server_orchestrator/services/sessions.py),
+> [routers/payments.py](../../src/server_orchestrator/routers/payments.py),
+> [memory/checkpointer.py](../../src/agent_brain/agent/memory/checkpointer.py), `graph.chat()`.
+>
+> **Caption:** *Each turn the agent resolves the table's ACTIVE session and uses its id as the
+> LangGraph `thread_id`. Within a visit that id is stable, so memory persists; once payment closes
+> the session the next guest opens a new one, yielding a fresh thread and no context bleed. Before
+> any seating the agent falls back to a table-scoped thread (`table-3-nosession`).*
+
+```plantuml
+@startuml
+' ── print profile (see "Rendering" at the top of this file) ──
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam nodesep 18
+skinparam ranksep 24
+skinparam padding 2
+skinparam roundCorner 6
+skinparam ArrowColor #37474F
+skinparam ArrowFontSize 12
+skinparam NoteBackgroundColor #FFFDE7
+skinparam NoteFontSize 11
+
+actor "Guest A" as GA
+actor "Guest B" as GB
+participant Kiosk
+participant "Agent Brain" as AG
+database "checkpoints.db" as CK
+participant "Orchestrator" as API
+
+Kiosk -> API : POST /seatings {table_id, party_size}
+API -> API : session #7 ACTIVE\ntable -> DANG_PHUC_VU (ledger write)
+
+GA -> AG : "cho 2 phở"
+AG -> API : GET /tables/3/session
+API --> AG : {id: 7, party_size: 2}
+AG <-> CK : load/save thread 7
+AG -> API : confirm_order -> POST /orders
+API -> API : order #1 under session 7
+
+GA -> AG : "thêm 1 chả giò"
+AG -> API : GET /tables/3/session --> {id: 7}
+AG -> API : POST /orders
+API -> API : order #2, SAME session
+
+GA -> AG : "tính tiền"
+AG -> API : request_payment -> POST /payments
+API -> API : payment PENDING\namount = SUM(session 7)
+API --> AG : {amount, qr_url}
+
+GA -> AG : "xong"
+AG -> API : verify_payment -> POST /payments/verify
+API -> API : PAID · session CLOSED\ntable -> DA_THANH_TOAN
+
+== next party ==
+
+GB -> AG : "cho tôi xem menu"
+AG -> API : GET /tables/3/session
+API --> AG : null (no ACTIVE session)
+
+Kiosk -> API : POST /seatings
+API -> API : session #8 ACTIVE
+@enduml
+```
+
+**The claim this figure supports:** cross-guest context bleed is prevented *by construction*. There
+is no "clear the conversation" job to schedule and no TTL to tune — the thread key is the business
+session key, so closing the bill closes the conversation. State the failure mode it removes: without
+this, Guest B's first turn inherits Guest A's cart, and the validator would happily confirm it.
+
+`reset_thread()` ("cuộc trò chuyện mới") is the deliberate exception: it deletes the checkpoints of
+the *current* thread while leaving the session — and therefore the bill — untouched.
 
 ---
 
-## Table 4.2 — Agent Turn Trace Example
+## Figure 12a — Task Lifecycle and Robot States
 
-Multi-intent utterance: *"Cho 2 Oc Huong roi tinh tien luon"* (ORDER + PAYMENT)
+> Ch.4 §4.7.4. Source: [services/dispatcher.py](../../src/server_orchestrator/services/dispatcher.py).
+>
+> **Caption:** *Task lifecycle (left) and the robot state it drives (right). A robot that
+> disconnects or goes silent past the heartbeat timeout has its task returned to `PENDING`, so no
+> job is lost to a dropped link. A task is created on seating, an order reaching `XONG`, or a call
+> button; `try_assign()` picks the **nearest** online robot that is idle/returning with battery
+> ≥ 20%. Telemetry paths: RAM every beat, panel broadcast throttled to 0.2 s, DB snapshot every
+> 15 s. The voice binding this assignment also maintains is Figure 12b.*
 
-| Step | Node | Action | Output |
-|------|------|--------|--------|
-| 1 | MLP Classifier | embedding (768-d) + context (10-d) → MLP forward | `current_intents = ["ORDER", "PAYMENT"]` (rewriter path: multi-clause) |
-| 2 | ORDER Worker | LLM → tool call | `add_cart(name="Ốc Hương Xốt Trứng Muối", qty=2)` |
-| 3 | Validator | Resolve name against menu (Level 2: prefix match) | exact match → `is_valid = True` |
-| 4 | ToolNode | Execute `add_cart` | `CartAddResult(status=success)` |
-| 5 | State Updater | Update cart, update shown_dishes, pop intent | `active_cart = [{name, qty=2, price=85000}]`, queue → `["PAYMENT"]` |
-| 6 | PAYMENT Dispatch | Deterministic emit | `request_payment(table_id="T1")` |
-| 7 | Validator | table_id present | `is_valid = True` |
-| 8 | ToolNode | Execute `request_payment` → POST /payments | `PaymentResult(amount=170000, qr_url=...)` |
-| 9 | State Updater | Pop intent queue | queue → `[]` (empty) |
-| 10 | State Outcome | Build `PaymentResponseContext` | Reset per-turn fields |
-| 11 | Response | Template (payment) | "Dạ, tổng hóa đơn 170.000đ. Quét mã QR ạ." |
+```plantuml
+@startuml
+' ── print profile (see "Rendering" at the top of this file) ──
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam nodesep 18
+skinparam ranksep 24
+skinparam padding 2
+skinparam roundCorner 6
+skinparam ArrowColor #37474F
+skinparam ArrowFontSize 12
+skinparam NoteBackgroundColor #FFFDE7
+skinparam NoteFontSize 11
+
+state "TASK" as TASK {
+  [*] --> PENDING : create
+  PENDING --> ASSIGNED : try_assign()
+  ASSIGNED --> IN_PROGRESS : accepted
+  IN_PROGRESS --> DONE : done
+  ASSIGNED --> PENDING : failed / lost
+  IN_PROGRESS --> PENDING : lost / timeout
+  DONE --> [*]
+}
+
+state "ROBOT" as ROBOT {
+  [*] --> offline
+  offline --> idle : connect
+  idle --> busy : assigned
+  busy --> returning : task_done
+  returning --> idle : at dock
+  returning --> busy : reassigned
+  busy --> offline : disconnect
+  returning --> offline : disconnect
+}
+
+TASK -[#0277BD]-> ROBOT : drives status
+
+@enduml
+```
 
 ---
 
-## Suggested Placement in Thesis
+## Figure 12b — Dynamic Voice Binding (table ↔ robot)
 
-| Figure/Table | Section | Size | New/Updated |
-|-------------|---------|------|:---:|
-| Fig 4.1 — System Architecture | §4.3.1 | Full page | Updated (labels) |
-| Fig 4.2 — Agent 5-Stage Pipeline | §4.5 (opening) | Full page | **NEW** |
-| Fig 4.3 — LangGraph StateGraph | §4.5.1 | Full page | Updated (correct flow) |
-| Fig 4.4 — MLP Classifier | §4.5.2 | Half page | **NEW** (replaces old router) |
-| Fig 4.5 — Validator 5-Level Resolution | §4.5.4 | Half page | **NEW** |
-| Fig 4.6 — Hybrid RAG Pipeline | §4.6.2 | Half page | Updated (removed gatekeeper) |
-| Fig 4.7 — Voice Ordering Sequence | §4.3.4 | Full page | **NEW** |
-| Fig 4.8 — Cart State Machine | §4.5.5 | Quarter page | Unchanged |
-| Fig 4.9 — Task Lifecycle & Voice Binding | §4.7.4–5 | Half page | Updated (robot states + binding) |
-| Fig 4.10 — Database Schema ERD | §4.7.6 | Half page | Updated (missing columns) |
-| Fig 4.11 — WebSocket Hub | §4.7.2 | Half page | Unchanged |
-| Table 4.1 — Response Decision Table | §4.5.6 | Half page | Updated |
-| Table 4.2 — Agent Turn Trace | §4.5.1 | Half page | Updated (MLP router) |
+> Ch.4 §4.7.4. Source: [realtime/connection_manager.py](../../src/server_orchestrator/realtime/connection_manager.py)
+> (`bind_table_robot`, `send_to_voice_device`), [dispatcher.py](../../src/server_orchestrator/services/dispatcher.py) (`on_arrived`, `on_done`).
+>
+> **Caption:** *A robot is not tied to a table — it is tied to one while serving it. The dispatcher
+> binds the pair on arrival, so "table 3 wants to talk" resolves to whichever robot is standing at
+> table 3, and returns `no_device` when none is.*
+
+```plantuml
+@startuml
+' ── print profile (see "Rendering" at the top of this file) ──
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam nodesep 18
+skinparam ranksep 24
+skinparam padding 2
+skinparam roundCorner 6
+skinparam ArrowColor #37474F
+skinparam ArrowFontSize 12
+
+state "BINDING (_table_to_robot, in RAM)" as VB #FBE9E7 {
+  [*] --> unbound
+  unbound --> bound : task "arrived" at table\nbind_table_robot(table, robot)
+  bound --> unbound : task_done · robot disconnect\n· robot bound to another table
+}
+
+state "RESOLUTION on POST /voice/listen" as RES #E3F2FD {
+  [*] --> lookup
+  lookup --> no_device : no robot bound\nto this table
+  lookup --> socket : robot_id found
+  socket --> no_device : that robot's mic\nsocket is down
+  socket --> start_listening : frame sent\n{type, table_id}
+}
+
+VB -[#C62828]-> RES : supplies table -> robot
+
+@enduml
+```
+
+One physical robot holds **two** sockets under the same id — `role=robot` (motion) and
+`role=voice-device` (mic) — in separate registries. The binding deliberately follows the *robot's*
+presence, not the mic's: restarting the mic process must not force the robot to re-arrive at the
+table before the guest can speak again.
+
+**Task assignment cost function** (§4.7.4, and the thing Ch.5 should measure): eligibility is
+`connected ∧ status ∈ {idle, returning} ∧ battery ≥ 20%`, then `argmin` Euclidean distance from the
+robot's **live** pose to the table's approach waypoint, both in the saved SLAM map frame. Pending
+tasks are assigned oldest-first and the loop **breaks** on the first unassignable task — so the
+queue is FIFO, not best-effort reordered. `returning` counts as free because both robot clients
+queue a task received mid-drive.
+
+Note the layering to state explicitly: the dispatcher issues *system* tasks ("serve table 3") and
+never speaks Nav2. It knows table waypoints only to rank robots; turning a task into motion is the
+robot's own job. That separation is what lets the simulated and real robots share one backend.
+
+---
+
+## Figure 13 — WebSocket Hub (four roles, one endpoint)
+
+> Ch.4 §4.7.2. Source: [realtime/ws.py](../../src/server_orchestrator/realtime/ws.py),
+> [realtime/connection_manager.py](../../src/server_orchestrator/realtime/connection_manager.py).
+>
+> **Caption:** *One `/ws` endpoint, four client roles, four in-RAM registries — `_by_role`
+> (role→sockets), `_robots` and `_voice_devices` (robot_id→socket), and `_table_to_robot`
+> (table_id→robot_id). Viewers (`panel`, `customer`) are anonymous and their inbound frames are
+> ignored; only robot frames are parsed and routed to the dispatcher, so the hub has exactly one
+> inbound message grammar to trust.*
+
+```plantuml
+@startuml
+' ── print profile (see "Rendering" at the top of this file) ──
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "DejaVu Sans"
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam nodesep 18
+skinparam ranksep 24
+skinparam padding 2
+skinparam roundCorner 6
+skinparam ArrowColor #37474F
+skinparam ArrowFontSize 12
+skinparam NoteBackgroundColor #FFFDE7
+skinparam NoteFontSize 11
+skinparam componentStyle rectangle
+
+rectangle "GET /ws?role=…" as EP #FFFFFF
+
+package "ConnectionManager (RAM registries)" #F5F5F5 {
+  rectangle "_by_role" as BR #E3F2FD
+  rectangle "_robots" as RB #E1BEE7
+  rectangle "_voice_devices" as VD #C8E6C9
+  rectangle "_table_to_robot" as TR #FBE9E7
+}
+
+rectangle "panel\n(viewer)" as PANEL #FFF3E0
+rectangle "customer\n(viewer)" as CUST #FFF3E0
+rectangle "robot\n(two-way)" as ROBOT #E1BEE7
+rectangle "voice-device\n(command sink)" as VOICE #C8E6C9
+
+EP --> BR
+EP --> RB
+EP --> VD
+
+PANEL <-- BR : broadcast
+CUST  <-- BR : broadcast
+ROBOT <-- RB : send
+ROBOT --> RB : inbound
+VOICE <-- VD : send
+
+TR --> VD : table → mic
+
+@enduml
+```
+
+### Message vocabulary per role (Table 4.y)
+
+| Role | Direction | Messages |
+|---|---|---|
+| `panel` | server → client | `order.created` · `table.updated` · `robot.updated` · `task.created` / `task.updated` |
+| `customer` | server → client | `voice.heard` · `voice.reply` · `voice.progress` · `robot.arrived` |
+| `robot` | server → client | `task.assign` |
+| `robot` | client → server | `heartbeat` · `task_accepted` · `arrived` · `task_done` · `at_dock` |
+| `voice-device` | server → client | `start_listening` · `cancel_listening` · `set_muted` |
+
+Broadcast is **fire-and-forget with drop-on-error**: a socket that raises is disconnected and
+skipped rather than retried, so one dead browser tab cannot stall the panel fan-out or hold the
+event loop. Combined with the pose-broadcast throttle (0.2 s), that is what keeps a moving fleet
+from flooding the hub.
+
+---
+
+## Fact Sheet — verified constants
+
+Every number below was read from the code on 2026-07-23. Quote these in Ch.4/Ch.5 rather than the
+values in older design docs; where the two disagree, the code is right.
+
+| Component | Constant | Value | Source |
+|---|---|---|---|
+| Intent classifier | architecture | 778 → 256 → 64 → 4, ReLU, dropout 0.2 | `classifier/model.py` |
+| | embedding | `bkai-foundation-models/vietnamese-bi-encoder`, 768-d, float32 | `predict.py`, `.env.template` |
+| | context features | 10-d (8 effectively active) | `classifier/features.py` |
+| | fast-path threshold | `0.70` | `classifier_router_node.py` |
+| | boundary markers | `rồi, và, thì, xong, rồi thì, với lại` | `classifier_router_node.py` |
+| | failure fallback | intent = `CHAT`, confidence `0.0` | `classifier_router_node.py` |
+| Agent graph | registered / live nodes | 11 / 10 (`router` = rollback path) | `graph.py` |
+| | retry cap | `MAX_RETRY_LOOPS = 3` | `graph.py` |
+| | tools | `search, add_cart, remove_cart, clear_cart, confirm_order, request_payment, verify_payment` (+ `delegate`) | `graph.py`, `tools/` |
+| Validator | menu resolution | exact → single prefix/substring → ambiguous → modifier-strip retry → Jaccard suggestion | `menu_utils.py` |
+| | suggestion floor | Jaccard `>= 0.30` | `menu_utils.py` |
+| LLM | model | `qwen2.5:7b-instruct` (code default) / `qwen2.5:14b-instruct-q6_K` (`.env.template`) | `agent_config.py` |
+| | context window | `LLM_NUM_CTX = 16384` | `agent_config.py` |
+| | keep-alive | `-1` (pinned resident) + startup warmup | `agent_config.py`, `server.py` |
+| RAG | candidates per lane | 15 | `hybrid_retriever.py` |
+| | BM25 | `BM25Okapi(k1=1.2, b=0)`, underthesea tokens | `indices/bm25.py` |
+| | gatekeeper | vector top-1 `>= 0.35` **OR** lexical token hit | `fusion/rrf.py` |
+| | RRF constant | `k = 60` | `fusion/rrf.py` |
+| | returned | top-6, deduped by dish name | `search_tool.py` |
+| Voice | VAD | Silero, threshold `0.5`, 512-sample (32 ms) frames @ 16 kHz | `vad_silero.py` |
+| | end-of-utterance | 1.5 s silence (≈47 frames) | `vad_silero.py` |
+| | STT | faster-whisper `medium`, `language="vi"`, `beam_size=5`, cuda/float16 | `stt_phowhisper.py` |
+| | queues | `speech_queue` / `text_queue`, maxsize 10, drop-newest + counter | `perception/queues.py` |
+| | TTS | Piper `vi_VN-vais1000-medium` (local) → edge-tts `vi-VN-HoaiMyNeural` (cloud) | `tts_engine.py` |
+| | playback | 22.05 kHz, non-blocking, VAD barge-in | `tts_engine.py` |
+| | turn timeouts | utterance 15 s · transcript 12 s · agent HTTP 60 s | `edge_voice/main.py` |
+| Fleet | min battery for a task | `20.0` % | `dispatcher.py` |
+| | pose broadcast throttle | `0.2` s | `dispatcher.py` |
+| | DB pose snapshot | every `15.0` s | `dispatcher.py` |
+| Ports | agent / orchestrator / frontends | 8100 / 8000 / 5173 | `server.py`, `main.py` |
+
+### Three drift risks to fix before submitting
+
+1. **`PhoWhisperSTT` loads Whisper-medium, not PhoWhisper** (Figure 8). Rename or swap.
+2. **The `DRAFTING` order stage is dead**, and two of the classifier's ten context dims are always
+   zero (Figures 4 and 9). Both are safe to describe accurately; neither is safe to overclaim.
+3. **The LLM model differs between the code default (7B) and `.env.template` (14B-q6_K).** Ch.5
+   results are only reproducible if you state which one produced them, on which hardware.
+
+---
