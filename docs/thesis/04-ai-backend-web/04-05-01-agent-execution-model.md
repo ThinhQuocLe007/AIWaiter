@@ -43,6 +43,17 @@ for one stage of the processing pipeline. The separation is not arbitrary — it
 natural sequence of an interaction: classify the intent, decide the action, validate the
 action, execute it, and respond.
 
+Figure 3 shows the complete architecture.
+
+![Figure 3. Agent StateGraph Topology](../images/Figure3.svg)
+
+*Figure 3. Agent StateGraph Topology: an utterance enters at the router, which classifies
+the intent and dispatches to one of four specialized agents. Each agent's output passes
+through the validator before execution. The chat agent and delegated utterances bypass
+validation. The state updater merges results, the state outcome finalizes the turn, and
+the response generator produces the spoken reply. Four annotated execution paths (A–D)
+trace the standard, retry, circuit breaker, and chat leaf flows. (drawn by the group)*
+
 The first component is a **router** that determines what the customer wants. It receives the
 utterance and the current conversation state and produces a classification: is this an order,
 a menu search, a payment request, or casual conversation? The router must be fast — the
@@ -84,7 +95,7 @@ architecture addresses this with a **validator** positioned between every agent'
 the execution of that output.
 
 The validator is a pure-rules layer with no machine learning. Every check is a hand-written
-predicate: does this dish name resolve against the restaurant's 217-item menu? Is this
+predicate: does this dish name resolve against the restaurant's item menu? Is this
 quantity within a reasonable range? Is the cart in the correct state for this operation? The
 validator does not prevent the language model from hallucinating, but it detects hallucinated
 output before it reaches the cart, the kitchen, or the payment system. When it detects an
@@ -141,90 +152,3 @@ designed so that the language model's primary role is extraction and paraphrasin
 *which* structured action to take and *how* to say what has been verified — while
 classification, validation, and price computation are performed by deterministic code that
 does not depend on the model's language quality.
-
-Figure 3 shows the complete architecture.
-
-![Figure 3. Agent StateGraph Topology](../images/Figure3.svg)
-
-*Figure 3. Agent StateGraph Topology: an utterance enters at the router, which classifies
-the intent and dispatches to one of four specialized agents. Each agent's output passes
-through the validator before execution. The chat agent and delegated utterances bypass
-validation. The state updater merges results, the state outcome finalizes the turn, and
-the response generator produces the spoken reply. Four annotated execution paths (A–D)
-trace the standard, retry, circuit breaker, and chat leaf flows. (drawn by the group)*
-
-### 4.5.2 Intent Classification
-
-The router is the first stage of every utterance — the component that determines whether the
-customer is ordering, searching, paying, or chatting. This section details the router's
-design: why a trained multi-layer perceptron was chosen over the semantic and language-model-
-based alternatives surveyed in §2.4.4, how the 768-dimensional Vietnamese bi-encoder
-embedding is augmented with ten context features extracted from the conversation state to
-produce a 778-dimensional input vector, how the three-layer network was trained on 3,712
-synthetic utterances, and how the classifier achieves 97.4 percent accuracy on a held-out
-evaluation set while operating in under one millisecond — three orders of magnitude faster
-than a language-model-based alternative.
-
-### 4.5.3 Specialized Agents
-
-The four specialized agents — order, search, payment, and chat — each handle one domain of
-the restaurant interaction. This section details their design: the shared patterns across the
-language-model-based agents (forced tool choice, temperature 0.1, KV-cache-optimized prompt
-ordering), the tool bindings and argument schemas that define each agent's capabilities, the
-dynamic context injection that provides the order agent with cart state and the search agent
-with known-item lists, the delegate mechanism that allows agents to hand off utterances they
-cannot handle, and the robustness mechanisms — retry with corrective feedback and the circuit
-breaker — that guarantee bounded execution regardless of language model behavior.
-
-### 4.5.4 Deterministic Validator
-
-The validator is the safety firewall introduced in §4.5.1. This section presents its design
-in full: the five-level menu name resolution cascade that matches dish names against the
-restaurant's 217-item menu (exact match, diacritic-insensitive match, prefix match, substring
-match, and token Jaccard fallback); the ambiguity detection that flags generic names matching
-multiple menu variants; the off-menu handling policy that captures invalid names with nearest-
-match suggestions without auto-correcting; the modifier stripping logic that separates special
-requests from dish names; the state consistency checks that prevent simultaneous add-and-
-confirm, preserve existing cart items during additive turns, and deduplicate against the
-cart; and the per-tool validation rules and circuit breaker that together ensure no invalid
-tool call reaches execution. The validator's effectiveness is quantified in §5.3.2.
-
-### 4.5.5 State Management
-
-This section specifies the typed state object and the persistence model introduced in
-§4.5.1. It covers the state fields organized by lifecycle — conversation history, task state
-(the cart, order stage, search context), routing state (the intent queue), inter-agent
-communication fields (validation flags, feedback, off-menu items), and output fields (the
-typed response context and UI action commands). It presents the cart state machine that
-governs the ordering workflow through four guarded states: idle, drafting, awaiting
-confirmation, and confirmed. It details the tool execution and state merging process, the
-multi-intent sequential execution via the intent queue, and the SQLite-backed checkpointer
-whose thread identifier tracks the restaurant session to provide session-scoped persistence
-without manual cleanup.
-
-### 4.5.6 Response Generation
-
-The final stage converts the typed response context into spoken Vietnamese. This section
-details the hybrid template-and-language-model design: template responses for formula-driven
-outputs — cart echoes, order confirmations, ambiguity clarifications, off-menu rejections,
-greetings, and thanks — that are pre-written by a Vietnamese speaker and assembled in
-microseconds with guaranteed correctness; language-model-based responses for variable
-content — search result paraphrasing, off-menu suggestions, free-form chat — where the model
-receives only pre-verified structured data, eliminating hallucination risk. It also presents
-the sentence-level streaming architecture that delivers the reply to the robot's voice
-pipeline one sentence at a time, enabling speech synthesis to begin while the response is
-still being generated.
-
-### 4.5.7 Prompt Architecture
-
-No fine-tuning is used for any language model call in the agent. All domain adaptation —
-Vietnamese restaurant vocabulary, the ordering workflow, the hospitality tone — is achieved
-through prompting. This section presents the prompt architecture: the seven system prompts
-written in Vietnamese to activate the model's Vietnamese representations rather than
-translating from English; the five few-shot example sets selected to cover observed failure
-modes rather than random utterances; the three skill documents defining hospitality etiquette,
-menu grounding rules, and service boundaries, composed into prompts across nodes for
-consistent persona; the dynamic context injection mechanisms that provide conversation
-history, order stage, and validator feedback at runtime; and the key-value cache optimization
-that groups all static prompt content before dynamic content to preserve Ollama's prefix
-caching across turns, reducing per-turn latency.
