@@ -92,8 +92,9 @@ GOAL_GRINDING_GRACE = 10.0  # s parked inside that radius before we stop waiting
 
 # Hard cap on the WHOLE post-arrival marker phase (settle + search + align). The guest is waiting to
 # talk, and a half-aligned heading serves them fine — when the budget runs out we keep whatever
-# heading we have and report arrival. Raise it once the tolerances are tuned and align is trusted.
-MARKER_PHASE_BUDGET = 15.0
+# heading we have and report arrival. Raised 15 → 20s (2026-07-26): align was cut off too early on
+# the dock → Table 1 run. This is the cap that actually bites; ALIGN_TIMEOUT below sits above it.
+MARKER_PHASE_BUDGET = 20.0
 
 SEARCH_ANGULAR_SPEED = 0.30  # rad/s (~17°/s) — a ±90° sweep fits inside MARKER_PHASE_BUDGET
 SEARCH_SWEEP_RAD = math.pi / 2  # bounded ±90° sweep instead of a full spin
