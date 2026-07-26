@@ -26,10 +26,41 @@ def _fetch_order(conn, order_id: int) -> OrderOut | None:
     return OrderOut(**dict(row), items=[dict(it) for it in items])
 
 
+def _committed_quantities(conn, session_id: int) -> dict[str, int]:
+    """How many portions of each dish the kitchen has already STARTED this session.
+
+    Anything past CHO_BEP is committed — a pot on the stove cannot be un-ordered — so a
+    replace-confirm must leave those rows alone AND subtract them from the incoming cart, or the
+    dish would show up twice on the board (once cooking, once queued again).
+    """
+    rows = conn.execute(
+        "SELECT i.name, SUM(i.qty) AS qty FROM order_items i JOIN orders o ON i.order_id = o.id "
+        "WHERE o.session_id = ? AND o.status != 'CHO_BEP' GROUP BY i.name",
+        (session_id,),
+    ).fetchall()
+    return {r["name"]: int(r["qty"]) for r in rows}
+
+
+def _drop_pending_orders(conn, session_id: int) -> list[int]:
+    """Delete this session's not-yet-started orders. Returns the ids that were removed.
+
+    Only CHO_BEP rows: nothing here has been cooked, so throwing them away costs the kitchen
+    nothing and keeps the board equal to the cart the guest just confirmed.
+    """
+    ids = [
+        r["id"]
+        for r in conn.execute(
+            "SELECT id FROM orders WHERE session_id = ? AND status = 'CHO_BEP'", (session_id,)
+        ).fetchall()
+    ]
+    for order_id in ids:
+        conn.execute("DELETE FROM order_items WHERE order_id = ?", (order_id,))
+        conn.execute("DELETE FROM orders WHERE id = ?", (order_id,))
+    return ids
+
+
 @router.post("/orders", response_model=OrderOut, status_code=201)
 async def create_order(payload: OrderCreate) -> OrderOut:
-    # Server-side total so a tampered/ stale client cart can't set the price.
-    total = sum(it.price * it.qty for it in payload.items)
     with get_conn() as conn:
         table = conn.execute(
             'SELECT id FROM "tables" WHERE id = ?', (payload.table_id,)
@@ -40,20 +71,47 @@ async def create_order(payload: OrderCreate) -> OrderOut:
         # Attach the order to the table's open session (gộp bill). Opened at seating; lazily
         # created here if missing so an order never fails for lack of a session.
         session_id = ensure_active_session(conn, payload.table_id)
-        cur = conn.execute(
-            "INSERT INTO orders (session_id, table_id, status, total) "
-            "VALUES (?, ?, 'CHO_BEP', ?)",
-            (session_id, payload.table_id, total),
-        )
-        order_id = cur.lastrowid
-        conn.executemany(
-            "INSERT INTO order_items (order_id, dish_id, name, qty, price, note) "
-            "VALUES (?, ?, ?, ?, ?, ?)",
-            [
-                (order_id, it.dish_id, it.name, it.qty, it.price, it.note)
+
+        lines = [(it.dish_id, it.name, it.qty, it.price, it.note) for it in payload.items]
+        dropped_order_ids: list[int] = []
+        if payload.replace_pending:
+            # `items` is the guest's whole cart (see OrderCreate.replace_pending): retire the
+            # queued batch and re-send only what the kitchen has not started, so a dish the guest
+            # removed disappears from Chờ bếp instead of being cooked anyway.
+            committed = _committed_quantities(conn, session_id)
+            lines = [
+                (it.dish_id, it.name, it.qty - committed.get(it.name, 0), it.price, it.note)
                 for it in payload.items
-            ],
-        )
+                if it.qty - committed.get(it.name, 0) > 0
+            ]
+            dropped_order_ids = _drop_pending_orders(conn, session_id)
+
+        if lines:
+            # Server-side total so a tampered/stale client cart can't set the price.
+            total = sum(qty * price for _, _, qty, price, _ in lines)
+            cur = conn.execute(
+                "INSERT INTO orders (session_id, table_id, status, total) "
+                "VALUES (?, ?, 'CHO_BEP', ?)",
+                (session_id, payload.table_id, total),
+            )
+            order_id = cur.lastrowid
+            conn.executemany(
+                "INSERT INTO order_items (order_id, dish_id, name, qty, price, note) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                [(order_id, *line) for line in lines],
+            )
+        else:
+            # Every dish in the cart is already on the stove, so this confirm only retired the
+            # queued batch. Writing a zero-line order would draw a blank kitchen card; point the
+            # table at the surviving order instead and return that.
+            row = conn.execute(
+                "SELECT id FROM orders WHERE session_id = ? ORDER BY id DESC LIMIT 1",
+                (session_id,),
+            ).fetchone()
+            if row is None:  # can't happen: empty `lines` implies a committed order exists
+                raise HTTPException(409, "Giỏ hàng không còn món nào để gửi bếp.")
+            order_id = row["id"]
+
         # The table stays DANG_PHUC_VU (dining); we just point it at its active order. Kitchen
         # progress lives on orders.status (CHO_BEP→DANG_LAM→XONG), not on the table.
         conn.execute(
@@ -65,6 +123,13 @@ async def create_order(payload: OrderCreate) -> OrderOut:
             'SELECT * FROM "tables" WHERE id = ?', (payload.table_id,)
         ).fetchone()
     assert order is not None
+    # Retire the replaced cards on the kitchen board before pushing the new one, so the panel
+    # never shows the old and the new batch side by side.
+    for dropped in dropped_order_ids:
+        await manager.broadcast(
+            "panel",
+            {"type": "order.deleted", "order_id": dropped, "table_id": payload.table_id},
+        )
     # Push the new order to the kitchen panel, and the table change to the overview.
     await manager.broadcast("panel", {"type": "order.created", "order": order.model_dump()})
     await manager.broadcast(

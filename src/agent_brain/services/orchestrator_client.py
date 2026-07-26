@@ -36,8 +36,18 @@ class OrchestratorClient:
 
     # --- Orders ---------------------------------------------------------------
     def create_order(self, table_id, items: list[dict]) -> dict:
-        """POST /orders — persist the cart under the table's active session. Returns the order."""
-        payload = {"table_id": normalise_table_id(table_id), "items": items}
+        """POST /orders — persist the cart under the table's active session. Returns the order.
+
+        ``replace_pending``: the agent's cart is not cleared when an order is confirmed, so
+        ``items`` is always the guest's WHOLE cart, not a delta. The backend therefore replaces
+        whatever the kitchen has not started rather than stacking another order — otherwise a dish
+        the guest removed before re-confirming would stay on the board forever.
+        """
+        payload = {
+            "table_id": normalise_table_id(table_id),
+            "items": items,
+            "replace_pending": True,
+        }
         order = self._post("/orders", payload)
         logger.info(f"Order #{order['id']} created for table {table_id} via orchestrator")
         return order

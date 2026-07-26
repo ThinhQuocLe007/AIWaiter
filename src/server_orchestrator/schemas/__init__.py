@@ -37,6 +37,15 @@ class OrderItemIn(BaseModel):
 class OrderCreate(BaseModel):
     table_id: int
     items: list[OrderItemIn] = Field(min_length=1)
+    # Does `items` carry the guest's WHOLE cart, or just a new batch to add?
+    #
+    #   False (tablet's "Xác Nhận Đặt Món") — the touch cart clears its draft after each confirm,
+    #     so `items` is a delta: append it as a new order.
+    #   True (the voice agent's confirm_order) — the agent's cart is the guest's whole cart, so
+    #     `items` REPLACES whatever the kitchen has not started yet. That is what lets "xoá món
+    #     rồi chốt lại" actually pull the dish off the kitchen board; without it the earlier
+    #     order sat in Chờ bếp forever with no way to take it back.
+    replace_pending: bool = False
 
 
 class OrderItemOut(OrderItemIn):

@@ -107,6 +107,11 @@ function upsertOrder(order: Order) {
   else orders.value.push(order)
 }
 
+// The guest changed their mind before the kitchen started: drop the retired card off the board.
+function removeOrder(orderId: number) {
+  orders.value = orders.value.filter((o) => o.id !== orderId)
+}
+
 function upsertTable(table: Table) {
   const i = tables.value.findIndex((t) => t.id === table.id)
   if (i >= 0) tables.value[i] = table
@@ -182,6 +187,7 @@ async function load() {
 
 function onEvent(e: WsEvent) {
   if (e.type === 'order.created' || e.type === 'order.updated') upsertOrder(e.order)
+  else if (e.type === 'order.deleted') removeOrder(e.order_id)
   else if (e.type === 'table.updated') upsertTable(e.table)
   else if (e.type === 'robot.updated') upsertRobot(e.robot)
   else if (e.type === 'reset') load() // demo reset: re-pull everything (orders cleared, tables freed)

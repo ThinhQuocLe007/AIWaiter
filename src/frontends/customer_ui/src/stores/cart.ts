@@ -97,8 +97,19 @@ export const useCartStore = defineStore('cart', () => {
     clearTimeout(pushTimer)
     const tableId = activeTable // capture: the push must land on the table this edit belongs to
     pushTimer = setTimeout(() => {
-      const payload = items.value.map((i) => ({ name: i.foodItem.name, quantity: i.quantity }))
-      syncCartToAgent(tableId, payload).catch(() => {
+      // Send draft AND "đã gửi bếp": the agent's cart is everything the guest has in play, because
+      // that is what its confirm_order re-sends and the backend now uses to REPLACE the kitchen's
+      // not-yet-started batch (OrderCreate.replace_pending). Pushing the draft alone would tell the
+      // agent the earlier dishes are gone, and the next voice confirm would wipe them off the board.
+      const merged = new Map<string, { name: string; quantity: number }>()
+      for (const list of [orderedItems.value, items.value]) {
+        for (const i of list) {
+          const seen = merged.get(i.foodItem.id)
+          if (seen) seen.quantity += i.quantity
+          else merged.set(i.foodItem.id, { name: i.foodItem.name, quantity: i.quantity })
+        }
+      }
+      syncCartToAgent(tableId, [...merged.values()]).catch(() => {
         // agent unreachable — the tablet cart still works; the two carts re-converge on the
         // next successful push
       })
@@ -163,18 +174,25 @@ export const useCartStore = defineStore('cart', () => {
   // Replace the draft with the voice agent's cart. `voiceItems` carry official menu names; each
   // is resolved against the loaded menu for price/image. Unresolvable names are skipped (the
   // agent's validator already strips off-menu items, so this should not happen in practice).
+  //
+  // The agent's cart spans draft + already-sent dishes (pushToAgent sends both, and the agent does
+  // not clear its cart when an order is confirmed), so peel the sent portions back off: they live
+  // in the read-only "Đã gửi bếp" section, and leaving them in the draft showed them twice and
+  // offered them for re-ordering.
   function syncFromVoice(
     voiceItems: Array<{ name: string; quantity: number }>,
     foodItems: FoodItem[],
   ) {
+    const sent = new Map(orderedItems.value.map((o) => [o.foodItem.id, o.quantity]))
     const next: CartItem[] = []
     for (const vi of voiceItems) {
       const match = foodItems.find((f) => normalizeName(f.name) === normalizeName(vi.name))
-      if (match) {
-        next.push({ foodItem: match, quantity: vi.quantity })
-      } else {
+      if (!match) {
         console.warn(`[cart] voice item not found in menu, skipped: "${vi.name}"`)
+        continue
       }
+      const remaining = vi.quantity - (sent.get(match.id) ?? 0)
+      if (remaining > 0) next.push({ foodItem: match, quantity: remaining })
     }
     items.value = next
   }

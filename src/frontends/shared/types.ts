@@ -96,6 +96,9 @@ export interface VoiceCartItem {
 export type WsEvent =
   | { type: 'order.created'; order: Order }
   | { type: 'order.updated'; order: Order }
+  // A queued (Chờ bếp) order was retired because the guest re-confirmed a changed cart — the
+  // kitchen board must drop the card. Only ever fires for orders the kitchen had not started.
+  | { type: 'order.deleted'; order_id: number; table_id: number }
   | { type: 'table.updated'; table: Table }
   | { type: 'robot.updated'; robot: Robot }
   | { type: 'task.created'; task: Task }
