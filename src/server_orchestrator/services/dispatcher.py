@@ -1,11 +1,14 @@
 """Dispatcher — turns business events into robot tasks and assigns them to robots.
 
 This is the "shift manager": it never moves anything itself. When a business event happens
-(a party is seated, the kitchen marks an order done, a guest presses the call button) the API
-routers call `create_task(...)`. The dispatcher persists a PENDING task, then `try_assign()`
-picks the best free robot (idle + enough battery + nearest to the target table) and pushes the
-task to *that* robot over WS. The robot reports back (`task_accepted`/`arrived`/`task_done`),
-which advances the task and the table's serving-lifecycle state.
+(a party is seated, a guest presses the call button) the API routers call `create_task(...)`. The
+dispatcher persists a PENDING task, then `try_assign()` picks the best free robot (idle + enough
+battery + nearest to the target table) and pushes the task to *that* robot over WS. The robot
+reports back (`task_accepted`/`arrived`/`task_done`), which advances the task and the table's
+serving-lifecycle state.
+
+Sending a robot home is gated on its voice: a `task.release` waits until the robot's mic device
+reports its conversation turn finished, so it never drives off mid-sentence (see _release_robot).
 
 Two task layers (mục 6 of SYSTEM_ARCHITECTURE.md): the *system task* lives here ("serve table
 3"); the robot itself turns it into physical motion (waypoint + Nav2). So this module knows
@@ -60,16 +63,13 @@ TABLE_HEADING: dict[int, tuple[float, float]] = floorplan.table_heading()
 # What a robot is doing *while travelling* to the table, for the panel's robot board.
 _ACTIVITY = {
     "go_to_table": "Đang tới bàn {table}",
-    "deliver": "Đang giao món · Bàn {table}",
     "call": "Đang tới bàn {table} (gọi phục vụ)",
 }
 # What a robot is doing *after it has arrived* and is standing at the table (serving the guest).
-# go_to_table / call mean the robot waits there (taking the order / helping) until the guest orders
-# or pays; deliver just hands the food over and leaves on its own.
+# Both kinds mean the robot waits there (taking the order / helping) until the guest orders or pays.
 _SERVING_ACTIVITY = {
     "go_to_table": "Đang phục vụ · Bàn {table}",
     "call": "Đang hỗ trợ · Bàn {table}",
-    "deliver": "Đang giao món · Bàn {table}",
 }
 _IDLE_ACTIVITY = "Đang ở dock"
 # After task_done the robot is still physically DRIVING home — it only becomes "Đang ở dock"
@@ -146,20 +146,18 @@ def _pick_robot(conn, table_id: int | None) -> str | None:
 
 
 # --- Public API: events → tasks ---------------------------------------------------------------
-async def create_task(
-    kind: str, table_id: int | None = None, order_id: int | None = None
-) -> TaskOut:
+async def create_task(kind: str, table_id: int | None = None) -> TaskOut:
     """Persist a PENDING task for a business event, then try to assign it immediately."""
     with get_conn() as conn:
         cur = conn.execute(
-            "INSERT INTO tasks (kind, table_id, order_id, status) VALUES (?, ?, ?, 'PENDING')",
-            (kind, table_id, order_id),
+            "INSERT INTO tasks (kind, table_id, status) VALUES (?, ?, 'PENDING')",
+            (kind, table_id),
         )
         task_id = cur.lastrowid
         task = _fetch_task(conn, task_id)
     assert task is not None
     await manager.broadcast("panel", {"type": "task.created", "task": task.model_dump()})
-    log.info("task %s created kind=%s table=%s order=%s", task_id, kind, table_id, order_id)
+    log.info("task %s created kind=%s table=%s", task_id, kind, table_id)
     await try_assign()
     return task
 
@@ -192,12 +190,6 @@ async def try_assign() -> None:
 
     # Push outside the DB transaction so a slow/closed socket can't hold the write lock.
     for task_id, robot_id, kind, table_id in assignments:
-        order_id = None
-        with get_conn() as conn:
-            row = conn.execute(
-                "SELECT order_id FROM tasks WHERE id = ?", (task_id,)
-            ).fetchone()
-            order_id = row["order_id"] if row else None
         delivered = await manager.send_to_robot(
             robot_id,
             {
@@ -205,7 +197,6 @@ async def try_assign() -> None:
                 "task_id": task_id,
                 "kind": kind,
                 "table_id": table_id,
-                "order_id": order_id,
             },
         )
         with get_conn() as conn:
@@ -242,6 +233,7 @@ async def on_robot_disconnect(robot_id: str) -> None:
     """
     _last_seen.pop(robot_id, None)
     manager.unbind_robot(robot_id)  # no longer at any table — stop routing voice to it
+    _discard_pending_release(robot_id)  # nobody left to release; its task is requeued below
     with get_conn() as conn:
         row = conn.execute(
             "SELECT current_task_id FROM robots WHERE id = ?", (robot_id,)
@@ -384,13 +376,83 @@ def reset_fleet_offline() -> None:
         )
 
 
+# --- "Let it finish talking" gate -------------------------------------------------------------
+# A `task.release` frame tells a robot its visit step is over and it may drive home. What triggers
+# one — the guest ordering or paying — normally happens IN THE MIDDLE of a voice turn: the agent
+# runs its verify_payment / place_order tool (which calls the API below) and only afterwards speaks
+# "Cảm ơn quý khách…". Sending the frame the instant the tool lands drove the robot off mid-sentence.
+# So a release aimed at a robot whose voice device is mid-turn is parked here and flushed when the
+# device reports the turn finished (its last TTS sentence has played).
+_pending_release: dict[str, dict] = {}          # robot_id → the frame waiting to go out
+_release_timers: dict[str, asyncio.Task] = {}   # robot_id → its grace-period safety net
+
+
+async def _release_robot(robot_id: str, frame: dict) -> None:
+    """Send a `task.release` — or hold it until the robot has finished speaking."""
+    if not manager.voice_busy(robot_id):
+        await manager.send_to_robot(robot_id, frame)
+        return
+    # Newest frame wins: the robot only needs telling once, and the latest one carries the
+    # freshest task/table context.
+    _pending_release[robot_id] = frame
+    timer = _release_timers.get(robot_id)
+    if timer is None or timer.done():
+        _release_timers[robot_id] = asyncio.create_task(_release_after_grace(robot_id))
+    log.info("robot %s is mid voice turn — holding its release until it stops talking", robot_id)
+
+
+async def _release_after_grace(robot_id: str) -> None:
+    """Safety net: never park a robot forever because a voice device died mid-turn."""
+    await asyncio.sleep(settings.voice_turn_grace_s)
+    if robot_id in _pending_release:
+        log.warning(
+            "robot %s: voice turn never ended within %.0fs — releasing anyway",
+            robot_id,
+            settings.voice_turn_grace_s,
+        )
+        manager.set_voice_busy(robot_id, False)
+        await _flush_release(robot_id)
+
+
+async def _flush_release(robot_id: str) -> None:
+    """Send whatever release was waiting on this robot's speech (no-op if none)."""
+    frame = _pending_release.pop(robot_id, None)
+    timer = _release_timers.pop(robot_id, None)
+    # `is not current_task()` because the grace timer itself calls this — cancelling the running
+    # task here would abort at the next await and swallow the very frame we came to send.
+    if timer is not None and timer is not asyncio.current_task() and not timer.done():
+        timer.cancel()
+    if frame is not None:
+        await manager.send_to_robot(robot_id, frame)
+        log.info("robot %s finished talking — release sent, heading home", robot_id)
+
+
+def _discard_pending_release(robot_id: str) -> None:
+    """Drop a held release (the robot went offline — its task is being requeued anyway)."""
+    _pending_release.pop(robot_id, None)
+    timer = _release_timers.pop(robot_id, None)
+    if timer is not None and not timer.done():
+        timer.cancel()
+
+
+async def on_voice_turn(robot_id: str, active: bool) -> None:
+    """The robot's voice device started / finished one turn (listen → LLM → speak).
+
+    Called from the WS hub on every `voice_turn` frame, and on a `false` when the mic socket drops.
+    """
+    manager.set_voice_busy(robot_id, active)
+    if not active:
+        await _flush_release(robot_id)
+
+
 async def release_robot_at_table(table_id: int) -> None:
     """Tell the robot standing at `table_id` that its visit is over (the guest just ordered or paid)
     so it can head back to the dock. We only *signal* the robot; it drives home and reports
     ``task_done`` through the normal path (on_done → free + unbind + try_assign).
 
     No-op if no robot is serving the table (e.g. it already left, or none ever arrived). Idempotent:
-    a second order/payment event after the robot has gone simply finds no binding.
+    a second order/payment event after the robot has gone simply finds no binding. If the robot is
+    still speaking to the guest the frame is held until it stops (see _release_robot).
     """
     robot_id = manager.table_robot(table_id)
     if robot_id is None:
@@ -400,17 +462,17 @@ async def release_robot_at_table(table_id: int) -> None:
             "SELECT current_task_id FROM robots WHERE id = ?", (robot_id,)
         ).fetchone()
     task_id = row["current_task_id"] if row else None
-    await manager.send_to_robot(
+    log.info("releasing robot %s from table %s (task %s)", robot_id, table_id, task_id)
+    await _release_robot(
         robot_id, {"type": "task.release", "task_id": task_id, "table_id": table_id}
     )
-    log.info("released robot %s from table %s (task %s) — heading home", robot_id, table_id, task_id)
 
 
 async def cancel_table_tasks(table_id: int) -> None:
     """Close out a table's outstanding work when its visit ends (paid, or staff ends the table).
 
     Every PENDING/ASSIGNED/IN_PROGRESS task for the table is marked DONE so it leaves the panel's
-    queue instead of lingering forever (e.g. a `call`/`deliver` that no robot ever picked up because
+    queue instead of lingering forever (e.g. a `call` that no robot ever picked up because
     the only robot went offline). Any **online** robot still assigned one is told to drive home
     (`task.release`) and freed via the normal `on_done` path; offline robots were already cleared by
     `on_robot_disconnect`. Idempotent: a second call finds no non-DONE task and does nothing.
@@ -434,9 +496,7 @@ async def cancel_table_tasks(table_id: int) -> None:
     # when it reports in. Also drop the voice binding now so the table stops routing to it.
     for robot_id in robots_to_send_home:
         manager.unbind_robot(robot_id)
-        await manager.send_to_robot(
-            robot_id, {"type": "task.release", "table_id": table_id}
-        )
+        await _release_robot(robot_id, {"type": "task.release", "table_id": table_id})
     log.info(
         "table %s ended — cancelled %d task(s); sent home: %s",
         table_id,

@@ -28,6 +28,10 @@ class ConnectionManager:
         # arrives at a table; "table N wants to talk" resolves through here to the robot's mic. Empty
         # until a robot is actually standing at a table — that's why an unattended table has no mic.
         self._table_to_robot: dict[int, str] = {}
+        # Robots whose voice device is in the middle of a conversation turn (listening → LLM →
+        # speaking). The dispatcher holds a robot's `task.release` while this is set, so it can't
+        # drive away mid-sentence — see dispatcher._release_robot.
+        self._voice_busy: set[str] = set()
 
     async def connect(
         self,
@@ -55,6 +59,9 @@ class ConnectionManager:
             del self._robots[robot_id]
         if role == "voice-device" and robot_id and self._voice_devices.get(robot_id) is ws:
             del self._voice_devices[robot_id]
+            # The mic is gone, so no turn can still be running on it. Clearing this here means a
+            # crashed device can't leave a robot parked waiting for speech that will never end.
+            self._voice_busy.discard(robot_id)
             # Don't unbind the table here: the table↔robot binding tracks the robot's *physical*
             # presence (its role=robot lifecycle), not the mic socket. A mic restart shouldn't force
             # a re-arrival — and while the mic is down send_to_voice_device already returns no_device.
@@ -118,6 +125,17 @@ class ConnectionManager:
         except Exception:
             self._voice_devices.pop(robot_id, None)
             return False
+
+    def set_voice_busy(self, robot_id: str, busy: bool) -> None:
+        """Record whether this robot's voice device is mid-conversation-turn."""
+        if busy:
+            self._voice_busy.add(robot_id)
+        else:
+            self._voice_busy.discard(robot_id)
+
+    def voice_busy(self, robot_id: str) -> bool:
+        """Is this robot still listening / thinking / speaking? False if it has no mic device."""
+        return robot_id in self._voice_busy
 
     def connected_robot_ids(self) -> set[str]:
         return set(self._robots)

@@ -14,7 +14,7 @@
       </div>
 
       <h1 class="title">Đặt món thành công!</h1>
-      <p class="subtitle">Robot sẽ giao món đến <strong>Bàn {{ ui.tableId }}</strong></p>
+      <p class="subtitle">Món sẽ được mang ra <strong>Bàn {{ ui.tableId }}</strong></p>
 
       <div v-if="itemCount > 0" class="summary">
         <span>{{ itemCount }} món</span>

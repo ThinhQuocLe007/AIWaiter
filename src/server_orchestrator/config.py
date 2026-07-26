@@ -64,5 +64,12 @@ class Settings(BaseSettings):
     heartbeat_timeout_s: float = 30.0
     watchdog_interval_s: float = 5.0
 
+    # "Let the robot finish talking." A `task.release` (guest ordered / paid) is held back while
+    # that robot's voice device is mid-turn, so it never drives off in the middle of "Cảm ơn quý
+    # khách…". This is the cap on that hold: if the device never reports the turn ended (it
+    # crashed, the Jetson froze), the release goes out anyway rather than parking the robot at the
+    # table forever. Must comfortably exceed a worst-case turn (STT + LLM + TTS playback).
+    voice_turn_grace_s: float = 45.0
+
 
 settings = Settings()

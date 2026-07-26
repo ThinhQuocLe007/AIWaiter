@@ -48,9 +48,12 @@ class PaymentStatus(str, Enum):
 
 
 class TaskKind(str, Enum):
-    """A system task the dispatcher hands to a robot."""
-    GO_TO_TABLE = "go_to_table"   # robot drives to a table (seating / call)
-    DELIVER = "deliver"             # robot brings food from the kitchen
+    """A system task the dispatcher hands to a robot.
+
+    Two kinds only — the robot takes orders, it does not carry food: it drives out when a
+    party is seated, and again when a guest presses the call button. Staff bring the dishes.
+    """
+    GO_TO_TABLE = "go_to_table"   # robot drives to a newly seated table to take the order
     CALL = "call"                   # robot goes to ask the guest "thêm món / thanh toán?"
 
 

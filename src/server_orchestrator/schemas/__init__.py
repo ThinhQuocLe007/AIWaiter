@@ -122,7 +122,7 @@ class PaymentOut(BaseModel):
 
 # --- Tasks (dispatcher) -------------------------------------------------------------------
 class TaskOut(BaseModel):
-    """A system task the dispatcher hands to a robot (go_to_table / deliver / call)."""
+    """A system task the dispatcher hands to a robot (go_to_table / call)."""
 
     id: int
     kind: TaskKind

@@ -129,10 +129,28 @@ async def voice_device_loop(vad: SileroVAD, agent_client: httpx.Client, player: 
     The turn itself (capture → STT → agent → TTS) runs as a BACKGROUND task, never awaited inline:
     the receive loop must stay free to process cancel_listening / set_muted arriving mid-turn —
     that's the whole point of the tablet's Dừng and tắt-loa buttons working in realtime.
+
+    We tell the backend when a turn starts and ends (`voice_turn`). The dispatcher holds this
+    robot's `task.release` for the duration, so ordering or paying mid-turn can no longer drive the
+    robot off before it has finished saying "Cảm ơn quý khách…".
     """
     url = _backend_ws_url()
     retry = 0
+    ws = None  # the live socket; send_turn_state() below always uses the current one
     turn_task: asyncio.Task | None = None
+    # Monotonic id of the turn currently owning the mic. A cancelled turn can keep unwinding for
+    # seconds after a new one starts; only the current turn may report "finished", or that zombie
+    # would clear the flag — and release the robot — in the middle of the new conversation.
+    turn_seq = 0
+
+    async def send_turn_state(active: bool) -> None:
+        if ws is None:
+            return
+        try:
+            await ws.send(json.dumps({"type": "voice_turn", "active": active}))
+        except Exception:  # link dropped — the server clears the flag on disconnect anyway
+            pass
+
     # Abort flag of the CURRENT turn, handed to that turn's capture worker. A fresh Event per
     # turn, never a reused one: a cancelled worker can still be parked in a blocking call (the
     # agent stream, the STT queue wait) for seconds after we cancel it, and clearing a SHARED
@@ -144,6 +162,10 @@ async def voice_device_loop(vad: SileroVAD, agent_client: httpx.Client, player: 
                 retry = 0
                 logger.info("voice-device connected: %s", url)
                 print(f"[READY] đã kết nối backend ({ROBOT_ID}) — chờ điều tới bàn + web bấm 'nói chuyện'.")
+                # A turn that outlived the dropped socket: the server forgot we were talking when
+                # the old one closed, so re-assert the hold on the new one.
+                if turn_task is not None and not turn_task.done():
+                    await send_turn_state(True)
                 async for raw in ws:
                     try:
                         msg = json.loads(raw)
@@ -167,9 +189,23 @@ async def voice_device_loop(vad: SileroVAD, agent_client: httpx.Client, player: 
                             continue
                         turn_cancel = threading.Event()  # this turn's own flag; zombies keep theirs set
                         player.reset()  # clear a leftover interrupt; mute (if on) persists
+                        turn_seq += 1
                         turn_task = asyncio.create_task(asyncio.to_thread(
                             _capture_and_send_streaming, vad, agent_client, table_id, player, turn_cancel
                         ))
+                        # Hold the robot from the moment we start listening, not from the first
+                        # spoken word: the agent settles the bill as a TOOL CALL, which lands
+                        # before it has said anything — the release would otherwise beat the reply.
+                        await send_turn_state(True)
+
+                        def _turn_finished(_task, seq=turn_seq):
+                            # _capture_and_send_streaming returns only after its last sentence has
+                            # finished playing (play_sentence blocks), so this is genuinely
+                            # "the robot has stopped talking".
+                            if seq == turn_seq:
+                                asyncio.create_task(send_turn_state(False))
+
+                        turn_task.add_done_callback(_turn_finished)
                     elif mtype == "cancel_listening":
                         # Tablet's Hủy/Dừng: kill the whole in-flight turn — armed mic, agent
                         # stream consumption AND the sentence currently coming out of the speaker.

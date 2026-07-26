@@ -50,15 +50,21 @@ async def ws_endpoint(
     try:
         while True:
             raw = await websocket.receive_text()
-            # Viewers (panel) + voice devices don't send anything we act on here; robots drive the
-            # dispatcher. (The voice device only receives "start_listening" and POSTs to the agent.)
+            # Viewers (panel) send nothing we act on. Robots drive the dispatcher; voice devices
+            # report only whether they are mid-conversation-turn.
             if role == "robot" and robot_id:
                 await _handle_robot_message(dispatcher, robot_id, raw)
+            elif role == "voice-device" and robot_id:
+                await _handle_voice_device_message(dispatcher, robot_id, raw)
     except WebSocketDisconnect:
         manager.disconnect(websocket, role, robot_id)
         log.info("ws disconnected role=%s robot_id=%s", role, robot_id)
         if role == "robot" and robot_id:
             await dispatcher.on_robot_disconnect(robot_id)
+        if role == "voice-device" and robot_id:
+            # The mic died mid-turn: end the turn server-side so a release held for this robot
+            # goes out now instead of waiting out the grace period.
+            await dispatcher.on_voice_turn(robot_id, False)
 
 
 async def _handle_robot_message(dispatcher, robot_id: str, raw: str) -> None:
@@ -81,3 +87,21 @@ async def _handle_robot_message(dispatcher, robot_id: str, raw: str) -> None:
         await dispatcher.on_at_dock(robot_id)
     else:
         log.warning("unknown robot message type=%r from %s", mtype, robot_id)
+
+
+async def _handle_voice_device_message(dispatcher, robot_id: str, raw: str) -> None:
+    """Parse one inbound voice-device frame.
+
+    The only thing a mic reports is `voice_turn {active}` — a turn (listen → LLM → speak) started
+    or finished. The dispatcher uses it to hold this robot's `task.release` until it has stopped
+    talking, so the guest hears the whole reply before the robot drives off.
+    """
+    try:
+        msg = json.loads(raw)
+    except json.JSONDecodeError:
+        log.warning("bad voice-device frame from %s: %r", robot_id, raw[:200])
+        return
+    if msg.get("type") == "voice_turn":
+        await dispatcher.on_voice_turn(robot_id, bool(msg.get("active")))
+    else:
+        log.warning("unknown voice-device message type=%r from %s", msg.get("type"), robot_id)

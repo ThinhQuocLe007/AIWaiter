@@ -79,7 +79,6 @@ export const useVoiceStore = defineStore('voice', () => {
       // The robot is standing at this table now: bring the tablet to the screen matching the
       // visit step, so the guest never has to navigate by hand. go_to_table = fresh party →
       // straight to the menu; call = mid-meal service → the "order more / pay" chooser.
-      // deliver needs no screen change (the guest just takes the food).
       if (e.table_id !== getStoredTableId()) return
       if (e.kind === 'go_to_table' && router.currentRoute.value.name !== 'menu') {
         router.push({ name: 'menu' })

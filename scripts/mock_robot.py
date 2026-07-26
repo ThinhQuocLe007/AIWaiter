@@ -4,11 +4,11 @@ It speaks the same WS contract a real `ws_client.py` (Mốc A) will: connects as
 `/ws?role=robot&robot_id=<id>`, sends periodic heartbeats, and when it receives a `task.assign`
 it walks the task lifecycle (accept → drive → arrive → serve → finish) instead of using Nav2.
 
-Serving is event-driven, not on a timer: for a `go_to_table` / `call` task the robot ARRIVES and
-then WAITS at the table (so you can talk to it via the voice device) until the server sends a
-`task.release` frame — which the dispatcher emits when the guest places an order (`POST /orders`)
-or pays (`/payments/verify`). Only then does it report `task_done` and drive back to the dock. A
-`deliver` task still auto-completes after dropping the food.
+Serving is event-driven, not on a timer: for a `go_to_table` / `call` task (the only two kinds —
+the robot takes orders, staff carry the food) the robot ARRIVES and then WAITS at the table (so you
+can talk to it via the voice device) until the server sends a `task.release` frame — which the
+dispatcher emits when the guest places an order (`POST /orders`) or pays (`/payments/verify`).
+Only then does it report `task_done` and drive back to the dock.
 
 Run (backend must be up on :8000):
     uv run python scripts/mock_robot.py --id robo-1
@@ -35,7 +35,6 @@ import websockets
 HEARTBEAT_EVERY = 3.0  # seconds, while idle
 DRIVE_SPEED = 0.7  # m/s fake travel speed (a table is ~5m away → a few seconds)
 MOVE_STEP = 0.2  # seconds between pose updates while driving → smooth dot on the panel minimap
-ACTION_SECONDS = 3.0  # fake time doing the action at the table
 
 # Approach waypoints per table and the dock, in the saved SLAM map frame — read from the SAME
 # floorplan file the backend and the real robot bridge use (services/floorplan.py), so the fake
@@ -105,11 +104,10 @@ async def drive_to(ws, state: dict, target: tuple[float, float]) -> bool:
 async def run_task(ws, task: dict, state: dict) -> None:
     """Walk one assigned task: accept → drive to table → arrive → serve → done → drive back to dock.
 
-    The "serve" step depends on the task kind, mirroring the real flow:
-      * ``go_to_table`` / ``call`` — the robot WAITS at the table (taking the order / helping) until
-        the server says the guest is finished. That signal is a ``task.release`` frame, sent by the
-        dispatcher when the guest places an order or pays. Only then does it report done and leave.
-      * ``deliver`` — it just hands the food over (a few seconds) and heads back on its own.
+    The "serve" step mirrors the real flow: for both kinds (``go_to_table`` = party just seated,
+    ``call`` = guest pressed the button) the robot WAITS at the table (taking the order / helping)
+    until the server says the guest is finished. That signal is a ``task.release`` frame, sent by
+    the dispatcher when the guest places an order or pays. Only then does it report done and leave.
     """
     task_id = task["task_id"]
     table_id = task["table_id"]
@@ -124,15 +122,12 @@ async def run_task(ws, task: dict, state: dict) -> None:
     print(f"[{state['id']}] task {task_id} → arrived (bàn {table_id})")
     await ws.send(json.dumps({"type": "arrived", "task_id": task_id}))
 
-    if kind in ("go_to_table", "call"):
-        # Stand at the table and serve the guest. Heartbeats keep streaming our (unchanged) pose, so
-        # the panel shows the robot parked at the table the whole time. Block until the server sends
-        # task.release (guest ordered / paid).
-        print(f"[{state['id']}] task {task_id} → đang phục vụ bàn {table_id}, chờ khách đặt món / thanh toán...")
-        await state["release"].wait()
-        print(f"[{state['id']}] task {task_id} → khách xong, rời bàn {table_id}")
-    else:
-        await asyncio.sleep(ACTION_SECONDS)  # deliver: drop the food and go
+    # Stand at the table and serve the guest. Heartbeats keep streaming our (unchanged) pose, so
+    # the panel shows the robot parked at the table the whole time. Block until the server sends
+    # task.release (guest ordered / paid).
+    print(f"[{state['id']}] task {task_id} → đang phục vụ bàn {table_id}, chờ khách đặt món / thanh toán...")
+    await state["release"].wait()
+    print(f"[{state['id']}] task {task_id} → khách xong, rời bàn {table_id}")
     if state.get("hung"):
         return
     print(f"[{state['id']}] task {task_id} → done")

@@ -10,15 +10,13 @@ Contract (same one scripts/mock_robot.py fakes and the dispatcher expects):
     robot → server : task_accepted / arrived / task_done {task_id}   ·  at_dock
                      heartbeat {robot_id, battery, x, y}   (map frame)
 
-Task lifecycle:
-  * ``go_to_table`` / ``call`` — drive to the table, report ``arrived``, then WAIT
-    there until the server sends ``task.release``, then ``task_done`` and head back to
-    the dock. Nothing else ends that wait — no timer, no distance check. The server sends
-    that frame when the guest confirms an order (``POST /orders``) or settles the bill
-    (``/payments/verify``); until one of those lands the robot stays parked, holding the
-    table's microphone.
-  * ``deliver`` — drive to the table, ``arrived``, pause a few seconds, ``task_done``,
-    head back to the dock.
+Task lifecycle — both kinds behave the same (the robot takes orders, it never carries food):
+  * ``go_to_table`` (party just seated) / ``call`` (guest pressed the call button) — drive to
+    the table, report ``arrived``, then WAIT there until the server sends ``task.release``,
+    then ``task_done`` and head back to the dock. Nothing else ends that wait — no timer, no
+    distance check. The server sends that frame when the guest confirms an order
+    (``POST /orders``) or settles the bill (``/payments/verify``); until one of those lands the
+    robot stays parked, holding the table's microphone.
 
 Demo floor (2026-07-22): one surveyed table — Table 1 = ArUco 1, dock = ArUco 6. The web still
 offers six tables, so a task for an unsurveyed table is served at Table 1 (``default_table``);
@@ -60,8 +58,6 @@ from tarkbot_robot.visual_delivery import (
     return_to_dock,
     startup_sequence,
 )
-
-DELIVER_SERVE_SECONDS = 5.0  # deliver task: pause at the table for the guest to take the food
 
 
 class TaskBridge:
@@ -319,14 +315,12 @@ class TaskBridge:
 
         self._send({"type": "arrived", "task_id": task_id})
 
-        if kind in ("go_to_table", "call"):
-            # Serve the guest: park at the table (heartbeats keep flowing) until the server
-            # says the visit step is over (guest placed an order / paid) via task.release.
-            self._log().info(f"Đang phục vụ bàn {table_id} — chờ khách đặt món / thanh toán…")
-            while rclpy.ok() and not self._release.wait(timeout=0.5):
-                pass
-        else:  # deliver — hand the food over and leave on our own
-            time.sleep(DELIVER_SERVE_SECONDS)
+        # Serve the guest: park at the table (heartbeats keep flowing) until the server says the
+        # visit step is over (guest placed an order / paid) via task.release. Same for both kinds
+        # — go_to_table takes the first order, call asks "thêm món hay thanh toán?".
+        self._log().info(f"Đang phục vụ bàn {table_id} ({kind}) — chờ khách đặt món / thanh toán…")
+        while rclpy.ok() and not self._release.wait(timeout=0.5):
+            pass
 
         self._send({"type": "task_done", "task_id": task_id})
 

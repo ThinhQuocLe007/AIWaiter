@@ -99,7 +99,7 @@ CREATE TABLE IF NOT EXISTS robots (
 
 CREATE TABLE IF NOT EXISTS tasks (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    kind       TEXT NOT NULL,        -- {TaskKind.GO_TO_TABLE.value} | {TaskKind.DELIVER.value} | {TaskKind.CALL.value}
+    kind       TEXT NOT NULL,        -- {TaskKind.GO_TO_TABLE.value} | {TaskKind.CALL.value}
     table_id   INTEGER,
     order_id   INTEGER,
     robot_id   TEXT,
@@ -178,6 +178,17 @@ def _migrate_payments_to_session(conn: sqlite3.Connection) -> None:
         conn.execute("DROP TABLE payments")
 
 
+def _drop_legacy_deliver_tasks(conn: sqlite3.Connection) -> None:
+    """Delete `deliver` rows left by DBs seeded before the robot stopped carrying food.
+
+    The robot now only takes orders (go_to_table / call); `deliver` is gone from TaskKind, so a
+    leftover row would fail TaskOut validation on every read of the task queue. Tasks are
+    transient work items — the business history lives in orders/payments — so dropping them
+    loses nothing. Idempotent; a no-op on a DB that never had one.
+    """
+    conn.execute("DELETE FROM tasks WHERE kind = 'deliver'")
+
+
 def init_db() -> None:
     """Create the schema (idempotent). Called once on startup."""
     settings.db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -186,3 +197,4 @@ def init_db() -> None:
         _migrate_payments_to_session(conn)
         conn.executescript(PAYMENTS_DDL)
         _apply_migrations(conn)
+        _drop_legacy_deliver_tasks(conn)
