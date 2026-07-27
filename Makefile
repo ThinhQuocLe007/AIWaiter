@@ -1,7 +1,7 @@
 # Makefile - Convenience commands for AI Waiter project
 # Run 'make help' to see available commands
 
-.PHONY: help setup install update frontend menu kiosk panel backend reindex agent voice probe mockrobot simbridge hwbridge hwstack map build serve kill reset clean
+.PHONY: help setup install update frontend menu kiosk panel backend reindex agent voice probe mockrobot simbridge hwbridge hwstack jetson map build serve kill reset clean
 
 # Role-specific Python extras for the backend env (see docs/setup-deploy.md). Each machine
 # picks ONLY its role: fastapi/uvicorn live in `--extra server`, STT/TTS in `--extra voice`,
@@ -39,6 +39,7 @@ help:
 	@echo "  make mockrobot  - Start a mock robot WS client (ID=robo-1 ARGS=...) to test the dispatcher"
 	@echo "  make simbridge  - Gazebo robot bridge (sim demo); make backend SIM=1 for the sim map"
 	@echo "  make hwstack    - REAL robot, all-in-one on the Jetson: localization + Nav2 + bridge"
+	@echo "  make jetson     - MỘT lệnh cho cả buổi demo trên Jetson: hwstack + voice + trình duyệt kiosk"
 	@echo "  make hwbridge   - REAL robot bridge only (localization + Nav2 already running)"
 	@echo "  make map        - Re-export the minimap floor from the RTAB-Map database"
 	@echo "  make reindex    - Clean rebuild of FAISS + BM25 + centroid artifacts"
@@ -189,6 +190,20 @@ hwstack:
 	@cd robot_ws && . /opt/ros/humble/setup.sh && . install/setup.sh && \
 	ros2 launch ai_hw_bridge ai_waiter.launch.py \
 		server_host:=$(SERVER_HOST) robot_id:=$(ID)
+
+# MỘT lệnh, MỘT terminal cho cả buổi demo trên Jetson: `hwstack` + `voice` + trình duyệt kiosk
+# trên màn robot. Script tự `source .venv/bin/activate` trước (khỏi phải nhớ), log mỗi phần gắn
+# tiền tố [stack]/[voice]/[web], Ctrl-C một lần tắt sạch cả ba. Chỉ cần gõ:  make jetson
+# Server là IP Netbird cố định của ducduy-pc — đổi khi cần: make jetson SERVER_HOST=192.168.1.x:8000
+# Bỏ bớt phần nào:  make jetson VOICE=0    (chỉ nav)      make jetson WEB=0   (gõ qua SSH, không mở web)
+VOICE ?= 1
+WEB ?= 1
+jetson: SERVER_HOST := 100.66.165.221:8000
+jetson: ID := robo-1
+jetson: $(VENV_PY)
+	@SERVER_HOST=$(SERVER_HOST) ID=$(ID) VOICE=$(VOICE) WEB=$(WEB) \
+		$(if $(URL),URL=$(URL),) $(if $(KIOSK_BROWSER),KIOSK_BROWSER=$(KIOSK_BROWSER),) \
+		bash scripts/jetson_run.sh
 
 # Just the bridge — for when localization and Nav2 are already up in their own terminals:
 #   ros2 launch tarkbot_robot rtabmap_localization.launch.py

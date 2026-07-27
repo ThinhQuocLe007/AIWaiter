@@ -119,7 +119,31 @@ hoặc quay lưng vào mã thì localization xuất phát sai và mọi thứ sa
 
 ---
 
-## ③ JETSON — 2 terminal
+## ③ JETSON — 1 terminal, 1 lệnh
+
+```bash
+cd ~/ptd_workspace/AIWaiter
+make jetson
+```
+
+Server `100.66.165.221:8000` + `robo-1` đã cố định sẵn trong Makefile nên không phải gõ gì thêm.
+Một lệnh này chạy đủ ba phần trong **một** terminal, log gắn tiền tố để đọc riêng:
+
+| Phần | Bằng với lệnh cũ | Tiền tố log |
+|---|---|---|
+| cả stack robot (base + lidar + camera + EKF + RTAB-Map + Nav2 + RViz + bridge) | `make hwstack` | `[stack]` |
+| vòng lặp voice | `make voice` | `[voice]` |
+| trình duyệt kiosk trên màn robot | `firefox --kiosk http://…:8000/` | `[web]` |
+
+Script (`scripts/jetson_run.sh`) tự `source .venv/bin/activate` nên **không phải tự activate nữa**;
+trình duyệt chỉ mở **sau khi** backend trả lời. **Ctrl-C một lần tắt sạch cả ba**; đóng nhầm cửa sổ
+kiosk thì robot vẫn chạy tiếp.
+
+Bỏ bớt phần nào khi cần: `make jetson VOICE=0` (chỉ nav + web), `make jetson WEB=0` (gõ qua SSH),
+`make jetson URL=http://100.66.165.221:5173/` (kiosk vào dev server), hoặc `SERVER_HOST=…` nếu đổi
+máy chủ.
+
+Vẫn muốn tách terminal (dễ đọc log lúc debug) thì ba lệnh cũ còn nguyên:
 
 ```bash
 # ── T1: cả stack robot (base driver + lidar + camera + EKF + RTAB-Map + Nav2 + RViz + bridge)
@@ -158,7 +182,8 @@ firefox --kiosk http://100.66.165.221:8000/     # cách A
 # cách B (dev server):  firefox --kiosk http://100.66.165.221:5173/
 ```
 
-Thoát kiosk: `Ctrl+W` hoặc `Alt+F4`.
+Thoát kiosk: `Ctrl+W` hoặc `Alt+F4`. (`make jetson` tự dò `firefox` → `chromium-browser` →
+`chromium`; ép dùng cái khác: `make jetson KIOSK_BROWSER=chromium-browser`.)
 
 ---
 
