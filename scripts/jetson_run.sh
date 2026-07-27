@@ -52,10 +52,15 @@ trap cleanup INT TERM EXIT
 (
 	deactivate 2>/dev/null || true
 	cd robot_ws
+	# Các file setup.sh do ament sinh ra đọc $AMENT_TRACE_SETUP_FILES khi biến chưa set ->
+	# dưới `set -u` bash coi là lỗi và thoát NGAY subshell, hwstack không bao giờ khởi động.
+	# Tắt -u quanh phần source (make hwstack chạy được chính vì shell của make không có -u).
+	set +u
 	# shellcheck disable=SC1090,SC1091
 	. "$ROS_SETUP"
 	# shellcheck disable=SC1091
 	. install/setup.sh
+	set -u
 	exec ros2 launch ai_hw_bridge ai_waiter.launch.py \
 		server_host:="$SERVER_HOST" robot_id:="$ID"
 ) 2>&1 | tag stack &
