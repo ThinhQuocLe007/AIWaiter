@@ -4,7 +4,10 @@ from typing import Any
 
 from langchain_core.messages import HumanMessage
 
-from src.agent_brain.agent.nodes.keyword_detector import should_invoke_rewriter
+from src.agent_brain.agent.nodes.keyword_detector import (
+    is_definite_payment,
+    should_invoke_rewriter,
+)
 from src.agent_brain.agent.nodes.rewriter_node import rewriter_node
 from src.agent_brain.agent.nodes.semantic_router_node import (
     MIN_SIM_THRESHOLD,
@@ -38,7 +41,19 @@ def hybrid_router_node(state: AgentState) -> dict[str, Any]:
     intent_queries: dict[str, str] = {}
     decided_by = "SEMANTIC_ARGMX"
 
-    if not should_rewrite:
+    if is_definite_payment(last_user_message):
+        # Hard guarantee: an explicit payment request always reaches payment_dispatch.
+        # Bare "cho"/"lấy" in "cho tôi thanh toán" used to trip the multi-intent rule and
+        # send the turn through the rewriter, which is where payments got lost.
+        should_rewrite = False
+        current_intents = ["PAYMENT"]
+        decided_by = "PAYMENT_OVERRIDE"
+        logger.info(
+            "[Hybrid Router] PAYMENT override — explicit payment request, "
+            "skipping rewriter (semantic said %s, max_sim=%.3f)",
+            sem_intent, max_sim,
+        )
+    elif not should_rewrite:
         current_intents = [sem_intent] if sem_intent else ["CHAT"]
         logger.info(
             "[Hybrid Router] Fast-tracked by SEMANTIC. Intent: %s (max_sim=%.3f, groups=%s)",
