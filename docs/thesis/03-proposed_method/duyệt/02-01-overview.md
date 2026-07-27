@@ -1,0 +1,72 @@
+## 2.1 Overview: Automation of the Restaurant Service Loop
+
+> **Cross-refs:** §2.2–§2.8 (each need in depth), §2.9 (summary and requirement traceability), §3.1, §4.1 (requirements)
+> **Citations:** [2.1.1]–[2.1.25]; final numbering assigned when all Ch.2 references are merged.
+
+---
+
+From greeting to payment, a restaurant service interaction is a closed-loop business process with three components: the customer conversation (taking orders, answering menu questions, confirming selections), the backend transaction (creating order records, updating kitchen displays, computing bills), and the physical delivery of food from kitchen to table. Automation has addressed each component independently.
+
+### 2.1.1 Service Robots in the Restaurant Industry
+
+Service robots for food delivery are already deployed commercially at scale. They fall into two architectural categories: free-navigation platforms and track-based systems.
+
+Free-navigation platforms use LiDAR and RGB-D cameras for SLAM-based mapping and autonomous navigation in restaurant environments [2.1.1]–[2.1.3]. The category includes the Bear Robotics Servi (manufacturer founded USA, 2017; Servi introduced 2019), the Pudu BellaBot (manufacturer founded China, 2016; BellaBot debuted January 2019), and the Keenon T-series (manufacturer founded China, 2010). These robots build an occupancy grid of the restaurant floor, localize within it, and plan collision-free paths between kitchen and tables. BellaBot was reported operating in over 600 cities across more than 60 countries as of June 2023, and Pudu reported nearly 70,000 cumulative units shipped across its full product range as of August 2023 [2.1.5]. BellaBot has a cat-like animated face display and a voice module for pre-recorded greetings; Servi has a minimalist form factor with tray shelves and obstacle avoidance. All three platforms share one operational model. A human waiter loads food onto the robot and selects a destination table on a touchscreen, and the robot navigates autonomously to deliver the items. On arrival it plays a greeting, waits for the customer to retrieve the food, and returns to the kitchen. Load, navigate, deliver, and return are all autonomous; the ordering and conversational components remain entirely human-operated.
+
+Track-based systems are the alternative. Alibaba Robot.He (Shanghai, 2018) mounts pod-shaped automated guided vehicles (AGVs) on fixed physical rails installed alongside dining tables, adapted from Cainiao's warehouse logistics technology [2.1.6]. The rail removes SLAM, path planning, and localization from the problem entirely: the robot follows a deterministic track to a predetermined position with sub-centimeter precision. This trades spatial flexibility for mechanical simplicity and delivery accuracy. Robot.He handles food delivery, table clearing, and dishwashing assistance in the Hema robotic restaurant chain, as shown in Figure 2.1. The division of labour there is explicit: customers order by scanning a QR code and using the Hema application, while human staff greet arriving guests, explain the system, take payment, and cook [2.1.6]. The robot's role is limited to transport. Other rail-based systems include rotating conveyor belts in sushi restaurants and ceiling-mounted monorail delivery units in themed dining venues.
+
+![Pod-shaped AGVs of the Alibaba Robot.He system running on fixed rails alongside dining tables.](../images/alibaba_robotic.png)
+
+**Figure 2.1.** Track-based food delivery: Alibaba Robot.He pod AGVs on fixed rails in a Hema robotic restaurant. Each numbered pod carries one covered dish to a predetermined table position. Source: [2.1.6].
+
+Both categories transport food reliably from kitchen to table. Autonomous physical delivery is what they do well. Both are also closed appliances. Their interaction model is a touchscreen for destination selection, or a pre-recorded voice greeting that plays on arrival. They provide no documented speech recognition, natural-language understanding, dialogue management, or Vietnamese-language support. The food they carry was ordered through a separate channel, whether a human waiter, a tablet application, or a QR-code menu, and the robot takes no part in that conversation. The software stack is proprietary, so third-party developers cannot add an LLM agent, a Vietnamese speech pipeline, or a custom fleet dispatcher.
+
+A second line of research has worked with general-purpose mobile platforms rather than dedicated service robots. These are usually two-wheel differential-drive (TWD) or four-wheel mecanum chassis carrying 2D LiDAR, RGB-D cameras, and inertial sensors, and they run the Robot Operating System (ROS2) for autonomous navigation [2.1.8]. Their firmware is not proprietary, so the sensor drivers, SLAM algorithms, path planners, and motor controllers are all open to modification. One published platform of this kind combines a TWD base with EKF-fused odometry, RTAB-Map SLAM, and the Nav2 navigation stack, and performs autonomous indoor delivery with fiducial-marker precision docking [2.1.9]. In hardware terms these platforms and the commercial service robots are comparable, since both navigate and both deliver. They differ in architectural openness. A closed appliance cannot be coupled to external software, whereas an open ROS2 platform can be driven by an external system that manages interaction and business logic alongside navigation. The published systems do not take that step: the navigation goal is set by a human operator rather than by an external software agent (§2.2).
+
+### 2.1.2 Conversational Ordering Systems
+
+Conversational ordering has progressed through three generations of technology. The first is traditional task-oriented dialogue systems: pipelines of natural language understanding (intent classification + slot filling), dialogue state tracking, and natural language generation. These have been deployed for English, Chinese, Korean, and Japanese restaurant ordering on platforms such as Rasa and Dialogflow [2.1.10]–[2.1.12]. They produce structured API calls (create order, add item) and enforce valid state transitions. Their classifiers, however, are language-specific and trained on formal corpora. Vietnamese informal variants ("ck" for chuyển khoản, "z" for vậy) are out of vocabulary, and their slot schemas cannot represent open-ended Vietnamese customer queries.
+
+Large language models introduced a more flexible approach. Vietnamese-language chatbots such as Zalo AI (VNG) and VinAI demonstrate conversational Vietnamese capability across open domains [2.1.13]. Combined with retrieval-augmented generation, they can ground responses in a restaurant's actual menu. A chatbot, however, generates text; it does not change system state. When a customer says "Cho 1 phần Ốc Hương Xốt Trứng Muối," the chatbot can reply "Dạ, món đó giá 170.000đ ạ." The reply is linguistically correct but operationally empty. Nothing entered a cart, no order record was created, and no kitchen display changed. The gap is architectural: a chatbot cannot call an `add_cart` function, validate a dish name against a menu database, or dispatch a robot.
+
+Voice ordering systems are the third generation. Wendy's FreshAI (USA, 2023) uses an LLM pipeline to process spoken drive-through orders in English and push them to the point-of-sale system [2.1.15]. Domino's (USA) launched its DOM voice-ordering assistant in 2014 and announced AI handling of inbound telephone orders in April 2018, tested initially across twenty US stores, which took pizza orders through speech recognition and NLU [2.1.16]. Both show that LLM-based voice ordering is commercially viable: the systems process real orders, cut wait times, and integrate with the kitchen. They are also English-only, cloud-dependent (inference runs on Google Cloud for Wendy's and on a proprietary platform for Domino's), and stateless per transaction. They have no multi-turn memory, no persistent cart, and no physical robot delivery, since a human server hands the food to the customer.
+
+### 2.1.3 Restaurant Management Software
+
+A separate layer of operational software runs alongside all three generations of conversational technology and largely independent of them. It records what was ordered and tells the kitchen to cook it. Point-of-sale systems track orders and payments. Kitchen display systems (KDS) show order tickets to cooking staff. QR-code ordering applications let customers browse menus and place orders from their phones, a model that proliferated during COVID-19 [2.1.17]. These systems share a common architecture: each covers one role (POS, kitchen, customer) and operates independently. A kitchen display learns about a new order on its next poll cycle, typically every 5 to 10 seconds. The customer ordering app does not know the kitchen's queue depth. The robot does not know the customer just paid. There is no shared real-time state across roles, and no external AI agent can drive the multi-role workflow through API calls.
+
+### 2.1.4 The Integration Gap
+
+No existing system handles all three parts of the loop: the conversation, the transaction, and the delivery. Table 2.1 shows what each category covers.
+
+**Table 2.1** - Coverage of the three service-loop components by existing categories of restaurant automation. Coverage: ✓ full, ◐ partial, ✗ absent. Language reach and deployment model are reported as observed characteristics rather than as pass/fail criteria.
+
+| Category | Conversation | Transaction | Delivery | Language reach | Deployment model |
+|----------|:---:|:---:|:---:|---|---|
+| Free-navigation robots (Bear, Pudu, Keenon) | ✗ | ✗ | ✓ | n/a (touchscreen) | Vendor cloud, closed stack |
+| Track-based AGV (Alibaba Robot.He) | ✗ | ✗ | ✓ | n/a (QR code and app) | Closed stack |
+| Task-oriented dialogue frameworks (Rasa, Dialogflow) | ◐ | ✓ | ✗ | Retrainable; Vietnamese needs a labelled corpus | Rasa self-hosted; Dialogflow cloud |
+| Vietnamese LLM chatbots (Zalo AI, VinAI) | ✓ | ✗ | ✗ | Native Vietnamese | Cloud |
+| LLM voice ordering (Wendy's, Domino's) | ◐ | ✓ | ✗ | English only, as deployed | Vendor cloud |
+| Restaurant software (POS, KDS, QR ordering) | ✗ | ✓ | ✗ | Localizable | Varies by vendor |
+
+No category covers more than two of the three components, and none covers conversation and delivery together. Delivery robots move the food but play no part in the conversation that produced the order. Vietnamese chatbots hold that conversation but cannot act on it. Restaurant software records the transaction without speaking to the customer or moving the food.
+
+The two partial ratings mean different things. Task-oriented dialogue frameworks converse only inside a predefined schema of intents and slots, so they handle the utterances their author anticipated and fail on the rest. LLM voice ordering handles open speech, but each transaction is stateless: no cart or memory survives across a visit, and both deployments run in English only.
+
+One property is missing from the table because no category has it. None of these systems checks a proposed action against an authoritative source before executing it, and none needs to. A slot-filling system only accepts requests that fit its predefined intents and slots, so it can never produce an action outside that set, and the other systems leave correctness to the human entering the order. The check only becomes necessary once a component that can produce wrong actions is allowed to propose them freely, which is what an LLM agent does. Validation is therefore discussed in §2.4.5, where it arises, instead of as a column here.
+
+Combining the three components is not a small extension of any row in Table 2.1. The conversation has to produce actions correct enough to run against live business records, those records have to trigger physical delivery, and every component has to work from the same real-time state.
+
+The rest of the chapter splits the gap along the same three components. Delivery is §2.2. Conversation splits into three layers: the voice interface that carries it (§2.3), the agent that turns an utterance into a validated action (§2.4), and the retrieval pipeline that grounds answers in the restaurant's own menu (§2.5). Transaction splits into two: the backend that holds restaurant state (§2.6) and the role-specific interfaces through which each actor observes and changes it (§2.7). Six needs follow:
+
+1. **Dynamic goal navigation (§2.2):** navigation goals derived at runtime from live restaurant state by an end-to-end system, instead of waypoints a human operator selects.
+2. **Vietnamese voice on the edge (§2.3):** speech detection, recognition, and synthesis running on the robot's own hardware, under restaurant noise conditions.
+3. **Informal speech to validated actions (§2.4):** teencode-heavy Vietnamese utterances turned into tool calls that are checked against an authoritative source before they run.
+4. **Vague descriptions to relevant items (§2.5):** sensory queries such as *"món gì ấm bụng cho ngày lạnh?"* matched against a menu indexed by name, category, and price.
+5. **Service events to synchronized operations (§2.6):** customer tablet, kitchen display, manager dashboard, and robot fleet sharing one real-time state that the agent, the floor staff, and the kitchen all write to.
+6. **Multi-role web interfaces (§2.7):** the role-specific presentation layer over that shared state.
+
+Each section states its need and reviews the prior work on it. Where that work has produced mature components (speech models, embedding models, navigation stacks, web frameworks), the section reports the options and what separates them, in comparison tables that Chapters 3 and 4 later select from. Where it has not, the section says what is missing. Either way, the section ends on what the published evidence establishes and what it leaves open.
+
+The delivery robot in this thesis is an open ROS2 platform of the second kind reviewed in §2.1.1: a two-wheel differential-drive (TWD) base, whose navigation stack §2.2 develops in detail. Its software runs on an NVIDIA Jetson Orin Nano, whose hardware limits decide where each workload can run. Section 2.8 covers those limits and what they imply for the architecture. Section 2.9 then consolidates the six needs into a traceability matrix linking each gap to the system requirements it motivates (Chapters 3 and 4) and the experiments that validate it (Chapter 5).

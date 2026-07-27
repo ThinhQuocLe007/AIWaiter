@@ -32,6 +32,7 @@ from tarkbot_robot.visual_delivery import (
     deliver_to,
     load_floorplan,
     return_to_dock,
+    set_enable_visual_align,
     startup_sequence,
 )
 
@@ -50,6 +51,7 @@ class DeliverTestNode(Node):
         self.declare_parameter('table_id', 1)
         self.declare_parameter('return_dock', False)
         self.declare_parameter('floorplan_path', '')
+        self.declare_parameter('enable_visual_align', True)
 
 
 def main(args=None):
@@ -58,6 +60,8 @@ def main(args=None):
     table_id = int(helper.get_parameter('table_id').value)
     return_dock = _as_bool(helper.get_parameter('return_dock').value)
     floorplan_path = str(helper.get_parameter('floorplan_path').value).strip()
+    enable_align = _as_bool(helper.get_parameter('enable_visual_align').value)
+    set_enable_visual_align(enable_align)
 
     if floorplan_path:
         path = load_floorplan(floorplan_path)
@@ -65,7 +69,8 @@ def main(args=None):
         path = load_floorplan()
     helper.get_logger().info(f'Floorplan: {path}')
     helper.get_logger().info(
-        'Demo: Table 1 = service table (ArUco 1); dock = ArUco 6.')
+        f'Demo: Table 1 = service table (ArUco 1); dock = ArUco 6; '
+        f'enable_visual_align={enable_align}.')
 
     name = f'Table {table_id}'
     if name not in DESTINATIONS:

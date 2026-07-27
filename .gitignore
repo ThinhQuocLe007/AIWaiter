@@ -103,9 +103,15 @@ evals/results/
 scratch/
 !scratch/.gitkeep
 
+# TarkBot Chapter-5 evaluate trial logs (keep the empty logs/ dir)
+robot_ws/src/real/tarkbot_robot/evaluate/logs/*
+!robot_ws/src/real/tarkbot_robot/evaluate/logs/.gitkeep
+
 # Logs and Jupyter
 *.log
 logs/
+!robot_ws/src/real/tarkbot_robot/evaluate/logs/
+!robot_ws/src/real/tarkbot_robot/evaluate/logs/.gitkeep
  .ipynb_checkpoints/
 
 # OS files

@@ -72,7 +72,22 @@ MARKER_SIZE = 0.15
 # ─────────────────────────────────────────────────────────── behaviour tuning
 # Ablation switch: False = pure Nav2 arrival (no marker search/align), so the raw arrival error
 # ([Arrival] err_x) can be read and you can judge whether alignment earns its keep.
+# Override at runtime via ``set_enable_visual_align`` (ROS param / evaluate scripts).
 ENABLE_VISUAL_ALIGN = True
+
+# Filled by ``_acquire_and_align`` for evaluate scripts (pre-align + optional post-align).
+LAST_ARRIVAL: dict = {}
+
+
+def set_enable_visual_align(enabled: bool) -> None:
+    """Toggle last-metre visual align without editing source (thesis ablation Tables 5.4/5.5)."""
+    global ENABLE_VISUAL_ALIGN
+    ENABLE_VISUAL_ALIGN = bool(enabled)
+
+
+def get_last_arrival() -> dict:
+    """Copy of the most recent arrival/align metrics (empty if none yet)."""
+    return dict(LAST_ARRIVAL)
 
 STARTUP_TF_TIMEOUT = 120.0  # s to wait for map->base_footprint before giving up on localization
 NAV_GOAL_TIMEOUT = 180.0    # s cap on a single Nav2 drive (a table is seconds away, not minutes)
@@ -570,21 +585,59 @@ def _acquire_and_align(nav, tracker, cmd_pub, marker_id, label):
         time.sleep(0.05)
 
     # Objective arrival metric — pure Nav2 heading, before any search/align touches it.
+    LAST_ARRIVAL.clear()
+    LAST_ARRIVAL['label'] = label
+    LAST_ARRIVAL['marker_id'] = marker_id
+    LAST_ARRIVAL['align_enabled'] = bool(ENABLE_VISUAL_ALIGN)
+
     m = tracker.get_marker(marker_id)
     if m is not None:
         nav.info(f'[Arrival] err_x={m["err_x"]:+.3f}, marker_yaw={m["marker_yaw"]:+.2f}, '
                  f'range={m["range"]:.2f}m (marker {marker_id}, before search/align)')
+        LAST_ARRIVAL['pre_align'] = {
+            'visible': True,
+            'err_x': float(m['err_x']),
+            'marker_yaw': float(m['marker_yaw']),
+            'range': float(m['range']),
+        }
     else:
         nav.warn(f'[Arrival] marker {marker_id} NOT visible on arrival (heading off, or occluded).')
+        LAST_ARRIVAL['pre_align'] = {
+            'visible': False,
+            'err_x': None,
+            'marker_yaw': None,
+            'range': None,
+        }
 
     if not ENABLE_VISUAL_ALIGN:
         nav.info('[Align] disabled (ablation) — heading left as Nav2 delivered it.')
+        LAST_ARRIVAL['post_align'] = None
+        LAST_ARRIVAL['metric_source'] = 'pre_align'
         return
 
     if m is None and not _search_marker(nav, tracker, cmd_pub, marker_id, deadline):
         nav.warn(f'[{label}] could not acquire marker {marker_id} — skipping align.')
+        LAST_ARRIVAL['post_align'] = None
+        LAST_ARRIVAL['metric_source'] = 'pre_align'
         return
     _visual_align(nav, tracker, cmd_pub, marker_id, deadline)
+    m2 = tracker.get_marker(marker_id)
+    if m2 is not None:
+        LAST_ARRIVAL['post_align'] = {
+            'visible': True,
+            'err_x': float(m2['err_x']),
+            'marker_yaw': float(m2['marker_yaw']),
+            'range': float(m2['range']),
+        }
+        LAST_ARRIVAL['metric_source'] = 'post_align'
+    else:
+        LAST_ARRIVAL['post_align'] = {
+            'visible': False,
+            'err_x': None,
+            'marker_yaw': None,
+            'range': None,
+        }
+        LAST_ARRIVAL['metric_source'] = 'pre_align'
 
 
 def _go(nav, tracker, cmd_pub, dest: dict, label: str) -> bool:
