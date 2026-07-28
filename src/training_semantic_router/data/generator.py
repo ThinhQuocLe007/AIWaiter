@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import time
 from pathlib import Path
 from typing import Any, Literal
@@ -12,35 +13,55 @@ import httpx
 logger = logging.getLogger(__name__)
 
 Intent = Literal["ORDER", "SEARCH", "PAYMENT", "CHAT"]
-Style = Literal["formal", "casual", "dialect", "edge"]
+Style = Literal["formal", "casual", "dialect", "edge", "fragment"]
 
 OUTPUT_DIR = Path(__file__).resolve().parent
 
+# Vocabulary audit, 2026-07-23. The previous corpus (3,712 utterances) contained only 609
+# unique tokens, because the generator echoes the lexicon of whatever appears in these
+# definitions. Words absent from every example were absent from the whole corpus, and the
+# classifier was confidently wrong on them at serving time -- "xoá hết giỏ hàng" was routed
+# PAYMENT at confidence 0.998, having never seen "xoá" or "giỏ hàng" in training. Notably
+# "tôi", the standard first-person pronoun, occurred zero times.
+#
+# The definitions below therefore name the vocabulary explicitly rather than leaving it to
+# the generating model's sense of what sounds typical. When adding a capability to the agent,
+# add its words here too, or the router will not learn them.
 INTENT_DEFINITIONS: dict[Intent, str] = {
     "ORDER": (
-        "ORDER — khách muốn gọi món: đặt, thêm, bỏ, sửa, hủy món, xác nhận đơn hàng, "
-        'chốt đơn. Ví dụ: "cho 2 ốc hương", "xác nhận đặt luôn", "bỏ món mực chiên đi em", '
-        '"thêm 1 bia nữa", "ok chốt đơn đi", "đổi món này qua món kia". '
+        "ORDER — khách muốn gọi món hoặc thay đổi giỏ hàng: đặt, gọi, lấy, thêm, bớt, bỏ, "
+        "xoá, xóa, huỷ, hủy, sửa, đổi, giảm số lượng, tăng số lượng, làm lại từ đầu, "
+        "dọn sạch giỏ hàng, xác nhận đơn hàng, chốt đơn, lên đơn. "
+        'Ví dụ: "cho 2 ốc hương", "tôi muốn gọi thêm 1 lẩu thái", "xác nhận đặt luôn", '
+        '"bỏ món mực chiên đi em", "xoá hết giỏ hàng giúp mình", "xóa món ốc hương ra khỏi giỏ", '
+        '"dọn giỏ hàng làm lại từ đầu", "giảm ốc hương xuống còn 1 phần", '
+        '"thêm 1 bia nữa", "ok chốt đơn đi", "đổi món này qua món kia", "lên đơn giúp tôi". '
         "Bao gồm cả câu xác nhận ngắn: 'ừ', 'ok em', 'được', 'đúng rồi' "
         "(nếu đang trong ngữ cảnh chờ xác nhận đơn)."
     ),
     "SEARCH": (
         "SEARCH — khách hỏi thông tin: giá cả, món ăn, nguyên liệu, mùi vị, độ cay, "
-        'thực đơn, giờ mở cửa, khuyến mãi, wifi, nhà vệ sinh, best seller. '
+        "thực đơn, menu, danh sách món, giờ mở cửa, khuyến mãi, wifi, nhà vệ sinh, "
+        "chỗ đậu xe, best seller, món bán chạy, giao hàng, ship, khu vực giao (quận, phường). "
         'Ví dụ: "ốc hương giá bao nhiêu", "món này có cay không", '
-        '"quán mình có món chay không", "có giao hàng không", '
-        '"gợi ý món ngon đi em", "quán mở cửa tới mấy giờ".'
+        '"cho tôi xem menu", "cho mình xem thực đơn với", "quán có những món gì", '
+        '"quán mình có món chay không", "có giao hàng không", "có ship về quận 7 không shop", '
+        '"gợi ý món ngon đi em", "quán mở cửa tới mấy giờ", "món nào bán chạy nhất".'
     ),
     "PAYMENT": (
         "PAYMENT — khách muốn thanh toán, trả tiền, xin hóa đơn, hỏi phương thức "
-        'thanh toán, tổng tiền. Ví dụ: "tính tiền đi em", "cho anh xin hóa đơn", '
+        "thanh toán, tổng tiền, kiểm tra đã thanh toán chưa. "
+        'Ví dụ: "tính tiền đi em", "cho anh xin hóa đơn", "tôi muốn thanh toán", '
         '"hết bao nhiêu tiền rồi", "thanh toán chuyển khoản được không", '
-        '"cho xin mã qr", "quẹt thẻ được không em", "bill đi em".'
+        '"cho xin mã qr", "quẹt thẻ được không em", "bill đi em", '
+        '"kiểm tra giúp mình đã thanh toán chưa", "trả tiền mặt được không shop".'
     ),
     "CHAT": (
-        "CHAT — khách chào hỏi, cảm ơn, tán gẫu, khen chê, nói chuyện phiếm, "
-        "lạc đề. KHÔNG có hành động gọi món, hỏi menu, hay đòi thanh toán. "
+        "CHAT — khách chào hỏi, cảm ơn, tán gẫu, khen chê, phàn nàn, nói chuyện phiếm, "
+        "hỏi về bản thân trợ lý, lạc đề. KHÔNG có hành động gọi món, hỏi menu, "
+        "hay đòi thanh toán. "
         'Ví dụ: "xin chào em", "cảm ơn nhiều nha", "đồ ăn ngon quá", '
+        '"món này mặn quá", "bạn là robot hay người thật vậy", '
         '"trời hôm nay mưa to thật", "quán đông ghê ha".'
     ),
 }
@@ -68,6 +89,20 @@ STYLE_DESCRIPTIONS: dict[Style, str] = {
         '"để anh xem đã", "từ từ đi", "khoan đã", "cho anh... ừm...", '
         '"à mà thôi", "đúng rồi", "ok em". Đây là dạng KHÓ NHẤT để phân loại.'
     ),
+    # Added 2026-07-23. At serving time a multi-clause utterance is split by the rewriter and
+    # each fragment is classified on its own, but no fragment-shaped example existed in
+    # training: every sample was a whole, polite, particle-bearing sentence. The fragments the
+    # rewriter actually emits -- "Cho 1 Lẩu Thái", "Xoá hết giỏ hàng", "2 Bia Sài Gòn" -- were
+    # therefore out of distribution, and multi-intent turns collapsed accordingly.
+    "fragment": (
+        "Mệnh đề rời được tách ra từ câu dài, KHÔNG phải câu hoàn chỉnh. "
+        "Bỏ hết từ đệm lịch sự ('ạ', 'dạ', 'nha', 'nhé', 'em ơi'), bỏ chủ ngữ, "
+        "chỉ giữ phần lõi mang ý định. Có thể chỉ là một cụm danh từ có số lượng. "
+        'Ví dụ: "Cho 1 Lẩu Thái", "2 Bia Sài Gòn", "Xoá hết giỏ hàng", '
+        '"Chốt đơn", "Thêm 1 bia nữa", "Cho xem menu", "Tính tiền", '
+        '"Cho xin mã QR", "Bắt đầu lại với 1 lẩu thái", "Món nào bán chạy nhất". '
+        "Độ dài điển hình 2–6 từ. Đây là dạng bộ phân loại gặp khi câu gốc có nhiều ý định."
+    ),
 }
 
 SYSTEM_PROMPT_TEMPLATE = """Bạn là chuyên gia ngôn ngữ tiếng Việt, chuyên tạo dữ liệu huấn luyện cho AI phục vụ nhà hàng.
@@ -87,7 +122,19 @@ YÊU CẦU NGHIÊM NGẶT:
 4. INTENT ĐƠN — mỗi câu chỉ MỘT intent, không được gộp nhiều intent.
 5. Đa dạng: dùng nhiều cách diễn đạt, nhiều tên món, nhiều cấu trúc câu khác nhau.
 6. Tên món ăn: dùng tên món hải sản Việt Nam thực tế (ốc hương, hàu nướng, lẩu thái, cháo hàu, mì xào, gỏi xoài, tôm càng, sò điệp, nghêu hấp, cua rang me, bia, coca, trà tắc, trà đào, v.v.).
-7. Trả về JSON array, mỗi phần tử có format chính xác bên dưới.
+7. BẮT BUỘC ĐA DẠNG XƯNG HÔ — đây là yêu cầu quan trọng nhất về từ vựng.
+   Phân bổ đại từ nhân xưng gần đều nhau trên toàn bộ {count} câu, KHÔNG được
+   chỉ dùng "em"/"anh":
+     - "tôi"  (trang trọng, trung tính)   — ít nhất 20% số câu
+     - "mình" (thân mật)                  — ít nhất 15% số câu
+     - "anh" / "chị" / "em"               — phần còn lại
+     - xưng hô với quán: "shop", "quán", "nhà hàng", hoặc không xưng hô
+   Một bộ dữ liệu chỉ có "em ơi cho anh..." sẽ khiến bộ phân loại hỏng khi khách
+   dùng "tôi" hay "shop", vì những từ đó chưa từng xuất hiện lúc huấn luyện.
+8. Đa dạng từ vựng hành động: với mỗi khái niệm hãy dùng nhiều từ đồng nghĩa
+   (ví dụ xoá/xóa/bỏ/huỷ/hủy/dọn/loại bỏ; menu/thực đơn/danh sách món;
+   tính tiền/thanh toán/trả tiền/hoá đơn/bill). Không lặp lại một từ duy nhất.
+9. Trả về JSON array, mỗi phần tử có format chính xác bên dưới.
 
 OUTPUT FORMAT (chỉ JSON, không markdown, không giải thích):
 [
@@ -159,7 +206,69 @@ def _parse_json_response(text: str) -> list[dict[str, Any]]:
     raise ValueError(f"Cannot parse JSON from response: {text[:200]}...")
 
 
-def _validate_record(record: dict, expected_intent: Intent) -> bool:
+# Strong lexical markers per intent. Used only to reject cross-labelled samples, never to
+# label anything: the generating model writes the `intent` field itself, always echoing the
+# one it was asked for, so the original `intent == expected_intent` check could not detect a
+# semantic mismatch. A smoke test of 12 ORDER samples returned two that were plainly SEARCH
+# and PAYMENT ("cho mình biết menu quán", "tính tiền cho tôi nha") -- 17% label noise going
+# straight into training.
+_INTENT_MARKERS: dict[Intent, tuple[str, ...]] = {
+    # No generic request framing here ("cho tôi", "cho mình"): that construction is
+    # intent-neutral -- "cho tôi xem menu" is SEARCH and "cho tôi thanh toán" is PAYMENT --
+    # so counting it as an ORDER marker made every mislabelled sample look self-consistent
+    # and defeated the check. Only genuinely order-specific verbs and objects belong here.
+    "ORDER": (
+        "gọi món", "đặt", "lấy", "thêm", "bớt", "bỏ", "xoá", "xóa", "huỷ", "hủy",
+        "đổi", "sửa", "giảm", "tăng", "giỏ hàng", "chốt đơn", "lên đơn", "xác nhận",
+        "làm lại", "dọn",
+    ),
+    "SEARCH": (
+        "bao nhiêu", "giá", "có không", "menu", "thực đơn", "danh sách món", "món gì",
+        "gợi ý", "bán chạy", "best seller", "mở cửa", "đóng cửa", "khuyến mãi", "wifi",
+        "nhà vệ sinh", "đậu xe", "giao hàng", "ship", "cay không", "ngon không", "nguyên liệu",
+    ),
+    "PAYMENT": (
+        "tính tiền", "thanh toán", "trả tiền", "hoá đơn", "hóa đơn", "bill", "mã qr", "quét mã",
+        "chuyển khoản", "quẹt thẻ", "tiền mặt", "tổng tiền", "hết bao nhiêu tiền",
+    ),
+    "CHAT": (
+        "xin chào", "chào", "cảm ơn", "cám ơn", "ngon quá", "mặn quá", "dở",
+        "robot", "người thật", "thời tiết", "mưa", "nắng", "đông ghê", "tạm biệt",
+    ),
+}
+
+# Politeness particles a genuine rewriter fragment would not carry.
+_PARTICLES = ("nhé", "nha", "nghen", "ạ", "dạ", "em ơi", "anh ơi", "giúp em", "giùm em")
+
+
+def _marker_hit(marker: str, utterance_low: str) -> bool:
+    """Whether a marker occurs as whole word(s), not as a substring.
+
+    Substring matching silently rejected correct samples: "giá" matches inside "Ốc Giác", so
+    every order mentioning that dish looked like a price question and was thrown away. In a
+    language written with spaces between syllables this failure mode is common enough that it
+    measurably shrank the generated corpus before it was caught.
+    """
+    return re.search(rf"(?<!\w){re.escape(marker)}(?!\w)", utterance_low) is not None
+
+
+def _conflicting_intent(utterance: str, expected: Intent) -> Intent | None:
+    """Return an intent whose markers dominate this utterance over the expected one.
+
+    Deliberately conservative: a sample is only rejected when it carries markers of another
+    intent and none of its own, so ordinary overlap ("chốt đơn" inside an ORDER sentence that
+    also mentions a price) survives. The aim is to drop clear mislabels, not to police style.
+    """
+    low = utterance.lower()
+    if any(_marker_hit(m, low) for m in _INTENT_MARKERS[expected]):
+        return None
+    for intent, markers in _INTENT_MARKERS.items():
+        if intent != expected and any(_marker_hit(m, low) for m in markers):
+            return intent
+    return None
+
+
+def _validate_record(record: dict, expected_intent: Intent, style: Style | None = None) -> bool:
     if not isinstance(record, dict):
         return False
     utterance = record.get("utterance", "")
@@ -170,6 +279,20 @@ def _validate_record(record: dict, expected_intent: Intent) -> bool:
         return False
     if intent != expected_intent:
         return False
+
+    conflict = _conflicting_intent(utterance, expected_intent)
+    if conflict:
+        logger.debug("  reject %r: labelled %s but reads as %s", utterance, expected_intent, conflict)
+        return False
+
+    # Fragments are the input shape the rewriter produces. A "fragment" carrying politeness
+    # particles or running past a clause length is a full sentence the model relabelled, and
+    # keeping it would leave the fragment path as under-covered as it was before.
+    if style == "fragment":
+        low = utterance.lower()
+        if any(p in low for p in _PARTICLES) or len(utterance.split()) > 8:
+            logger.debug("  reject %r: not fragment-shaped", utterance)
+            return False
     return True
 
 
@@ -194,7 +317,7 @@ def generate_batch(
             else:
                 records = _call_ollama(prompt, model)
 
-            valid = [r for r in records if _validate_record(r, intent)]
+            valid = [r for r in records if _validate_record(r, intent, style)]
             if len(valid) >= count * 0.7:
                 logger.info("  Got %d/%d valid records", len(valid), count)
                 return valid
@@ -222,7 +345,10 @@ def generate_all(
     if counts is None:
         counts = {intent: 200 for intent in ["ORDER", "SEARCH", "PAYMENT", "CHAT"]}
     if styles is None:
-        styles = ["formal", "casual", "dialect", "edge"]
+        # "fragment" belongs in the default set, not as an opt-in: the rewriter splits
+        # multi-clause utterances at serving time, so fragments are a routine input shape
+        # rather than an exotic one. Leaving it out is what made multi-intent turns fail.
+        styles = ["formal", "casual", "dialect", "edge", "fragment"]
 
     all_records: list[dict[str, Any]] = []
     output_path = Path(output_path) if output_path else OUTPUT_DIR / "synthetic_raw.json"

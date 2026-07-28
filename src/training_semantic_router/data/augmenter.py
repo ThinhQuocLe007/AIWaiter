@@ -49,6 +49,7 @@ AMBI_UTTERANCES = {
     "được": {"AWAITING_CONFIRMATION": "ORDER", "IDLE": "CHAT", "BUILDING": "CHAT"},
     "đúng rồi": {"AWAITING_CONFIRMATION": "ORDER", "CONFIRMED": "CHAT", "IDLE": "CHAT"},
     "đúng rồi đó": {"AWAITING_CONFIRMATION": "ORDER", "IDLE": "CHAT"},
+    "uh đúng rồi đó": {"AWAITING_CONFIRMATION": "ORDER", "IDLE": "CHAT"},
     "chuẩn": {"AWAITING_CONFIRMATION": "ORDER", "IDLE": "CHAT"},
     "đi": {"AWAITING_CONFIRMATION": "ORDER", "IDLE": "CHAT", "BUILDING": "CHAT"},
     "chốt luôn đi em": {"AWAITING_CONFIRMATION": "ORDER", "BUILDING": "ORDER", "IDLE": "ORDER"},

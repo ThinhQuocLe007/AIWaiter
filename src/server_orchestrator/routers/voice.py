@@ -11,14 +11,33 @@ this endpoint **delivers** it. The backend stays ignorant of the agent (no `src.
 import), keeping the standalone-orchestrator boundary intact — the bridge is plain JSON over HTTP.
 """
 
+import asyncio
 import httpx
 from fastapi import APIRouter
 from pydantic import BaseModel
 
 from ..config import settings
 from ..realtime.connection_manager import manager
+from ..services import dispatcher
 
 router = APIRouter(prefix="/voice", tags=["voice"])
+
+_pending_releases: dict[int, asyncio.Task] = {}
+_RELEASE_DELAY = 7
+
+
+async def _release_after_delay(table_id: int):
+    await asyncio.sleep(_RELEASE_DELAY)
+    await dispatcher.release_robot_at_table(table_id)
+    _pending_releases.pop(table_id, None)
+
+
+def reset_release_timer(table_id: int):
+    """Bump the auto-release countdown — guest is still interacting with this table."""
+    old = _pending_releases.pop(table_id, None)
+    if old and not old.done():
+        old.cancel()
+    _pending_releases[table_id] = asyncio.create_task(_release_after_delay(table_id))
 
 
 class VoiceEvent(BaseModel):
@@ -46,6 +65,10 @@ class VoiceEvent(BaseModel):
 async def voice_event(ev: VoiceEvent) -> dict:
     """Fan a voice event out to every customer tablet; each filters by its own table_id."""
     await manager.broadcast("customer", ev.model_dump())
+    # After a confirm turn, start the auto-release timer: if the guest doesn't
+    # interact again within 7 s the robot heads back to the dock.
+    if ev.type == "voice.reply" and ev.confirmed:
+        reset_release_timer(ev.table_id)
     return {"status": "ok"}
 
 
@@ -71,6 +94,9 @@ async def voice_listen(req: ListenRequest) -> dict:
     ok = await manager.send_to_voice_device(
         req.table_id, {"type": "start_listening", "table_id": req.table_id}
     )
+    # Guest pressed the mic — they're about to say something. Cancel the dock timer so the
+    # robot stays put while the conversation is still active.
+    reset_release_timer(req.table_id)
     return {"status": "ok" if ok else "no_device"}
 
 

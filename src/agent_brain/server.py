@@ -18,7 +18,7 @@ import json
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
-from queue import Queue, Empty
+from queue import Empty, Queue
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
@@ -27,7 +27,6 @@ from pydantic import BaseModel
 
 from src._shared.types import normalise_table_id
 from src.agent_brain.agent.graph import AIWaiterGraph
-from src.agent_brain.agent.nodes.response_node import set_output_queue
 from src.agent_brain.config import settings
 from src.agent_brain.services.conversation_logger import log_turn
 from src.agent_brain.services.orchestrator_client import OrchestratorClient
@@ -219,7 +218,6 @@ def chat_stream(req: ChatRequest):
     SSE events.
     """
     q: Queue = Queue()
-    set_output_queue(q)
 
     def generate():
         table_id = req.table_id
@@ -237,7 +235,7 @@ def chat_stream(req: ChatRequest):
                 {"type": "voice.progress", "table_id": table_int, "status": "đang xử lý..."}
             )
 
-            future = executor.submit(_agent.chat, text, table_id)
+            future = executor.submit(_agent.chat, text, table_id, None, q)
 
             while True:
                 try:
@@ -289,7 +287,6 @@ def chat_stream(req: ChatRequest):
             })
             yield f"data: {done_data}\n\n"
         finally:
-            set_output_queue(None)
             executor.shutdown(wait=False)
 
     return StreamingResponse(generate(), media_type="text/event-stream")

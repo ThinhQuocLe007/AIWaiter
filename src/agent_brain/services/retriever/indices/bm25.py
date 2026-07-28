@@ -9,6 +9,45 @@ import underthesea
 
 from src.agent_brain.utils import logger
 
+
+def segment(text: str) -> List[str]:
+    """Word-segment one field into BM25 terms.
+
+    Two things this has to get right, both learned the hard way:
+
+    1. Segment each field, and each comma-separated phrase within a field,
+       independently. underthesea segments its input as a single sentence, so
+       joining fields first merged terms across the boundary: "Chè Khúc Bạch"
+       followed by "Mát lạnh" produced the token "bạch_mát", a word that does
+       not exist in either field.
+
+    2. Split compounds back into their parts. underthesea's segmentation is
+       context-dependent, so the same phrase yields different tokens depending
+       on what surrounds it:
+
+           "tráng miệng"                 -> tráng, miệng
+           "có món tráng miệng gì không" -> tráng_miệng
+
+       A document and a query naming the same thing therefore need not agree on
+       the compound, and "tráng_miệng" matched no document at all. Flattening
+       every compound puts both sides in the same token space no matter which
+       way the segmenter went. Keeping the compound *alongside* its parts also
+       restores the match, but it inflates term frequencies for exactly the
+       common words that compounds are built from, which measurably flattened
+       the ranking among near-identical dishes ("ốc hấp sả" lost its top hits).
+
+    Used for documents at build time and queries at search time.
+    """
+    tokens: List[str] = []
+    for phrase in text.lower().split(","):
+        phrase = phrase.strip()
+        if not phrase:
+            continue
+        for token in underthesea.word_tokenize(phrase, format="text").split():
+            tokens.extend(part for part in token.split("_") if part)
+    return tokens
+
+
 class BM25Index:
     def __init__(self, db_path: str):
         self.db_path = db_path
@@ -27,9 +66,12 @@ class BM25Index:
                 if doc.metadata.get("taste_profile"): components.append(str(doc.metadata.get("taste_profile")))
                 if doc.metadata.get("tags"): components.append(str(doc.metadata.get("tags")))
                 
-                text_to_index = " ".join(components) if components else doc.page_content
-                
-                tokens = underthesea.word_tokenize(text_to_index.lower(), format="text").split()
+                if not components:
+                    components = [doc.page_content]
+
+                tokens = []
+                for component in components:
+                    tokens.extend(segment(component))
                 self.tokenized_docs.append(tokens)
                     
             self.bm25 = BM25Okapi(self.tokenized_docs, k1=1.2, b=0)
@@ -60,7 +102,7 @@ class BM25Index:
             print("Error: Index not built or loaded.")
             return
 
-        tokenized_query = underthesea.word_tokenize(query.lower(), format="text").split()
+        tokenized_query = segment(query)
         print(f"Tokenized Query: {tokenized_query}")
         
         scores = self.bm25.get_scores(tokenized_query)
@@ -96,12 +138,18 @@ class BM25Index:
 
     def search(self, query: str, k: int = 4) -> List[Tuple[Document, float]]:
         try:
-            tokenized_query = underthesea.word_tokenize(query.lower(), format="text").split()
+            tokenized_query = segment(query)
             scores = self.bm25.get_scores(tokenized_query)
 
-            doc_scores = []
-            for idx, score in enumerate(scores):
-                doc_scores.append((self.documents[idx], float(score)))
+            # Zero score means the query shares no term with the document. Those
+            # used to be returned anyway (sort-then-slice always yielded k docs),
+            # which handed arbitrary documents a top RRF rank on queries with no
+            # lexical evidence at all.
+            doc_scores = [
+                (self.documents[idx], float(score))
+                for idx, score in enumerate(scores)
+                if score > 0
+            ]
             doc_scores.sort(key=lambda x: x[1], reverse=True)
 
             return doc_scores[:k]

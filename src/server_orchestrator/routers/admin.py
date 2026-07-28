@@ -8,10 +8,10 @@ reloads immediately. Not meant for production.
 
 from fastapi import APIRouter
 
-from ..services import fleet
 from ..data.db import get_conn
-from ..services.menu_loader import SEED_ROBOTS
 from ..realtime.connection_manager import manager
+from ..services import fleet
+from ..services.menu_loader import SEED_ROBOTS
 
 router = APIRouter(tags=["admin"])
 
@@ -23,10 +23,11 @@ async def reset_state() -> dict:
         conn.execute("DELETE FROM orders")
         conn.execute("DELETE FROM payments")
         conn.execute("DELETE FROM tasks")
+        conn.execute("DELETE FROM sessions")
         # Restart the AUTOINCREMENT counters so a fresh demo gets ids from 1 again.
         conn.execute(
             "DELETE FROM sqlite_sequence "
-            "WHERE name IN ('orders', 'order_items', 'payments', 'tasks')"
+            "WHERE name IN ('orders', 'order_items', 'payments', 'tasks', 'sessions')"
         )
         # Free every table.
         conn.execute(

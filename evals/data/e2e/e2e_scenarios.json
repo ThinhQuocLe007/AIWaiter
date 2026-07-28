@@ -1,0 +1,1076 @@
+{
+  "dataset": "e2e_scenarios",
+  "version": "4.0",
+  "description": "E2E evaluation for the single-intent MLP router + rewriter architecture. Covers 20 scenarios across 5 categories: happy-path, multi-intent rewriter path, modification & recovery, ambiguity & clarification, and long conversations. Every multi-intent turn exercises the rewriter → fragment classify → multi-worker pipeline. Dish names matched against menu.json (Ốc Quậy, 219 items).",
+  "total_scenarios": 20,
+  "categories": {
+    "happy_path": 5,
+    "multi_intent_rewriter": 5,
+    "modification_recovery": 4,
+    "ambiguity_clarification": 3,
+    "long_conversation": 3
+  },
+  "scenarios": [
+    {
+      "id": "E2E-001",
+      "category": "happy_path",
+      "name": "single_item_order",
+      "description": "Customer orders one dish clearly, confirms, completes. Tests basic sync_cart → confirm_order flow.",
+      "table_id": "T_e2e_1",
+      "difficulty": "easy",
+      "expected_outcome": "order_placed",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình 2 phần Ốc Hương Xốt Trứng Muối",
+          "assert": {
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm",
+            "response_should_contain_one_of": [
+              "Ốc Hương",
+              "tạm tính",
+              "xác nhận",
+              "đặt"
+            ]
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Đúng rồi, xác nhận đặt luôn",
+          "assert": {
+            "tool_called": "confirm_order",
+            "response_contains": "đơn hàng",
+            "confirmed_items_must_contain": "Ốc Hương"
+          }
+        }
+      ]
+    },
+    {
+      "id": "E2E-002",
+      "category": "happy_path",
+      "name": "multi_item_order",
+      "description": "Customer orders multiple items in one sentence, then confirms.",
+      "table_id": "T_e2e_2",
+      "difficulty": "easy",
+      "expected_outcome": "order_placed",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho 3 con Hàu Nướng Phô Mai và 2 chai Bia Tiger nha",
+          "assert": {
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm",
+            "response_should_contain_one_of": [
+              "Hàu",
+              "Bia",
+              "tạm tính",
+              "xác nhận"
+            ]
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Ok chốt đơn đi em",
+          "assert": {
+            "tool_called": "confirm_order",
+            "response_contains": "đơn hàng",
+            "confirmed_items_must_contain": "Hàu"
+          }
+        }
+      ]
+    },
+    {
+      "id": "E2E-003",
+      "category": "happy_path",
+      "name": "search_then_order",
+      "description": "Customer asks about a dish then orders it. Tests SEARCH → ORDER transition within one conversation.",
+      "table_id": "T_e2e_3",
+      "difficulty": "medium",
+      "expected_outcome": "order_placed",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Ốc Hương có những loại xốt nào vậy em?",
+          "assert": {
+            "tool_called": "search",
+            "response_should_contain_one_of": [
+              "Trứng Muối",
+              "Phô Mai",
+              "Me",
+              "Bơ",
+              "Sa Tế",
+              "Thái"
+            ]
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Vậy cho anh 1 phần Xốt Trứng Muối và 1 phần Xốt Phô Mai đi",
+          "assert": {
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm",
+            "response_should_contain_one_of": [
+              "Ốc Hương",
+              "tạm tính"
+            ]
+          }
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "content": "Chốt đơn luôn đi em",
+          "assert": {
+            "tool_called": "confirm_order",
+            "confirmed_items_must_contain": "Ốc Hương"
+          }
+        }
+      ]
+    },
+    {
+      "id": "E2E-004",
+      "category": "happy_path",
+      "name": "full_order_pay_flow",
+      "description": "Complete flow: order → confirm → request payment → verify. All 4 tools in sequence.",
+      "table_id": "T_e2e_4",
+      "difficulty": "medium",
+      "expected_outcome": "payment_requested",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình 1 phần Tôm Thẻ Xốt Me và 2 Bia Saigon",
+          "assert": {
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm"
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Xác nhận đặt luôn nha",
+          "assert": {
+            "tool_called": "confirm_order",
+            "confirmed_items_must_contain": "Tôm"
+          }
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "content": "Tính tiền cho mình",
+          "assert": {
+            "tool_called": "request_payment",
+            "response_should_contain_one_of": [
+              "QR",
+              "chuyển khoản",
+              "thanh toán",
+              "tổng"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "E2E-005",
+      "category": "happy_path",
+      "name": "search_only_no_order",
+      "description": "Customer only asks information, never orders. Tests SEARCH path without side effects.",
+      "table_id": "T_e2e_5",
+      "difficulty": "easy",
+      "expected_outcome": "information_provided",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Quán mình có món chay nào không?",
+          "assert": {
+            "tool_called": "search",
+            "tool_must_NOT_call": "add_cart"
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Còn món nào bán chạy nhất ở đây?",
+          "assert": {
+            "tool_called": "search",
+            "tool_must_NOT_call": "add_cart"
+          }
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "content": "Cảm ơn em, để anh suy nghĩ thêm tí nha",
+          "assert": {
+            "tool_must_NOT_call": [
+              "add_cart",
+              "confirm_order",
+              "request_payment"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "E2E-006",
+      "category": "multi_intent_rewriter",
+      "name": "order_then_pay_same_utterance",
+      "description": "Multi-intent: ORDER + PAYMENT in one sentence. 'rồi' boundary marker. Tests rewriter decomposes → ORDER fragment → add_cart, PAYMENT fragment → request_payment.",
+      "table_id": "T_e2e_6",
+      "difficulty": "medium",
+      "expected_outcome": "payment_requested",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình 2 phần Ốc Hương Xốt Me rồi tính tiền luôn nha",
+          "assert": {
+            "tool_called": "add_cart",
+            "response_should_contain_one_of": [
+              "Ốc Hương",
+              "thêm",
+              "giỏ"
+            ]
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "note": "Agent should have queued PAYMENT after ORDER. If only ORDER was queued, customer must ask for payment again.",
+          "content": "Tính tiền đi em",
+          "assert": {
+            "tool_called": "request_payment",
+            "response_should_contain_one_of": [
+              "QR",
+              "chuyển khoản",
+              "thanh toán",
+              "tổng"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "E2E-007",
+      "category": "multi_intent_rewriter",
+      "name": "search_then_order_same_utterance",
+      "description": "Multi-intent: SEARCH + ORDER. 'thì' boundary marker. Test rewriter decomposes both intents and executes in sequence.",
+      "table_id": "T_e2e_7",
+      "difficulty": "medium",
+      "expected_outcome": "order_placed",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Lẩu Thái có cay không, không cay thì cho mình 1 phần",
+          "assert": {
+            "tool_called": "search",
+            "response_should_contain_one_of": [
+              "cay",
+              "Lẩu Thái",
+              "không cay"
+            ]
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Ok đặt luôn đi em",
+          "assert": {
+            "tool_called": "confirm_order",
+            "confirmed_items_must_contain": "Lẩu Thái"
+          }
+        }
+      ]
+    },
+    {
+      "id": "E2E-008",
+      "category": "multi_intent_rewriter",
+      "name": "order_then_add_same_utterance",
+      "description": "Multi-intent: ORDER + ORDER (modify cart). 'và' boundary marker. Two cart operations in one utterance. First turn establishes cart, second turn rewrites it.",
+      "table_id": "T_e2e_8",
+      "difficulty": "medium",
+      "expected_outcome": "order_placed",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình 1 phần Mực Cháy Tỏi đi em",
+          "assert": {
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm"
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Bỏ món Mực Cháy Tỏi đi và thêm cho mình 1 Cháo Hàu",
+          "assert": {
+            "tool_called": "add_cart",
+            "response_should_contain_one_of": [
+              "Cháo Hàu",
+              "Mực",
+              "cập nhật",
+              "giỏ"
+            ]
+          }
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "content": "Chốt đơn luôn",
+          "assert": {
+            "tool_called": "confirm_order",
+            "confirmed_items_must_contain": "Cháo Hàu",
+            "confirmed_items_must_NOT_contain": "Mực"
+          }
+        }
+      ]
+    },
+    {
+      "id": "E2E-009",
+      "category": "multi_intent_rewriter",
+      "name": "order_chitchat_same_utterance",
+      "description": "Multi-intent: ORDER + CHAT. 'à mà' boundary marker. Order food while making casual remark.",
+      "table_id": "T_e2e_9",
+      "difficulty": "hard",
+      "expected_outcome": "order_placed",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho 2 Ốc Hương Xốt Trứng Muối, à mà quán mình đẹp ghê ha",
+          "assert": {
+            "tool_called": "add_cart",
+            "response_should_contain_one_of": [
+              "Ốc Hương",
+              "thêm",
+              "giỏ"
+            ]
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Ok chốt đơn nha em",
+          "assert": {
+            "tool_called": "confirm_order"
+          }
+        }
+      ]
+    },
+    {
+      "id": "E2E-010",
+      "category": "multi_intent_rewriter",
+      "name": "triple_intent_chain",
+      "description": "Multi-intent: SEARCH + ORDER + PAYMENT. 'rồi' boundary marker. Most complex decomposition — 3 fragments.",
+      "table_id": "T_e2e_10",
+      "difficulty": "hard",
+      "expected_outcome": "payment_requested",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình xem menu có món lẩu gì rồi lấy 1 Lẩu Thái luôn rồi tính tiền",
+          "assert": {
+            "response_should_contain_one_of": [
+              "Lẩu",
+              "menu",
+              "giỏ",
+              "thêm"
+            ]
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Ok bill luôn đi em",
+          "assert": {
+            "tool_called": "request_payment",
+            "response_should_contain_one_of": [
+              "QR",
+              "chuyển khoản",
+              "thanh toán",
+              "tổng"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "E2E-011",
+      "category": "modification_recovery",
+      "name": "change_item_before_confirm",
+      "description": "Customer orders, then changes their mind before confirming. Agent must handle cart modification correctly.",
+      "table_id": "T_e2e_11",
+      "difficulty": "hard",
+      "expected_outcome": "order_placed_after_change",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình 1 phần Mực Chiên Xù đi",
+          "assert": {
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm"
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Thôi không lấy Mực nữa, đổi thành Cháo Hàu đi em",
+          "assert": {
+            "tool_called": "add_cart",
+            "tool_must_NOT_call": "confirm_order",
+            "response_should_contain_one_of": [
+              "Cháo Hàu",
+              "Cháo"
+            ]
+          }
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "content": "Ok đặt thôi",
+          "assert": {
+            "tool_called": "confirm_order",
+            "confirmed_items_must_contain": "Cháo Hàu",
+            "confirmed_items_must_NOT_contain": "Mực"
+          }
+        }
+      ]
+    },
+    {
+      "id": "E2E-012",
+      "category": "modification_recovery",
+      "name": "add_items_incrementally",
+      "description": "Customer builds order incrementally, adding items one by one before confirming.",
+      "table_id": "T_e2e_12",
+      "difficulty": "medium",
+      "expected_outcome": "order_placed",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình 1 Lẩu Cá Tầm Măng Chua",
+          "assert": {
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm"
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Thêm 2 Bia Heineken nữa",
+          "assert": {
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm"
+          }
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "content": "Với 1 dĩa Khoai Tây Lắc Phô Mai luôn",
+          "assert": {
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm"
+          }
+        },
+        {
+          "turn": 4,
+          "role": "user",
+          "content": "Ok xác nhận đơn đi em",
+          "assert": {
+            "tool_called": "confirm_order",
+            "confirmed_items_must_contain": [
+              "Lẩu",
+              "Bia",
+              "Khoai"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "E2E-013",
+      "category": "modification_recovery",
+      "name": "cancel_and_restart",
+      "description": "Customer deletes entire cart and starts over. Tests the clear-cart path.",
+      "table_id": "T_e2e_13",
+      "difficulty": "hard",
+      "expected_outcome": "order_placed",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình 2 Ốc Hương Xốt Me và 1 Chả Giò Hải Sản",
+          "assert": {
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm"
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Thôi xoá hết giỏ hàng đi, gọi lại từ đầu",
+          "assert": {
+            "response_should_contain_one_of": [
+              "xoá",
+              "xóa",
+              "trống",
+              "mới",
+              "làm lại"
+            ]
+          }
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "content": "Cho 1 Lẩu Thái và 3 Bia Saigon",
+          "assert": {
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm"
+          }
+        },
+        {
+          "turn": 4,
+          "role": "user",
+          "content": "Chốt luôn",
+          "assert": {
+            "tool_called": "confirm_order",
+            "confirmed_items_must_contain": [
+              "Lẩu",
+              "Bia"
+            ],
+            "confirmed_items_must_NOT_contain": [
+              "Ốc Hương Xốt Me",
+              "Chả Giò Hải Sản"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "E2E-014",
+      "category": "modification_recovery",
+      "name": "modify_quantity_after_confirm",
+      "description": "Customer confirms order then wants to add more. Tests post-confirm cart modification.",
+      "table_id": "T_e2e_14",
+      "difficulty": "hard",
+      "expected_outcome": "order_modified",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình 2 phần Sò Điệp Nướng Mỡ Hành",
+          "assert": {
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm"
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Ok chốt đơn",
+          "assert": {
+            "tool_called": "confirm_order"
+          }
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "content": "À mà cho anh thêm 1 phần Sò Điệp nữa được không",
+          "assert": {
+            "tool_called": "add_cart",
+            "response_should_contain_one_of": [
+              "thêm",
+              "Sò",
+              "cập nhật"
+            ]
+          }
+        },
+        {
+          "turn": 4,
+          "role": "user",
+          "content": "Ok xác nhận lại luôn",
+          "assert": {
+            "tool_called": "confirm_order"
+          }
+        }
+      ]
+    },
+    {
+      "id": "E2E-015",
+      "category": "ambiguity_clarification",
+      "name": "ambiguous_dish_name_resolution",
+      "description": "Customer says 'Ốc Hương' which has 11 variants. Agent must ask for clarification.",
+      "table_id": "T_e2e_15",
+      "difficulty": "medium",
+      "expected_outcome": "order_placed_after_clarification",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình 2 phần Ốc Hương đi em",
+          "assert": {
+            "response_should_contain_one_of": [
+              "loại",
+              "chọn",
+              "xốt",
+              "Trứng Muối",
+              "Phô Mai",
+              "Me",
+              "Bơ",
+              "nào"
+            ]
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Cho loại Xốt Trứng Muối đi",
+          "assert": {
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm",
+            "response_should_contain_one_of": [
+              "Ốc Hương",
+              "Trứng Muối"
+            ]
+          }
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "content": "Chốt đơn luôn",
+          "assert": {
+            "tool_called": "confirm_order"
+          }
+        }
+      ]
+    },
+    {
+      "id": "E2E-016",
+      "category": "ambiguity_clarification",
+      "name": "vague_quantity_resolution",
+      "description": "Customer doesn't specify quantity. Agent should ask or infer default.",
+      "table_id": "T_e2e_16",
+      "difficulty": "medium",
+      "expected_outcome": "order_placed",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình Bia Saigon đi em",
+          "assert": {
+            "tool_called": "add_cart",
+            "response_should_contain_one_of": [
+              "Bia",
+              "mấy",
+              "bao nhiêu",
+              "chai",
+              "lon"
+            ]
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "3 chai đi",
+          "assert": {
+            "tool_called": "add_cart",
+            "response_should_contain_one_of": [
+              "Bia",
+              "thêm",
+              "cập nhật"
+            ]
+          }
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "content": "Chốt đơn",
+          "assert": {
+            "tool_called": "confirm_order"
+          }
+        }
+      ]
+    },
+    {
+      "id": "E2E-017",
+      "category": "ambiguity_clarification",
+      "name": "off_menu_fallback",
+      "description": "Customer asks for a dish that doesn't exist. Agent should suggest alternatives.",
+      "table_id": "T_e2e_17",
+      "difficulty": "hard",
+      "expected_outcome": "alternative_suggested",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình 1 phần Bò Lúc Lắc đi em",
+          "assert": {
+            "tool_must_NOT_call": "add_cart",
+            "response_should_contain_one_of": [
+              "không có",
+              "không",
+              "món khác",
+              "thay",
+              "menu"
+            ]
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Vậy có món bò nào không?",
+          "assert": {
+            "tool_called": "search"
+          }
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "content": "Thôi cho mình Mực Cháy Tỏi đi vậy",
+          "assert": {
+            "tool_called": "add_cart",
+            "response_should_contain_one_of": [
+              "Mực",
+              "thêm",
+              "Đã thêm"
+            ]
+          }
+        },
+        {
+          "turn": 4,
+          "role": "user",
+          "content": "Ok đặt luôn",
+          "assert": {
+            "tool_called": "confirm_order"
+          }
+        }
+      ]
+    },
+    {
+      "id": "E2E-018",
+      "category": "long_conversation",
+      "name": "couple_date_night",
+      "description": "Realistic couple date: browse menu, order multiple items with modifications, casual chat, pay bill. 8 turns. Tests full state integrity across a sitting.",
+      "table_id": "T_e2e_18",
+      "difficulty": "hard",
+      "expected_outcome": "payment_requested",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Chào em, tụi anh mới tới lần đầu, quán mình có món gì đặc biệt không?",
+          "assert": {
+            "tool_called": "search",
+            "tool_must_NOT_call": "add_cart"
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Ốc Hương với Hàu Nướng nghe ngon quá. Cho anh 2 phần Ốc Hương Xốt Trứng Muối và 3 con Hàu Nướng Phô Mai nha",
+          "assert": {
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm",
+            "response_should_contain_one_of": [
+              "Ốc",
+              "Hàu"
+            ]
+          }
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "content": "À với cho thêm 1 Lẩu Thái nữa, trời mưa ăn lẩu là đúng bài",
+          "assert": {
+            "tool_called": "add_cart",
+            "response_should_contain_one_of": [
+              "Lẩu",
+              "thêm"
+            ]
+          }
+        },
+        {
+          "turn": 4,
+          "role": "user",
+          "content": "Lẩu Thái có cay lắm không em? Bà xã anh không ăn cay được",
+          "assert": {
+            "tool_called": "search",
+            "response_should_contain_one_of": [
+              "cay",
+              "Lẩu"
+            ]
+          }
+        },
+        {
+          "turn": 5,
+          "role": "user",
+          "content": "Thôi vậy đổi Lẩu Thái thành Lẩu Cá Tầm Măng Chua đi em, với 2 Bia Heineken nữa",
+          "assert": {
+            "tool_called": "add_cart",
+            "response_should_contain_one_of": [
+              "Cá Tầm",
+              "Lẩu",
+              "Bia"
+            ]
+          }
+        },
+        {
+          "turn": 6,
+          "role": "user",
+          "content": "Đồ ăn ngon thiệt, cảm ơn em nha. Mà quán có giao hàng không, lần sau lười đi thì kêu ship",
+          "assert": {
+            "tool_called": "search",
+            "response_should_contain_one_of": [
+              "giao",
+              "ship",
+              "có",
+              "không"
+            ]
+          }
+        },
+        {
+          "turn": 7,
+          "role": "user",
+          "content": "Ok xác nhận đơn luôn đi em",
+          "assert": {
+            "tool_called": "confirm_order",
+            "confirmed_items_must_contain": [
+              "Ốc",
+              "Hàu",
+              "Cá Tầm"
+            ]
+          }
+        },
+        {
+          "turn": 8,
+          "role": "user",
+          "content": "Tính tiền cho anh, với cho xin cái bill chi tiết nha",
+          "assert": {
+            "tool_called": "request_payment",
+            "response_should_contain_one_of": [
+              "QR",
+              "chuyển khoản",
+              "thanh toán",
+              "tổng",
+              "bill"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "E2E-019",
+      "category": "long_conversation",
+      "name": "group_drinking_party",
+      "description": "Group of friends drinking: order rounds of drinks and snacks, modify quantities, split payment. 8 turns.",
+      "table_id": "T_e2e_19",
+      "difficulty": "hard",
+      "expected_outcome": "payment_requested",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho tụi anh 6 Bia Saigon và 2 dĩa Khoai Tây Lắc Phô Mai trước đi",
+          "assert": {
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm"
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Có món gì nhậu ngon ngon nữa không em?",
+          "assert": {
+            "tool_called": "search",
+            "tool_must_NOT_call": "add_cart"
+          }
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "content": "Cho thêm 2 phần Ốc Hương Xốt Me và 1 Mực Cháy Tỏi đi",
+          "assert": {
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm"
+          }
+        },
+        {
+          "turn": 4,
+          "role": "user",
+          "content": "Thêm 4 Bia Saigon nữa, hết bia rồi",
+          "assert": {
+            "tool_called": "add_cart",
+            "response_should_contain_one_of": [
+              "Bia",
+              "thêm"
+            ]
+          }
+        },
+        {
+          "turn": 5,
+          "role": "user",
+          "content": "Mấy đứa kêu thêm 1 Gỏi Xoài Bạch Tuộc với 1 Chả Giò Hải Sản nữa",
+          "assert": {
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm"
+          }
+        },
+        {
+          "turn": 6,
+          "role": "user",
+          "content": "Ok chốt đơn hết đi em. À mà khoan, bỏ món Chả Giò đi, đổi thành Trứng Cút Lộn 3 phần",
+          "assert": {
+            "tool_called": "add_cart",
+            "response_should_contain_one_of": [
+              "Trứng Cút",
+              "Chả Giò",
+              "bỏ",
+              "đổi"
+            ]
+          }
+        },
+        {
+          "turn": 7,
+          "role": "user",
+          "content": "Chốt luôn nha",
+          "assert": {
+            "tool_called": "confirm_order",
+            "confirmed_items_must_contain": [
+              "Bia",
+              "Ốc",
+              "Mực",
+              "Gỏi",
+              "Trứng"
+            ]
+          }
+        },
+        {
+          "turn": 8,
+          "role": "user",
+          "content": "Tụi anh tính tiền riêng 2 người nha, bill của thằng bạn với bill của anh riêng",
+          "assert": {
+            "tool_called": "request_payment",
+            "response_should_contain_one_of": [
+              "thanh toán",
+              "tổng",
+              "riêng",
+              "từng"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "E2E-020",
+      "category": "long_conversation",
+      "name": "family_dinner_with_kids",
+      "description": "Family with kids: asks about non-spicy food, orders family-style, kids change their mind, parent pays. 8 turns.",
+      "table_id": "T_e2e_20",
+      "difficulty": "hard",
+      "expected_outcome": "payment_requested",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Chào em, gia đình anh 4 người có 2 đứa nhỏ. Cho anh xem thực đơn với",
+          "assert": {
+            "tool_called": "search",
+            "response_should_contain_one_of": [
+              "menu",
+              "thực đơn",
+              "món"
+            ]
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Có món nào không cay cho trẻ con không em?",
+          "assert": {
+            "tool_called": "search",
+            "response_should_contain_one_of": [
+              "không cay",
+              "trẻ",
+              "bé",
+              "cháo",
+              "cơm"
+            ]
+          }
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "content": "Cho 2 phần Cháo Hàu cho mấy đứa nhỏ, 1 Lẩu Cá Tầm Măng Chua, 1 Gỏi Xoài Bạch Tuộc, và 1 Mì Xào Sò",
+          "assert": {
+            "tool_called": "add_cart",
+            "tool_output_contains": "Đã thêm"
+          }
+        },
+        {
+          "turn": 4,
+          "role": "user",
+          "content": "Đứa nhỏ đòi uống Coca, cho 2 lon Coca với 2 Trà Tắc cho người lớn nha",
+          "assert": {
+            "tool_called": "add_cart",
+            "response_should_contain_one_of": [
+              "Coca",
+              "Trà Tắc",
+              "thêm"
+            ]
+          }
+        },
+        {
+          "turn": 5,
+          "role": "user",
+          "content": "Thằng nhỏ đổi ý, nó muốn ăn Bánh Mì Bơ Tỏi thay vì Cháo Hàu. Bỏ 1 Cháo Hàu và thêm 1 Bánh Mì Bơ Tỏi đi em",
+          "assert": {
+            "tool_called": "add_cart",
+            "response_should_contain_one_of": [
+              "Bánh Mì",
+              "Cháo",
+              "bỏ",
+              "đổi"
+            ]
+          }
+        },
+        {
+          "turn": 6,
+          "role": "user",
+          "content": "Ok vậy đủ rồi, xác nhận đơn cho anh",
+          "assert": {
+            "tool_called": "confirm_order",
+            "confirmed_items_must_contain": [
+              "Lẩu",
+              "Gỏi",
+              "Mì",
+              "Bánh Mì"
+            ]
+          }
+        },
+        {
+          "turn": 7,
+          "role": "user",
+          "content": "Cho anh xin bill với, thanh toán chuyển khoản nha",
+          "assert": {
+            "tool_called": "request_payment",
+            "response_should_contain_one_of": [
+              "QR",
+              "chuyển khoản",
+              "thanh toán",
+              "tổng"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

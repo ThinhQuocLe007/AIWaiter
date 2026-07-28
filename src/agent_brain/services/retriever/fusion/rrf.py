@@ -1,12 +1,20 @@
 from typing import List, Tuple
 from langchain_core.documents import Document
 from src.agent_brain.schemas.search import SearchResult
+from src.agent_brain.services.retriever.indices.embeddings import get_profile
 from src.agent_brain.utils import logger
 
 
 def compute_reciprocal_rank(rank: int, k: int = 60) -> float:
     rank = max(1, rank)
     return 1.0 / (k + rank)
+
+
+def _raw_score_to_cosine(raw_score: float, normalize: bool) -> float:
+    if not normalize:
+        return float(raw_score)
+    cosine = max(0.0, min(1.0, 1.0 - raw_score / 2.0))
+    return cosine
 
 
 class RRFFusion:
@@ -18,10 +26,12 @@ class RRFFusion:
         
         query = kwargs.get("query", "")
         rrf_k = kwargs.get("rrf_k", 60)
-        
+        normalize = get_profile().get("normalize", False)
+
         # --- 1. DUAL-LANE GATEKEEPER ---
-        top_vector_score = vector_results[0][1] if vector_results else 0.0
-        semantic_match = top_vector_score >= 0.35
+        raw_top = vector_results[0][1] if vector_results else 0.0
+        cos_sim = _raw_score_to_cosine(raw_top, normalize)
+        semantic_match = cos_sim >= 0.35
         
         lexical_match = False
         clean_query = query.lower().replace("?", "").replace(".", "")
@@ -42,13 +52,13 @@ class RRFFusion:
         if not semantic_match and not lexical_match:
             logger.info(
                 f"[GATEKEEPER] Rejected query: '{query}' "
-                f"(Top Vector Similarity: {top_vector_score:.3f} < 0.35, Lexical Match: {lexical_match})"
+                f"(raw={raw_top:.3f}, cos={cos_sim:.3f} < 0.35, Lexical Match: {lexical_match})"
             )
             return []
             
         logger.info(
             f"[GATEKEEPER] Approved query: '{query}' "
-            f"(Top Vector Similarity: {top_vector_score:.3f}, Lexical Match: {lexical_match})"
+            f"(raw={raw_top:.3f}, cos={cos_sim:.3f}, Lexical Match: {lexical_match})"
         )
 
         fusion_scores = {}
@@ -97,8 +107,14 @@ class RRFFusion:
         seen: set[str] = set()
         deduped: list[SearchResult] = []
         for r in sorted_results:
-            name = r.document.metadata.get("name", "")
-            if name and name not in seen:
-                seen.add(name)
+            meta = r.document.metadata
+            # Menu dishes dedupe on `name`; restaurant_info.txt sections carry
+            # `title` instead. Keying on `name` alone silently dropped every
+            # info doc here, so no opening-hours / address / policy question
+            # could ever be answered from the index even though the metadata
+            # filter deliberately lets those docs through.
+            key = meta.get("name") or meta.get("title") or r.document.page_content
+            if key not in seen:
+                seen.add(key)
                 deduped.append(r)
         return deduped[:k]

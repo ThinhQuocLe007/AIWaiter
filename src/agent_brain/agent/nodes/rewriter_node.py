@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from typing import Any
 
 import httpx
@@ -28,6 +29,8 @@ from src.agent_brain.utils import trace_latency
 from src.agent_brain.utils.prompt_utils import load_json_data, load_prompt
 
 logger = logging.getLogger(__name__)
+
+_DANGLING_RE = re.compile(r"\s+(?:với|và|rồi|thì|xong)$")
 
 
 def _build_rewriter_prompt() -> ChatPromptTemplate:
@@ -89,6 +92,11 @@ _rewriter_prompt = _build_rewriter_prompt()
 _rewriter_chain = _rewriter_prompt | _llm
 
 
+def _clean_fragments(fragments: list[str]) -> list[str]:
+    cleaned = [_DANGLING_RE.sub("", f).strip() for f in fragments]
+    return [c for c in cleaned if c]
+
+
 @trace_latency("Rewriter Node", run_type="chain")
 def rewriter_node(state: AgentState) -> dict[str, Any]:
     """Decompose utterance into single-intent fragments.
@@ -113,6 +121,7 @@ def rewriter_node(state: AgentState) -> dict[str, Any]:
             "chat_history": chat_history or "No previous history.",
         })
         fragments = result.fragments or [query]
+        fragments = _clean_fragments(fragments)
         logger.info(
             "Rewriter: decomposed into %d fragments: %s",
             len(fragments), fragments,

@@ -21,11 +21,20 @@ class DocumentLoader:
             "customer_info.json": self._parse_customer_json,
         }
 
-    def load(self, file_path): 
+    # Extensions the line-per-document fallback is meaningful for. Structured
+    # data needs a real parser: line-splitting raw JSON indexed every brace and
+    # comment of floorplan.sim.json as its own searchable "document", 58 of them,
+    # and one outranked the whole menu on a plain dish query.
+    _FALLBACK_EXTENSIONS = (".txt", ".md")
+
+    def load(self, file_path):
         filename = os.path.basename(file_path)
         parser = self.parsers.get(filename)
 
-        if not parser: 
+        if not parser:
+            if not filename.lower().endswith(self._FALLBACK_EXTENSIONS):
+                logger.warning(f"No parser for {filename} and it is not plain text — skipping")
+                return []
             logger.warning(f"No parser found for {filename}, using default loader")
             return self._default_text_loader(file_path)
 
@@ -61,16 +70,23 @@ class DocumentLoader:
                 "price": price_val,
             }
 
-            page_content = f"""
-            Tên món: {item.get('name')}
-            Mô tả: {item.get('description')}
-            Giá: {item.get('price')}
-            Loại món ăn: {item.get('diet_type')}
-            Danh mục: {item.get('category')}
-            Thành phần: {item.get('ingredients')}
-            Hương vị: {item.get('taste_profile')}
-            Tags: {item.get('tags')}
-            """
+            # Only emit fields the item actually has. `description` and
+            # `ingredients` have never existed in menu.json, so the old fixed
+            # template embedded the literal string "None" twice into every
+            # single passage.
+            fields = [
+                ("Tên món", item.get("name")),
+                ("Mô tả", item.get("description")),
+                ("Giá", item.get("price")),
+                ("Loại món ăn", item.get("diet_type")),
+                ("Danh mục", item.get("category")),
+                ("Thành phần", item.get("ingredients")),
+                ("Hương vị", item.get("taste_profile")),
+                ("Tags", item.get("tags")),
+            ]
+            page_content = "\n".join(
+                f"{label}: {value}" for label, value in fields if value
+            )
 
             docs.append(
                 Document(

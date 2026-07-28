@@ -302,7 +302,13 @@ def deterministic_validator_node(state: AgentState) -> dict[str, Any]:
             else:
                 cart = state.get("active_cart")
                 if not cart or not cart.items:
-                    errors.append("Giỏ hàng trống, không thể xóa món.")
+                    if state.get("order_stage") == "CONFIRMED":
+                        errors.append(
+                            "Đơn hàng đã được xác nhận và gửi xuống bếp rồi, "
+                            "không thể xóa món được nữa. Anh/chị có muốn gọi thêm món mới không ạ?"
+                        )
+                    else:
+                        errors.append("Giỏ hàng trống, không thể xóa món.")
                 else:
                     resolved = _resolve_remove_name(name, cart)
                     if resolved:

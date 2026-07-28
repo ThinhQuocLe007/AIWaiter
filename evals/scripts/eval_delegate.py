@@ -4,6 +4,7 @@ and provides an ablation mode where delegate is removed.
 Usage:
     PYTHONPATH=. uv run python evals/scripts/eval_delegate.py
     PYTHONPATH=. uv run python evals/scripts/eval_delegate.py --ablation
+    PYTHONPATH=. uv run python evals/scripts/eval_delegate.py --runs 5
 """
 
 import json
@@ -23,6 +24,7 @@ load_dotenv()
 
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 from src.agent_brain.agent.agent import get_agent_app
+from evals.lib.stats import RunAggregate
 
 E2E_DIR = os.path.join(PROJECT_ROOT, "evals", "data", "e2e")
 RESULTS_DIR = os.path.join(PROJECT_ROOT, "evals", "results")
@@ -189,92 +191,87 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(description="Delegate Mechanism Evaluator")
     parser.add_argument("--ablation", action="store_true", help="Also report delegate impact analysis")
+    parser.add_argument("--runs", type=int, default=5, help="Repetitions (§5.2.3 requires 5)")
     args = parser.parse_args()
 
     suffix = "ablation" if args.ablation else "baseline"
-    log_path = os.path.join(RESULTS_DIR, f"delegate_{suffix}_{TS}.log")
-    report_path = os.path.join(RESULTS_DIR, f"delegate_{suffix}_{TS}.json")
 
-    log("DELEGATE MECHANISM EVALUATION", log_path)
-    log("=" * 60, log_path)
+    per_run_delegate_rate: list[float] = []
+    per_run_conn_errors: list[int] = []
+    all_report_data: list[dict] = []
 
-    checkpoint_db = os.path.join(PROJECT_ROOT, "storage", "db", "checkpoints.db")
-    if os.path.exists(checkpoint_db):
-        os.remove(checkpoint_db)
+    for run_idx in range(args.runs):
+        run_ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        log_path = os.path.join(RESULTS_DIR, f"delegate_{suffix}_{run_ts}_run{run_idx}.log")
 
-    log("Loading agent...", log_path)
-    app = get_agent_app()
+        log(f"DELEGATE MECHANISM EVALUATION — Run {run_idx+1}/{args.runs}", log_path)
+        log("=" * 60, log_path)
 
-    warmup_cfg = {"configurable": {"thread_id": "warmup_del"}}
-    for _ in app.stream(
-        {"messages": [HumanMessage(content="warmup")], "table_id": "warmup"},
-        config=warmup_cfg,
-        stream_mode="updates",
-    ):
-        pass
-    log("Agent ready.", log_path)
+        checkpoint_db = os.path.join(PROJECT_ROOT, "storage", "db", "checkpoints.db")
+        if os.path.exists(checkpoint_db):
+            os.remove(checkpoint_db)
 
-    all_scenarios = []
-    for ds in DATASETS:
-        path = os.path.join(E2E_DIR, ds)
-        if os.path.exists(path):
-            with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            scenarios = data.get("scenarios", [])
-            all_scenarios.extend(scenarios)
-            log(f"Loaded {len(scenarios)} scenarios from {ds}", log_path)
-        else:
-            log(f"Warning: {path} not found", log_path)
+        log("Loading agent...", log_path)
+        app = get_agent_app()
 
-    log(f"\nRunning {len(all_scenarios)} scenarios...", log_path)
+        warmup_cfg = {"configurable": {"thread_id": f"warmup_del_{run_idx}"}}
+        for _ in app.stream(
+            {"messages": [HumanMessage(content="warmup")], "table_id": "warmup"},
+            config=warmup_cfg,
+            stream_mode="updates",
+        ):
+            pass
+        log("Agent ready.", log_path)
 
-    result = run_scenarios(app, all_scenarios, log_path)
+        all_scenarios = []
+        for ds in DATASETS:
+            path = os.path.join(E2E_DIR, ds)
+            if os.path.exists(path):
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                scenarios = data.get("scenarios", [])
+                all_scenarios.extend(scenarios)
+                log(f"Loaded {len(scenarios)} scenarios from {ds}", log_path)
+            else:
+                log(f"Warning: {path} not found", log_path)
 
-    # Per-worker breakdown
-    order_delegates = [d for d in result["delegate_calls"] if "ORDER" in d["worker"].upper()]
-    search_delegates = [d for d in result["delegate_calls"] if "SEARCH" in d["worker"].upper()]
-    order_turns = sum(1 for d in result["delegate_calls"] if "ORDER" in d["worker"].upper())
-    search_turns = sum(1 for d in result["delegate_calls"] if "SEARCH" in d["worker"].upper())
+        log(f"\nRunning {len(all_scenarios)} scenarios...", log_path)
+        result = run_scenarios(app, all_scenarios, log_path)
+        per_run_delegate_rate.append(result["delegate_rate"])
 
-    log(f"\n{'='*60}", log_path)
-    log("DELEGATE SUMMARY", log_path)
-    log(f"{'='*60}", log_path)
-    log(f"Total turns:            {result['total_turns']}", log_path)
-    log(f"Total delegate calls:   {result['total_delegate_calls']}", log_path)
-    log(f"Delegate rate:          {result['delegate_rate']:.2%}", log_path)
-    log(f"ORDER worker delegates: {len(order_delegates)}", log_path)
-    log(f"SEARCH worker delegates: {len(search_delegates)}", log_path)
-    log(f"Potential wrong calls:  {len(result['wrong_tool_calls'])}", log_path)
-    log("", log_path)
+        conn_errors = sum(1 for d in result["delegate_calls"]
+                          if "connection" in d.get("reason", "").lower())
+        per_run_conn_errors.append(conn_errors)
+        all_report_data.append({"run": run_idx, "delegate_rate": result["delegate_rate"],
+                                 "delegate_calls": len(result["delegate_calls"]),
+                                 "total_turns": result["total_turns"]})
 
-    log("Delegate call details:", log_path)
-    for d in result["delegate_calls"]:
-        log(f"  [{d['scenario']}] T{d['turn']}: '{d['input'][:60]}' | worker={d['worker']} reason='{d['reason'][:60]}'", log_path)
+        log(f"  Run {run_idx+1}: delegate_rate={result['delegate_rate']:.2%}  "
+            f"calls={result['total_delegate_calls']}/{result['total_turns']} turns", log_path)
 
-    if result["wrong_tool_calls"]:
-        log("\nPotential wrong tool calls:", log_path)
-        for w in result["wrong_tool_calls"]:
-            log(f"  [{w['scenario']}] T{w['turn']}: intent={w['intent']} called {w['tool']} ({w['expected_domain']} domain)", log_path)
+    delegate_agg = RunAggregate("delegate_rate", per_run_delegate_rate)
+    conn_total = sum(per_run_conn_errors)
+    if conn_total > 0:
+        print(f"\n  !! {conn_total} connection errors across {args.runs} runs")
+
+    print(f"\n{'='*60}")
+    print(f"DELEGATE EVALUATION — {args.runs} runs")
+    print(f"{'='*60}")
+    print(f"  Delegate rate: {delegate_agg}")
+
+    final_ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    report_path = os.path.join(RESULTS_DIR, f"delegate_{suffix}_{final_ts}.json")
 
     report = {
-        "timestamp": TS,
+        "timestamp": final_ts,
         "mode": "baseline",
-        "summary": {
-            "total_turns": result["total_turns"],
-            "total_delegate_calls": result["total_delegate_calls"],
-            "delegate_rate": round(result["delegate_rate"], 4),
-            "order_worker_delegates": len(order_delegates),
-            "search_worker_delegates": len(search_delegates),
-            "potential_wrong_tool_calls": len(result["wrong_tool_calls"]),
-        },
-        "delegate_calls": result["delegate_calls"],
-        "wrong_tool_calls": result["wrong_tool_calls"],
-        "scenarios": result["scenarios"],
+        "runs": args.runs,
+        "summary": {"delegate_rate": delegate_agg.as_dict()},
+        "per_run": all_report_data,
     }
-
     with open(report_path, "w", encoding="utf-8") as f:
-        json.dump(report, f, indent=2, ensure_ascii=False)
-    log(f"\nReport saved to {report_path}", log_path)
+        json.dump(report, f, indent=2, ensure_ascii=False, default=str)
+    print(f"\nReport saved to {report_path}")
 
 
 if __name__ == "__main__":

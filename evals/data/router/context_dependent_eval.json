@@ -1,0 +1,1730 @@
+{
+  "dataset": "context_dependent_eval",
+  "version": "3.0",
+  "description": "Context-dependent evaluation. Same utterance evaluated with different order_stage context features. Expanded to 123 cases (61 pairs + 1 solo). All pairs have different labels to maximise McNemar discordant count.",
+  "total_cases": 123,
+  "cases": [
+    {
+      "id": "CD-001",
+      "utterance": "ok",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "Không có đơn hàng → CHAT"
+    },
+    {
+      "id": "CD-002",
+      "utterance": "ok",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "Đang chờ xác nhận → ORDER"
+    },
+    {
+      "id": "CD-003",
+      "utterance": "ừ",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "Gật gù không ngữ cảnh → CHAT"
+    },
+    {
+      "id": "CD-004",
+      "utterance": "ừ",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "Đang chờ xác nhận → ORDER"
+    },
+    {
+      "id": "CD-005",
+      "utterance": "đúng rồi",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "Khẳng định ở IDLE → CHAT"
+    },
+    {
+      "id": "CD-006",
+      "utterance": "đúng rồi",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "Xác nhận đơn → ORDER"
+    },
+    {
+      "id": "CD-007",
+      "utterance": "được",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "Được ở IDLE → CHAT"
+    },
+    {
+      "id": "CD-008",
+      "utterance": "được",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "Đồng ý xác nhận đơn → ORDER"
+    },
+    {
+      "id": "CD-009",
+      "utterance": "ok em",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "Không có đơn → CHAT"
+    },
+    {
+      "id": "CD-010",
+      "utterance": "ok em",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "Xác nhận đơn → ORDER, dễ nhầm CHAT"
+    },
+    {
+      "id": "CD-011",
+      "utterance": "thêm 1 phần nữa",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "Không có giỏ hàng → CHAT"
+    },
+    {
+      "id": "CD-012",
+      "utterance": "thêm 1 phần nữa",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "BUILDING",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "Có giỏ hàng đang soạn → ORDER"
+    },
+    {
+      "id": "CD-013",
+      "utterance": "chuẩn",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "Chuẩn ở IDLE → CHAT"
+    },
+    {
+      "id": "CD-014",
+      "utterance": "chuẩn",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "Xác nhận đơn → ORDER"
+    },
+    {
+      "id": "CD-015",
+      "utterance": "oke",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "Biến thể ok ở IDLE → CHAT"
+    },
+    {
+      "id": "CD-016",
+      "utterance": "oke",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 2,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "Biến thể ok xác nhận đơn → ORDER"
+    },
+    {
+      "id": "CD-017",
+      "utterance": "đồng ý",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "Đồng ý chung chung ở IDLE → CHAT"
+    },
+    {
+      "id": "CD-018",
+      "utterance": "đồng ý",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 2,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "Đồng ý xác nhận đơn → ORDER"
+    },
+    {
+      "id": "CD-019",
+      "utterance": "ok luôn",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "hard",
+      "note": "Ok luôn ở IDLE, không có gì để ok → CHAT"
+    },
+    {
+      "id": "CD-020",
+      "utterance": "ok luôn",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 5,
+        "has_search_context": true,
+        "search_context_size": 3
+      },
+      "difficulty": "hard",
+      "note": "Ok luôn xác nhận đơn → ORDER"
+    },
+    {
+      "id": "CD-021",
+      "utterance": "thôi",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "hard",
+      "note": "Thôi ở IDLE → CHAT"
+    },
+    {
+      "id": "CD-022",
+      "utterance": "thôi",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "hard",
+      "note": "Thôi trong ngữ cảnh có giỏ hàng → ORDER (từ chối/hủy)"
+    },
+    {
+      "id": "CD-023",
+      "utterance": "không",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "hard",
+      "note": "Không ở IDLE → CHAT"
+    },
+    {
+      "id": "CD-024",
+      "utterance": "không",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": true,
+        "search_context_size": 4
+      },
+      "difficulty": "hard",
+      "note": "Không xác nhận → ORDER (từ chối xác nhận là hành động trên giỏ hàng)"
+    },
+    {
+      "id": "CD-025",
+      "utterance": "lấy món đó đi",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "hard",
+      "note": "Món đó ở IDLE không có tham chiếu → CHAT"
+    },
+    {
+      "id": "CD-026",
+      "utterance": "lấy món đó đi",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "BUILDING",
+        "has_cart": true,
+        "cart_size": 2,
+        "has_search_context": true,
+        "search_context_size": 5
+      },
+      "difficulty": "hard",
+      "note": "Món đó trong ngữ cảnh có search→ ORDER"
+    },
+    {
+      "id": "CD-027",
+      "utterance": "cho mình món đó",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "hard",
+      "note": "Món đó không rõ ở IDLE → CHAT"
+    },
+    {
+      "id": "CD-028",
+      "utterance": "cho mình món đó",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "BUILDING",
+        "has_cart": true,
+        "cart_size": 1,
+        "has_search_context": true,
+        "search_context_size": 6
+      },
+      "difficulty": "hard",
+      "note": "Món đó sau search → ORDER"
+    },
+    {
+      "id": "CD-029",
+      "utterance": "cái này luôn",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "hard",
+      "note": "Cái này không tham chiếu ở IDLE → CHAT"
+    },
+    {
+      "id": "CD-030",
+      "utterance": "cái này luôn",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "BUILDING",
+        "has_cart": true,
+        "cart_size": 2,
+        "has_search_context": true,
+        "search_context_size": 4
+      },
+      "difficulty": "hard",
+      "note": "Cái này sau khi được gợi ý món → ORDER"
+    },
+    {
+      "id": "CD-031",
+      "utterance": "thêm món đó nữa",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "hard",
+      "note": "Thêm món đó không có tham chiếu → CHAT"
+    },
+    {
+      "id": "CD-032",
+      "utterance": "thêm món đó nữa",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "BUILDING",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": true,
+        "search_context_size": 5
+      },
+      "difficulty": "hard",
+      "note": "Thêm món đó có tham chiếu từ search → ORDER"
+    },
+    {
+      "id": "CD-033",
+      "utterance": "xóa hết đi",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "Xóa khi giỏ trống → CHAT"
+    },
+    {
+      "id": "CD-034",
+      "utterance": "xóa hết đi",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 5,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "Xóa khi giỏ có món → ORDER"
+    },
+    {
+      "id": "CD-035",
+      "utterance": "bỏ món đó đi",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "hard",
+      "note": "Bỏ món khi giỏ trống → CHAT"
+    },
+    {
+      "id": "CD-036",
+      "utterance": "bỏ món đó đi",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "BUILDING",
+        "has_cart": true,
+        "cart_size": 4,
+        "has_search_context": true,
+        "search_context_size": 3
+      },
+      "difficulty": "hard",
+      "note": "Bỏ món có tham chiếu từ giỏ hàng → ORDER"
+    },
+    {
+      "id": "CD-037",
+      "utterance": "còn gì nữa không",
+      "intent": "SEARCH",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "Còn gì nữa ở IDLE → SEARCH (khám phá menu)"
+    },
+    {
+      "id": "CD-038",
+      "utterance": "còn gì nữa không",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "BUILDING",
+        "has_cart": true,
+        "cart_size": 4,
+        "has_search_context": true,
+        "search_context_size": 3
+      },
+      "difficulty": "medium",
+      "note": "Còn gì nữa khi đã có search → CHAT (hỏi tiếp)"
+    },
+    {
+      "id": "CD-039",
+      "utterance": "có khuyến mãi gì không",
+      "intent": "SEARCH",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "Hỏi khuyến mãi ở IDLE → SEARCH"
+    },
+    {
+      "id": "CD-040",
+      "utterance": "có khuyến mãi gì không",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 4,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "Hỏi khuyến mãi trước khi xác nhận → CHAT"
+    },
+    {
+      "id": "CD-041",
+      "utterance": "có giảm giá không",
+      "intent": "SEARCH",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "Giảm giá ở IDLE → SEARCH"
+    },
+    {
+      "id": "CD-042",
+      "utterance": "có giảm giá không",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "BUILDING",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": true,
+        "search_context_size": 2
+      },
+      "difficulty": "medium",
+      "note": "Giảm giá khi đang soạn đơn → CHAT"
+    },
+    {
+      "id": "CD-043",
+      "utterance": "gọi món đi",
+      "intent": "SEARCH",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "Gọi món ở IDLE → SEARCH (xem menu trước)"
+    },
+    {
+      "id": "CD-044",
+      "utterance": "gọi món đi",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 4,
+        "has_search_context": true,
+        "search_context_size": 3
+      },
+      "difficulty": "medium",
+      "note": "Gọi món khi đã có giỏ hàng → ORDER (xác nhận)"
+    },
+    {
+      "id": "CD-045",
+      "utterance": "đặt luôn đi",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "hard",
+      "note": "Đặt luôn khi chưa có gì → CHAT"
+    },
+    {
+      "id": "CD-046",
+      "utterance": "đặt luôn đi",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 2,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "hard",
+      "note": "Đặt luôn khi có giỏ hàng chờ xác nhận → ORDER"
+    },
+    {
+      "id": "CD-047",
+      "utterance": "món này ngon không",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "hard",
+      "note": "Món này không tham chiếu ở IDLE → CHAT"
+    },
+    {
+      "id": "CD-048",
+      "utterance": "món này ngon không",
+      "intent": "SEARCH",
+      "context": {
+        "order_stage": "BUILDING",
+        "has_cart": true,
+        "cart_size": 2,
+        "has_search_context": true,
+        "search_context_size": 4
+      },
+      "difficulty": "hard",
+      "note": "Món này có tham chiếu từ search → SEARCH (hỏi chi tiết)"
+    },
+    {
+      "utterance": "Uh đúng rồi đó",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "Uh đúng rồi đó ở IDLE → CHAT (đồng tình suông)",
+      "id": "CD-049"
+    },
+    {
+      "utterance": "ừa",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "ừa ở IDLE → CHAT",
+      "id": "CD-050"
+    },
+    {
+      "utterance": "ừa",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "ừa ở AWAITING_CONFIRMATION → ORDER",
+      "id": "CD-051"
+    },
+    {
+      "utterance": "dạ",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "dạ ở IDLE → CHAT",
+      "id": "CD-052"
+    },
+    {
+      "utterance": "dạ",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "dạ ở AWAITING_CONFIRMATION → ORDER",
+      "id": "CD-053"
+    },
+    {
+      "utterance": "vâng",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "vâng ở IDLE → CHAT",
+      "id": "CD-054"
+    },
+    {
+      "utterance": "vâng",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "vâng ở AWAITING_CONFIRMATION → ORDER",
+      "id": "CD-055"
+    },
+    {
+      "utterance": "rồi đó",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "rồi đó ở IDLE → CHAT",
+      "id": "CD-056"
+    },
+    {
+      "utterance": "rồi đó",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "rồi đó ở AWAITING_CONFIRMATION → ORDER",
+      "id": "CD-057"
+    },
+    {
+      "utterance": "đúng vậy",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "đúng vậy ở IDLE → CHAT",
+      "id": "CD-058"
+    },
+    {
+      "utterance": "đúng vậy",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "đúng vậy ở AWAITING_CONFIRMATION → ORDER",
+      "id": "CD-059"
+    },
+    {
+      "utterance": "ok bạn",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "ok bạn ở IDLE → CHAT",
+      "id": "CD-060"
+    },
+    {
+      "utterance": "ok bạn",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "ok bạn ở AWAITING_CONFIRMATION → ORDER",
+      "id": "CD-061"
+    },
+    {
+      "utterance": "chắc rồi",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "chắc rồi ở IDLE → CHAT",
+      "id": "CD-062"
+    },
+    {
+      "utterance": "chắc rồi",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "chắc rồi ở AWAITING_CONFIRMATION → ORDER",
+      "id": "CD-063"
+    },
+    {
+      "utterance": "đúng òi",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "đúng òi ở IDLE → CHAT",
+      "id": "CD-064"
+    },
+    {
+      "utterance": "đúng òi",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "đúng òi ở AWAITING_CONFIRMATION → ORDER",
+      "id": "CD-065"
+    },
+    {
+      "utterance": "chốt nha",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "chốt nha ở IDLE → CHAT",
+      "id": "CD-066"
+    },
+    {
+      "utterance": "chốt nha",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "chốt nha ở AWAITING_CONFIRMATION → ORDER. chốt không có đơn → CHAT",
+      "id": "CD-067"
+    },
+    {
+      "utterance": "gửi bếp đi",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "gửi bếp đi ở IDLE → CHAT",
+      "id": "CD-068"
+    },
+    {
+      "utterance": "gửi bếp đi",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "gửi bếp đi ở AWAITING_CONFIRMATION → ORDER",
+      "id": "CD-069"
+    },
+    {
+      "utterance": "xác nhận đi",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "xác nhận đi ở IDLE → CHAT",
+      "id": "CD-070"
+    },
+    {
+      "utterance": "xác nhận đi",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "xác nhận đi ở AWAITING_CONFIRMATION → ORDER",
+      "id": "CD-071"
+    },
+    {
+      "utterance": "làm đi em",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "làm đi em ở IDLE → CHAT",
+      "id": "CD-072"
+    },
+    {
+      "utterance": "làm đi em",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "làm đi em ở AWAITING_CONFIRMATION → ORDER",
+      "id": "CD-073"
+    },
+    {
+      "utterance": "món đó đi",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "món đó đi ở IDLE → CHAT",
+      "id": "CD-074"
+    },
+    {
+      "utterance": "món đó đi",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "BUILDING",
+        "has_cart": true,
+        "cart_size": 2,
+        "has_search_context": true,
+        "search_context_size": 5
+      },
+      "difficulty": "medium",
+      "note": "món đó đi ở BUILDING → ORDER",
+      "id": "CD-075"
+    },
+    {
+      "utterance": "cái kia nữa",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "cái kia nữa ở IDLE → CHAT",
+      "id": "CD-076"
+    },
+    {
+      "utterance": "cái kia nữa",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "BUILDING",
+        "has_cart": true,
+        "cart_size": 2,
+        "has_search_context": true,
+        "search_context_size": 5
+      },
+      "difficulty": "medium",
+      "note": "cái kia nữa ở BUILDING → ORDER",
+      "id": "CD-077"
+    },
+    {
+      "utterance": "thêm cái nữa",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "thêm cái nữa ở IDLE → CHAT",
+      "id": "CD-078"
+    },
+    {
+      "utterance": "thêm cái nữa",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "BUILDING",
+        "has_cart": true,
+        "cart_size": 2,
+        "has_search_context": true,
+        "search_context_size": 5
+      },
+      "difficulty": "medium",
+      "note": "thêm cái nữa ở BUILDING → ORDER",
+      "id": "CD-079"
+    },
+    {
+      "utterance": "lấy luôn đi",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "lấy luôn đi ở IDLE → CHAT",
+      "id": "CD-080"
+    },
+    {
+      "utterance": "lấy luôn đi",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "BUILDING",
+        "has_cart": true,
+        "cart_size": 2,
+        "has_search_context": true,
+        "search_context_size": 5
+      },
+      "difficulty": "medium",
+      "note": "lấy luôn đi ở BUILDING → ORDER",
+      "id": "CD-081"
+    },
+    {
+      "utterance": "cho mình cái đó",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "cho mình cái đó ở IDLE → CHAT",
+      "id": "CD-082"
+    },
+    {
+      "utterance": "cho mình cái đó",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "BUILDING",
+        "has_cart": true,
+        "cart_size": 2,
+        "has_search_context": true,
+        "search_context_size": 5
+      },
+      "difficulty": "medium",
+      "note": "cho mình cái đó ở BUILDING → ORDER",
+      "id": "CD-083"
+    },
+    {
+      "utterance": "thôi khỏi",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "thôi khỏi ở IDLE → CHAT",
+      "id": "CD-084"
+    },
+    {
+      "utterance": "thôi khỏi",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "thôi khỏi ở AWAITING_CONFIRMATION → ORDER. hủy đơn đang chờ → ORDER",
+      "id": "CD-085"
+    },
+    {
+      "utterance": "để lát đi",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "để lát đi ở IDLE → CHAT",
+      "id": "CD-086"
+    },
+    {
+      "utterance": "để lát đi",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "để lát đi ở AWAITING_CONFIRMATION → ORDER",
+      "id": "CD-087"
+    },
+    {
+      "utterance": "chưa cần",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "chưa cần ở IDLE → CHAT",
+      "id": "CD-088"
+    },
+    {
+      "utterance": "chưa cần",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "chưa cần ở AWAITING_CONFIRMATION → ORDER",
+      "id": "CD-089"
+    },
+    {
+      "utterance": "khoan đã",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "khoan đã ở IDLE → CHAT",
+      "id": "CD-090"
+    },
+    {
+      "utterance": "khoan đã",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "khoan đã ở AWAITING_CONFIRMATION → ORDER",
+      "id": "CD-091"
+    },
+    {
+      "utterance": "đợi chút",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "đợi chút ở IDLE → CHAT",
+      "id": "CD-092"
+    },
+    {
+      "utterance": "đợi chút",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "đợi chút ở AWAITING_CONFIRMATION → ORDER",
+      "id": "CD-093"
+    },
+    {
+      "utterance": "còn món nào nữa",
+      "intent": "SEARCH",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "còn món nào nữa ở IDLE → SEARCH",
+      "id": "CD-094"
+    },
+    {
+      "utterance": "còn món nào nữa",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "BUILDING",
+        "has_cart": true,
+        "cart_size": 2,
+        "has_search_context": true,
+        "search_context_size": 5
+      },
+      "difficulty": "medium",
+      "note": "còn món nào nữa ở BUILDING → CHAT",
+      "id": "CD-095"
+    },
+    {
+      "utterance": "món nào ngon hơn",
+      "intent": "SEARCH",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "món nào ngon hơn ở IDLE → SEARCH",
+      "id": "CD-096"
+    },
+    {
+      "utterance": "món nào ngon hơn",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "BUILDING",
+        "has_cart": true,
+        "cart_size": 2,
+        "has_search_context": true,
+        "search_context_size": 5
+      },
+      "difficulty": "medium",
+      "note": "món nào ngon hơn ở BUILDING → CHAT",
+      "id": "CD-097"
+    },
+    {
+      "utterance": "có món tương tự không",
+      "intent": "SEARCH",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "có món tương tự không ở IDLE → SEARCH",
+      "id": "CD-098"
+    },
+    {
+      "utterance": "có món tương tự không",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "BUILDING",
+        "has_cart": true,
+        "cart_size": 2,
+        "has_search_context": true,
+        "search_context_size": 5
+      },
+      "difficulty": "medium",
+      "note": "có món tương tự không ở BUILDING → CHAT",
+      "id": "CD-099"
+    },
+    {
+      "utterance": "món nào rẻ hơn",
+      "intent": "SEARCH",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "món nào rẻ hơn ở IDLE → SEARCH",
+      "id": "CD-100"
+    },
+    {
+      "utterance": "món nào rẻ hơn",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "BUILDING",
+        "has_cart": true,
+        "cart_size": 2,
+        "has_search_context": true,
+        "search_context_size": 5
+      },
+      "difficulty": "medium",
+      "note": "món nào rẻ hơn ở BUILDING → CHAT",
+      "id": "CD-101"
+    },
+    {
+      "utterance": "quán có món gì hot",
+      "intent": "SEARCH",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "quán có món gì hot ở IDLE → SEARCH",
+      "id": "CD-102"
+    },
+    {
+      "utterance": "quán có món gì hot",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "BUILDING",
+        "has_cart": true,
+        "cart_size": 2,
+        "has_search_context": true,
+        "search_context_size": 5
+      },
+      "difficulty": "medium",
+      "note": "quán có món gì hot ở BUILDING → CHAT",
+      "id": "CD-103"
+    },
+    {
+      "utterance": "có món mới không",
+      "intent": "SEARCH",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "có món mới không ở IDLE → SEARCH",
+      "id": "CD-104"
+    },
+    {
+      "utterance": "có món mới không",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "có món mới không ở AWAITING_CONFIRMATION → CHAT",
+      "id": "CD-105"
+    },
+    {
+      "utterance": "có giao hàng không",
+      "intent": "SEARCH",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "có giao hàng không ở IDLE → SEARCH",
+      "id": "CD-106"
+    },
+    {
+      "utterance": "có giao hàng không",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "có giao hàng không ở AWAITING_CONFIRMATION → CHAT",
+      "id": "CD-107"
+    },
+    {
+      "utterance": "cho tôi order",
+      "intent": "SEARCH",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "cho tôi order ở IDLE → SEARCH",
+      "id": "CD-108"
+    },
+    {
+      "utterance": "cho tôi order",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "cho tôi order ở AWAITING_CONFIRMATION → ORDER. IDLE→SEARCH(xem menu); chờ→ORDER(xác nhận)",
+      "id": "CD-109"
+    },
+    {
+      "utterance": "muốn gọi món",
+      "intent": "SEARCH",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "muốn gọi món ở IDLE → SEARCH",
+      "id": "CD-110"
+    },
+    {
+      "utterance": "muốn gọi món",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "AWAITING_CONFIRMATION",
+        "has_cart": true,
+        "cart_size": 3,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "muốn gọi món ở AWAITING_CONFIRMATION → ORDER",
+      "id": "CD-111"
+    },
+    {
+      "utterance": "bắt đầu gọi món",
+      "intent": "SEARCH",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "bắt đầu gọi món ở IDLE → SEARCH",
+      "id": "CD-112"
+    },
+    {
+      "utterance": "bắt đầu gọi món",
+      "intent": "ORDER",
+      "context": {
+        "order_stage": "BUILDING",
+        "has_cart": true,
+        "cart_size": 2,
+        "has_search_context": true,
+        "search_context_size": 5
+      },
+      "difficulty": "medium",
+      "note": "bắt đầu gọi món ở BUILDING → ORDER",
+      "id": "CD-113"
+    },
+    {
+      "utterance": "cần gọi thêm",
+      "intent": "SEARCH",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "cần gọi thêm ở IDLE → SEARCH",
+      "id": "CD-114"
+    },
+    {
+      "utterance": "cần gọi thêm",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "BUILDING",
+        "has_cart": true,
+        "cart_size": 2,
+        "has_search_context": true,
+        "search_context_size": 5
+      },
+      "difficulty": "medium",
+      "note": "cần gọi thêm ở BUILDING → CHAT. từ đầu→SEARCH; đang soạn→CHAT",
+      "id": "CD-115"
+    },
+    {
+      "utterance": "cho coi menu đi",
+      "intent": "SEARCH",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "medium",
+      "note": "cho coi menu đi ở IDLE → SEARCH",
+      "id": "CD-116"
+    },
+    {
+      "utterance": "cho coi menu đi",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "BUILDING",
+        "has_cart": true,
+        "cart_size": 2,
+        "has_search_context": true,
+        "search_context_size": 5
+      },
+      "difficulty": "medium",
+      "note": "cho coi menu đi ở BUILDING → CHAT",
+      "id": "CD-117"
+    },
+    {
+      "utterance": "tính hết bao nhiêu",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "hard",
+      "note": "tính hết bao nhiêu ở IDLE → CHAT",
+      "id": "CD-118"
+    },
+    {
+      "utterance": "tính hết bao nhiêu",
+      "intent": "PAYMENT",
+      "context": {
+        "order_stage": "CONFIRMED",
+        "has_cart": true,
+        "cart_size": 4,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "hard",
+      "note": "tính hết bao nhiêu ở CONFIRMED → PAYMENT. IDLE→CHAT; đã confirm→PAYMENT",
+      "id": "CD-119"
+    },
+    {
+      "utterance": "bill đâu",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "hard",
+      "note": "bill đâu ở IDLE → CHAT",
+      "id": "CD-120"
+    },
+    {
+      "utterance": "bill đâu",
+      "intent": "PAYMENT",
+      "context": {
+        "order_stage": "CONFIRMED",
+        "has_cart": true,
+        "cart_size": 4,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "hard",
+      "note": "bill đâu ở CONFIRMED → PAYMENT",
+      "id": "CD-121"
+    },
+    {
+      "utterance": "đưa bill đây",
+      "intent": "CHAT",
+      "context": {
+        "order_stage": "IDLE",
+        "has_cart": false,
+        "cart_size": 0,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "hard",
+      "note": "đưa bill đây ở IDLE → CHAT",
+      "id": "CD-122"
+    },
+    {
+      "utterance": "đưa bill đây",
+      "intent": "PAYMENT",
+      "context": {
+        "order_stage": "CONFIRMED",
+        "has_cart": true,
+        "cart_size": 4,
+        "has_search_context": false,
+        "search_context_size": 0
+      },
+      "difficulty": "hard",
+      "note": "đưa bill đây ở CONFIRMED → PAYMENT",
+      "id": "CD-123"
+    }
+  ]
+}

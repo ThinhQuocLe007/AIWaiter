@@ -111,7 +111,7 @@ def _format_cart_echo(ctx: OrderResponseContext) -> str:
 
 
 def _format_confirm_reply(order_id: int) -> str:
-    return f"Dạ, em đã xác nhận đơn hàng #{order_id} ạ. Món đang được chuẩn bị, anh/chị chờ một chút nhé."
+    return f"Dạ, em đã xác nhận đơn hàng #{order_id} ạ. Món đang được chuẩn bị. Anh/chị có muốn gọi thêm món gì nữa không ạ?"
 
 
 def _format_remove_reply(ctx: OrderResponseContext) -> str:

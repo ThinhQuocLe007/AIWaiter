@@ -1,0 +1,384 @@
+{
+  "dataset": "e2e_qualitative",
+  "version": "1.0",
+  "description": "Seven qualitative end-to-end scenarios for Chapter 5 case-study analysis. Each scenario tests a distinct architectural claim through a natural Vietnamese restaurant conversation.",
+  "total_scenarios": 7,
+  "scenarios": [
+    {
+      "id": "QS-001",
+      "category": "happy_path",
+      "name": "two_dishes_confirm_pay",
+      "description": "Customer orders two dishes, confirms, then pays. Tests the complete order→confirm→pay pipeline with correct cart state throughout.",
+      "table_id": "T_qs_1",
+      "difficulty": "easy",
+      "expected_outcome": "payment_requested",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình 2 Ốc Hương Xốt Trứng Muối với 1 Lẩu Thái nha",
+          "note": "Multi-item order in single utterance",
+          "assert": {
+            "tool_called": "add_cart",
+            "response_should_contain_one_of": ["Ốc Hương", "Lẩu Thái", "giỏ hàng"]
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Ok chốt đơn đi em",
+          "note": "Confirmation — must call confirm_order with correct items",
+          "assert": {
+            "tool_called": "confirm_order",
+            "confirmed_items_must_contain": ["Ốc Hương", "Lẩu Thái"]
+          }
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "content": "Tính tiền giùm mình",
+          "note": "Payment request",
+          "assert": {
+            "tool_called": "request_payment",
+            "response_should_contain_one_of": ["thanh toán", "hóa đơn", "QR", "tổng"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "QS-002",
+      "category": "search_then_order",
+      "name": "browse_then_select",
+      "description": "Customer browses the menu using natural language, then orders one of the suggested dishes. Tests SEARCH→ORDER transition and search_context persistence.",
+      "table_id": "T_qs_2",
+      "difficulty": "medium",
+      "expected_outcome": "order_confirmed",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Có món gì cay cay ăn nhậu không em",
+          "note": "Vibe-based search — should trigger search tool",
+          "assert": {
+            "tool_called": "search",
+            "tool_must_NOT_call": "add_cart"
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Vậy cho mình 1 phần món đó đi",
+          "note": "Orders the recommended dish by reference — tests search_context→cart bridge",
+          "assert": {
+            "tool_called": "add_cart",
+            "response_should_contain_one_of": ["giỏ hàng", "đã thêm"]
+          }
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "content": "Chốt đơn luôn nha",
+          "note": "Confirm order",
+          "assert": {
+            "tool_called": "confirm_order"
+          }
+        }
+      ]
+    },
+    {
+      "id": "QS-003",
+      "category": "multi_intent",
+      "name": "order_and_pay_same_turn",
+      "description": "Customer orders dishes and requests payment in the same utterance. Tests the multi-intent rewriter path — the utterance must be decomposed, both ORDER and PAYMENT intents executed.",
+      "table_id": "T_qs_3",
+      "difficulty": "medium",
+      "expected_outcome": "payment_requested",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho 2 Hàu Nướng Phô Mai rồi tính tiền luôn nha em",
+          "note": "ORDER + PAYMENT in one utterance — tests boundary marker 'rồi' and rewriter",
+          "assert": {
+            "tool_called": "add_cart",
+            "response_should_contain_one_of": ["Hàu", "giỏ hàng"],
+            "note_accept_extra_tools": "May also call request_payment if rewriter successfully splits intents"
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Xác nhận đơn rồi bill luôn",
+          "note": "ORDER_CONFIRM + PAYMENT in one utterance",
+          "assert": {
+            "response_should_contain_one_of": ["xác nhận", "đơn hàng", "hóa đơn", "thanh toán"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "QS-004",
+      "category": "modification",
+      "name": "change_mind_mid_order",
+      "description": "Customer builds an order, then changes their mind — swaps one dish for another, adds a dish, and only then confirms. Tests cart mutation tools and state integrity.",
+      "table_id": "T_qs_4",
+      "difficulty": "medium",
+      "expected_outcome": "order_confirmed_with_modified_cart",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình 1 Mực Cháy Tỏi với 2 Bia Sài Gòn",
+          "note": "Initial order",
+          "assert": {
+            "tool_called": "add_cart",
+            "response_should_contain_one_of": ["Mực", "giỏ hàng"]
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Thôi bỏ Mực Cháy Tỏi đi, đổi qua Cháo Hàu 1 phần",
+          "note": "Remove + add — tests substitution pattern",
+          "assert": {
+            "tool_called": "add_cart",
+            "response_should_contain_one_of": ["Cháo", "bỏ", "đổi"]
+          }
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "content": "Thêm 1 Khoai Tây Lắc Phô Mai nữa",
+          "note": "Incremental add to existing cart",
+          "assert": {
+            "tool_called": "add_cart",
+            "response_should_contain_one_of": ["Khoai", "giỏ hàng"]
+          }
+        },
+        {
+          "turn": 4,
+          "role": "user",
+          "content": "Ok chốt đơn đi",
+          "note": "Final confirmation — must contain Cháo Hàu, Bia Sài Gòn, Khoai Tây; must NOT contain Mực Cháy Tỏi",
+          "assert": {
+            "tool_called": "confirm_order",
+            "confirmed_items_must_contain": ["Cháo", "Bia", "Khoai"],
+            "confirmed_items_must_NOT_contain": ["Mực"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "QS-005",
+      "category": "ambiguity",
+      "name": "ambiguous_dish_clarification",
+      "description": "Customer asks for a dish with an ambiguous name — 'Ốc Hương' matches 11 sauce variants. The system must ask for clarification, not silently pick one. Tests the validator's ambiguity detection.",
+      "table_id": "T_qs_5",
+      "difficulty": "medium",
+      "expected_outcome": "clarification_then_correct_selection",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình 2 phần Ốc Hương",
+          "note": "Ambiguous — Ốc Hương matches 11 variants. System must ask which one.",
+          "assert": {
+            "response_should_contain_one_of": ["loại nào", "muối", "xốt", "nhiều loại", "chọn"]
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Ốc Hương Xốt Bơ Cay ấy",
+          "note": "Customer picks a specific variant after clarification",
+          "assert": {
+            "tool_called": "add_cart",
+            "response_should_contain_one_of": ["Ốc Hương Xốt Bơ Cay", "giỏ hàng"]
+          }
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "content": "Chốt đơn đi em",
+          "note": "Confirm with the selected variant",
+          "assert": {
+            "tool_called": "confirm_order",
+            "confirmed_items_must_contain": ["Ốc Hương Xốt Bơ Cay"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "QS-006",
+      "category": "long_conversation",
+      "name": "group_dinner_full_service",
+      "description": "A group of four friends dining — they browse the menu, ask about specific dishes, order multiple rounds, check the cart, modify items, ask for recommendations, confirm, and pay. 12-turn natural restaurant conversation staying entirely within restaurant service scope. Tests state integrity across a complete sitting.",
+      "table_id": "T_qs_6",
+      "difficulty": "hard",
+      "expected_outcome": "full_sitting_completed",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Quán mình có món nào bán chạy nhất không em, tụi mình lần đầu tới quán",
+          "note": "Ask for best-sellers — should trigger search",
+          "assert": {
+            "tool_called": "search",
+            "tool_must_NOT_call": "add_cart"
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Ốc Hương Xốt Trứng Muối giá bao nhiêu vậy em",
+          "note": "Ask about a specific dish",
+          "assert": {
+            "tool_called": "search",
+            "tool_must_NOT_call": "add_cart"
+          }
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "content": "Ok cho 2 phần Ốc Hương Xốt Trứng Muối với 4 Bia Sài Gòn nha",
+          "note": "First order after browsing",
+          "assert": {
+            "tool_called": "add_cart",
+            "response_should_contain_one_of": ["Ốc Hương", "Bia", "giỏ hàng"]
+          }
+        },
+        {
+          "turn": 4,
+          "role": "user",
+          "content": "Có món nào ăn nhậu lai rai không em, gợi ý thêm vài món đi",
+          "note": "Ask for recommendations — should trigger search, not order",
+          "assert": {
+            "tool_called": "search",
+            "tool_must_NOT_call": "add_cart"
+          }
+        },
+        {
+          "turn": 5,
+          "role": "user",
+          "content": "Vậy cho thêm 1 Mực Cháy Tỏi với 1 Khoai Tây Lắc Phô Mai nữa",
+          "note": "Second round of ordering based on recommendations",
+          "assert": {
+            "tool_called": "add_cart",
+            "response_should_contain_one_of": ["Mực", "Khoai", "giỏ hàng"]
+          }
+        },
+        {
+          "turn": 6,
+          "role": "user",
+          "content": "Cho mình xem lại giỏ hàng đang có gì",
+          "note": "Review cart — no tool changes, just query",
+          "assert": {
+            "tool_must_NOT_call": ["add_cart", "confirm_order", "remove_cart"]
+          }
+        },
+        {
+          "turn": 7,
+          "role": "user",
+          "content": "Thôi bỏ Bia Sài Gòn đi, đổi qua 4 Bia Heineken",
+          "note": "Substitution mid-order — remove Sài Gòn, add Heineken",
+          "assert": {
+            "tool_called": "add_cart",
+            "response_should_contain_one_of": ["Heineken", "đổi", "giỏ hàng"]
+          }
+        },
+        {
+          "turn": 8,
+          "role": "user",
+          "content": "Mực Cháy Tỏi ăn có cay không em? Tụi mình có đứa không ăn cay được",
+          "note": "Ask about dish properties — search, not order",
+          "assert": {
+            "tool_called": "search",
+            "tool_must_NOT_call": "add_cart"
+          }
+        },
+        {
+          "turn": 9,
+          "role": "user",
+          "content": "Thôi đổi Mực Cháy Tỏi qua Cháo Hàu đi, ăn Cháo Hàu cho lành",
+          "note": "Another substitution",
+          "assert": {
+            "tool_called": "add_cart",
+            "response_should_contain_one_of": ["Cháo Hàu", "đổi", "giỏ hàng"]
+          }
+        },
+        {
+          "turn": 10,
+          "role": "user",
+          "content": "Tổng cộng hết bao nhiêu rồi em",
+          "note": "Check total before confirming",
+          "assert": {
+            "tool_must_NOT_call": ["add_cart", "confirm_order", "remove_cart"]
+          }
+        },
+        {
+          "turn": 11,
+          "role": "user",
+          "content": "Ok chốt đơn đi em, đúng hết rồi đó",
+          "note": "Final confirmation — must contain Ốc Hương, Heineken, Khoai Tây, Cháo Hàu; no Bia Sài Gòn, no Mực Cháy Tỏi",
+          "assert": {
+            "tool_called": "confirm_order",
+            "confirmed_items_must_contain": ["Ốc Hương", "Heineken", "Khoai Tây", "Cháo"],
+            "confirmed_items_must_NOT_contain": ["Sài Gòn", "Mực"]
+          }
+        },
+        {
+          "turn": 12,
+          "role": "user",
+          "content": "Tính tiền giùm tụi mình luôn nha em",
+          "note": "Payment",
+          "assert": {
+            "tool_called": "request_payment",
+            "response_should_contain_one_of": ["thanh toán", "hóa đơn", "QR"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "QS-007",
+      "category": "off_menu_rejection",
+      "name": "off_menu_handling",
+      "description": "Customer asks for items not on the menu (Phở, Cơm Tấm) mixed with valid items. The validator must reject off-menu items, accept valid ones, and offer alternatives. Tests the validator's safety boundary.",
+      "table_id": "T_qs_7",
+      "difficulty": "hard",
+      "expected_outcome": "off_menu_rejected_valid_accepted",
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình 1 tô Phở Bò Tái, 2 Ốc Hương Xốt Me với 1 dĩa Cơm Tấm Sườn",
+          "note": "Two off-menu items (Phở Bò Tái, Cơm Tấm Sườn) + one valid (Ốc Hương Xốt Me). Validator must reject the off-menu ones and accept the valid one.",
+          "assert": {
+            "tool_called": "add_cart",
+            "response_should_contain_one_of": ["không có", "thực đơn", "món khác", "tương tự"]
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Vậy thôi cho mình Ốc Hương Xốt Me đi, mấy món kia bỏ",
+          "note": "Customer accepts the suggestion — only Ốc Hương Xốt Me should be in cart",
+          "assert": {
+            "tool_called": "add_cart",
+            "response_should_contain_one_of": ["Ốc Hương", "giỏ hàng"]
+          }
+        },
+        {
+          "turn": 3,
+          "role": "user",
+          "content": "Chốt đơn đi",
+          "note": "Final check — cart must contain only Ốc Hương Xốt Me, no Phở or Cơm Tấm",
+          "assert": {
+            "tool_called": "confirm_order",
+            "confirmed_items_must_contain": ["Ốc Hương"],
+            "confirmed_items_must_NOT_contain": ["Phở", "Cơm Tấm"]
+          }
+        }
+      ]
+    }
+  ]
+}

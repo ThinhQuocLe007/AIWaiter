@@ -1,9 +1,11 @@
-"""Pipeline Latency Instrumentor — measures per-stage latency for the agent
-pipeline by instrumenting each LangGraph node with high-resolution timestamps.
+"""Pipeline Latency Instrumentor — measures agent turn latency per intent class,
+reporting p50 and p95 percentiles.  The LLM stages have heavily right-skewed
+distributions, so percentiles replace means throughout.
 
 Usage:
     PYTHONPATH=. uv run python evals/scripts/eval_latency.py
     PYTHONPATH=. uv run python evals/scripts/eval_latency.py --cold-start
+    PYTHONPATH=. uv run python evals/scripts/eval_latency.py --n-runs 5
 """
 
 import json
@@ -14,7 +16,7 @@ import uuid
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from statistics import median
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
@@ -31,7 +33,6 @@ RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 TS = datetime.now().strftime("%Y%m%d_%H%M%S")
 REPORT_PATH = RESULTS_DIR / f"latency_{TS}.json"
 
-# Test utterances covering all intent types
 TEST_UTTERANCES = [
     ("ORDER", "Cho mình 2 phần Ốc Hương Xốt Trứng Muối"),
     ("ORDER", "Lấy 1 Lẩu Thái với 3 chai bia Tiger"),
@@ -48,59 +49,24 @@ TEST_UTTERANCES = [
 ]
 
 
-def extract_node_timings(stream: list) -> dict[str, float]:
-    """Extract per-node timing from stream updates by recording when each node fires."""
-    timings = {}
-    node_start = None
-
-    for i, update in enumerate(stream):
-        node_names = list(update.keys())
-        for name in node_names:
-            if name not in timings:
-                # First time we see this node
-                timings[name] = None
-                node_start = time.perf_counter()
-        # Record when we last saw output (approximates completion)
-        if node_start is not None and len(stream) > 0:
-            pass  # Just tracking presence
-
-    # Use the routing_meta latency from router as baseline
-    for update in stream:
-        if "router" in update:
-            router_output = update["router"]
-            routing_meta = router_output.get("routing_meta", {})
-            router_latency = routing_meta.get("latency_seconds")
-            if router_latency:
-                timings["router"] = router_latency
-
-    return timings
-
-
-def measure_cold_start(app, test_state: dict, config: dict) -> float:
-    """Measure first utterance latency (cold start penalty)."""
-    print("  Measuring cold start...")
-    start = time.perf_counter()
-    for _ in app.stream(test_state, config=config, stream_mode="updates"):
-        pass
-    elapsed = time.perf_counter() - start
-    print(f"    Cold start: {elapsed:.2f}s")
-    return elapsed
-
-
-def measure_warm_utterance(app, test_state: dict, config: dict) -> float:
-    """Measure warm utterance latency."""
-    start = time.perf_counter()
-    for _ in app.stream(test_state, config=config, stream_mode="updates"):
-        pass
-    elapsed = time.perf_counter() - start
-    return elapsed
+def _percentile(values, pct):
+    """Return the pct-th percentile of a sorted list."""
+    if not values:
+        return 0.0
+    s = sorted(values)
+    k = (len(s) - 1) * pct / 100.0
+    f = int(k)
+    c = k - f
+    if f + 1 < len(s):
+        return s[f] + c * (s[f + 1] - s[f])
+    return s[f]
 
 
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Pipeline Latency Instrumentor")
     parser.add_argument("--cold-start", action="store_true", help="Measure cold-start penalty")
-    parser.add_argument("--n-runs", type=int, default=3, help="Runs per utterance")
+    parser.add_argument("--n-runs", type=int, default=5, help="Runs per utterance")
     args = parser.parse_args()
 
     print("PIPELINE LATENCY INSTRUMENTOR")
@@ -114,29 +80,34 @@ def main():
     print("Loading agent...")
     app = get_agent_app()
 
-    # Cold start measurement
     cold_start_latency = None
     if args.cold_start:
         cs_config = {"configurable": {"thread_id": f"lat_cold_{uuid.uuid4().hex[:8]}"}}
-        cs_state = {"messages": [HumanMessage(content="Xin chào")], "table_id": "T_lat"}
-        cold_start_latency = measure_cold_start(app, cs_state, cs_config)
+        cs_state = {"messages": [HumanMessage(content="Xin chào")], "table_id": "T_lat_3"}
+        print("  Measuring cold start...")
+        start = time.perf_counter()
+        for _ in app.stream(cs_state, config=cs_config, stream_mode="updates"):
+            pass
+        cold_start_latency = time.perf_counter() - start
+        print(f"    Cold start: {cold_start_latency:.2f}s")
     else:
-        # Warmup
         print("Warming up agent...")
         warm_config = {"configurable": {"thread_id": "warmup_lat"}}
         for _ in app.stream(
-            {"messages": [HumanMessage(content="warmup")], "table_id": "warmup"},
+            {"messages": [HumanMessage(content="warmup")], "table_id": "T_lat_3"},
             config=warm_config,
             stream_mode="updates",
         ):
             pass
         print("Agent warm.")
 
-    # Per-utterance latency measurement
     print(f"\nMeasuring latencies ({args.n_runs} runs each)...")
 
+    all_runs = []  # flat list for global p50/p95
+
     results = []
-    per_intent_latency = defaultdict(list)
+    per_intent_latencies = defaultdict(list)  # list of tuples (intent, all_run_vals)
+    per_node_latencies = defaultdict(list)    # per-node latency samples across all runs
 
     for intent, utterance in TEST_UTTERANCES:
         thread_id = f"lat_{uuid.uuid4().hex[:8]}"
@@ -148,80 +119,95 @@ def main():
         for run_i in range(args.n_runs):
             state = {
                 "messages": [HumanMessage(content=utterance)],
-                "table_id": "T_lat",
+                "table_id": "T_lat_3",
             }
 
-            # Instrument with stream to capture per-node output
             start = time.perf_counter()
-            stream = []
-            node_appearances = []
-            for chunk in app.stream(state, config=config, stream_mode="updates"):
-                stream.append(chunk)
-                node_names = list(chunk.keys())
-                node_appearances.append((node_names, time.perf_counter()))
+            last = start
+            node_times: dict[str, float] = {}
+            for update in app.stream(state, config=config, stream_mode="updates"):
+                now = time.perf_counter()
+                for node in update:
+                    node_times[node] = node_times.get(node, 0.0) + (now - last)
+                last = now
             total_latency = time.perf_counter() - start
 
             run_latencies.append(total_latency)
+            all_runs.append((intent, total_latency))
+            per_intent_latencies[intent].append(total_latency)
+            for node, t in node_times.items():
+                per_node_latencies[node].append(t)
 
-            # Extract final response
-            for update in reversed(stream):
-                if "response_node" in update:
-                    for msg in reversed(update["response_node"].get("messages", [])):
-                        if isinstance(msg, AIMessage) and msg.content:
-                            resp = msg.content[:60]
-                            break
-                for node in ["order_worker", "search_worker", "payment_dispatch", "chat_worker"]:
-                    if node in update:
-                        for msg in reversed(update[node].get("messages", [])):
-                            if isinstance(msg, AIMessage) and msg.content and isinstance(msg.content, str) and not msg.tool_calls:
-                                resp = msg.content[:60]
-                                break
+            print(f"    Run {run_i + 1}: {total_latency:.2f}s")
 
-            # Get routing info
-            routing_meta = {}
-            for update in stream:
-                if "router" in update:
-                    routing_meta = update["router"].get("routing_meta", {})
-
-            decided_by = routing_meta.get("decided_by", "N/A")
-            router_lat = routing_meta.get("latency_seconds", 0)
-
-            print(f"    Run {run_i+1}: total={total_latency:.2f}s  router={router_lat:.3f}s  by={decided_by}")
-
-        avg_lat = sum(run_latencies) / len(run_latencies)
-        per_intent_latency[intent].append(avg_lat)
+        avg = sum(run_latencies) / len(run_latencies)
+        sorted_runs = sorted(run_latencies)
+        p50 = median(sorted_runs)
+        p95 = _percentile(sorted_runs, 95)
 
         results.append({
             "intent": intent,
             "utterance": utterance,
             "n_runs": args.n_runs,
-            "mean_latency_s": round(avg_lat, 3),
-            "min_latency_s": round(min(run_latencies), 3),
-            "max_latency_s": round(max(run_latencies), 3),
-            "individual_times_s": [round(l, 3) for l in run_latencies],
+            "p50_s": round(p50, 3),
+            "p95_s": round(p95, 3),
+            "mean_s": round(avg, 3),
+            "min_s": round(min(run_latencies), 3),
+            "max_s": round(max(run_latencies), 3),
         })
 
     # Summary
     print(f"\n{'='*60}")
-    print("LATENCY SUMMARY")
+    print("LATENCY SUMMARY (p50 / p95)")
     print(f"{'='*60}")
 
     per_intent_summary = {}
     for intent in ["ORDER", "ORDER_CONFIRM", "SEARCH", "PAYMENT", "CHAT", "MULTI"]:
-        vals = per_intent_latency.get(intent, [])
+        vals = per_intent_latencies.get(intent, [])
         if vals:
-            avg = sum(vals) / len(vals)
-            per_intent_summary[intent] = round(avg, 3)
-            print(f"  {intent:<20} mean={avg:.3f}s  (n={len(vals)} utterances)")
+            s = sorted(vals)
+            p50_v = median(s)
+            p95_v = _percentile(s, 95)
+            per_intent_summary[intent] = {"p50": round(p50_v, 3), "p95": round(p95_v, 3),
+                                           "n": len(vals)}
+            print(f"  {intent:<20} p50={p50_v:.3f}s  p95={p95_v:.3f}s  n={len(vals)}")
+
+    # Global
+    all_sorted = sorted([v for _, v in all_runs])
+    global_p50 = median(all_sorted) if all_sorted else 0.0
+    global_p95 = _percentile(all_sorted, 95)
+    print(f"\n  GLOBAL: p50={global_p50:.3f}s  p95={global_p95:.3f}s  n={len(all_sorted)}")
 
     if cold_start_latency:
-        print(f"\n  Cold-start penalty: {cold_start_latency:.2f}s (first utterance vs warm)")
+        print(f"\n  Cold-start penalty: {cold_start_latency:.2f}s")
+
+    # Per-node latency breakdown
+    if per_node_latencies:
+        print(f"\n{'='*60}")
+        print("PER-NODE LATENCY BREAKDOWN (p50 / p95)")
+        print(f"{'='*60}")
+        node_summary = {}
+        for node in sorted(per_node_latencies):
+            vals = per_node_latencies[node]
+            s = sorted(vals)
+            p50_v = _percentile(s, 50)
+            p95_v = _percentile(s, 95)
+            pct = sum(vals) / sum(sum(per_node_latencies[n]) for n in per_node_latencies) * 100
+            node_summary[node] = {
+                "p50_s": round(p50_v, 3), "p95_s": round(p95_v, 3),
+                "n": len(vals), "pct_of_total": round(pct, 1),
+            }
+            print(f"  {node:<30} p50={p50_v:.3f}s  p95={p95_v:.3f}s  "
+                  f"{pct:.1f}%  n={len(vals)}")
 
     report = {
         "timestamp": TS,
-        "cold_start": round(cold_start_latency, 3) if cold_start_latency else None,
+        "cold_start_s": round(cold_start_latency, 3) if cold_start_latency else None,
         "n_runs_per_utterance": args.n_runs,
+        "global": {"p50_s": round(global_p50, 3), "p95_s": round(global_p95, 3),
+                    "n": len(all_sorted)},
         "per_intent_summary": per_intent_summary,
+        "per_node_summary": node_summary if per_node_latencies else {},
         "detailed": results,
     }
 

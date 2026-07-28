@@ -141,44 +141,30 @@ _BUILDERS = {
 }
 
 
-# ── Dispatcher ──────────────────────────────────────────────────────────────
-# Priority: cart-affecting tools come before informational ones so that
-# multi-intent turns (ORDER + SEARCH) echo the cart changes, not the search
-# results. Without this the LLM makes up the cart total from memory.
-_CART_TOOLS = {"add_cart", "remove_cart", "clear_cart", "confirm_order"}
-_PAYMENT_TOOLS = {"request_payment", "verify_payment"}
+def _pick_tool_messages(state: AgentState) -> list:
+    """Return every ToolMessage from the current turn in chronological order.
 
-
-def _pick_tool_message(state: AgentState):
-    """Return the highest-priority ToolMessage from the current turn.
-
-    Cart tools (add / remove / clear / confirm) take precedence over
-    payment tools, which take precedence over search.  When the turn
-    includes an order action AND a search (multi-intent), the cart
-    echo (template, deterministic) runs instead of the search rewriter
-    (LLM, can hallucinate totals).
+    Single-intent turns get one message; multi-intent turns (e.g. ORDER + SEARCH)
+    get several, and the response node verbalises all of them so the guest hears
+    every action that happened.
     """
     messages = state["messages"]
     tool_msgs: list = []
-    for m in reversed(messages):
-        if isinstance(m, HumanMessage):
-            break
+    for m in messages:
         if isinstance(m, ToolMessage):
             tool_msgs.append(m)
 
     if not tool_msgs:
-        return None
+        return []
 
-    if len(tool_msgs) == 1:
-        return tool_msgs[0]
+    seen_since_last_user = []
+    for m in reversed(messages):
+        if isinstance(m, HumanMessage):
+            break
+        if isinstance(m, ToolMessage):
+            seen_since_last_user.append(m)
 
-    for m in tool_msgs:
-        if m.name in _CART_TOOLS:
-            return m
-    for m in tool_msgs:
-        if m.name in _PAYMENT_TOOLS:
-            return m
-    return tool_msgs[0]
+    return list(reversed(seen_since_last_user))
 
 
 def _build_from_tool_message(last: ToolMessage, state: AgentState) -> ResponseContext:
@@ -231,7 +217,6 @@ def _finalize(ctx: ResponseContext) -> dict[str, Any]:
 
 
 def state_outcome_node(state: AgentState) -> dict[str, Any]:
-    # CHAT path: chat_worker already set the context — just finalize.
     existing = state.get("response_context")
     if existing is not None:
         return _finalize(existing)
@@ -239,16 +224,23 @@ def state_outcome_node(state: AgentState) -> dict[str, Any]:
     if _is_retry_state(state):
         return _finalize(_build_retry_context(state))
 
-    tool_msg = _pick_tool_message(state)
-    if tool_msg is not None:
-        return _finalize(_build_from_tool_message(tool_msg, state))
+    tool_msgs = _pick_tool_messages(state)
+    if tool_msgs:
+        contexts = []
+        for tm in tool_msgs:
+            ctx = _build_from_tool_message(tm, state)
+            if ctx is not None:
+                contexts.append(ctx)
+        if len(contexts) == 1:
+            return _finalize(contexts[0])
+        if contexts:
+            return {
+                **{k: None for k in ("unavailable_items", "ambiguous_items", "feedback",
+                                      "last_tool", "delegate_reason", "intent_queries")},
+                "response_context": contexts,
+            }
+        return _finalize(_build_retry_context(state))
 
-    # Defensive fallback — should be unreachable.
-    # Reached in practice when a worker calls delegate() and the graph
-    # routes through state_updater → state_outcome without executing
-    # any tool calls (no ToolMessages). The ChatResponseContext must
-    # carry delegate_reason so the rewriter can apply special handling
-    # (cart echo for "xem lại", clarification for "không rõ", etc.).
     return _finalize(ChatResponseContext(
         intent="CHAT", user_message=last_user_text(state),
         active_cart=state.get("active_cart") or Cart(),
