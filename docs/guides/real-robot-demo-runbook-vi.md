@@ -39,7 +39,7 @@ cổng serial của STM32 và cả hai cùng hỏng.
 cd ~/AIWaiter
 ollama serve      # T0
 make backend      # T1 — :8000 — REST + WS hub
-make agent        # T2 — :8100, chờ in "Agent ready." (lần đầu build embeddings, lâu)
+make agent        # T2 — :8100, chờ in "Warmup complete — models resident." (lần đầu build embeddings, lâu)
 ```
 
 Rồi **chọn một trong hai cách phục vụ web** — đây là chỗ hay lẫn:
@@ -213,10 +213,20 @@ Pin có mà chấm chưa có = localization chưa xong, chờ thêm (bridge cố
 **3 — Nói chuyện.** Trên màn robot bấm **"Nói chuyện với AI"** → T2 in `[LISTENING]` → nói tiếng
 Việt → `[HEARD @ … | bàn 3]` → `[WAITER]: …` + loa đọc + customer_ui hiện hội thoại.
 
-**4 — Đặt món rồi robot tự về.** Đặt món trên customer_ui (hoặc thanh toán).
+**4 — Chốt đơn rồi robot tự về.** Nói **"chốt đơn đi em"** với robot, rồi **im lặng 15 giây**.
+- customer_ui: banner **"Robot sắp về trạm"** hiện ở đỉnh màn hình, đếm ngược 15 → 0.
 - Backend: `released robot robo-1 from table 3 — heading home`.
 - T1: `task.release` → Nav2 chạy về dock → `[Align] locked` trên ArUco 6 → `at_dock`.
 - Panel: **Đang về dock** → **Đang ở dock**. Chấm minimap về đúng góc dock.
+
+Bấm nút mic (hoặc **"Gọi thêm món"** trên banner) lúc đồng hồ chưa về 0 thì nó nhảy lại 15 —
+robot ở lại phục vụ tiếp. Đó là cách giữ robot khi khách còn muốn gọi thêm.
+
+> **Chỉ ba việc này đuổi robot về dock**, không có việc thứ tư:
+> chốt đơn **bằng giọng nói** (sau 15 s) · **thanh toán** (ngay) · staff kết thúc bàn trên panel (ngay).
+> Đặt món bằng cách **chạm tay trên customer_ui KHÔNG** đuổi robot — `orders.py` không còn gọi
+> `release_robot_at_table`, và bộ đếm 15 s chỉ được kích bởi lượt thoại giọng nói. Đặt bằng tay
+> xong mà ngồi đợi robot đi thì đợi mãi; muốn nó về thì thanh toán, hoặc kết thúc bàn từ panel.
 
 Chạy hết 4 bước là **end-to-end đã thông**.
 
@@ -228,7 +238,7 @@ Chạy hết 4 bước là **end-to-end đã thông**.
 |---|---|---|---|
 | 1 | server | `ollama serve` | `ollama list` ra model |
 | 2 | server | `make backend` | `/health` OK · log `map:` trỏ `tarkbot_robot/maps` |
-| 3 | server | `make agent` | `Agent ready.` |
+| 3 | server | `make agent` | `Warmup complete — models resident.` (dòng `Agent ready.` in **trước** lúc nạp model — chờ nhầm dòng thì lượt nói đầu tiên lâu bất thường) |
 | 4 | server | `make build` + restart backend **hoặc** `make frontend` | `curl -sI :8000/` ra 200 (cách A) |
 | 5 | — | **đặt robot ở dock, camera thấy ArUco 6** | mắt thường |
 | 6 | jetson | `make hwstack SERVER_HOST=… ID=robo-1` | `task_bridge ready` + chấm dock trên panel |
@@ -236,7 +246,7 @@ Chạy hết 4 bước là **end-to-end đã thông**.
 | 8 | jetson | `firefox --kiosk :8000/` | web hiện trên màn robot |
 | 9 | web | kiosk seat một bàn | robot chạy · panel `Đang phục vụ` |
 | 10 | web | bấm "nói chuyện" | jetson `[LISTENING]` |
-| 11 | web | đặt món | robot về dock · panel `Đang ở dock` |
+| 11 | web | nói **"chốt đơn đi em"** rồi im lặng 15 s · hoặc **thanh toán** | robot về dock · panel `Đang ở dock` (đặt món bằng tay **không** đuổi robot) |
 
 Tắt: server `make kill` · Jetson `Ctrl-C` ở T1 (tắt cả stack) rồi T2.
 

@@ -98,7 +98,11 @@ def _handle_clear_cart_result(state: AgentState, tool_result) -> dict[str, Any]:
 
 
 def _handle_confirm_order_result(state: AgentState, tool_result) -> dict[str, Any]:
-    return {"order_stage": "CONFIRMED", "active_cart": Cart()}
+    # ``order_confirmed`` is the per-turn flag the tablet and the orchestrator both key off:
+    # it moves the tablet's draft into "đã gửi bếp" and arms the dock-release countdown. It was
+    # declared and read in three places but never once set, so both stayed dead — the cart card
+    # kept showing a draft the kitchen already had, and the robot never went home on its own.
+    return {"order_stage": "CONFIRMED", "active_cart": Cart(), "order_confirmed": True}
 
 
 def _handle_search_result(state: AgentState, tool_result) -> dict[str, Any]:

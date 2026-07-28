@@ -6,6 +6,7 @@ import { useDragScroll } from '@/composables/useDragScroll'
 import { useVoiceStore } from '@/stores/voice'
 import { useCartStore } from '@/stores/cart'
 import { getStoredTableId } from '@/data/tableSession'
+import RobotReleaseBanner from '@/components/voice/RobotReleaseBanner.vue'
 
 // Scale the fixed 1024x600 stage to fit the current viewport (kiosk: scale = 1).
 useViewportScale()
@@ -34,6 +35,9 @@ onUnmounted(() => voice.disconnect())
         <component :is="Component" />
       </Transition>
     </RouterView>
+    <!-- Lives at app level, not inside the voice sheet: the robot leaves whether or not the
+         guest has the assistant open, and the countdown must survive a screen change. -->
+    <RobotReleaseBanner />
   </div>
 </template>
 

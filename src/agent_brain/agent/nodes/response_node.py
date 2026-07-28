@@ -426,7 +426,7 @@ def _rewrite_payment(ctx: PaymentResponseContext, stream: _StreamContext) -> str
             stream.emit(reply)
             return reply
         reply = (
-            f"Dạ, tổng hóa đơn của anh/chị là {ctx.amount_vnd}₫ ạ."
+            f"Dạ, tổng hóa đơn của anh/chị là {ctx.amount_vnd} ạ."  # amount_vnd carries the ₫
             f" Anh/chị vui lòng quét mã QR để thanh toán nhé."
         )
         stream.emit(reply)

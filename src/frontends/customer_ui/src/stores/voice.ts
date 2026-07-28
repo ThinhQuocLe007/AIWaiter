@@ -39,10 +39,15 @@ export const useVoiceStore = defineStore('voice', () => {
   const aiResponse = ref('')
   const isSoundEnabled = ref(true)
   const messages = ref<ChatMessage[]>([])
+  // Seconds left before the robot drives back to the dock, or null when nothing is pending.
+  // Seeded from the backend's `robot.release_pending` (never from a constant here) and ticked
+  // down locally; every re-arm on the server replaces it, so the two can't drift apart.
+  const releaseCountdown = ref<number | null>(null)
 
   let messageId = 0
   let wsHandle: WsHandle | null = null
   let speakingTimer: ReturnType<typeof setTimeout> | undefined
+  let releaseTicker: ReturnType<typeof setInterval> | undefined
   // "Hủy" was pressed for the turn in flight: swallow its voice.heard/voice.reply when (if)
   // they arrive, so a cancelled utterance never shows up nor mutates the cart. Cleared when
   // the suppressed reply lands, or when the guest deliberately starts a new turn.
@@ -62,6 +67,9 @@ export const useVoiceStore = defineStore('voice', () => {
   function disconnect() {
     wsHandle?.close()
     wsHandle = null
+    // No socket, no way to learn the countdown was stood down — don't leave a ticker
+    // running against a number nothing can correct.
+    setReleaseCountdown(null)
   }
 
   function onEvent(e: WsEvent) {
@@ -75,6 +83,9 @@ export const useVoiceStore = defineStore('voice', () => {
     } else if (e.type === 'voice.progress') {
       if (e.table_id !== getStoredTableId()) return
       aiState.value = 'thinking'
+    } else if (e.type === 'robot.release_pending') {
+      if (e.table_id !== getStoredTableId()) return
+      setReleaseCountdown(e.seconds)
     } else if (e.type === 'robot.arrived') {
       // The robot is standing at this table now: bring the tablet to the screen matching the
       // visit step, so the guest never has to navigate by hand. go_to_table = fresh party →
@@ -101,6 +112,30 @@ export const useVoiceStore = defineStore('voice', () => {
     }
   }
 
+  // Start / restart / stop the dock countdown. `seconds` comes straight off the wire: a number
+  // re-seeds the local ticker from the backend's own delay, null clears the banner.
+  //
+  // The ticker stops AT 0 rather than clearing itself: the robot leaving is the backend's call,
+  // and it says so with its own `seconds: null` once dispatcher.release_robot_at_table has run.
+  // Hiding the banner at 0 on our own would claim the robot left a beat before it actually did.
+  function setReleaseCountdown(seconds: number | null) {
+    clearInterval(releaseTicker)
+    releaseTicker = undefined
+    if (seconds === null || seconds <= 0) {
+      releaseCountdown.value = null
+      return
+    }
+    releaseCountdown.value = seconds
+    releaseTicker = setInterval(() => {
+      const left = (releaseCountdown.value ?? 0) - 1
+      releaseCountdown.value = left > 0 ? left : 0
+      if (left <= 0) {
+        clearInterval(releaseTicker)
+        releaseTicker = undefined
+      }
+    }, 1000)
+  }
+
   // The visit is over (paid / table ended / system reset): clear the persisted cart AND the
   // conversation, so the next guest at this table starts from zero.
   function endSession() {
@@ -113,6 +148,9 @@ export const useVoiceStore = defineStore('voice', () => {
   // per-table buckets in the cart store rather than being wiped.
   function resetConversation() {
     clearTimeout(speakingTimer)
+    // The visit (or this tablet's table binding) is over, so whatever robot the countdown
+    // referred to is no longer this table's business.
+    setReleaseCountdown(null)
     messages.value = []
     suppressTurn = false
     closePanel()
@@ -333,6 +371,7 @@ export const useVoiceStore = defineStore('voice', () => {
     aiResponse,
     isSoundEnabled,
     messages,
+    releaseCountdown,
     connect,
     disconnect,
     openPanel,

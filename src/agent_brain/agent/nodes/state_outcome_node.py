@@ -21,12 +21,14 @@ from src.agent_brain.schemas import (
     SearchResponseContext,
 )
 from src.agent_brain.agent.nodes.chat_worker_node import _to_curated_memory
+# One money formatter for the whole response path. There used to be a second `_vnd` defined
+# right here that was identical EXCEPT it left the ₫ off — so `total_vnd` reached the templates
+# bare while the per-item prices beside it carried the symbol, and the cart echo read
+# "… 255.000₫/phần … Tổng tạm tính 255.000". The templates' comments already claimed the ₫ was
+# applied here, which is what kept it unnoticed.
+from src.agent_brain.agent.nodes.response_template import _vnd
 from src.agent_brain.schemas.order import Cart
 from src.agent_brain.utils import last_user_text
-
-
-def _vnd(amount) -> str:
-    return f"{int(amount):,}".replace(",", ".")
 
 
 def _last_tool_call_args(state: AgentState) -> dict[str, Any]:

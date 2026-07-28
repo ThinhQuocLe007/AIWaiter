@@ -314,8 +314,11 @@ async def on_arrived(robot_id: str, task_id: int | None) -> None:
         await _broadcast_robot(conn, robot_id)
     # The robot is now standing at the table, so route this table's "talk to AI" button to this
     # robot's mic. Held until the robot leaves (on_done), is dispatched elsewhere (re-bind), or
-    # drops (on disconnect). For go_to_table/call the robot now WAITS here until the guest orders
-    # or pays — the orders/payments routers then call release_robot_at_table to send it home.
+    # drops (on disconnect). For go_to_table/call the robot now WAITS here until one of two things
+    # sends it home: the voice router's dock countdown expires (armed when a voice turn confirms an
+    # order, bumped by any further guest interaction), or the visit ends and cancel_table_tasks
+    # releases it. Creating an order does NOT release on its own — orders.py used to, and the
+    # countdown replaced that so the robot can stay for "gọi thêm món".
     manager.bind_table_robot(task.table_id, robot_id)
     # Wake the table's customer_ui: the robot is standing there now, so the tablet should switch
     # to the right screen on its own (menu for a first visit, order-more/pay chooser for a call).

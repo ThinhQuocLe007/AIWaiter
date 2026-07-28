@@ -69,13 +69,107 @@ whether the router correctly flags them for the rewriter path.
 
 ---
 
+## Run Configuration — 2026-07-28 Pass
+
+Everything in this revision was produced in a single sequential pass on 2026-07-28.  Logs and
+per-stage timings are in `evals/results/run14b_20260728_190734/`.
+
+| Setting | Value |
+|---------|-------|
+| Router / worker / response model | `qwen2.5:14b-instruct-q6_K` (the deployment model) |
+| Embedding model | `bkai-foundation-models/vietnamese-bi-encoder`, CUDA, 768-dim |
+| GPU | NVIDIA GeForce RTX 5060 Ti, 16 GB |
+| System RAM | 31 GB |
+| Menu | `assets/data/menu.json`, **234 dishes** |
+| Repetitions | N = 5 for every LLM-dependent experiment; single run for deterministic ones |
+
+**This pass replaces the 7B draft.**  The previous revision ran on `qwen2.5:7b-instruct` and
+carried a PROVISIONAL banner saying every LLM-produced number had to be regenerated on the 14B.
+This pass regenerates them on the 14B and applies the N = 5 protocol of §5.2.3 to every
+stochastic experiment rather than to two of them.  Per-experiment run counts are stated in each
+section; where a section still reports a single run, it says so.
+
+### What was deliberately not run, and why
+
+Recorded here so that no reader has to infer an omission from a missing table.
+
+**Arm B of the router ablation (`SLM only`) was dropped.**  Arms B and F are the same prompt at
+two model sizes — `_prompted()` in `eval_router_arms.py` is a single function and the arms
+differ only in the model name.  This pass was constrained to keep exactly one model resident on
+the 16 GB card, so arm B was pointed at nothing rather than at a second small model, which would
+have made it a byte-identical duplicate of arm F contributing one redundant row and no
+information.  The ablation was therefore run as `--arms A C D E F`, five arms.  The consequence
+is that the **E-vs-B McNemar comparison is absent from this revision**; the previous revision's
+figure (arm B = 246/304 = 80.9 % on `qwen2.5:3b`, E vs B p = 0.020) is the last measurement of
+it and was made on the 7B-era pass.  If the thesis wants an SLM baseline, it needs a deliberate
+choice of which small model that is, and a run of its own.
+
+**The cascade experiment (speech → routing) was not run.**  It requires 180 recordings from
+three speakers plus a restaurant-noise file, none of which exist yet; `evals/HANDOFF.md` is the
+packet for whoever records them.  This is the one Chapter 5 experiment that cannot be produced
+from the repository alone.
+
+**`evals/data/e2e/e2e_real_life.json` (4 scenarios) and `e2e_scenarios.json` (20 scenarios) were
+not run.**  Neither appears in the §5.2.4 experiment inventory; the qualitative case study uses
+`e2e_qualitative.json` and the safety pool uses `e2e_out_of_menu_test.json`.  They are datasets
+without a listed experiment, not experiments that were skipped.
+
+### Harness changes made during this pass
+
+Three changes to eval scripts, all recorded here because they touch how results are produced.
+None of them changes what any experiment measures.
+
+- **`eval_latency.py`** cleared `storage/db/checkpoints.db` without its `-wal` and `-shm`
+  sidecars.  The stale sidecars were then paired with the fresh database and every later process
+  that opened it — including the agent service already holding the old file — died with
+  `sqlite3.OperationalError: disk I/O error`.  This destroyed the first attempt at the LLM block:
+  six consecutive experiments failed, and `eval_qualitative.py` **reported `pass_rate 0.000` with
+  exit code 0** rather than failing, which is exactly the silent-corruption mode §5.2.3 warns
+  about.  The script now removes all three files, and it is ordered last in the run because it
+  clears state other experiments share.
+- **`eval_router_arms.py`** had its arm models hard-coded, which made the 14 B-versus-7 B control
+  above impossible to run.  They are now overridable via `ARM_LLM_MODEL` / `ARM_SLM_MODEL`.
+- The run driver now marks any stage whose log contains a traceback, an OOM, a connection error
+  or a `falling back to CHAT` line as `DIRTY` in `_progress.log`, so a crashed run cannot be
+  mistaken for a low score.
+
+**A note on GPU capacity, since it caused a corrupted run.**  `qwen2.5:14b-instruct-q6_K` at a
+16 384-token context occupies roughly 14 GB of the 16 GB card.  Running the agent HTTP service
+alongside an evaluation puts a second copy of the embedding model on the same device, and the
+classifier then raises `torch.OutOfMemoryError` — which
+`classifier_router_node` catches and converts into a **silent fallback to CHAT**.  An entire
+N = 5 run completed that way, routing every utterance to CHAT and reporting it as a result.  The
+service must be stopped for the duration of an evaluation pass; the evaluations construct the
+agent in-process and do not need it.  This failure mode deserves a line in §5.6.4: the fallback
+is correct behaviour for a live service and the wrong behaviour for a measurement harness.
+
+### Dataset and menu drift found during this pass
+
+Two datasets have fallen out of sync with `menu.json`, which has grown from the **219 dishes**
+this chapter asserts in §5.2.1 to **234**.  Both are ground-truth problems rather than system
+regressions, and both are detailed where they bite:
+
+- **Name resolution** (§5.4.2): four names the dataset marks off-menu are now real dishes,
+  costing five cases and dropping a reported 100 % to 92.9 %.
+- **Out-of-menu robustness** (§5.4.2): `OOM-002` lists `Cà Phê Sữa Đá` and `OOM-020` lists
+  `Kem Dừa` among their `invalid_items`; both are on the current menu, and `OOM-020` is
+  categorised `all_invalid` while containing a valid item.
+
+The `menu_verified` field in `e2e_out_of_menu_test.json` still reads "kiểm tra ngày
+2026-07-23".  Every dataset that hard-codes dish names needs re-verification against the menu
+before the chapter is written, and §5.2.1's "219-entry menu" needs correcting to 234.
+
+---
+
 ## §5.4.1 — Intent Classification & Routing
 
 ### Single-Intent Accuracy (n = 149, `evals/data/router/single_intent_eval.json`)
 
-**140/149 = 94.0 %** (Wilson 95 % CI: 89.0–96.8 %).  p50 latency 8.0 ms, p95 10.1 ms.
+**140/149 = 94.0 %** (Wilson 95 % CI: 89.0–96.8 %).  p50 latency 7.9 ms, p95 8.4 ms.
 
-*Result file:* `mlp_router_eval_20260726_124805.json`.  The dataset was expanded from 100 to 149 cases on 2026-07-26 to improve class balance (roughly 37 per class) and vocabulary coverage, particularly the first-person pronoun `tôi` (absent from the original 100-case set).  The original 100-case subset scored 98/100 = 98.0 %.
+*Result file:* `mlp_router_eval_20260728_190748.json` (2026-07-28).  The dataset was expanded from 100 to 149 cases on 2026-07-26 to improve class balance (roughly 37 per class) and vocabulary coverage, particularly the first-person pronoun `tôi` (absent from the original 100-case set).  The original 100-case subset scored 98/100 = 98.0 %.
+
+The 2026-07-28 re-run reproduces the 2026-07-26 figure exactly — same 140/149, same nine errors, same per-class table, mean confidence 0.961 — which is the expected outcome for a deterministic classifier on an unchanged checkpoint and confirms the harness is stable across the model swap.
 
 Mean confidence on correct predictions: 0.969.  Mean confidence overall: 0.961.
 
@@ -93,16 +187,23 @@ gì được").  These are genuinely ambiguous cases where the surface form of t
 resembles both a conversational remark and an ordering request.  PAYMENT maintained
 perfect classification across all 37 cases, including both the original and expanded sets.
 
-### Context-Dependent Accuracy (n = 70, `evals/data/router/context_dependent_eval.json`)
+### Context-Dependent Accuracy (n = 123, `evals/data/router/context_dependent_eval.json`)
 
-| Mode | Accuracy | n |
-|------|:--------:|:--:|
-| With context features | 70.0 % (49/70) | 70 |
-| Without context (IDLE defaults) | 58.6 % (41/70) | 70 |
+| Mode | Accuracy | 95 % Wilson CI | n |
+|------|:--------:|:--------------:|:--:|
+| With context features | 61.0 % (75/123) | 52.1–69.1 % | 123 |
+| Without context (IDLE defaults) | 48.0 % (59/123) | 39.3–56.7 % | 123 |
 
-*Result file:* `mlp_router_eval_20260726_125059.json`.  The dataset was expanded from 20 to 70 cases (36 utterance groups) on 2026-07-26.
+*Result file:* `mlp_router_eval_20260728_190748.json` (2026-07-28).  **The dataset has grown
+again since the previous revision, from 70 cases (36 utterance groups) to 123 cases (62
+groups)**, spanning four order stages (IDLE 62, AWAITING_CONFIRMATION 36, BUILDING 22,
+CONFIRMED 3).  The figures here therefore supersede the 70-case ones and are not directly
+comparable to them: absolute accuracy falls (70.0 % → 61.0 %) because the added cases are
+harder, while the quantity the experiment exists to measure — the context effect — gets
+stronger and, for the first time, significant.
 
-**Label correction, disclosed.**  An earlier run of the same eval two minutes prior
+**Label correction, disclosed** *(concerns the superseded 70-case set; retained because it is a
+disclosure of edits made to ground truth after predictions were visible)*.  An earlier run of the same eval two minutes prior
 (`mlp_router_eval_20260726_124805.json`) reports 46/70 = 65.7 % with context.  The model's
 predictions are byte-identical across the two runs; three ground-truth labels were corrected
 between them, all at IDLE: CD-023 "chốt luôn đi" (CHAT → ORDER), CD-053 "thanh toán đi"
@@ -113,33 +214,33 @@ CD-023 is more debatable and its `note` field still reads "IDLE không có gì �
 contradicting its new label.  Because the corrections raise the reported figure and were made
 after the predictions were visible, they are stated here rather than left to be discovered.
 
-**The set is weaker than its name suggests.**  10 of the 36 utterance groups now carry the same
-label at both order stages ("tính tiền đi", "Ok chốt đơn đi em", "chốt luôn đi", "từ từ đã",
-"để sau đi", "giỏ hàng có gì rồi", "tổng bao nhiêu", "thanh toán đi", "cho xin bill",
-"hết chưa"), so on those pairs context is irrelevant by construction and cannot contribute to
-the D-vs-E ablation either way.  The three corrections above moved two pairs into this group.
-The honest reading is that only 26 of the 36 groups test the context claim; the ablation should
-either report both numbers or the set should be re-partitioned.
+**The ablation now reaches significance.**  McNemar exact on the 18 discordant pairs:
+b = 17 (context fixes), c = 1 (context breaks), **p = 1.4 × 10⁻⁴**.  On the 70-case set this
+comparison was b = 11, c = 3, p = 0.057 — close but not significant, and the previous revision
+estimated that roughly 140 cases would be needed to resolve it.  The expansion to 123 delivered
+that: the D-vs-E context ablation is no longer an underpowered "not significant" row.  The
+13.0-percentage-point gap (48.0 % → 61.0 %) is now the strongest single piece of evidence for
+the context-feature design decision.
 
-The context feature resolved 11 cases correctly (b = 11), including all seven original short
-affirmations ("ok", "ừ", "đúng rồi", "được", "ok em", "Uh đúng rồi đó", "chuẩn" — all
-correctly routed to ORDER at AWAITING_CONFIRMATION vs. CHAT at IDLE) plus four new cases
-("oke" at IDLE → CHAT, "đồng ý" at AWAITING_CONFIRMATION → ORDER, "ok luôn" at IDLE → CHAT,
-"món này ngon không" at BUILDING → SEARCH).  Context broke the prediction on 3 cases
-(c = 3): "chưa muốn đâu", "còn gì nữa không" and "hết chưa", all routed to SEARCH or ORDER
-instead of CHAT.
+**The set is also no longer weak by construction.**  The previous revision's main caveat was
+that 10 of 36 utterance groups carried the same label at both order stages, so context could
+not contribute on them either way.  At 62 groups only **one** does.  That criticism is retired;
+the set now tests what its name claims.
 
-McNemar exact: b = 11, c = 3, p = 0.057.  The 11.4 percentage-point improvement is close to
-but does not reach significance at α = 0.05.  At the observed discordant ratio of 3.7 : 1,
-approximately 25 discordant pairs would be needed for p < 0.05 — a sample of approximately
-140 cases, matching the target in §5.2.3.
+The 17 cases context resolved are dominated by bare affirmations that are CHAT at IDLE and
+ORDER at AWAITING_CONFIRMATION — "ok", "ừ", "đúng rồi", "được", "ok em", "chuẩn", "đồng ý",
+"vâng", "rồi đó", "đúng vậy", "ok bạn", "đúng òi" — plus "oke" and "ok luôn" at IDLE → CHAT,
+"món này ngon không" at BUILDING → SEARCH, and "cho coi menu đi" at IDLE → SEARCH.  Exactly
+one case broke: CD-038 "còn gì nữa không" at BUILDING, routed to SEARCH where the label expects
+CHAT — a defensible prediction against a debatable label.
 
-The 18 cases wrong in both modes are dominated by utterances containing ambiguous action
-verbs: "thêm", "lấy", "cho", "bỏ", "đặt" at IDLE (empty-cart) contexts.  The MLP
-consistently routes these to ORDER, reflecting the surface ordering language, while the
-labels expect CHAT (no cart to act upon).  These are genuinely borderline cases where the
-customer's intent is underspecified — the utterance sounds like an order but lacks a
-referring target.
+The 47 cases wrong in both modes are the same failure mode reported before, now with a sharper
+profile: 25 of them sit at IDLE, and 28 carry an expected label of CHAT against which the MLP
+predicts ORDER 21 times.  These are utterances containing ambiguous action verbs ("thêm",
+"lấy", "cho", "bỏ", "đặt") in empty-cart contexts, where the surface form is an ordering
+command but the label expects CHAT because there is nothing to act upon.  The customer's intent
+is genuinely underspecified in these cases; this is the class the low-confidence rewriter path
+exists to absorb, not one the classifier can be expected to settle from text alone.
 
 ### Multi-Intent Detection (n = 27, `evals/data/router/multi_intent_detection.json`)
 
@@ -159,77 +260,183 @@ reasonable fallback.
 rewriter decomposes them into same-intent fragments).  No single-intent utterance was
 incorrectly routed to the wrong worker due to the detection mechanism.
 
-### Six-Arm Router Ablation (n = 304 pooled, `evals/results/router_arms_20260726_125915.json`)
+### Five-Arm Router Ablation (n = 360 pooled, `evals/results/router_arms_20260728_193643.json`)
 
-The pooled set was expanded on 2026-07-26 from 130 to 304 cases by incorporating the expanded
-`single_intent_eval.json` (149 cases) and `context_dependent_eval.json` (70 cases) alongside the
-original `router_eval.json`, `semantic_eval.json` and `router_context_eval.json` files.
+Run at **N = 5** on the deployment model, `--arms A C D E F`.  Arm B was dropped; see
+*Run Configuration* above for why, and what is lost with it.  The pooled set grew again with the
+context-dependent dataset, from 304 cases to **360** (`router`, `single`, `semantic`, `context`,
+`context_dep`).
 
-| Arm | System | n correct | Accuracy | 95 % Wilson CI | p50 (ms) | p95 (ms) | GPU (MB) |
-|-----|--------|:---------:|----------|---------------:|----------:|----------:|:--------:|
-| A | Centroid (semantic only) | 232 | 76.3 % | 71.2–80.7 % | 10 | 12 | — |
-| B | SLM only (qwen2.5:3b) | 246 | 80.9 % | 76.1–84.9 % | 194 | 205 | — |
-| C | Hybrid semantic→SLM (previous) | 225 | 74.0 % | 68.8–78.6 % | 12 | 705 | — |
-| D | MLP, no context features | 254 | 83.6 % | 79.0–87.3 % | 10 | 13 | — |
-| **E** | **MLP + context (proposed)** | **262** | **86.2 %** | **81.9–89.6 %** | **9** | **11** | — |
-| F | LLM zero-shot (qwen2.5:7b-instruct) | 253 | 83.2 % | 78.6–87.0 % | 229 | 271 | — |
+| Arm | System | n correct | Accuracy | 95 % Wilson CI | p50 (ms) | p95 (ms) |
+|-----|--------|:---------:|----------|---------------:|----------:|----------:|
+| A | Centroid (semantic only) | 251/360 | 69.7 % | 64.8–74.2 % | 10 | 11 |
+| C | Hybrid semantic→SLM (previous) | 251/360 | 69.7 % | 64.8–74.2 % | 10 | 1820 |
+| D | MLP, no context features | 274/360 | 76.1 % | 71.4–80.2 % | 8 | 9 |
+| **E** | **MLP + context (proposed)** | **290/360** | **80.6 %** | **76.2–84.3 %** | **8** | **9** |
+| F | LLM zero-shot (`qwen2.5:14b-instruct-q6_K`) | 277/360 | 76.9 % | 72.3–81.0 % | 235 | 267 |
 
-The GPU column is empty because no per-arm figure exists.  The `peak_gpu_mb` field in both runs
-records total device occupancy at the moment each arm ran and is therefore cumulative in arm
-order; see the Peak GPU Memory note in §5.4.6.  All six arms are single runs (`"runs": 1`),
-which for arms B, C and F means one draw from a stochastic system.
-
-Paired McNemar exact (identical items, n = 304):
+Paired McNemar exact (identical items, n = 360):
 
 | Comparison | b (E only) | c (other only) | p | Verdict |
 |---|---:|---:|---:|---|
-| E vs C (previous system) | 56 | 19 | 2.2 × 10⁻⁵ | **significant** |
-| E vs A (centroid) | 51 | 21 | 5.4 × 10⁻⁴ | **significant** |
-| E vs B (SLM) | 29 | 13 | 0.020 | **significant** |
-| E vs D (context ablation) | 11 | 3 | 0.057 | not significant |
-| **E vs F (LLM ceiling)** | **24** | **15** | **0.200** | **not significant** |
+| E vs C (previous system) | 61 | 22 | 2.2 × 10⁻⁵ | **significant** |
+| E vs A (centroid) | 61 | 22 | 2.2 × 10⁻⁵ | **significant** |
+| E vs D (context ablation) | 18 | 2 | 4.0 × 10⁻⁴ | **significant** |
+| E vs F (LLM ceiling, 14B) | 32 | 19 | 0.092 | not significant, favouring E |
 
-The proposed arm reaches 86.2 %, numerically exceeding the 7 B LLM zero-shot router (83.2 %)
-while running at p50 = 9 ms vs. 229 ms — a **25 × latency advantage**.  The arm is
-statistically significantly better than the centroid, SLM, and previous hybrid system;
-it is indistinguishable from the 7 B LLM (p = 0.20) despite the numerical advantage.
+**The LLM-ceiling caveat is resolved, and it resolved in the thesis's favour.**  The previous
+revision had to concede that arm F was a 7B while the system deploys a 14B, so the ablation
+established only that the classifier matched a smaller model than the one that ships.  Arm F is
+now the deployed `qwen2.5:14b-instruct-q6_K`.  The proposed arm still comes out ahead —
+80.6 % against 76.9 % — and McNemar still cannot separate them (p = 0.092).  The defensible
+sentence is therefore stronger than before and has the same shape:
 
-Per-class F1 for the proposed arm (n = 304):
+> The trained MLP classifier is statistically indistinguishable from a zero-shot router built on
+> the **deployed 14 B model** (p = 0.092 at n = 360), while running at 8 ms against 235 ms p50 —
+> a **29 × latency advantage** — and is significantly better than every non-LLM baseline.
+
+#### Control: is the 14 B really worse than the 7 B?  No — the pool changed.
+
+Arm F scored 83.2 % in the previous revision on the 7 B and 76.9 % here on the 14 B, which reads
+as the larger model routing worse.  It does not survive checking, and the check matters because
+the naive reading would undermine the model-selection argument in §5.1.1.
+
+**The pools are different.**  Every arm fell by a similar margin between the two revisions,
+including the three that never touch a language model and therefore *cannot* be affected by the
+model swap:
+
+| Arm | Previous (n = 304) | This pass (n = 360) | Δ | Uses an LLM? |
+|-----|:---:|:---:|:---:|:---:|
+| A Centroid | 76.3 % | 69.7 % | −6.6 | no |
+| D MLP, no context | 83.6 % | 76.1 % | −7.5 | no |
+| E MLP + context | 86.2 % | 80.6 % | −5.6 | no |
+| F LLM zero-shot | 83.2 % | 76.9 % | −6.3 | yes |
+
+Arm F's drop sits inside the band set by arms that are provably model-independent, so there is
+nothing left for the model swap to explain.
+
+**Measured directly.**  Arm F was re-run with `qwen2.5:7b-instruct` over the identical 360-item
+pool (`ARM_LLM_MODEL=qwen2.5:7b-instruct`, result file `armF_7b_20260728.json`):
+
+| Model | Accuracy | 95 % Wilson CI | p50 |
+|-------|:--------:|:--------------:|----:|
+| `qwen2.5:14b-instruct-q6_K` | 277/360 = 76.9 % | 72.3–81.0 % | 235 ms |
+| `qwen2.5:7b-instruct` | 274/360 = 76.1 % | 71.4–80.2 % | 196 ms |
+
+Paired McNemar: b = 14, c = 11, **p = 0.69**.  The two models agree on 328 of 360 items
+(91.1 %).  The 14 B is if anything marginally ahead, and the difference is not significant.
+**The 7 B-versus-14 B comparison is a null result, and the apparent regression was entirely
+pool composition.**
+
+**Why both models sit at the same number — a structural ceiling.**  The discordant cases are
+dominated by the context-dependent subset, and inspection explains it.  Of the 112
+`context_dep` items in the pool, **110 belong to 55 utterances whose gold label differs by order
+stage** ("ok luôn", "rồi đó", "chắc rồi", "đúng òi", "thôi khỏi", "chưa cần", …).  Arm F is a
+text-only prompt: it never receives `order_stage`, so it assigns one label per utterance string
+and is necessarily wrong on one member of every such pair.  **Its ceiling on those 110 items is
+55, i.e. 50 %.**  Measured:
+
+| Arm | `context_dep` (n = 112) | Sees order stage? |
+|-----|:---:|:---:|
+| F, 14 B | 56/112 = 50 % | no — **at the ceiling** |
+| F, 7 B | 53/112 = 47 % | no — at the ceiling |
+| A, centroid | 57/112 = 51 % | no — at the ceiling |
+| **E, MLP + context** | **65/112 = 58 %** | **yes — the only arm above it** |
+
+Both prompted arms and the centroid are pinned at the ceiling regardless of capacity, while the
+proposed arm is the only one that clears it.  This sharpens the contribution claim considerably.
+The argument is not "a small classifier happens to match a large language model"; it is that on
+the subset where conversation state decides the label, **no text-only router can exceed 50 % no
+matter how large it is**, and the gap is closed by giving the classifier the state rather than
+by scaling the model.  It also explains why growing the context-dependent set lowered every arm
+except E: the pool gained items that are unanswerable without context.
+
+Per-dataset accuracy for the full comparison:
+
+| Arm | router (39) | single (118) | semantic (71) | context (20) | context_dep (112) |
+|-----|:---:|:---:|:---:|:---:|:---:|
+| E, MLP + context | 97 % | 93 % | 87 % | 75 % | 58 % |
+| F, 14 B | 95 % | 91 % | 92 % | 60 % | 50 % |
+| F, 7 B | 95 % | 90 % | 93 % | 60 % | 47 % |
+| A, centroid | 77 % | 72 % | 94 % | 60 % | 51 % |
+
+The prompted arms beat the classifier on `semantic` (92 % vs 87 %) — the subset of paraphrased,
+self-contained questions where world knowledge helps and conversation state is irrelevant.  That
+is the honest counterweight to the paragraph above and belongs in the chapter beside it.
+
+
+**The context ablation is now significant here too.**  D vs E moved from p = 0.057 at n = 304 to
+b = 18, c = 2, **p = 4.0 × 10⁻⁴** at n = 360, agreeing with the standalone context experiment in
+§5.4.1 above.  The two independent routes to that conclusion are the strongest result in this
+section.
+
+**The N = 5 protocol produced zero spread on the prompted arms.**  Arms C and F were each run
+five times and returned exactly 251/360 and 277/360 on all five runs.  This is not a harness
+error: `_prompted()` fixes temperature at 0.0, and the hybrid arm's SLM fallback is likewise
+greedy.  §5.2.3 anticipates reporting `mean [min–max]` for stochastic components; for these two
+arms the range is degenerate, and the honest reporting is a single figure with the note that
+five draws were taken and did not differ.  The genuine run-to-run variation this chapter has
+observed elsewhere — the QS-006 tool-call flip in §5.4.5 — comes from the agent graph, not from
+the router's prompted arms.
+
+**Arm C fires its SLM fallback on 1 % of cases and is otherwise the centroid.**  Arms A and C
+score identically (251/360) and produce the same Wilson interval, which was initially read as a
+possible harness fault.  It is not: the per-arm prediction vectors are stored in the result
+file, and comparing them directly shows the two arms **differ on exactly 4 of 360 items**.  All
+four are two utterances that appear at two order stages —
+
+| Case | Utterance | Gold | A (centroid) | C (hybrid) |
+|------|-----------|------|--------------|------------|
+| CD-066 | "chốt nha" | CHAT | CHAT ✓ | ORDER ✗ |
+| CD-067 | "chốt nha" | ORDER | CHAT ✗ | ORDER ✓ |
+| CD-092 | "đợi chút" | CHAT | CHAT ✓ | ORDER ✗ |
+| CD-093 | "đợi chút" | ORDER | CHAT ✗ | ORDER ✓ |
+
+— so each arm wins one of each pair and they cancel exactly: McNemar b = 2, c = 2, p = 1.0.
+The hybrid arm's semantic fast path accepts the other 356 cases outright, so its SLM fallback
+runs about 1 % of the time.  That is consistent with its p95 of 1 820 ms: the fallback is rare
+and expensive, which is precisely the behaviour the previous production router had and the
+reason it was replaced.
+
+The practical consequence for the chapter stands: **E-vs-C and E-vs-A are not independent
+comparisons.**  They return identical discordant counts (b = 61, c = 22, p = 2.2 × 10⁻⁵) because
+the two arms differ on four items that cancel.  Report one of them, or report both while saying
+they are the same comparison; do not present them as two separate pieces of evidence.
+
+Full pairwise McNemar, computed from the stored prediction vectors:
+
+| Pair | b (row only) | c (col only) | p |
+|------|---:|---:|---:|
+| A vs C | 2 | 2 | 1.0 |
+| A vs D | 25 | 48 | 0.0095 |
+| A vs E | 22 | 61 | 2.2 × 10⁻⁵ |
+| A vs F | 22 | 48 | 0.0025 |
+| D vs E | 2 | 18 | 4.0 × 10⁻⁴ |
+| D vs F | 18 | 21 | 0.75 |
+| E vs F | 32 | 19 | 0.092 |
+
+Per-class F1 for the proposed arm
 
 | Class | Precision | Recall | F1 | Support |
 |-------|:---------:|:------:|:----:|:-------:|
-| ORDER | 0.816 | 0.939 | 0.873 | 99 |
-| SEARCH | 0.848 | 0.833 | 0.840 | 60 |
-| PAYMENT | 0.965 | 0.965 | 0.965 | 57 |
-| CHAT | 0.865 | 0.727 | 0.790 | 88 |
+| ORDER | 0.757 | 0.883 | 0.815 | 120 |
+| SEARCH | 0.803 | 0.792 | 0.797 | 72 |
+| PAYMENT | 0.946 | 0.964 | 0.955 | 55 |
+| CHAT | 0.796 | 0.655 | 0.718 | 113 |
 
-**Context-feature ablation (D vs. E).**  The context feature resolved 11 cases correctly and
-broke 3 (b = 11, c = 3, p = 0.057).  The improvement (83.6 % → 86.2 %) is close to but does
-not reach significance.  At the observed 3.7 : 1 discordant ratio, approximately 25 discordant
-pairs are needed for p < 0.05, requiring approximately 140 additional context-dependent cases.
+CHAT recall is the weak class at 0.655, the same pattern the standalone single-intent
+experiment shows: conversational remarks carrying ordering verbs are pulled into ORDER.
 
-**The arm ordering is not stable across runs; lead with the significant result, not the
-numerical one.**  On the earlier 130-case pool (`router_arms_20260726_011327.json`) arm F led
-arm E, 87.7 % against 85.4 %, and the centroid scored 83.8 % against the 76.3 % it scores here.
-Expanding the pool to 304 cases changed its composition, and the "E numerically exceeds F"
-ordering is a product of that composition rather than a stable property.  A 3-point gap that
-McNemar cannot resolve at p = 0.20 should not be led with.
+**Accuracies fell across every arm relative to the previous revision** (E: 86.2 % → 80.6 %,
+F: 83.2 % → 76.9 %, A: 76.3 % → 69.7 %).  This is a composition change, not a regression — the
+pool grew from 304 to 360 by absorbing the expanded context-dependent set, whose cases are
+harder than the pool average.  Arm-to-arm comparisons within this table are paired on identical
+items and are unaffected; comparisons against the previous revision's numbers are not valid.
 
-**The defensible claim.**  The trained MLP classifier is **statistically indistinguishable from
-the 7B LLM zero-shot router** (p = 0.20 at n = 304) while running at 9 ms against 229 ms p50, a
-25x latency advantage, and is significantly better than all three non-LLM baselines (centroid
-p = 5.4e-4, SLM p = 0.020, previous hybrid p = 2.2e-5).
-
-**The LLM ceiling is a 7B, and the deployed model is a 14B.**  Arm F uses
-`qwen2.5:7b-instruct`, which is what the draft evaluation pass ran on, not the 14B the system is
-intended to deploy.  So this ablation does not currently establish that the classifier matches
-the routing accuracy of the LLM the system actually runs; it establishes that it matches a 7B.
-A 14B zero-shot router would plausibly score higher, and the E-vs-F comparison could turn from
-"indistinguishable" into "the LLM is better but 25x slower", which is still a defensible
-contribution but a different sentence.  Arm F must be re-run on the 14B alongside the rest of
-the chapter.  The comparisons against the centroid, SLM and previous hybrid are unaffected,
-since none of those involve the deployed model.
-
+**GPU memory remains unreportable per arm.**  The `peak_gpu_mb` field records total device
+occupancy while each arm ran (A: 1 785 MB, C: 14 770 MB, D/E/F: 15 318 MB) and is cumulative in
+arm order, so it measures what was already loaded rather than what the arm needs.  A per-arm
+figure requires running each arm alone from a cold GPU (`--arms E`), which this pass did not do.
 ### Clean Holdout (n = 39, `evaluate.py --context-aware`)
 
 **38/39** (Wilson 95 % CI: 86.8–99.5 %).  The holdout was partitioned before
@@ -248,11 +455,9 @@ holdout.
 
 ### Name Resolution by Stage (n = 70 pairs)
 
-*Result file:* `name_resolution_20260719_000825.json` (2026-07-19).  A run 67 seconds earlier
-(`..._000718.json`) reports 14/70; the harness was corrected between the two and only the later
-run measures the resolver.  These are pure-Python validator functions and do not depend on the
-classifier, so the 2026-07-19 date does not invalidate them, but they should be re-run if
-`menu.json` changes.
+*Result file:* `name_resolution_20260728_190802.json` (2026-07-28).  The previous revision
+reported **70/70 = 100 %** from `name_resolution_20260719_000825.json` and warned that the set
+"should be re-run if `menu.json` changes".  It has changed, and the warning has come due.
 
 | Resolution stage | Correct | Total | Accuracy |
 |------------------|:-------:|:-----:|:--------:|
@@ -262,8 +467,33 @@ classifier, so the 2026-07-19 date does not invalidate them, but they should be 
 | Substring match | 10 | 10 | 100 % |
 | Token-Jaccard (match) | 5 | 5 | 100 % |
 | Token-Jaccard (reject) | 4 | 4 | 100 % |
-| Misspelled (correctly rejected) | 16 | 16 | 100 % |
-| **Total** | **70** | **70** | **100 %** |
+| Misspelled (correctly rejected) | 11 | 16 | 68.8 % |
+| **Total** | **65** | **70** | **92.9 %** (Wilson 84.3–96.9 %) |
+
+**The five failures are stale ground truth, not a resolver regression.**  `menu.json` has grown
+from the **219 dishes** this chapter quotes throughout to **234**, and four of the names the
+dataset marks as off-menu (`expected = none`) are now real dishes the resolver is correct to
+find:
+
+| Case | Probe | Dataset says | Menu now contains |
+|------|-------|--------------|-------------------|
+| NR-062 | "Gỏi Cuốn" | off-menu | Gỏi Cuốn Tôm Thịt |
+| NR-064 | "Bò Nướng Lá Lốt" | off-menu | Bò Nướng Lá Lốt (exact) |
+| NR-065 | "Nước Cam" | nearest = Nước Suối | Nước Ép Cam |
+| NR-066 | "Trà Đào" | off-menu | Trà Đào Cam Sả |
+| NR-068 | "Cá Hồi Nướng" | nearest = Cá Chim Nướng Sa Tế | Khô Cá Đuối Nướng (new nearest) |
+
+Six of the seven resolution stages — exact, diacritic-insensitive, prefix, substring,
+token-Jaccard match and token-Jaccard reject — still score 100 %.  The entire loss sits in the
+seventh, the `misspelled` bucket, and is attributable to menu growth
+rather than to the resolver, whose behaviour on all five is the behaviour one would want.
+
+**This is an action item, not a result.**  Either the five labels are corrected against the
+current `menu.json` and the experiment re-run, or the chapter states that name resolution was
+measured against the 219-dish snapshot.  Reporting 92.9 % as a resolver accuracy would
+understate the component and invite a question at the defence that has a better answer.  The
+same menu drift affects the out-of-menu dataset (see §5.4.2 below) and the "219-entry menu"
+figure asserted in §5.2.1.
 
 ### Ambiguity Detection (n = 25 cases)
 
@@ -278,7 +508,13 @@ All 15 ambiguous prefixes (e.g. "Ốc Hương" matching 11 sauce variants) corre
 clarification.  All 10 unambiguous full names correctly resolved.  QS-005 in §5.4.5 shows this
 behaviour end to end on a live turn.
 
-*Result file:* `ambiguity_20260719_000719.json` (2026-07-19, deterministic validator function).
+*Result file:* `ambiguity_20260728_190802.json` (2026-07-28, deterministic validator function).
+Re-run against the current 234-dish `menu.json`: unchanged at 25/25, precision 1.000, recall
+1.000.  Unlike name resolution, this experiment is insensitive to menu growth — it asks whether
+a generic prefix maps to more than one dish, and adding dishes cannot turn an ambiguous prefix
+unambiguous.  The candidate counts did shift (e.g. "Ốc Cà Na" now returns 4 candidates where
+the dataset's `note` expects ≥ 9), which affects none of the pass/fail outcomes but does mean
+the per-case expected-count annotations in `ambiguity_eval.json` are stale.
 
 ### Validator Ablation — ON vs. OFF (n = 41 scenarios each)
 
@@ -458,43 +694,82 @@ trend.  The only well-populated case is the two-intent turn, at 19 of 25 cases.
 
 ### Retrieval Quality — BM25 / FAISS / RRF
 
-*Result file:* `retrieval_full_20260726_004318.json`.
+*Result file:* `retrieval_full_20260728_190807.json` (2026-07-28).
 
 | Mode | P@5 | R@5 | MRR | Hit Rate | Latency p50 |
 |------|:----:|:----:|:----:|:--------:|:-----------:|
-| BM25 only | 0.367 | 0.719 | 0.720 | 0.875 | 8.8 ms |
-| FAISS only | 0.315 | 0.523 | 0.663 | 0.792 | 422 ms |
-| **RRF fusion** | **0.400** | **0.743** | **0.751** | **0.917** | 9.7 ms |
+| **BM25 only** | **0.402** | **0.747** | **0.701** | **0.958** | **0.4 ms** |
+| FAISS only | 0.254 | 0.461 | 0.580 | 0.667 | 7.8 ms |
+| RRF fusion | 0.350 | 0.634 | 0.581 | 0.833 | 8.9 ms |
+
+**The fusion result has reversed, and this is the most consequential change in this revision.**
+The previous revision reported RRF ahead of both single lanes on every metric
+(P@5 0.400, R@5 0.743, MRR 0.751, hit 0.917).  It is now behind BM25 on every metric: recall
+drops 0.747 → 0.634, hit rate 0.958 → 0.833, MRR 0.701 → 0.581.  §5.2.2 states that recall and
+hit rate are the metrics that matter here, because the agent speaks a paraphrase of the top
+results and cannot recover a dish the retriever missed — so this is a loss exactly where the
+chapter argues it counts.  On this dataset the lexical lane alone is the strongest configuration
+and fusion actively costs recall by promoting weak semantic candidates into the top 5.
+
+Two further observations from the same run:
+
+- **FAISS latency fell from 422 ms to 7.8 ms p50.**  The previous revision's 422 ms was an
+  outlier attributable to first-query model loading inside the timed region; at 7.8 ms the
+  vector lane is no longer a latency argument for or against fusion.
+- **The vector lane retrieves non-dish documents.**  FAISS top-5 lists include
+  `1. Giới thiệu chung`, `# THÔNG TIN NHÀ HÀNG "ỐC QUẬY"` and `Chị Lan` — restaurant-info
+  chunks sitting in the same index as dishes.  These can never be relevant to a dish query, and
+  they are a plausible mechanism for both the FAISS numbers and the fusion regression.  Whether
+  the index should be partitioned by document type is a design question this result raises and
+  does not answer.
 
 ### Per-Difficulty (RRF)
 
 | Difficulty | n | P@5 | R@5 | MRR | Hit Rate |
 |------------|:--:|:----:|:----:|:----:|:--------:|
-| Easy | 8 | 0.425 | 0.865 | 1.000 | 1.000 |
-| Medium | 9 | 0.444 | 0.907 | 0.722 | 1.000 |
-| Hard | 7 | 0.314 | 0.391 | 0.505 | 0.714 |
+| Easy | 8 | 0.425 | 0.865 | 0.938 | 1.000 |
+| Medium | 9 | 0.356 | 0.741 | 0.491 | 0.889 |
+| Hard | 7 | 0.257 | 0.232 | 0.291 | 0.571 |
+
+The hard tier is where the system is weak: R@5 = 0.232 and a hit rate of 0.571 mean that on
+three of seven intent-style queries ("đồ nhắm lai rai với bia", "món nào bán chạy được yêu
+thích nhất", "có gì cho nhóm đông người chia sẻ") nothing relevant reaches the top 5 at all.
 
 ### Dual-Lane Gatekeeper (n = 24 queries)
 
 | Category | Count |
 |----------|:-----:|
 | Both lanes pass | 20 |
-| Lexical-only pass | 3 |
+| Lexical-only pass | 2 |
 | Semantic-only pass | 0 |
-| Correctly rejected | 1 |
-| Total passed | 23 (95.8 %) |
+| Rejected | 2 |
+| Total passed | 22 (91.7 %) |
 
-*Result file:* `retrieval_full_20260726_004318.json`.
+Top-1 cosine scores span [0.170, 0.587], all inside the valid [0, 1] interval — the cos > 1.0
+anomaly fixed in commit `f308a1a` has not returned.  The semantic lane still never passes
+independently.  The two lexical-only passes are SR-023 "đồ uống không cồn cho trẻ em"
+(cos = 0.240) and SR-024 "hàu chế biến kiểu gì" (cos = 0.273).
 
-The gatekeeper correctly rejects one query ("có gì cho nhóm đông người chia sẻ") where
-neither the semantic lane (cos = 0.195) nor the lexical lane found a keyword match.
-Top-1 cosine scores range from 0.165 to 0.581 across the 24 queries, all within the valid
-[0, 1] interval — the earlier cos > 1.0 anomaly was caused by an embedding-model
-configuration mismatch resolved by the float32 pinning and model-name fix in commit
-`f308a1a`.  The semantic lane never passes independently because the lexical lane is strong
-on nearly all menu queries; on 20 of 24 queries both lanes agree to admit the query.
-The 3 lexical-only passes occur on queries where the semantic similarity is low
-(cos = 0.165–0.278) but a keyword match in the top-ranked document confirms relevance.
+**One rejection is correct and one is a harness defect.**  SR-021 "có gì cho nhóm đông người
+chia sẻ" (cos = 0.195) is the same correct rejection reported before: neither lane finds
+anything.  SR-002 "cho xem lẩu thái" is not — it is an *easy* query on which BM25 returns
+`Lẩu Thái` at rank 1 with R@5 = 1.000, and the gatekeeper blocks it anyway (cos = 0.170,
+top_doc `Rau Muống Xào Chao`).
+
+The cause is a divergence between the harness and the system.  `gatekeeper_check()` in
+`evals/scripts/eval_retrieval_full.py:113-115` builds its lexical-lane text from the **vector
+engine's top-1 document only**, while the production gatekeeper in
+`src/agent_brain/services/retriever/fusion/rrf.py:44-47` concatenates the **BM25 top-1 and the
+vector top-1**.  The harness docstring claims "This is the same logic as the production
+gatekeeper in `rrf.py`"; it is not.  The harness therefore measures a strictly stronger
+gatekeeper than the one that ships, and would reject any query whose keyword match lives in the
+lexical lane — which is precisely what "lexical lane" is supposed to mean.
+
+Production would admit SR-002, since `Lẩu Thái` contains the query keyword.  **The gatekeeper
+figures above, and the 23/24 reported in the previous revision, both understate the deployed
+gatekeeper.**  The harness should be corrected to match `rrf.py` and this experiment re-run
+before the number reaches the chapter; the fix is one line, but it changes a reported result and
+so has been left for a decision rather than applied inside an evaluation pass.
 
 ---
 
@@ -879,18 +1154,34 @@ latency budget set in §4.1.  The ORDER_CONFIRM path has the highest tail (p95 =
 driven by the confirm_order tool call which involves a database write and kitchen-display
 push.
 
-### Router Latency per Arm (n = 304)
+### Router Latency per Arm (n = 360)
 
-*Result file:* `router_arms_20260726_125915.json`.
+*Result file:* `router_arms_20260728_193643.json` (2026-07-28, N = 5).
 
 | Arm | p50 | p95 |
 |-----|:-----:|:-----:|
-| MLP + context (proposed) | 9 ms | 11 ms |
-| MLP, no context | 10 ms | 13 ms |
-| Centroid | 10 ms | 12 ms |
-| SLM (qwen2.5:3b) | 194 ms | 205 ms |
-| Hybrid semantic→SLM | 12 ms | 705 ms |
-| LLM zero-shot (qwen2.5:7b) | 229 ms | 271 ms |
+| MLP + context (proposed) | 8 ms | 9 ms |
+| MLP, no context | 8 ms | 9 ms |
+| Centroid | 10 ms | 11 ms |
+| Hybrid semantic→SLM | 10 ms | 1 820 ms |
+| LLM zero-shot (`qwen2.5:14b-instruct-q6_K`) | 235 ms | 267 ms |
+
+Arm B (`SLM only`) is absent; see *Run Configuration*.  The previous revision measured it at
+194 ms p50 on `qwen2.5:3b`.
+
+Two things changed against the previous revision.  The prompted arm is now the 14B rather than
+the 7B and costs 235 ms p50 against the 7B's 229 ms — **model size barely moved the router's
+latency**, because the arm emits a single label token and is dominated by prompt processing
+rather than by generation.  The MLP arms are marginally faster (9 → 8 ms), which is noise.
+
+The hybrid arm's p95 rose from 705 ms to 1 820 ms, which is what one would expect once its SLM
+fallback runs on a 14B rather than a 3B — but see the note in §5.4.1 that arm C may be
+degenerating to arm A on this pool, which that p95 does not sit comfortably with.  The p95
+should be read as evidence the fallback fires, not as a settled figure.
+
+The **29 × p50 advantage** of the classifier over the prompted router (8 ms vs 235 ms) is the
+number the architecture argument rests on, and it survives the move to the deployment model
+intact.
 
 ### Peak GPU Memory (Router Arms)
 
@@ -923,47 +1214,69 @@ loaded for retrieval, both of which are defensible without a GPU measurement.
 
 ## §5.5.1 — API Benchmark
 
-*Result file:* `bench_api_20260726_124543.json`.  All 12 REST endpoints were exercised with
-n = 10 samples each after 2 warmup requests, against the live orchestrator on port 8000.
+*Result file:* `bench_api_20260728_190815.json` (2026-07-28).  All 12 REST endpoints were
+exercised against the live orchestrator on port 8000.  **The harness now takes n = 100 samples
+per endpoint rather than the n = 10 of the previous revision**, so these percentiles are better
+resolved; p99 in particular was previously estimated from ten observations and meant little.
 
 | Endpoint | p50 (ms) | p95 (ms) | p99 (ms) |
 |----------|:---:|:---:|:---:|
-| GET /menu | 2.2 | 3.1 | 3.1 |
-| GET /tables | 2.2 | 3.0 | 3.0 |
-| GET /tables/{id} | 2.5 | 2.9 | 2.9 |
-| POST /seatings | 2.0 | 2.6 | 2.6 |
-| GET /orders | 2.8 | 3.6 | 3.6 |
-| POST /orders | 1.3 | 2.3 | 2.3 |
-| GET /payments | 1.6 | 2.8 | 2.8 |
-| GET /robots | 2.0 | 2.9 | 2.9 |
-| GET /tasks | 1.8 | 3.0 | 3.0 |
-| GET /layout | 1.4 | 2.0 | 2.0 |
-| POST /voice/event | 1.3 | 1.7 | 1.7 |
-| POST /voice/listen | 1.4 | 2.3 | 2.3 |
+| GET /menu | 1.1 | 1.2 | 1.2 |
+| GET /tables | 1.1 | 1.2 | 1.3 |
+| GET /tables/{id} | 1.2 | 1.3 | 1.5 |
+| POST /seatings | 1.0 | 1.1 | 1.2 |
+| GET /orders | 1.3 | 1.4 | 1.4 |
+| POST /orders | 0.8 | 1.0 | 6.4 |
+| GET /payments | 1.1 | 1.2 | 1.3 |
+| GET /robots | 1.1 | 1.3 | 1.4 |
+| GET /tasks | 1.2 | 1.4 | 1.5 |
+| GET /layout | 0.9 | 1.0 | 1.0 |
+| POST /voice/event | 0.8 | 1.0 | 1.1 |
+| POST /voice/listen | 0.8 | 0.9 | 0.9 |
 
-All endpoints respond within 4 ms at p99.  The FastAPI + SQLite design meets the real-time
-requirement — push-based WebSocket events replace the 5–10 s polling cycle of traditional
-KDS systems (§2.6.4).
+All 1 200 requests succeeded (`n_err = 0` on every endpoint).  Eleven of the twelve endpoints
+respond within 1.5 ms at p99 — roughly twice as fast as the previous revision's figures, which
+is consistent with the larger sample amortising the warmup cost rather than with any change to
+the backend.  The single exception is **POST /orders at p99 = 6.4 ms against a p50 of 0.8 ms**,
+a tail that appears only at n = 100 and was invisible at n = 10.  It is the one write path that
+inserts order lines, so an occasional SQLite write stall is the obvious explanation; at 6.4 ms
+it is far inside any interactive budget and is recorded rather than investigated.
 
-The benchmark also issued 2 and then 4 simultaneous requests, all of which succeeded
-(`concurrent.2_tables.n_ok = 2`, `4_tables.n_ok = 4`) at a p95 of 2.9 and 3.4 ms.  This measures
-concurrent HTTP handling only.  It is **not** the session-isolation experiment §5.5.2 calls for,
-which requires concurrent conversations at different tables ordering overlapping dishes and a
-cross-session leakage count.  That experiment has not been run.
+The FastAPI + SQLite design meets the real-time requirement — push-based WebSocket events
+replace the 5–10 s polling cycle of traditional KDS systems (§2.6.4).
+
+Concurrency: 2 and then 4 simultaneous table orders, all successful (`2_tables.n_ok = 2` at
+p95 = 2.3 ms, `4_tables.n_ok = 4` at p95 = 3.0 ms).  This measures concurrent HTTP handling
+only.  It is **not** the session-isolation experiment §5.5.2 calls for, which requires
+concurrent conversations at different tables ordering overlapping dishes and a cross-session
+leakage count.  That experiment has still not been run.
 
 ### WebSocket Event Propagation
 
-The WebSocket benchmark (`bench_ws_20260726_124544.json`) connected successfully as `panel`
-and `customer` roles but collected no events — the orchestrator was idle during the
-measurement window.  Event propagation latency requires active agent-driven traffic
-(e.g. order creation, robot status updates) and remains unevaluated pending a
-multi-component integration test.  This limitation is noted in §5.6.4.
+*Result file:* `bench_ws_20260728_190817.json`.  **Still unmeasured, and for a new reason — the
+benchmark is now broken.**
+
+The previous revision reported that the WebSocket client connected but collected no events
+because the orchestrator was idle.  This run is worse: the harness generated its own traffic and
+**every single one of the 20 `POST /orders` calls it issued was rejected with HTTP 422
+Unprocessable Entity**, leaving `rest_calls = 0`.  It collected 21 unrelated WS events from
+ambient activity and could match none of them to traffic it caused.
+
+This is a harness defect, not a backend defect: in the same pass `bench_api` posted to
+`/orders` 100 times with zero errors, and `bench_fleet` created an order that returned 201.
+`bench_ws.py` is therefore building a request body the current `/orders` schema no longer
+accepts — the endpoint's contract has moved and this one caller was not updated with it.
+
+WebSocket propagation latency consequently remains unevaluated, and §5.6.4 must continue to say
+so.  The fix is to bring `bench_ws.py`'s payload in line with the schema `bench_api.py` already
+uses; until then this benchmark reports nothing and should not be cited.
 
 ---
 
 ## §5.5.3 — Fleet Management & Robot Task Lifecycle
 
-*Result file:* `bench_fleet_20260726_135111.json`.
+*Result file:* `bench_fleet_20260728_190920.json` (2026-07-28).  Re-run; the lifecycle outcome
+is unchanged from 2026-07-26.
 
 A mock robot connects via WebSocket (`role=robot`), the backend creates a call task, the
 dispatcher assigns it, and the robot completes the lifecycle:
@@ -990,7 +1303,7 @@ measured.  This is the happy path of the lifecycle only, and §5.6.4 must say so
 
 ## §5.5.4 — Multi-Role State Consistency
 
-*Result file:* `bench_fleet_20260726_135111.json`.
+*Result file:* `bench_fleet_20260728_190920.json` (2026-07-28).
 
 A seating event (kiosk role) followed by an order creation (agent role) was driven through
 the REST API, and the three role views were polled to verify convergence:
@@ -998,20 +1311,22 @@ the REST API, and the three role views were polled to verify convergence:
 | Role | Endpoint | Before | After |
 |------|----------|--------|-------|
 | Kiosk (seating) | `POST /seatings` → table 3 | `TRONG` | `DANG_PHUC_VU`, party_size=4 |
-| Agent (order) | `POST /orders` → table 3 | 0 orders | 2 orders, latest 245,000 ₫ |
-| Panel (monitor) | `GET /orders` | 0 orders | 2 orders visible |
-| Customer (tablet) | `GET /tables/3` | `TRONG` | `DANG_PHUC_VU`, current_order_id set |
+| Agent (order) | `POST /orders` → table 3 | 3 orders | 5 orders, latest 245,000 ₫ |
+| Panel (monitor) | `GET /orders` | 3 orders | 5 orders visible |
+| Customer (tablet) | `GET /tables/3` | `TRONG` | `DANG_PHUC_VU`, `current_order_id = 5` |
 | Admin | `POST /admin/reset` | — | All tables freed ✓ |
 
 All three role views (kiosk, panel, customer tablet) reflect the same backend state within
 a single HTTP request-response cycle — there are no stale views or polling delays.  The
 FastAPI + SQLite backend serves as a single source of truth.
 
-The result file records `orders_before = 0`, `orders_after = 2` and `tasks_before = 1`,
-`tasks_after = 2`; the second order and the pre-existing task are residue from the fleet
-lifecycle test that ran immediately before in the same process.  Convergence across roles is
-what this experiment establishes, and that holds; the absolute counts are not a clean baseline
-and the benchmark should reset between the two phases.  Note also that this measures REST
+The result file records `orders_before = 3`, `orders_after = 5` and `tasks_before = 2`,
+`tasks_after = 3`; the extra order and the pre-existing tasks are residue from the fleet
+lifecycle test that ran immediately before in the same process, and from earlier runs that were
+never reset.  Convergence across roles is what this experiment establishes, and that holds; the
+absolute counts are not a clean baseline and the benchmark should reset between the two phases.
+The drift in these counts between the 2026-07-26 run (0 → 2) and this one (3 → 5) is itself
+evidence for that: the deltas are stable, the absolutes are not.  Note also that this measures REST
 polling convergence, not the WebSocket push latency §5.5.4 asks for, which remains unmeasured
 for the same reason as §5.5.1.
 

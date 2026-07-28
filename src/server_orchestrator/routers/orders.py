@@ -135,7 +135,7 @@ async def create_order(payload: OrderCreate) -> OrderOut:
         "panel", {"type": "table.updated", "table": TableOut(**dict(table_row)).model_dump()}
     )
     # Robot stays at the table — the voice module's auto-release timer will send it
-    # home after the guest stops interacting (7 s idle after the confirm reply).
+    # home after the guest stops interacting (15 s idle after the confirm reply).
     return order
 
 

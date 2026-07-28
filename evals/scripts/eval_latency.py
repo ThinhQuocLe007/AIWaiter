@@ -72,10 +72,19 @@ def main():
     print("PIPELINE LATENCY INSTRUMENTOR")
     print("=" * 60)
 
+    # The checkpointer opens this DB in WAL mode, so the -wal and -shm sidecars belong to it.
+    # Unlinking the .db alone leaves them behind to be paired with the next, empty database,
+    # and every later process that opens it -- including any agent service already holding the
+    # old file -- fails with "sqlite3.OperationalError: disk I/O error".
     checkpoint_db = PROJECT_ROOT / "storage" / "db" / "checkpoints.db"
-    if checkpoint_db.exists():
-        checkpoint_db.unlink()
-        print("Cleared checkpoint DB")
+    cleared = False
+    for path in (checkpoint_db, *(checkpoint_db.with_name(checkpoint_db.name + suffix)
+                                  for suffix in ("-wal", "-shm"))):
+        if path.exists():
+            path.unlink()
+            cleared = True
+    if cleared:
+        print("Cleared checkpoint DB (including -wal / -shm)")
 
     print("Loading agent...")
     app = get_agent_app()

@@ -23,21 +23,65 @@ from ..services import dispatcher
 router = APIRouter(prefix="/voice", tags=["voice"])
 
 _pending_releases: dict[int, asyncio.Task] = {}
-_RELEASE_DELAY = 7
+_RELEASE_DELAY = 15
 
 
-async def _release_after_delay(table_id: int):
+async def _broadcast_countdown(table_id: int, seconds: int | None) -> None:
+    """Tell the table's tablet where the dock countdown stands.
+
+    ``seconds`` is the full delay just armed — the tablet counts down locally from it
+    and never hardcodes a duration of its own, so ``_RELEASE_DELAY`` above stays the
+    single place the number lives. ``None`` means no countdown is running any more
+    (robot released, or stood down because nothing is bound to the table).
+    """
+    await manager.broadcast(
+        "customer",
+        {"type": "robot.release_pending", "table_id": table_id, "seconds": seconds},
+    )
+
+
+async def _release_after_delay(table_id: int) -> None:
+    # A cancel here (superseded by a newer timer) propagates out untouched: the task that
+    # replaced us broadcasts its own countdown, so this one must not clear the banner.
     await asyncio.sleep(_RELEASE_DELAY)
     await dispatcher.release_robot_at_table(table_id)
     _pending_releases.pop(table_id, None)
+    await _broadcast_countdown(table_id, None)
 
 
-def reset_release_timer(table_id: int):
-    """Bump the auto-release countdown — guest is still interacting with this table."""
-    old = _pending_releases.pop(table_id, None)
-    if old and not old.done():
-        old.cancel()
+def _cancel_pending(table_id: int) -> bool:
+    task = _pending_releases.pop(table_id, None)
+    if task is None:
+        return False
+    if not task.done():
+        task.cancel()
+    return True
+
+
+async def arm_release_timer(table_id: int) -> None:
+    """Start (or restart) the dock countdown from the full delay."""
+    had_one = _cancel_pending(table_id)
+    if manager.table_robot(table_id) is None:
+        # release_robot_at_table is a no-op with no robot bound, so don't run a timer the
+        # guest would see counting down against nothing. Clear a stale banner if we had one.
+        if had_one:
+            await _broadcast_countdown(table_id, None)
+        return
     _pending_releases[table_id] = asyncio.create_task(_release_after_delay(table_id))
+    await _broadcast_countdown(table_id, _RELEASE_DELAY)
+
+
+async def bump_release_timer(table_id: int) -> None:
+    """Push a RUNNING countdown back to full — the guest is still interacting.
+
+    Deliberately a no-op when nothing is pending: the countdown means "the order is with
+    the kitchen, the robot is free to go", and only a confirmed order may start it. Arming
+    one from any mic press would send the robot home 15 s into a guest's first sentence,
+    before they had ordered anything at all.
+    """
+    if table_id not in _pending_releases:
+        return
+    await arm_release_timer(table_id)
 
 
 class VoiceEvent(BaseModel):
@@ -65,10 +109,14 @@ class VoiceEvent(BaseModel):
 async def voice_event(ev: VoiceEvent) -> dict:
     """Fan a voice event out to every customer tablet; each filters by its own table_id."""
     await manager.broadcast("customer", ev.model_dump())
-    # After a confirm turn, start the auto-release timer: if the guest doesn't
-    # interact again within 7 s the robot heads back to the dock.
     if ev.type == "voice.reply" and ev.confirmed:
-        reset_release_timer(ev.table_id)
+        # Order is with the kitchen — the robot's job at this table is done. Start the
+        # countdown: 15 s of silence and it heads back to the dock.
+        await arm_release_timer(ev.table_id)
+    else:
+        # Any other voice traffic while the countdown runs means the guest is mid-turn.
+        # Bump it, or a slow STT+LLM round trip would let the robot leave mid-sentence.
+        await bump_release_timer(ev.table_id)
     return {"status": "ok"}
 
 
@@ -94,9 +142,9 @@ async def voice_listen(req: ListenRequest) -> dict:
     ok = await manager.send_to_voice_device(
         req.table_id, {"type": "start_listening", "table_id": req.table_id}
     )
-    # Guest pressed the mic — they're about to say something. Cancel the dock timer so the
-    # robot stays put while the conversation is still active.
-    reset_release_timer(req.table_id)
+    # Guest pressed the mic — they're about to say something. Push the dock countdown back
+    # to full so the robot stays put while the conversation is still active.
+    await bump_release_timer(req.table_id)
     return {"status": "ok" if ok else "no_device"}
 
 

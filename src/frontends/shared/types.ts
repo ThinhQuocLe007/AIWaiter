@@ -107,6 +107,12 @@ export type WsEvent =
   // A robot reached a table (role=customer): the tablet at that table switches screens on its
   // own — 'go_to_table' opens the menu (fresh party), 'call' opens the order-more/pay chooser.
   | { type: 'robot.arrived'; table_id: number; kind: 'go_to_table' | 'call' }
+  // The dock countdown for a table (role=customer). Emitted by the orchestrator every time it
+  // arms, re-arms or stands down the auto-release timer that sends the robot home after a
+  // confirmed order. `seconds` is the FULL delay the backend just armed — the tablet counts
+  // down locally from it and never hardcodes a duration, so the two sides cannot drift.
+  // `seconds: null` means no countdown is running (robot released, or no robot at the table).
+  | { type: 'robot.release_pending'; table_id: number; seconds: number | null }
   // Voice mirror (role=customer): what the robot heard / replied for a given table. The tablet
   // filters by its own table_id and shows the live conversation + follows any UI action.
   | { type: 'voice.progress'; table_id: number }

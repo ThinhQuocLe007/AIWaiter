@@ -33,6 +33,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import sys
 import time
 from collections import defaultdict
@@ -79,8 +80,13 @@ MERGE = {"ORDER_CONFIRM": "ORDER"}
 
 # Arm B is deliberately a *small* model and arm F the deployment model, so the pair brackets
 # the prompted-classifier approach by capacity while holding the prompt fixed.
-SLM_MODEL = "qwen2.5:3b"
-LLM_MODEL = "qwen2.5:14b-instruct-q6_K"
+#
+# Overridable so that the same prompt and the same item pool can be replayed against a
+# different model: comparing an arm-F figure to one from an earlier pass confounds the model
+# with whatever the pool contained at the time, and the only way to separate them is to run
+# both models over identical items.
+SLM_MODEL = os.environ.get("ARM_SLM_MODEL", "qwen2.5:3b")
+LLM_MODEL = os.environ.get("ARM_LLM_MODEL", "qwen2.5:14b-instruct-q6_K")
 
 PROMPT = """Bạn là bộ phân loại ý định cho một nhà hàng hải sản Việt Nam.
 Phân loại câu nói của khách vào ĐÚNG MỘT nhãn:
