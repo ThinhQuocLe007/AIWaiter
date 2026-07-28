@@ -20,6 +20,7 @@ from typing import Any
 
 import httpx
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.runnables import RunnableConfig
 from langchain_ollama import ChatOllama
 
 from src.agent_brain.agent.nodes.response_template import (
@@ -509,9 +510,12 @@ def _rewrite(ctx: ResponseContext, stream: _StreamContext) -> str:
 
 # ── Public node entry point ─────────────────────────────────────────────────
 @trace_latency("Response Node", run_type="chain")
-def response_node(state: AgentState) -> dict[str, Any]:
+def response_node(state: AgentState, config: RunnableConfig | None = None) -> dict[str, Any]:
+    # The queue comes from the RunnableConfig, not from state: state is checkpointed and a live
+    # Queue is not serialisable (see create_thread_config). Defaulted so any caller that invokes
+    # this node without a config — tests, direct calls — still works, streaming disabled.
     stream = _StreamContext()
-    stream.set_queue(state.get("stream_queue"))
+    stream.set_queue((config or {}).get("configurable", {}).get("stream_queue"))
     ctx = state.get("response_context")
     if ctx is None:
         if not stream.was_streamed:

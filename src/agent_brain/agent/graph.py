@@ -370,7 +370,7 @@ class AIWaiterGraph:
                     table_context = f"Bàn {table_no}" + (f" · {party} khách" if party else "")
             except httpx.HTTPError as e:
                 logger.warning("Backend unreachable — falling back to table-scoped thread: %s", e)
-        config = create_thread_config(table_id, session_id)
+        config = create_thread_config(table_id, session_id, stream_queue)
         current_state = self.app.get_state(config)
         existing_stage = current_state.values.get("order_stage", "IDLE") if current_state and current_state.values else "IDLE"
 
@@ -384,7 +384,9 @@ class AIWaiterGraph:
             "ui_action": None,  # reset each turn so a command never leaks to the next
             "order_confirmed": False,  # per-turn flag, same lifecycle as ui_action
             "cart_touched": False,  # per-turn flag, same lifecycle as ui_action
-            "stream_queue": stream_queue,
+            # NOTE: stream_queue deliberately does NOT go here — it travels in `config`
+            # (see create_thread_config). State is checkpointed; a live Queue is not
+            # serialisable and killed the whole /chat/stream turn when it was.
         }
         result = self.app.invoke(inputs, config)
 

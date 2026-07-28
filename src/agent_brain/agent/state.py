@@ -110,7 +110,8 @@ class AgentState(TypedDict):
     # Cleared on clear_cart / session reset.
     shown_dishes: list[str] | None
 
-    # Per-request Queue for SSE sentence streaming. Set by server.py on /chat/stream
-    # requests, None (the default) on plain /chat. Never checkpointed — this field is
-    # purely an in-memory tunnel from the request thread to the graph worker thread.
-    stream_queue: Any | None
+    # NOTE: the SSE sentence-streaming Queue used to live here. It cannot: every field of this
+    # TypedDict is checkpointed to SQLite after each turn, and a live ``queue.Queue`` is not
+    # msgpack-serialisable, so /chat/stream turns crashed on the checkpoint write. It now rides
+    # in ``config["configurable"]["stream_queue"]`` — see create_thread_config() — and
+    # response_node reads it from the RunnableConfig it is handed.
