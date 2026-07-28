@@ -34,7 +34,7 @@ A separate layer of operational software runs alongside all three generations of
 
 No existing system handles all three parts of the loop: the conversation, the transaction, and the delivery. Table 2.1 shows what each category covers.
 
-**Table 2.1** - Coverage of the three service-loop components by existing categories of restaurant automation. Coverage: ✓ full, ◐ partial, ✗ absent. Language reach and deployment model are reported as observed characteristics rather than as pass/fail criteria.
+**Table 2.1.** Coverage of the three service-loop components by existing categories of restaurant automation. Coverage: ✓ full, ◐ partial, ✗ absent. Language reach and deployment model are reported as observed characteristics rather than as pass/fail criteria.
 
 | Category | Conversation | Transaction | Delivery | Language reach | Deployment model |
 |----------|:---:|:---:|:---:|---|---|
@@ -49,13 +49,13 @@ No category covers more than two of the three components, and none covers conver
 
 The two partial ratings mean different things. Task-oriented dialogue frameworks converse only inside a predefined schema of intents and slots, so they handle the utterances their author anticipated and fail on the rest. LLM voice ordering handles open speech, but each transaction is stateless, with no cart or memory surviving across a visit, and both deployments run in English only.
 
-Combining the three is not a small extension of any row. The conversation has to produce actions correct enough to run against live business records, those records have to trigger physical delivery, and every component has to work from the same real-time state. Five needs follow, and the rest of the chapter takes them in turn.
+Combining the three is not a small extension of any row. The conversation has to produce actions correct enough to run against live business records, those records have to trigger physical delivery, and every component has to work from the same real-time state. Five needs follow, and the rest of the chapter takes them in turn. The first four each end on something the surveyed literature does not report. The fifth does not, and is listed because the system cannot be assembled without it.
 
 1. **Dynamic goal navigation (§2.2):** navigation goals derived at runtime from live restaurant state, instead of waypoints a human operator selects.
 2. **Vietnamese voice on the edge (§2.3):** speech detection, recognition, and synthesis running on the robot's own hardware, under restaurant noise conditions.
 3. **Informal speech to validated actions (§2.4):** teencode-heavy Vietnamese utterances turned into tool calls that are checked against an authoritative source before they run.
 4. **Vague descriptions to relevant items (§2.5):** requests that name a taste, a sensation, or an occasion rather than a dish, matched against a menu indexed by name, category, and price.
-5. **Service events to synchronized operations (§2.6):** customer tablet, kitchen display, manager dashboard, and robot fleet sharing one real-time state that the agent, the floor staff, and the kitchen all write to, each role seeing it through an interface of its own.
+5. **Service events to synchronized operations (§2.6):** customer tablet, kitchen display, manager dashboard, and robot fleet sharing one real-time state that the agent, the floor staff, and the kitchen all write to, each role seeing it through an interface of its own. The technologies that provide this are mature, so the survey in Section 2.6 selects among them rather than identifying an absence.
 
 The third need has no counterpart in Table 2.1, because none of these systems checks a proposed action before executing it and none needs to. A slot-filling system can only produce actions inside its own schema, and the rest leave correctness to the person entering the order. The check becomes necessary only once a component that can propose wrong actions freely is put in that position, which is what an LLM agent does.
 

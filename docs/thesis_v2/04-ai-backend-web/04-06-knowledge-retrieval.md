@@ -1,25 +1,35 @@
 ## 4.6 Knowledge Retrieval Pipeline
 
-Section 2.5 surveyed the RAG literature and identified a gap. Prior work does give the language
-model a role in retrieval, but always at one edge or the other: rewriting the query before it
-runs, or scoring the documents after it returns. What none of the surveyed pipelines builds is
-a path from the output of retrieval back to its input, so a rewrite that produced unusable
-terms cannot be recognised as such and answered differently. The architecture proposed here
-closes that path: the model rewrites the query before retrieval, a hybrid BM25-and-FAISS
-retriever searches the 219-entry menu behind a relevance gate that rejects a query cleanly when
-both retrieval strategies produce noise, and the model rephrases what survives, evaluating
-relevance against the original customer intent. A multi-turn search context persists across
-turns so the model can answer follow-up questions about previously retrieved dishes without
-re-querying.
+Section 4.1 requires the system to let customers find dishes by taste, dietary preference,
+or occasion, not only by dish name, and to return nothing when no dish matches rather than
+fabricate. Meeting this requirement raises the design challenge identified in §4.2: the way
+customers describe food does not match how the menu is stored. Customers ask by sensation
+or context ("món gì ấm bụng cho ngày lạnh?"), whereas the menu is organised by name,
+category, and price. A query and the dish that answers it may share no words at all, and
+standard embedding-based retrieval fails structurally in that case, because the query and
+the document occupy disconnected regions of the embedding space.
 
-This closed-loop design is the answer to the fourth design challenge of §4.2, that a query and
-the dish which answers it may share no words at all. Standard embedding-based retrieval fails
-structurally in that case, because the query and the document occupy disconnected regions of the
-embedding space. Figure 4.11 illustrates the full pipeline.
+Section 2.5 surveyed the RAG literature and identified the underlying gap: prior work gives
+the language model a role in retrieval, but always at one edge or the other, rewriting the
+query before it runs or scoring documents after they return. Nothing in the surveyed
+pipelines registers that a retrieval failed and does something different in consequence.
+The architecture proposed here places a component at that position: the model rewrites the
+query before retrieval, a hybrid BM25-and-FAISS retriever searches the 234-entry menu, and
+a deterministic relevance gate between retrieval and generation decides whether what came
+back is worth answering at all, rejecting the query cleanly when both retrieval strategies
+produce noise. What survives is rephrased by the model against the original customer intent,
+and a multi-turn search context persists across turns so follow-up questions about dishes
+already retrieved are answered without re-querying.
 
-![Figure 4.11. Hybrid Retrieval Pipeline](../images/Figure6.svg)
+The claim made here is deliberately narrower than a full control loop. The gate reads the
+output of retrieval and changes what happens next, but it does not send a signal back to the
+rewriter, and a rejected query is not retried with different terms. What it establishes is
+that the decision can be made deterministically and without inference, at the point where
+the surveyed pipelines make none. Figure 4.8 illustrates the pipeline.
 
-*Figure 4.11. Hybrid Retrieval Pipeline: the rewritten query enters two lanes that run in
+![Figure 4.8. Hybrid Retrieval Pipeline](../images/retrieval_pipeline.svg)
+
+*Figure 4.8. Hybrid Retrieval Pipeline: the rewritten query enters two lanes that run in
 parallel, keyword matching over the menu text and semantic similarity over the shared
 embedding index. The gatekeeper admits a result only when one of the two lanes is confident,
 so an out-of-domain question returns nothing rather than the least bad dishes. Survivors are
@@ -66,18 +76,20 @@ The rewritten query enters two parallel retrieval paths that exploit the complem
 of sparse and dense retrieval. BM25 matches keywords exactly against dish names, categories, tags,
 and taste profiles; FAISS matches meaning, by cosine similarity over embedding vectors. Neither is
 sufficient alone, and their failure modes are opposite, which is why running both guarantees that
-one of them finds a relevant match for any query type. Table 4.16 sets the two lanes against each
+one of them finds a relevant match for any query type. Table 4.14 sets the two lanes against each
 other.
 
-*Table 4.16. Where each retrieval lane succeeds, where it fails, and on what kind of query.*
+*Table 4.14. Where each retrieval lane succeeds, where it fails, and on what kind of query.*
 
 | Lane | Strong when | Weak when | Worked example |
 |------|-------------|-----------|----------------|
 | Keyword | The query names a dish or a category that appears in the menu text | The query and the dish that answers it share no words | "Ốc Hương" finds every sauce variant; "hải sản" misses "tôm mực cá" |
 | Semantic | The query describes a taste, an attribute, or a sensation | The dish name is rare and the encoder has little evidence for it | "món cay" finds spicy dishes with no word match; "Ốc Hương Xốt Trứng Muối" may sit closer to generic restaurant text than to itself |
 
-Both indices are built over the same 219 entries, each dish represented as one document
-concatenating its name, category, tags, taste profile, and description. The BM25 side tokenizes
+Both indices are built over the same 256 documents, of which 234 are the menu dishes and the
+remaining 22 are supporting material on best sellers, the restaurant itself, and returning
+customers. Each dish is represented as one document concatenating its name, category, tags,
+taste profile, and description. The BM25 side tokenizes
 those documents with the same Vietnamese word segmentation the classifier uses, so compounds stay
 whole, and it disables document-length normalization because menu entries are short and of near
 uniform length. The FAISS side encodes each document as a 768-dimensional vector using the frozen
@@ -124,9 +136,9 @@ between neighbouring ranks, which is what makes a document both lanes rank well 
 single lane puts first. The fused list is then sorted by descending score, deduplicated by dish
 name so an item returned by both retrievers appears once, and truncated to six final results.
 
-Table 4.17 collects the settings of the whole pipeline in one place.
+Table 4.15 collects the settings of the whole pipeline in one place.
 
-*Table 4.17. Settings of the retrieval pipeline.*
+*Table 4.15. Settings of the retrieval pipeline.*
 
 | Stage | Setting | Value |
 |-------|---------|-------|
@@ -145,18 +157,20 @@ Table 4.17 collects the settings of the whole pipeline in one place.
 
 ### 4.6.3 Result Rephrasing
 
-The third stage of the loop hands the fused dishes to the response node, which is described in
+The third stage hands the fused dishes to the response node, which is described in
 §4.5.6. What matters for retrieval is the shape of what is handed over: a typed search context in
 which every dish carries its name, price, category, tags, and taste profile, all read from the
 authoritative menu data rather than produced by the model. The model then judges each dish against
 what the customer originally asked and phrases the reply, so it decides the ordering and the
 wording but never which dishes exist or what they cost.
 
-The failure case is what makes the loop closed. When the gatekeeper rejects a query the search
-context is empty, and an empty context is not something a model can embellish: with no dishes to
-name, the reply becomes an apology and an offer to show the menu. Responding differently to a hit
-and to a miss, on evidence rather than on instruction, is the behaviour §2.5 found absent from
-standard RAG pipelines.
+The failure case is where the gate earns its position. When the gatekeeper rejects a query the
+search context is empty, and an empty context is not something a model can embellish: with no
+dishes to name, the reply becomes an apology and an offer to show the menu. The system therefore
+answers a hit and a miss differently on the evidence retrieval produced, rather than on an
+instruction in a prompt telling the model to admit when it does not know. That is a smaller
+property than the coordination §2.5 found missing, and it is the part of it that can be
+established without a second inference call.
 
 ### 4.6.4 Multi-Turn Search Context
 

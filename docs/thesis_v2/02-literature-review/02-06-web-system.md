@@ -13,7 +13,7 @@ The difference starts with the concurrency model. The older one is synchronous, 
 
 The second distinguishing property is where input validation sits. Boundary validation means the framework is given a declared schema per operation, checks every request against it, and rejects what does not conform before the handler runs. Without it, the same checks are written by hand in each handler, or quietly omitted.
 
-**Table 2.6a** — Backend framework families.
+**Table 2.6a.** Backend framework families.
 
 | Framework | Approach | Advantages | Limitations |
 |---|---|---|---|
@@ -34,7 +34,7 @@ The same shift shows up in how APIs are described. OpenAPI and JSON Schema state
 
 Transaction volumes at single-venue scale are low: tens of seatings, orders, and payments an hour, written by one application process. At that volume the database literature treats the choice as a question of operational cost and concurrency semantics rather than of throughput [2.6.6].
 
-**Table 2.6b** — Data stores for a single-venue deployment.
+**Table 2.6b.** Data stores for a single-venue deployment.
 
 | Store | Approach | Advantages | Limitations |
 |---|---|---|---|
@@ -48,7 +48,7 @@ SQLite is the option whose limitations do not bind here. One backend process per
 
 A separate storage question concerns data that is not transactional at all. A fleet of moving robots reports position and battery several times a second per robot, and each reading is superseded within milliseconds, so its worth lies almost entirely in being the current one. Written to the same file as orders and payments, that traffic contends for the write lock at a rate out of proportion to the value of any individual reading. Three patterns are documented [2.6.9]–[2.6.10].
 
-**Table 2.6c** — Storage patterns for high-frequency telemetry.
+**Table 2.6c.** Storage patterns for high-frequency telemetry.
 
 | Pattern | Advantages | Limitations |
 |---|---|---|
@@ -64,7 +64,7 @@ The third pattern suits a restaurant fleet, because the only consumer of a robot
 
 How a client learns that something has changed is the layer with the widest spread of documented options [2.6.11]–[2.6.14].
 
-**Table 2.6d** — Transport mechanisms for browser and device clients.
+**Table 2.6d.** Transport mechanisms for browser and device clients.
 
 | Mechanism | Approach | Advantages | Limitations |
 |---|---|---|---|
@@ -84,7 +84,7 @@ Two further properties are documented as mechanism and left open as content. Rou
 
 Interfaces of the kind restaurant operations call for, one per role over shared state, are built as single-page applications: one document, client-side routing, and a component tree updated in place as data changes. Three frameworks account for most of the ecosystem [2.6.16]–[2.6.17].
 
-**Table 2.6e** — Single-page application frameworks.
+**Table 2.6e.** Single-page application frameworks.
 
 | Framework | Approach | Advantages | Limitations |
 |---|---|---|---|
@@ -97,5 +97,7 @@ Vietnamese text does not distinguish them: all three emit standard HTML and leav
 Runtime cost does, for a reason particular to this deployment. One of these interfaces does not run on a device bought to display it: it runs in a browser on the robot's own embedded computer, beside the navigation stack and the speech models, drawing on a memory pool shared between CPU and GPU (§3.2.1). Bundle size is the smaller part of that, since the runtime loads once. The cost paid continuously is the work done per update, because these screens sit on a WebSocket delivering robot poses several times a second: Vue tracks dependencies through proxies and re-renders only the components whose data changed, React re-runs component functions and reconciles a virtual DOM on every state change, and Angular's change detection walks the tree. On a board whose CPU is shared with control loops, that difference is capacity the interface does not take from motion. React's larger component market and Angular's imposed structure would repay themselves on a large application built by a large team, which is not what these interfaces are.
 
 Two supporting choices follow. For a table-heavy operations screen PrimeVue supplies data-dense components with an unstyled mode, whereas Vuetify commits to Material Design and Ant Design Vue to an enterprise default [2.6.18]; and Vite serves native ES modules in development, so start-up is largely independent of project size, while its production build tree-shakes the payload [2.6.19]. Building several role-specific applications over one backend is itself established practice, documented for enterprise consoles and for operational systems giving dispatchers, field workers, and supervisors distinct views of shared work [2.6.20], where shared type definitions keep each one consistent with the backend and role-scoped subscriptions keep its updates relevant.
+
+Unlike the subjects of the preceding sections, nothing surveyed here is unsettled. Server frameworks, embedded databases, bidirectional transports, and single-page frameworks are mature technologies whose behaviour is documented and whose trade-offs are well understood, and the demands a restaurant floor places on them fall inside what each already supports. This section therefore closes on a selection rather than on an absence. The four choices it argues for follow from two properties of this particular deployment, that the whole backend runs on one on-premises machine with no cloud component in normal operation, and that one of the interfaces runs in a browser on the robot's own computer beside the navigation stack and the speech models. What is novel in the system is the traffic these components carry, namely business state written by an autonomous agent rather than by staff, and that is a property of the agent and the robot rather than of the web stack beneath them.
 
 
