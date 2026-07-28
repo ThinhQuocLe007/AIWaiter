@@ -3,7 +3,7 @@
 Chapter 1 set the objective of an autonomous waiter that takes spoken Vietnamese orders,
 understands them through a conversational agent, sends them to the kitchen, and delivers
 the food to the correct table. Chapter 3 delivered a robot that can navigate autonomously
-and dock at tables — but it does not yet understand what a customer says, decide what to
+and dock at tables, but it does not yet understand what a customer says, decide what to
 do about it, or know where to go. To close that gap, the system described in this chapter
 must:
 
@@ -13,8 +13,8 @@ must:
   compound words, and restaurant background noise.
 
 - **Understand informal spoken Vietnamese and map it to the correct action.** The agent
-  must classify utterances into ordering, searching, paying, or chatting — handling teencode
-  abbreviations, context-dependent short affirmations, and multi-intent turns — then decide
+  must classify utterances into ordering, searching, paying, or chatting (handling teencode
+  abbreviations, context-dependent short affirmations, and multi-intent turns), then decide
   which tool to invoke and keep the cart consistent when the customer switches between voice
   and touch on the tablet.
 
@@ -25,19 +25,19 @@ must:
 
 - **Push every business event to the right screen in real time.** A confirmed order must
   appear on the kitchen board instantly. A robot's position must update live on the
-  minimap. The session lifecycle — seating, orders, payment, table release — must be
+  minimap. The session lifecycle (seating, orders, payment, table release) must be
   enforced across all components, with six tables served concurrently in strict isolation.
 
 - **Dispatch the right robot to the right table at the right time.** The fleet manager
   must assign each navigation task to the nearest idle robot with sufficient battery, track
   position and battery from live telemetry, bind a table's voice channel to whichever robot
-  is physically there, and recover transparently when a robot disconnects — requeueing its
+  is physically there, and recover transparently when a robot disconnects, requeueing its
   tasks without the customer noticing.
 
-- **Provide three role-specific web interfaces** — a customer tablet for menu browsing
+- **Provide three role-specific web interfaces**: a customer tablet for menu browsing
   and voice mirroring, an entrance kiosk for check-in, and a management panel with a
-  kitchen order board, fleet status, and live minimap — all sharing a common TypeScript
-  client and receiving updates through WebSocket push rather than polling.
+  kitchen order board, fleet status, and live minimap. All three share a common TypeScript
+  client and receive updates through WebSocket push rather than polling.
 
 - **Run entirely on the restaurant's own hardware** with no cloud dependency in normal
   operation. Voice interaction must stay under five seconds from end of speech to start

@@ -1,156 +1,181 @@
-## 4.5.3 Tool-Calling Workers
+## 4.5.3 Specialized Agents and Prompt Architecture
 
-The workers select Qwen2.5 7B as the reasoning engine from the three categories of
-Vietnamese-capable LLMs surveyed in §2.4.3. The survey found that Vietnamese-specific models
-provide excellent language quality but no function calling, commercial API models offer the
-best quality but are cloud-dependent, and open-weight multilingual models provide function
-calling and local deployment — but the three properties of function calling, Vietnamese
-quality, and context window capacity had never been evaluated jointly for a task-oriented
-dialogue system. Qwen2.5 7B was selected as the smallest model capable of reliable Vietnamese
-tool calling within a 16-thousand-token context window, served locally by Ollama to eliminate
-cloud dependency.
+Section 4.5.1 established why the architecture deploys specialized agents rather than a single
+monolithic model. This section details how each agent is built: what tools it is bound to, what
+context it receives, how it recovers when an utterance falls outside its domain, and how the
+shared language model is adapted to each role. That adaptation is carried entirely by prompting.
+No fine-tuning is used anywhere in the agent, and the intent classifier is the one trained
+component, training only a small head on top of a frozen embedding. The prompt architecture is
+therefore a design element rather than an implementation detail, which is the gap §2.4.3
+identified: prompt engineering for domain adaptation is documented in the literature but untested
+on Vietnamese restaurant ordering.
 
-Each worker receives the customer's utterance, the current conversation state, and a set of
-bound tools, and must produce either a tool call specifying the action to take or a delegation
-indicating that the utterance falls outside its domain. The four workers form a symmetric
-design: every intent has exactly one worker, and every worker knows how to handle its domain.
+Table 4.8 sets out the four agents and the tools each is permitted to call.
 
-### 4.5.3.1 Worker Taxonomy
+*Table 4.8. The four agents, the tools each is allowed to call, and its model setting.*
 
-| Worker | Intent(s) | Bound Tools | LLM Called? | Temperature |
-|--------|-----------|-------------|-------------|-------------|
-| Order worker | ORDER, ORDER\_CONFIRM | add\_cart, remove\_cart, clear\_cart, confirm\_order, delegate | Yes | 0.1 |
-| Search worker | SEARCH | search, delegate | Yes | 0.1 |
-| Payment dispatch | PAYMENT | request\_payment | No (deterministic) | N/A |
-| Chat worker | CHAT | (none) | No (pure function) | N/A |
+| Agent | Intent | Bound Tools | Uses LLM | Temperature |
+|-------|--------|-------------|----------|-------------|
+| Order agent | ORDER, ORDER\_CONFIRM | add\_cart, remove\_cart, clear\_cart, confirm\_order, delegate | Yes | 0.1 |
+| Search agent | SEARCH | search, delegate | Yes | 0.1 |
+| Payment dispatch | PAYMENT | request\_payment | No | N/A |
+| Chat worker | CHAT | none | No | N/A |
 
-### 4.5.3.2 Shared LLM Worker Design
+Each agent receives a specific set of dynamic context injected into its prompt at runtime. What
+an agent sees determines what it can decide: the order agent cannot confirm an order if it does
+not know the cart contents, and the search agent cannot avoid redundant queries if it does not
+know what has already been retrieved. Table 4.9 lists what each one receives.
 
-The two LLM-based workers — order and search — share an identical architectural pattern,
-differing only in their bound tools, system prompts, and few-shot examples.
+*Table 4.9. What each agent is told about the current situation, and why it needs it.*
 
-Tool choice is forced: the model is configured to always produce exactly one tool call per
-invocation. This eliminates the failure mode where the LLM produces a text response instead
-of a tool call — for example, saying "Dạ, em sẽ thêm món đó vào giỏ hàng" without actually
-calling the add-to-cart tool. With forced tool choice, a tool call is guaranteed in every
-response.
+| Agent | Dynamic Context | Purpose |
+|-------|----------------|---------|
+| Order agent | Cart contents (items, quantities, prices) | Enables additive decisions, prevents re-adding items already present |
+| Order agent | Validator feedback (on retry) | Names the exact problem and nearest valid menu item for correction |
+| Search agent | Already-known items (prior search results and cart contents) | Prevents re-searching topics already discussed; triggers delegation for follow-up questions |
+| Search agent | Validator feedback (on retry) | Corrective instructions for invalid search queries |
+| Payment dispatch | Table identifier (injected by validator) | Required by the backend orchestrator for session-scoped payment requests |
+| Chat worker | Conversation history, cart with total, order stage, curated dishes from search, delegate reason | Enables memory-grounded and stage-appropriate conversational replies |
 
-The temperature is set to 0.1 rather than zero. A temperature of zero would reject all
-variant phrasings of Vietnamese tool arguments — "ít cay" versus "it cay" for "less spicy"
-— making the system brittle to informal spelling. The slightly-above-zero setting allows
-minor orthographic variation while keeping tool selection near-deterministic.
+The two language-model-based agents share three design patterns that distinguish them from a
+generic tool-calling setup. The first is forced tool choice: each agent always produces exactly
+one tool call per invocation. Without this constraint the model can answer in text instead of
+acting, saying "Dạ, em sẽ thêm món đó vào giỏ hàng" without calling the add-to-cart tool, so the
+system appears to acknowledge the request while doing nothing.
 
-The menu is deliberately excluded from the worker prompts. The language model does not need
-to know the full 217-item menu to decide which tool to call. When a customer says "Cho 2 Ốc
-Hương Xốt Trứng Muối," the LLM only needs to recognize this as an ordering action and
-extract the raw item name — the validator (§4.5.4) resolves the name against the actual menu.
-Excluding the menu keeps the prompt context compact, reduces latency, and eliminates the
-risk of the LLM hallucinating menu items it believes it has seen in the prompt.
+The second is temperature 0.1 rather than zero. Zero would reject variant phrasings of Vietnamese
+tool arguments, such as "ít cay" against "it cay", making the system brittle to informal spelling
+while buying no real determinism, because tool selection is already near-deterministic at this
+setting. The slightly-above-zero value allows orthographic variation in argument values while
+keeping the choice of which tool to call stable across invocations.
 
-The prompt sequence is ordered to maximize Ollama's prefix caching. System prompts and
-few-shot examples — which are identical across all turns for the same worker — are placed at
-the beginning of the sequence. Dynamic content such as cart state, validation feedback, and
-conversation history is appended at the end. Ollama caches the attention key-value pairs for
-the static prefix, so only the dynamic suffix requires fresh computation each turn.
+The third is the deliberate exclusion of the menu from every decision prompt. The model does not
+need the 219-entry menu to decide which tool to call or to extract names and quantities: when a
+customer says "Cho 2 Ốc Hương Xốt Trứng Muối," it only has to recognize an ordering action and
+extract the raw item string. Resolving that string against the menu belongs to the validator
+(§4.5.4). Excluding the menu keeps prompts compact, cuts per-turn latency, and removes the risk
+of the model inventing an item it believes it saw in the prompt.
 
-### 4.5.3.3 Order Worker
+The order agent is bound to five tools. Three are cart operations: add items with names,
+quantities, and optional special requests; remove a named item; and clear the cart. One sends the
+composed order to the kitchen. The fifth, delegate, is the escape hatch for an utterance that
+maps to no cart action. Each tool has a structured argument schema enforced by the model's
+function-calling mechanism: "Cho 2 Ốc Hương" becomes a record with name "Ốc Hương" and quantity
+2; "Lấy 1 phần Lẩu Thái, ít cay" carries "ít cay" as a special request; "Thêm 1 Bia Sài Gòn và 1
+Nước Suối" produces two items in a single call. The model's job is extraction, not validation.
+Its dynamic context is the current cart, which lets it add to an existing cart rather than
+replace it, and on a retry the validator's feedback, which names the exact problem so the model
+can fix its output without re-reasoning the whole utterance.
 
-The order worker handles cart CRUD operations and order confirmation. It is bound to five
-tools. The add-to-cart tool adds items to the cart with the names, quantities, and special
-requests extracted from the utterance. The remove-from-cart tool removes a named item. The
-clear-cart tool empties the entire cart. The confirm-order tool sends the composed order to
-the kitchen. The delegate tool provides an escape hatch when the utterance cannot be mapped
-to any cart action.
+The search agent is bound to two tools: the search tool, which runs a retrieval query over the
+menu and knowledge base through the hybrid pipeline of §4.6, and delegate. Its primary work is
+rewriting a conversational request into concrete search terms, which §4.6.1 describes in full.
+Its system prompt names what falls outside its domain, restaurant hours, parking availability,
+WiFi passwords, music requests, and complaints, and requires the model to call delegate with an
+explanatory reason rather than search for a dish that cannot exist.
 
-Each tool has a structured schema defining its expected arguments. For adding items, the
-LLM must extract structured information from natural Vietnamese: "Cho 2 Ốc Hương" becomes
-a structured record with name "Ốc Hương" and quantity 2; "Lấy 1 phần Lẩu Thái, ít cay"
-adds the special request "ít cay" as a modifier; "Thêm 1 Bia Sài Gòn và 1 Nước Suối"
-produces two items in a single tool call. The LLM's job is extraction, not validation —
-the validator checks every extracted name against the menu.
+The payment dispatch is deterministic: no language model, no keyword matching, no ambiguity. The
+router has already classified the intent as PAYMENT, and there is only one payment action the
+agent can initiate. It always emits a request-payment tool call with the table identifier.
+Computing the session total from all confirmed orders, generating the payment QR code, and
+verifying payment completion are handled by the backend orchestrator (§4.7), not the agent.
 
-The order worker receives two forms of dynamic context. The current cart contents — with
-quantities and prices — enable the LLM to make additive decisions, adding to an existing
-cart rather than replacing it, and to avoid re-adding items already present. The validator
-feedback, injected on retry, carries corrective instructions naming the exact problem and
-the nearest valid menu item, enabling the LLM to fix its output without re-reasoning from
-scratch.
+The chat worker is a pure function with no language model and no tools. It reads the current
+conversation state and assembles a structured context for the response generator: the customer's
+utterance, the active cart and its total, the current order stage, the conversation history, and
+up to five dishes from the most recent search converted into structured objects. If the chat
+worker was reached via delegation, the delegate reason explains why the domain agent passed
+control, for example "restaurant info query, not menu search." No validation occurs because
+there are no tool calls to validate; its responsibility is assembly, not generation.
 
-### 4.5.3.4 Search Worker
+The delegate tool, bound to both language-model-based agents, is what stops forced tool choice
+from forcing a wrong action. Some utterances genuinely fall outside an agent's domain: if the
+search agent receives "mấy giờ đóng cửa?" (what time do you close?), no menu item matches "đóng
+cửa" and a search call would return noise. Delegate provides a non-destructive way out. The
+model calls it with a reason, and the graph's routing function dispatches the utterance to the
+chat worker for a conversational response. The model is never forced to guess; when it is
+uncertain about its domain, it admits it.
 
-The search worker handles menu queries, restaurant information lookups, and recommendations.
-It is bound to two tools: a search tool that executes a retrieval query over the menu and
-knowledge base, and a delegate tool for utterances that fall outside the search domain.
+Domain adaptation, meaning Vietnamese restaurant vocabulary, the ordering workflow, and the
+hospitality tone, is carried by prompt files loaded at agent startup: five system prompts and
+three few-shot example sets, stored as editable text. A menu change or a tone adjustment needs
+only a file edit and a restart, with no retraining and no code change. Table 4.10 lists them and
+the node that reads each.
 
-The LLM's primary job is query rewriting — translating conversational Vietnamese into
-concrete search keywords. A customer might say "món gì ấm bụng cho ngày lạnh?" and the LLM
-translates this into search terms like "lẩu súp nóng" that the hybrid retrieval pipeline
-can match against the menu index. The rewritten query is placed in the search tool's
-arguments.
+*Table 4.10. The prompt resources, and the node that loads each at startup.*
 
-The search worker injects a list of already-known items, drawn from both the current search
-context — results from prior searches within the same session — and the active cart. This
-prevents the LLM from re-searching topics the customer has already discussed. If the
-customer asks "món đó có cay không?" and the item was returned in a prior search, the
-already-known list includes it, and the LLM should delegate to the chat worker rather than
-re-search.
+| File | Kind | Loaded by |
+|------|------|-----------|
+| `order_worker_agent.md` | System prompt | Order agent |
+| `search_agent.md` | System prompt | Search agent |
+| `rewriter_agent.md` | System prompt | Rewriter, called inside the classifier router |
+| `response_rewriter.md` | System prompt | Response generator, waiter voice |
+| `chat_rewriter.md` | System prompt | Response generator, conversational voice |
+| `order_worker.json` | Few-shot, 11 pairs | Order agent |
+| `search_worker.json` | Few-shot, 11 pairs | Search agent |
+| `rewriter.json` | Few-shot, 12 examples | Rewriter |
+| `utterances.json` | Few-shot | The rollback router only |
 
-The search worker's system prompt includes explicit instructions for what falls outside the
-search domain: restaurant hours, parking availability, WiFi passwords, music requests, and
-complaints. The LLM must recognize these as non-search queries and call the delegate tool
-with an explanatory reason.
+Every node that calls the model has its own system prompt defining its role, reasoning protocol,
+output format, and constraints. The router has none, because it is the trained classifier and
+calls no model; the prompt serving that stage belongs to the rewriter, the fallback call for a
+compound utterance, which is told to split the sentence into single-intent Vietnamese fragments
+and to resolve references such as "phần này" against the preceding turns. The order worker prompt
+defines cart rules, Vietnamese quantity patterns ("2 phần", "1 dĩa"), and modifier handling ("ít
+cay", "thêm hành"). The search worker prompt carries the rewriting instructions and the
+delegation triggers. The response node uses two prompts, one for the waiter persona when
+paraphrasing search results and one for open-ended conversation.
 
-### 4.5.3.5 Payment Dispatch
+All system prompts are written in Vietnamese, because prompting the model in Vietnamese produces
+more natural Vietnamese output than prompting in English and requesting Vietnamese output.
 
-The payment dispatch node is the simplest worker: it always emits a request-payment tool
-call with the table identifier. No language model is called. The router has already
-classified the intent as PAYMENT, and there is only one payment action the agent can
-initiate — requesting the bill. Additional payment logic — computing the session total
-from all confirmed orders, generating the payment QR code, verifying payment completion —
-is handled by the backend orchestrator, not the agent. The agent's responsibility is
-simply to initiate the request.
+The few-shot sets are static lists of utterance-to-action pairs injected into prompts at runtime.
+The twelve rewriter examples each pair a compound Vietnamese utterance with the fragments it
+should be split into, along with a short line of reasoning; they cover single-intent utterances
+that must pass through untouched, compound sentences such as "Cho 2 Ốc Hương rồi tính tiền
+luôn," and cases where a fragment makes sense only once a reference like "phần này" has been
+resolved from the previous turn. The order worker examples cover single-item and multi-item
+additions, modifiers and quantities, removals, clearing, confirmation, and delegation. The search
+worker examples cover keyword search, attribute-based search such as "món chay," price-based
+search, recommendation requests, and delegation for non-search queries. Every example was chosen
+to cover a failure mode observed in zero-shot testing rather than sampled at random; each one
+teaches a specific skill the model lacked.
 
-### 4.5.3.6 Chat Worker
+Static prompts define behaviour; dynamic context supplies the situation the model must act on.
+Conversation history is injected at three different depths, matched to what each stage needs. The
+rewriter receives the last five exchanges, which is what lets it resolve a reference in one clause
+against a dish named in an earlier turn. The workers receive the last three turns, including error
+messages from validation retries, so the model sees its own prior failed attempt beside the
+corrective feedback. The response node, on the chat path, receives the full conversation history.
+The classifier reads no history at all: it sees the conversation state through its context
+features instead, which is what allows it to separate "ok" at awaiting confirmation from "ok" at
+idle without a model call. The order stage is injected into the worker prompts as a plain string,
+and validator feedback is injected on retry behind a header marking it as mandatory corrective
+information.
 
-The chat worker is a pure function that builds a typed context for the response generator.
-It reads the current conversation state and assembles a structured record containing the
-customer's utterance, the active cart and its total, the current order stage, the full
-conversation history, up to five dishes from the most recent search converted into
-structured objects with name, price, tags, and taste profile, and — if reached via
-delegation — the reason the domain worker passed control to the chat path.
+The order of the prompt is chosen to exploit Ollama's attention key-value caching. All static
+content, the system prompt and the few-shot examples, sits at the front; all dynamic content,
+conversation history and cart state and validation feedback, sits at the end. Because the static
+prefix is identical across turns for a given worker, its attention keys and values are cached and
+only the dynamic suffix is computed fresh. Interleaving the two, for instance injecting cart
+state between few-shot examples, would invalidate the cache for every token after it.
 
-The chat worker is a leaf node in the graph. It connects directly to the state outcome
-node. No validation occurs because there are no tool calls to validate. No language model
-is called because the chat worker's responsibility is assembly, not generation —
-generation is deferred to the response node, which receives the structured context and
-produces the spoken reply.
+All three language-model-calling stages share one model instance, Qwen2.5 14B Instruct served
+locally by Ollama, configured differently per stage. Because the model runs on the server rather
+than on the robot, the choice is not constrained by a memory ceiling. Based on the survey of
+language models in Section 2.4.3 of Chapter 2, the 13 to 14 billion class was taken rather than
+the smaller class that would also have followed the tool protocol, because the larger model
+handles Vietnamese diacritics and compound words more accurately, and that accuracy matters most
+at the response stage, where the reply is spoken to the customer. The rewriter runs at temperature
+zero with output constrained to a list of fragments. The workers run at 0.1 with forced tool choice. The response node runs at 0.1 with
+free-form generation, low enough that the reply stays close to the pre-verified data it is given.
+A single Ollama instance pins the model in GPU memory with persistent keep-alive, so there is no
+model-switching overhead between stages: the same loaded model handles the routing fallback, the
+decision, and the response.
 
-### 4.5.3.7 Robustness Mechanisms
-
-Three mechanisms prevent language model errors from corrupting system state.
-
-The delegate escape hatch is bound alongside domain tools in both LLM-based workers.
-With forced tool choice, the LLM must always produce a tool call — but some utterances
-genuinely fall outside the worker's domain. If the search worker receives "mấy giờ đóng
-cửa?" (what time do you close?), the correct action is not to search for a menu item
-matching "đóng cửa" — there is none, and forcing a search call would return irrelevant
-results that confuse the customer. The delegate tool provides a non-destructive way out:
-the LLM calls it with a reason, and the routing function sends the utterance to the chat
-worker for a conversational response. The principle is that the language model is never
-forced to produce a wrong action; when uncertain about its domain, it admits it rather
-than guessing.
-
-The retry-with-corrective-feedback mechanism activates when the validator rejects a tool
-call. The validator returns specific feedback — naming the exact problem and the nearest
-valid menu item — and the routing function returns the utterance to the same worker. The
-worker sees its own prior failed attempt followed by the validator's error feedback as the
-full failure context, and must produce a corrected tool call on retry.
-
-The circuit breaker guarantees bounded execution. A loop counter tracks retry attempts.
-After each failed validation, the counter increments. At three failed attempts, the
-circuit breaker triggers: the validator returns with the counter at the threshold, the
-routing function sends the utterance directly to the state outcome instead of returning
-to the worker, and the response node generates an apology. Even if the language model
-repeatedly produces invalid output — due to hallucination, prompt confusion, or model
-error — the graph terminates after at most three retries with a graceful fallback rather
-than looping indefinitely.
+The model's Vietnamese limitations, moderate diacritic accuracy and variable compound-word
+handling, are absorbed by the surrounding design rather than by the prompt. Classification does
+not depend on them, because the trained classifier decides the intent without a model call.
+Orthographic errors do not reach the cart, because the validator normalizes diacritics on both
+sides before matching a name. What the model is left to do is extraction and paraphrasing:
+deciding which structured action to take, and how to say what has already been verified.

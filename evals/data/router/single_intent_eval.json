@@ -1,0 +1,902 @@
+{
+  "dataset": "single_intent_eval",
+  "version": "1.0",
+  "description": "Single-intent accuracy benchmark. MLP classifies each utterance into ORDER/SEARCH/PAYMENT/CHAT. Context features are not used.",
+  "total_cases": 150,
+  "cases": [
+    {
+      "utterance": "Cho tôi 2 phần Ốc Hương Xốt Trứng Muối",
+      "intent": "ORDER",
+      "difficulty": "easy",
+      "note": "gọi món chuẩn số lượng tên đầy đủ"
+    },
+    {
+      "utterance": "Lấy 1 Lẩu Thái với 3 chai bia Tiger",
+      "intent": "ORDER",
+      "difficulty": "easy",
+      "note": "gọi nhiều món, vẫn một intent"
+    },
+    {
+      "utterance": "Mình muốn gọi thêm 5 con Hàu Nướng",
+      "intent": "ORDER",
+      "difficulty": "easy",
+      "note": "gọi thêm + đơn vị con"
+    },
+    {
+      "utterance": "Cho 2 dĩa Khoai Tây Lắc Phô Mai nha",
+      "intent": "ORDER",
+      "difficulty": "easy",
+      "note": "gọi món vặt"
+    },
+    {
+      "utterance": "1 lẩu cá tầm măng chua nhe bạn",
+      "intent": "ORDER",
+      "difficulty": "easy",
+      "note": "số lượng đứng đầu"
+    },
+    {
+      "utterance": "Đúng rồi, xác nhận đặt luôn",
+      "intent": "ORDER",
+      "difficulty": "easy",
+      "note": "xác nhận đơn rõ ràng"
+    },
+    {
+      "utterance": "Ok chốt đơn đi em",
+      "intent": "ORDER",
+      "difficulty": "easy",
+      "note": "chốt đơn rõ ràng"
+    },
+    {
+      "utterance": "Cho em 1 phần Cháo Hàu và 2 lon Coca",
+      "intent": "ORDER",
+      "difficulty": "easy",
+      "note": "gọi kèm đồ uống"
+    },
+    {
+      "utterance": "Tôi muốn gọi 3 phần Sò Điệp Nướng Mỡ Hành",
+      "intent": "ORDER",
+      "difficulty": "easy",
+      "note": "tôi + gọi"
+    },
+    {
+      "utterance": "thêm dĩa ốc bulot nữa đi",
+      "intent": "ORDER",
+      "difficulty": "medium",
+      "note": "thêm món không nêu số lượng rõ"
+    },
+    {
+      "utterance": "bỏ món mực chiên xù ra khỏi đơn giúp mình",
+      "intent": "ORDER",
+      "difficulty": "medium",
+      "note": "huỷ món"
+    },
+    {
+      "utterance": "đổi 2 bia Sài Gòn thành 2 bia 333",
+      "intent": "ORDER",
+      "difficulty": "medium",
+      "note": "sửa đơn thay món"
+    },
+    {
+      "utterance": "chuẩn rồi, lên đơn giúp anh",
+      "intent": "ORDER",
+      "difficulty": "medium",
+      "note": "xác nhận bằng cách diễn đạt khác"
+    },
+    {
+      "utterance": "Xoá hết giỏ hàng của tôi đi",
+      "intent": "ORDER",
+      "difficulty": "medium",
+      "note": "xoá giỏ hàng"
+    },
+    {
+      "utterance": "Xóa món Ốc Hương ra khỏi giỏ đi em",
+      "intent": "ORDER",
+      "difficulty": "medium",
+      "note": "xóa món"
+    },
+    {
+      "utterance": "Bỏ hết giỏ hàng rồi gọi lại từ đầu",
+      "intent": "ORDER",
+      "difficulty": "medium",
+      "note": "làm lại đơn"
+    },
+    {
+      "utterance": "Giảm Ốc Hương xuống còn 1 phần thôi",
+      "intent": "ORDER",
+      "difficulty": "medium",
+      "note": "giảm số lượng"
+    },
+    {
+      "utterance": "nghêu",
+      "intent": "ORDER",
+      "difficulty": "hard",
+      "note": "chỉ tên món, ngầm hiểu là gọi"
+    },
+    {
+      "utterance": "cho Ốc Hương đi",
+      "intent": "ORDER",
+      "difficulty": "hard",
+      "note": "gọi món ngắn"
+    },
+    {
+      "utterance": "Ừ đặt nha",
+      "intent": "ORDER",
+      "difficulty": "hard",
+      "note": "xác nhận ngắn, dễ nhầm CHAT"
+    },
+    {
+      "utterance": "Cho tôi 3 phần sò huyết hấp sả",
+      "intent": "ORDER",
+      "difficulty": "hard",
+      "note": "dùng tôi + gọi món dài"
+    },
+    {
+      "utterance": "Làm lại đơn mới giùm anh",
+      "intent": "ORDER",
+      "difficulty": "hard",
+      "note": "làm lại đơn"
+    },
+    {
+      "utterance": "Dọn sạch giỏ hàng rồi bắt đầu lại",
+      "intent": "ORDER",
+      "difficulty": "hard",
+      "note": "dọn giỏ hàng"
+    },
+    {
+      "utterance": "Xác nhận đơn cho anh",
+      "intent": "ORDER",
+      "difficulty": "hard",
+      "note": "xác nhận không có từ khoá chốt"
+    },
+    {
+      "utterance": "Tôi muốn đặt 1 Bia Heineken",
+      "intent": "ORDER",
+      "difficulty": "hard",
+      "note": "tôi + đặt, ngắn"
+    },
+    {
+      "utterance": "Ốc Hương giá bao nhiêu vậy?",
+      "intent": "SEARCH",
+      "difficulty": "easy",
+      "note": "hỏi giá"
+    },
+    {
+      "utterance": "Quán mình có món chay không?",
+      "intent": "SEARCH",
+      "difficulty": "easy",
+      "note": "hỏi menu/diet"
+    },
+    {
+      "utterance": "Lẩu Thái cay không em?",
+      "intent": "SEARCH",
+      "difficulty": "easy",
+      "note": "hỏi tính chất món"
+    },
+    {
+      "utterance": "Quán mở cửa tới mấy giờ vậy",
+      "intent": "SEARCH",
+      "difficulty": "easy",
+      "note": "hỏi giờ mở cửa"
+    },
+    {
+      "utterance": "Món nào bán chạy nhất ở đây",
+      "intent": "SEARCH",
+      "difficulty": "easy",
+      "note": "hỏi best seller"
+    },
+    {
+      "utterance": "Cho mình xem menu với",
+      "intent": "SEARCH",
+      "difficulty": "easy",
+      "note": "xem menu"
+    },
+    {
+      "utterance": "Có món lẩu nào không",
+      "intent": "SEARCH",
+      "difficulty": "easy",
+      "note": "hỏi danh mục lẩu"
+    },
+    {
+      "utterance": "Cho tôi hỏi có bia không",
+      "intent": "SEARCH",
+      "difficulty": "easy",
+      "note": "hỏi đồ uống"
+    },
+    {
+      "utterance": "bia heineken bao nhiêu một lon vậy em",
+      "intent": "SEARCH",
+      "difficulty": "easy",
+      "note": "hỏi giá bia"
+    },
+    {
+      "utterance": "Hàu nướng có những kiểu chế biến nào?",
+      "intent": "SEARCH",
+      "difficulty": "medium",
+      "note": "hỏi biến thể món"
+    },
+    {
+      "utterance": "có món gì hợp cho nhóm 4 người nhậu không",
+      "intent": "SEARCH",
+      "difficulty": "medium",
+      "note": "gợi ý theo nhu cầu"
+    },
+    {
+      "utterance": "ốc bulot làm từ nguyên liệu gì thế",
+      "intent": "SEARCH",
+      "difficulty": "medium",
+      "note": "hỏi thành phần"
+    },
+    {
+      "utterance": "Có ship về quận 7 không em",
+      "intent": "SEARCH",
+      "difficulty": "medium",
+      "note": "hỏi ship + quận"
+    },
+    {
+      "utterance": "quán mình có chỗ đậu xe không",
+      "intent": "SEARCH",
+      "difficulty": "medium",
+      "note": "hỏi tiện ích"
+    },
+    {
+      "utterance": "Tôi muốn xem thực đơn của quán",
+      "intent": "SEARCH",
+      "difficulty": "medium",
+      "note": "tôi + xem thực đơn"
+    },
+    {
+      "utterance": "Ship về quận Tân Bình bao nhiêu tiền",
+      "intent": "SEARCH",
+      "difficulty": "medium",
+      "note": "hỏi phí ship quận"
+    },
+    {
+      "utterance": "Có khuyến mãi gì hôm nay không",
+      "intent": "SEARCH",
+      "difficulty": "medium",
+      "note": "hỏi khuyến mãi"
+    },
+    {
+      "utterance": "Món này giá sao vậy em",
+      "intent": "SEARCH",
+      "difficulty": "hard",
+      "note": "hỏi giá, dễ nhầm ORDER"
+    },
+    {
+      "utterance": "có món nào cay cay không?",
+      "intent": "SEARCH",
+      "difficulty": "hard",
+      "note": "hỏi lọc món, dễ nhầm ORDER"
+    },
+    {
+      "utterance": "Shop có giao hàng tối không",
+      "intent": "SEARCH",
+      "difficulty": "hard",
+      "note": "hỏi shop"
+    },
+    {
+      "utterance": "Tôi ở quận 3, ship được không",
+      "intent": "SEARCH",
+      "difficulty": "hard",
+      "note": "hỏi ship + quận"
+    },
+    {
+      "utterance": "Thực đơn hôm nay có gì mới",
+      "intent": "SEARCH",
+      "difficulty": "hard",
+      "note": "thực đơn không từ khóa hỏi"
+    },
+    {
+      "utterance": "Quận Gò Vấp có giao không shop",
+      "intent": "SEARCH",
+      "difficulty": "hard",
+      "note": "quận + shop"
+    },
+    {
+      "utterance": "Ốc Hương có mấy kiểu chế biến",
+      "intent": "SEARCH",
+      "difficulty": "hard",
+      "note": "hỏi kiểu, dễ nhầm ORDER tên Ốc"
+    },
+    {
+      "utterance": "Có những kiểu ốc nào ở đây",
+      "intent": "SEARCH",
+      "difficulty": "hard",
+      "note": "hỏi kiểu ốc"
+    },
+    {
+      "utterance": "Tính tiền giùm anh",
+      "intent": "PAYMENT",
+      "difficulty": "easy",
+      "note": "tính tiền chuẩn"
+    },
+    {
+      "utterance": "Cho xin hóa đơn",
+      "intent": "PAYMENT",
+      "difficulty": "easy",
+      "note": "xin hoá đơn"
+    },
+    {
+      "utterance": "Thanh toán chuyển khoản được không?",
+      "intent": "PAYMENT",
+      "difficulty": "easy",
+      "note": "hỏi phương thức"
+    },
+    {
+      "utterance": "cho xin mã qr thanh toán",
+      "intent": "PAYMENT",
+      "difficulty": "easy",
+      "note": "xin QR"
+    },
+    {
+      "utterance": "Cho tôi thanh toán",
+      "intent": "PAYMENT",
+      "difficulty": "easy",
+      "note": "tôi + thanh toán"
+    },
+    {
+      "utterance": "Tính tiền đi em",
+      "intent": "PAYMENT",
+      "difficulty": "easy",
+      "note": "tính tiền"
+    },
+    {
+      "utterance": "Em muốn thanh toán ạ",
+      "intent": "PAYMENT",
+      "difficulty": "easy",
+      "note": "thanh toán lịch sự"
+    },
+    {
+      "utterance": "Cho xin bill ạ",
+      "intent": "PAYMENT",
+      "difficulty": "easy",
+      "note": "xin bill"
+    },
+    {
+      "utterance": "Thanh toán cho anh",
+      "intent": "PAYMENT",
+      "difficulty": "easy",
+      "note": "thanh toán"
+    },
+    {
+      "utterance": "Quẹt thẻ được hông em",
+      "intent": "PAYMENT",
+      "difficulty": "medium",
+      "note": "hỏi quẹt thẻ"
+    },
+    {
+      "utterance": "chuyển khoản cho mình xin cái mã QR với",
+      "intent": "PAYMENT",
+      "difficulty": "medium",
+      "note": "chuyển khoản + QR"
+    },
+    {
+      "utterance": "hết nhiêu tiền rồi em ơi",
+      "intent": "PAYMENT",
+      "difficulty": "medium",
+      "note": "hỏi tổng tiền"
+    },
+    {
+      "utterance": "Tính tổng thiệt hại đi em",
+      "intent": "PAYMENT",
+      "difficulty": "medium",
+      "note": "tổng thiệt hại"
+    },
+    {
+      "utterance": "Cho xin cái bill với",
+      "intent": "PAYMENT",
+      "difficulty": "medium",
+      "note": "xin bill"
+    },
+    {
+      "utterance": "Tôi muốn thanh toán",
+      "intent": "PAYMENT",
+      "difficulty": "medium",
+      "note": "tôi + thanh toán"
+    },
+    {
+      "utterance": "Check bill giúp mình",
+      "intent": "PAYMENT",
+      "difficulty": "medium",
+      "note": "check bill"
+    },
+    {
+      "utterance": "Tính tổng giùm",
+      "intent": "PAYMENT",
+      "difficulty": "medium",
+      "note": "tính tổng ngắn"
+    },
+    {
+      "utterance": "bill đi em",
+      "intent": "PAYMENT",
+      "difficulty": "hard",
+      "note": "rất ngắn, dùng bill tiếng Anh"
+    },
+    {
+      "utterance": "Trả tiền cho anh",
+      "intent": "PAYMENT",
+      "difficulty": "hard",
+      "note": "trả tiền, không có từ khoá mạnh"
+    },
+    {
+      "utterance": "Tiền đâu trả đây",
+      "intent": "PAYMENT",
+      "difficulty": "hard",
+      "note": "hỏi trả tiền kiểu đùa"
+    },
+    {
+      "utterance": "Kiểm tra bill đi em",
+      "intent": "PAYMENT",
+      "difficulty": "hard",
+      "note": "kiểm tra bill"
+    },
+    {
+      "utterance": "Tính tiền mặt được không",
+      "intent": "PAYMENT",
+      "difficulty": "hard",
+      "note": "tiền mặt + tính tiền"
+    },
+    {
+      "utterance": "Cho em xin hoá đơn đỏ ạ",
+      "intent": "PAYMENT",
+      "difficulty": "hard",
+      "note": "hoá đơn đỏ"
+    },
+    {
+      "utterance": "Thanh toán cho 2 đứa riêng nha",
+      "intent": "PAYMENT",
+      "difficulty": "hard",
+      "note": "thanh toán riêng"
+    },
+    {
+      "utterance": "Tổng thiệt hại hết bao nhiêu",
+      "intent": "PAYMENT",
+      "difficulty": "hard",
+      "note": "tổng + hết bao nhiêu"
+    },
+    {
+      "utterance": "Xin chào shop",
+      "intent": "CHAT",
+      "difficulty": "easy",
+      "note": "chào hỏi"
+    },
+    {
+      "utterance": "Cảm ơn em nhiều nha",
+      "intent": "CHAT",
+      "difficulty": "easy",
+      "note": "cảm ơn"
+    },
+    {
+      "utterance": "Đồ ăn ở đây ngon quá trời",
+      "intent": "CHAT",
+      "difficulty": "easy",
+      "note": "khen"
+    },
+    {
+      "utterance": "Dạ em chào quán ạ",
+      "intent": "CHAT",
+      "difficulty": "easy",
+      "note": "chào lịch sự"
+    },
+    {
+      "utterance": "Cảm ơn quán nhiều ạ",
+      "intent": "CHAT",
+      "difficulty": "easy",
+      "note": "cảm ơn lịch sự"
+    },
+    {
+      "utterance": "ê quán đông ghê ha",
+      "intent": "CHAT",
+      "difficulty": "medium",
+      "note": "tán gẫu"
+    },
+    {
+      "utterance": "Món này mặn quá em ơi",
+      "intent": "CHAT",
+      "difficulty": "medium",
+      "note": "chê mặn"
+    },
+    {
+      "utterance": "Lần đầu tới đây ăn nè",
+      "intent": "CHAT",
+      "difficulty": "medium",
+      "note": "lần đầu"
+    },
+    {
+      "utterance": "Bạn là người hay robot vậy",
+      "intent": "CHAT",
+      "difficulty": "medium",
+      "note": "hỏi về AI"
+    },
+    {
+      "utterance": "Tôi no quá rồi",
+      "intent": "CHAT",
+      "difficulty": "medium",
+      "note": "no"
+    },
+    {
+      "utterance": "Quán này mới mở hả em",
+      "intent": "CHAT",
+      "difficulty": "medium",
+      "note": "hỏi quán"
+    },
+    {
+      "utterance": "Ngon thiệt chứ",
+      "intent": "CHAT",
+      "difficulty": "medium",
+      "note": "khen"
+    },
+    {
+      "utterance": "Hôm nay quán vắng ha",
+      "intent": "CHAT",
+      "difficulty": "medium",
+      "note": "quán vắng"
+    },
+    {
+      "utterance": "trời hôm nay mưa to thật",
+      "intent": "CHAT",
+      "difficulty": "hard",
+      "note": "lạc đề hoàn toàn"
+    },
+    {
+      "utterance": "Để anh suy nghĩ tí đã",
+      "intent": "CHAT",
+      "difficulty": "hard",
+      "note": "suy nghĩ - KHÔNG phải ORDER"
+    },
+    {
+      "utterance": "Từ từ đi em",
+      "intent": "CHAT",
+      "difficulty": "hard",
+      "note": "từ từ - KHÔNG phải ORDER"
+    },
+    {
+      "utterance": "Khoan đã đừng gọi vội",
+      "intent": "CHAT",
+      "difficulty": "hard",
+      "note": "khoan - dễ nhầm ORDER"
+    },
+    {
+      "utterance": "À mà thôi",
+      "intent": "CHAT",
+      "difficulty": "hard",
+      "note": "đổi ý - dễ nhầm ORDER"
+    },
+    {
+      "utterance": "Chưa biết nữa để tính sau",
+      "intent": "CHAT",
+      "difficulty": "hard",
+      "note": "chưa quyết định"
+    },
+    {
+      "utterance": "Chờ xíu nha",
+      "intent": "CHAT",
+      "difficulty": "hard",
+      "note": "chờ - dễ nhầm ORDER"
+    },
+    {
+      "utterance": "Để coi đã",
+      "intent": "CHAT",
+      "difficulty": "hard",
+      "note": "để coi - dễ nhầm SEARCH"
+    },
+    {
+      "utterance": "Thôi kệ đi",
+      "intent": "CHAT",
+      "difficulty": "hard",
+      "note": "thôi kệ"
+    },
+    {
+      "utterance": "Có gì vui kể nghe đi",
+      "intent": "CHAT",
+      "difficulty": "hard",
+      "note": "tán gẫu, dễ nhầm SEARCH"
+    },
+    {
+      "utterance": "Tôi cảm ơn em",
+      "intent": "CHAT",
+      "difficulty": "hard",
+      "note": "tôi + cảm ơn ngắn"
+    },
+    {
+      "utterance": "Em nói chuyện dễ thương ghê",
+      "intent": "CHAT",
+      "difficulty": "hard",
+      "note": "khen AI, dễ nhầm SEARCH hỏi về AI"
+    },
+    {
+      "utterance": "Tôi muốn gọi 2 phần Ốc Hương Xốt Me",
+      "intent": "ORDER",
+      "difficulty": "easy",
+      "note": "từ 'tôi' - từ vựng quan trọng chưa có trong training corpus cũ"
+    },
+    {
+      "utterance": "Xoá hết giỏ hàng giúp tôi",
+      "intent": "ORDER",
+      "difficulty": "medium",
+      "note": "từ 'xoá', 'giỏ hàng', 'tôi' - ba từ quan trọng thiếu trong training"
+    },
+    {
+      "utterance": "Lấy cho tôi 3 Tôm Càng Xanh Cháy Tỏi",
+      "intent": "ORDER",
+      "difficulty": "easy",
+      "note": "từ 'tôi' + tên món dài"
+    },
+    {
+      "utterance": "Tôi đổi món Mực Cháy Tỏi qua Sò Điệp Nướng Mỡ Hành",
+      "intent": "ORDER",
+      "difficulty": "medium",
+      "note": "từ 'tôi' + đổi món, hai tên món dài"
+    },
+    {
+      "utterance": "Bỏ món Gỏi Hải Sản ra khỏi đơn của tôi",
+      "intent": "ORDER",
+      "difficulty": "medium",
+      "note": "từ 'tôi' + bỏ món, cách nói trang trọng"
+    },
+    {
+      "utterance": "Xóa hết đơn hàng rồi gọi lại từ đầu cho tôi",
+      "intent": "ORDER",
+      "difficulty": "medium",
+      "note": "từ 'xóa' + yêu cầu hủy toàn bộ"
+    },
+    {
+      "utterance": "Tôi xác nhận đơn, cứ vậy mà làm",
+      "intent": "ORDER",
+      "difficulty": "medium",
+      "note": "từ 'tôi' + xác nhận đơn"
+    },
+    {
+      "utterance": "Thêm cho tôi 1 phần Khô Mực Nướng",
+      "intent": "ORDER",
+      "difficulty": "easy",
+      "note": "từ 'tôi' + thêm món"
+    },
+    {
+      "utterance": "Tôi chỉ cần 2 Bia Heineken và 1 Cháo Hàu thôi",
+      "intent": "ORDER",
+      "difficulty": "easy",
+      "note": "từ 'tôi' + gọi combo đơn giản"
+    },
+    {
+      "utterance": "Đổi giùm tôi Ốc Len Xào Dừa thành Ốc Hương Rang Muối",
+      "intent": "ORDER",
+      "difficulty": "medium",
+      "note": "từ 'tôi' + đổi món với tên đầy đủ"
+    },
+    {
+      "utterance": "Hủy đơn hàng của tôi, gọi lại món khác",
+      "intent": "ORDER",
+      "difficulty": "medium",
+      "note": "từ 'tôi' + hủy đơn"
+    },
+    {
+      "utterance": "Tôi muốn thêm 2 phần Chả Giò Hải Sản vào giỏ hàng",
+      "intent": "ORDER",
+      "difficulty": "easy",
+      "note": "từ 'tôi', 'giỏ hàng' + thêm món"
+    },
+    {
+      "utterance": "Cho tôi đặt thêm 3 Trứng Cút Lộn nữa",
+      "intent": "ORDER",
+      "difficulty": "easy",
+      "note": "từ 'tôi' + đặt thêm số lượng"
+    },
+    {
+      "utterance": "Có ship về quận 7 không shop",
+      "intent": "SEARCH",
+      "difficulty": "medium",
+      "note": "từ 'ship', 'quận', 'shop' - từ vựng quan trọng thiếu trong training"
+    },
+    {
+      "utterance": "Quán mình có giao hàng tận nơi không",
+      "intent": "SEARCH",
+      "difficulty": "medium",
+      "note": "hỏi giao hàng, biến thể của delivery query"
+    },
+    {
+      "utterance": "Ship về Thủ Đức mất bao lâu vậy",
+      "intent": "SEARCH",
+      "difficulty": "hard",
+      "note": "từ 'ship' + hỏi thời gian giao"
+    },
+    {
+      "utterance": "Tôi muốn xem thực đơn hôm nay có gì đặc biệt",
+      "intent": "SEARCH",
+      "difficulty": "easy",
+      "note": "từ 'tôi', 'thực đơn' + hỏi món đặc biệt"
+    },
+    {
+      "utterance": "Quán có nhận đặt tiệc sinh nhật không",
+      "intent": "SEARCH",
+      "difficulty": "medium",
+      "note": "hỏi dịch vụ đặt tiệc"
+    },
+    {
+      "utterance": "Có món nào dành cho người ăn kiêng không",
+      "intent": "SEARCH",
+      "difficulty": "medium",
+      "note": "hỏi món ăn kiêng"
+    },
+    {
+      "utterance": "Ốc Hương Xốt Bơ Cay bao nhiêu tiền một phần",
+      "intent": "SEARCH",
+      "difficulty": "easy",
+      "note": "hỏi giá món cụ thể với tên đầy đủ"
+    },
+    {
+      "utterance": "Món nào đang được ưa chuộng nhất quán mình",
+      "intent": "SEARCH",
+      "difficulty": "easy",
+      "note": "hỏi best seller"
+    },
+    {
+      "utterance": "Cho tôi hỏi quán có chỗ đậu xe hơi không",
+      "intent": "SEARCH",
+      "difficulty": "medium",
+      "note": "từ 'tôi' + hỏi tiện ích quán"
+    },
+    {
+      "utterance": "Có món hải sản nào tươi sống không vậy",
+      "intent": "SEARCH",
+      "difficulty": "easy",
+      "note": "hỏi món tươi sống"
+    },
+    {
+      "utterance": "Tôi cần tìm món không cay cho trẻ em",
+      "intent": "SEARCH",
+      "difficulty": "medium",
+      "note": "từ 'tôi' + filter không cay cho trẻ em"
+    },
+    {
+      "utterance": "Giá cả ở đây có đắt không",
+      "intent": "SEARCH",
+      "difficulty": "hard",
+      "note": "hỏi mức giá chung, không phải ORDER"
+    },
+    {
+      "utterance": "Tính tiền cho tôi đi",
+      "intent": "PAYMENT",
+      "difficulty": "easy",
+      "note": "từ 'tôi' + tính tiền"
+    },
+    {
+      "utterance": "Tôi muốn thanh toán bằng thẻ tín dụng",
+      "intent": "PAYMENT",
+      "difficulty": "easy",
+      "note": "từ 'tôi' + thanh toán thẻ"
+    },
+    {
+      "utterance": "Cho tôi xin cái bill thanh toán",
+      "intent": "PAYMENT",
+      "difficulty": "easy",
+      "note": "từ 'tôi' + bill thanh toán"
+    },
+    {
+      "utterance": "Làm ơn tính tổng hóa đơn của tôi",
+      "intent": "PAYMENT",
+      "difficulty": "easy",
+      "note": "từ 'tôi' + tổng hóa đơn"
+    },
+    {
+      "utterance": "Tôi trả tiền mặt được không",
+      "intent": "PAYMENT",
+      "difficulty": "easy",
+      "note": "từ 'tôi' + hỏi hình thức thanh toán"
+    },
+    {
+      "utterance": "Chia đều hóa đơn cho 4 người giùm tôi",
+      "intent": "PAYMENT",
+      "difficulty": "medium",
+      "note": "từ 'tôi' + chia hóa đơn"
+    },
+    {
+      "utterance": "Tôi muốn xuất hóa đơn đỏ",
+      "intent": "PAYMENT",
+      "difficulty": "medium",
+      "note": "từ 'tôi' + hóa đơn VAT"
+    },
+    {
+      "utterance": "Thanh toán giùm tôi, tôi chuyển khoản",
+      "intent": "PAYMENT",
+      "difficulty": "medium",
+      "note": "từ 'tôi' + chuyển khoản"
+    },
+    {
+      "utterance": "Tôi quét mã QR rồi, check giùm",
+      "intent": "PAYMENT",
+      "difficulty": "medium",
+      "note": "từ 'tôi' + quét QR, xác nhận đã trả"
+    },
+    {
+      "utterance": "Bàn tôi hết bao nhiêu tiền rồi em",
+      "intent": "PAYMENT",
+      "difficulty": "medium",
+      "note": "từ 'tôi' + hỏi tổng tiền bàn"
+    },
+    {
+      "utterance": "Tôi đã chuyển khoản xong, kiểm tra giúp",
+      "intent": "PAYMENT",
+      "difficulty": "medium",
+      "note": "từ 'tôi' + xác nhận chuyển khoản"
+    },
+    {
+      "utterance": "Làm ơn cho tôi cái QR thanh toán",
+      "intent": "PAYMENT",
+      "difficulty": "easy",
+      "note": "từ 'tôi' + QR thanh toán"
+    },
+    {
+      "utterance": "Tôi muốn gọi thêm mà quên mất món đó tên gì rồi",
+      "intent": "CHAT",
+      "difficulty": "hard",
+      "note": "từ 'tôi' + lưỡng lự, không phải ORDER rõ ràng"
+    },
+    {
+      "utterance": "Tôi ngồi đây được chưa",
+      "intent": "CHAT",
+      "difficulty": "medium",
+      "note": "từ 'tôi' + hỏi về chỗ ngồi"
+    },
+    {
+      "utterance": "Tôi muốn đặt bàn trước cho tối mai",
+      "intent": "CHAT",
+      "difficulty": "hard",
+      "note": "từ 'tôi' + đặt bàn, không phải ORDER món"
+    },
+    {
+      "utterance": "Tôi với bạn tôi lần đầu tới quán",
+      "intent": "CHAT",
+      "difficulty": "medium",
+      "note": "từ 'tôi' + tán gẫu, khách mới"
+    },
+    {
+      "utterance": "Cho tôi gửi lời khen tới đầu bếp",
+      "intent": "CHAT",
+      "difficulty": "medium",
+      "note": "từ 'tôi' + khen, không phải ORDER"
+    },
+    {
+      "utterance": "Tôi thấy quán mình đông khách ghê",
+      "intent": "CHAT",
+      "difficulty": "medium",
+      "note": "từ 'tôi' + nhận xét quán"
+    },
+    {
+      "utterance": "Tôi bị dị ứng hải sản thì gọi món gì được",
+      "intent": "CHAT",
+      "difficulty": "hard",
+      "note": "từ 'tôi' + hỏi tư vấn dị ứng, có thể SEARCH nhưng giống CHAT hơn"
+    },
+    {
+      "utterance": "Tôi có thể mang bánh sinh nhật vào quán không",
+      "intent": "CHAT",
+      "difficulty": "medium",
+      "note": "từ 'tôi' + hỏi quy định quán"
+    },
+    {
+      "utterance": "Tôi đợi bạn tôi tới rồi gọi món sau",
+      "intent": "CHAT",
+      "difficulty": "medium",
+      "note": "từ 'tôi' + trì hoãn gọi món"
+    },
+    {
+      "utterance": "Tôi vừa đi ngang thấy quán đẹp nên ghé",
+      "intent": "CHAT",
+      "difficulty": "medium",
+      "note": "từ 'tôi' + khen quán"
+    },
+    {
+      "utterance": "Tôi thấy trên mạng review quán mình ngon lắm",
+      "intent": "CHAT",
+      "difficulty": "medium",
+      "note": "từ 'tôi' + review"
+    },
+    {
+      "utterance": "Tôi có con nhỏ, quán có ghế em bé không",
+      "intent": "CHAT",
+      "difficulty": "medium",
+      "note": "từ 'tôi' + hỏi tiện ích gia đình"
+    }
+  ]
+}

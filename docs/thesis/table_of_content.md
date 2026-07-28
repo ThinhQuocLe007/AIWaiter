@@ -37,7 +37,6 @@
   - 2.4.4 Intent Classification — The Routing Layer
   - 2.4.5 Action Validation — The Safety Layer
   - 2.4.6 Memory and State Management in Conversational Agents
-  - 2.4.7 Tool Composition, Domain Adaptation, and the Cross-Domain Validation Pattern
 - 2.5 Menu Knowledge Retrieval (RAG)
   - 2.5.1 The Knowledge Problem and Standard RAG
   - 2.5.2 Embedding Models
@@ -86,11 +85,10 @@
 - 4.5 Conversational Agent
   - 4.5.1 Execution Model (LangGraph StateGraph)
   - 4.5.2 Stage I — Intent Classification (MLP)
-  - 4.5.3 Stage II — Tool-Calling LLM
+  - 4.5.3 Stage II — Specialized Agents & Prompt Architecture
   - 4.5.4 Stage III — Deterministic Validator
   - 4.5.5 Stage IV — Tools & State Management
   - 4.5.6 Stage V — Response Generation
-  - 4.5.7 Prompt Architecture
 - 4.6 Knowledge Retrieval Pipeline
   - 4.6.1 Query Rewriting
   - 4.6.2 Hybrid Retrieval

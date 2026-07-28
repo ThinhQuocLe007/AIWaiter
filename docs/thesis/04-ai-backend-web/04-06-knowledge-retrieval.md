@@ -1,140 +1,187 @@
 ## 4.6 Knowledge Retrieval Pipeline
 
-> **Status:** draft
-> **Cross-refs:** §2.5 (Need 4 — sensory queries to relevant items), §4.1 (FR2 — menu search by attributes), §4.2 (C8 — sensory queries don't match menu structure), §5.3.4 (retrieval evaluation)
-> **Source:** `src/agent_brain/services/retriever/hybrid_retriever.py` (102 lines), `indices/bm25.py` (58 lines), `indices/vector.py` (87 lines), `fusion/rrf.py` (68 lines), `document_loader.py` (72 lines), `filters.py` (67 lines)
-> **Figures needed:** Fig 4.6 — Closed-loop RAG pipeline (customer utterance → LLM rewrite → BM25 + FAISS → RRF fusion → LLM rephrase → grounded response)
+Section 2.5 surveyed the RAG literature and identified a gap. Prior work does give the language
+model a role in retrieval, but always at one edge or the other: rewriting the query before it
+runs, or scoring the documents after it returns. What none of the surveyed pipelines builds is
+a path from the output of retrieval back to its input, so a rewrite that produced unusable
+terms cannot be recognised as such and answered differently. The architecture proposed here
+closes that path: the model rewrites the query before retrieval, a hybrid BM25-and-FAISS
+retriever searches the 219-entry menu behind a relevance gate that rejects a query cleanly when
+both retrieval strategies produce noise, and the model rephrases what survives, evaluating
+relevance against the original customer intent. A multi-turn search context persists across
+turns so the model can answer follow-up questions about previously retrieved dishes without
+re-querying.
 
----
+This closed-loop design is the answer to the fourth design challenge of §4.2, that a query and
+the dish which answers it may share no words at all. Standard embedding-based retrieval fails
+structurally in that case, because the query and the document occupy disconnected regions of the
+embedding space. Figure 4.11 illustrates the full pipeline.
 
-Addressing C8: customers describe food by sensory experience — "món gì ấm bụng?" (what's warm and filling?), "ăn cay" (spicy), "món chay" (vegetarian) — which shares zero lexical overlap with menu entries indexed by name and category. Standard RAG (embed query → retrieve similar documents → generate) fails when query and document speak different languages.
+![Figure 4.11. Hybrid Retrieval Pipeline](../images/Figure6.svg)
 
-This section presents a closed-loop retrieval pipeline: the LLM rewrites the customer's vague utterance into concrete search terms before retrieval, a hybrid BM25+FAISS+RRF retriever searches the 217-dish menu, and the LLM rephrases the results in natural Vietnamese after retrieval — forming a rewrite → retrieve → rephrase loop. Multi-turn search context is retained in AgentState to prevent redundant queries.
-
----
+*Figure 4.11. Hybrid Retrieval Pipeline: the rewritten query enters two lanes that run in
+parallel, keyword matching over the menu text and semantic similarity over the shared
+embedding index. The gatekeeper admits a result only when one of the two lanes is confident,
+so an out-of-domain question returns nothing rather than the least bad dishes. Survivors are
+fused by rank, deduplicated by dish name, and cut to the final list. (drawn by the group)*
 
 ### 4.6.1 Query Rewriting
 
-The first stage of the closed-loop pipeline runs before any retrieval occurs. Rather than embedding the customer's raw utterance, the search worker (§4.5.3) uses the LLM to rewrite it into concrete, searchable Vietnamese terms.
+The first stage runs before any retrieval occurs. Rather than embedding the customer's raw
+utterance, the search agent (§4.5.3) uses the language model to translate conversational
+Vietnamese into concrete search terms.
 
-**Why rewriting is necessary.** The utterance "món gì ấm bụng cho ngày lạnh?" contains no words that appear in the menu. BM25 finds zero matches. FAISS retrieves the nearest vectors in embedding space, which for this query are general-domain sentences about comfort and warmth — not food items. The retrieval gap is not one of index quality or embedding model choice; it is a fundamental query-document mismatch. The query must be transformed before search.
+The utterance "món gì ấm bụng cho ngày lạnh?" contains no word that appears in the menu. BM25
+returns nothing, and FAISS returns the nearest vectors to a general-domain sentence about comfort
+and warmth rather than to any food item. What is needed is cultural knowledge, not extraction:
+"ấm bụng" names the sensation of warmth and fullness after eating, which in Vietnamese cuisine
+means noodle soups, hot pots, porridges, and stews. The model rewrites the request into those
+categories, "lẩu, súp, cháo, bún, phở, món nước nóng", which are lexically present in the menu's
+category and tag metadata. Extracting tokens instead would have produced "món", "ấm", "bụng",
+"lạnh", none of which match any entry.
 
-**How rewriting works.** The search worker's system prompt (`search_agent.md`) instructs the LLM to reason about Vietnamese culinary categories and produce concrete search terms:
+This is Step-Back Prompting (§2.5.4) applied to a domain the technique has not been evaluated
+on, and it differs from the canonical form in three ways. Step-Back abstracts a query to a
+single higher-level question; here the abstraction produces several categories at once, because
+one sensory description spans unrelated parts of a menu. Step-Back's published evaluations
+abstract over factual taxonomy in English; what is abstracted here is a culinary association
+rather than a fact, since nothing in the menu text records that warmth and fullness after eating
+correspond to hot pots and porridges, and whether a model holds such associations reliably
+enough to drive retrieval is what §5.4.4 measures. And the rewrite is not trusted on its own: it
+is checked by the gate of §4.6.2, which can reject what it produced, where Step-Back hands off
+to retrieval with no return path.
 
-1. **Input:** The customer's raw utterance, plus the last 2 conversation turns for context.
-2. **LLM reasoning:** The model identifies the customer's underlying need — "ấm bụng" means they want something hot, filling, and comforting. In Vietnamese cuisine, these attributes map to noodle soups (bún, phở), hot pots (lẩu), porridges (cháo), and stews (súp). The LLM performs this cultural reasoning and produces a list of these concrete categories.
-3. **Output:** A rewritten query string such as `"lẩu, súp, cháo, món nước nóng, bún, phở"` — terms that are lexically present in the menu.
-
-The rewritten query becomes both the BM25 search terms (each term is a keyword) and the FAISS embedding input (the full rewritten query is embedded). The LLM's `query` argument in the `search()` tool call carries this rewritten text.
-
-**Contrast with keyword extraction.** Query rewriting is not keyword extraction. Keyword extraction from "món gì ấm bụng cho ngày lạnh?" would produce "món", "ấm", "bụng", "lạnh" — none of which match menu entries. The LLM must translate sensory language into food-category language using cultural knowledge of Vietnamese cuisine, not just extract tokens from the input string.
-
-**Contrast with HyDE (Hypothetical Document Embeddings).** HyDE generates a hypothetical relevant document and embeds it for retrieval. The rewritten query in this system is more targeted — it produces search keywords optimized for both BM25 exact matching and FAISS semantic matching, rather than a free-form document that may introduce noise.
-
----
+The rewritten query goes into the search tool's arguments, where it is split on commas and each
+term run as an independent sub-query returning up to six results, the sub-queries then merged and
+deduplicated by dish name. One request becomes five parallel searches, so the result set covers
+every category the model identified. Decomposition is therefore the model's responsibility, and
+the retriever stays a plain search engine that matches terms without knowing why they were chosen.
+Mappings of this kind, "ấm bụng" to "cháo, lẩu, súp nóng" or "giải nhiệt" to "nước ép, sinh tố,
+trà đá", are taught by example in the search agent's prompt, which is what removes the need for a
+separate rewriting model or a hand-built synonym dictionary.
 
 ### 4.6.2 Hybrid Retrieval
 
-After the query is rewritten, it is sent through two parallel retrieval paths: a sparse BM25 index for exact keyword matching and a dense FAISS index for semantic similarity. The results from both are fused via Reciprocal Rank Fusion (RRF). This hybrid design exploits the complementary strengths of sparse and dense retrieval:
+The rewritten query enters two parallel retrieval paths that exploit the complementary strengths
+of sparse and dense retrieval. BM25 matches keywords exactly against dish names, categories, tags,
+and taste profiles; FAISS matches meaning, by cosine similarity over embedding vectors. Neither is
+sufficient alone, and their failure modes are opposite, which is why running both guarantees that
+one of them finds a relevant match for any query type. Table 4.16 sets the two lanes against each
+other.
 
-- **BM25 (sparse):** strong for exact keyword matches on dish names, ingredient mentions, and category labels. "Ốc Hương" → finds all dishes containing "Ốc Hương" in their name or description.
-- **FAISS (dense):** strong for semantic similarity on taste profiles, dietary attributes, and sensorily described preferences. "món cay" → finds dishes with spicy taste metadata even if the word "cay" does not appear in the dish name.
+*Table 4.16. Where each retrieval lane succeeds, where it fails, and on what kind of query.*
 
-**Why both, not one or the other.** Dense retrieval alone is weak on rare dish names and proper nouns — the embedding for "Ốc Hương Xốt Trứng Muối" may be closer to general restaurant terms than to the specific dish variant. Sparse retrieval alone is blind to semantic synonyms — "hải sản" (seafood) and "tôm mực cá" (shrimp squid fish) describe the same category but share no tokens. The hybrid design guarantees that at least one retriever finds a relevant match for any query type.
+| Lane | Strong when | Weak when | Worked example |
+|------|-------------|-----------|----------------|
+| Keyword | The query names a dish or a category that appears in the menu text | The query and the dish that answers it share no words | "Ốc Hương" finds every sauce variant; "hải sản" misses "tôm mực cá" |
+| Semantic | The query describes a taste, an attribute, or a sensation | The dish name is rare and the encoder has little evidence for it | "món cay" finds spicy dishes with no word match; "Ốc Hương Xốt Trứng Muối" may sit closer to generic restaurant text than to itself |
 
-#### 4.6.2.1 BM25 Sparse Index
+Both indices are built over the same 219 entries, each dish represented as one document
+concatenating its name, category, tags, taste profile, and description. The BM25 side tokenizes
+those documents with the same Vietnamese word segmentation the classifier uses, so compounds stay
+whole, and it disables document-length normalization because menu entries are short and of near
+uniform length. The FAISS side encodes each document as a 768-dimensional vector using the frozen
+bi-encoder shared with the classifier (§4.5.2), loaded once at startup so the embedding model
+occupies memory only once, and searches it exactly rather than approximately, which costs nothing
+at this corpus size.
 
-**Construction.** The BM25 index is built offline from the 217-dish menu (`assets/data/menu.json`). For each dish, a search document is created by concatenating metadata fields optimized for keyword matching:
-- Dish name (full Vietnamese)
-- Category (Lẩu, Ốc, Hải Sản, Nướng, etc.)
-- Tags (spicy, seafood, soup, etc.)
-- Taste profile (rich, sour, sweet, etc.)
-- Description (preparation details, key ingredients)
+Both retrievers are queried in parallel on a two-worker pool. Because keyword matching and vector
+search are independent and use different resources, the combined wall-clock time is the maximum of
+the two rather than their sum. Each returns up to fifteen candidates. Before fusion, a metadata
+post-filter applies if the customer named a constraint on price, dietary type, or category, and it
+applies only to menu documents so that supporting material such as restaurant information passes
+through untouched.
 
-**Vietnamese word segmentation.** Before indexing, each document is tokenized via `underthesea.word_tokenize()`. Vietnamese is a monosyllabic language where compound words carry meaning as units: "bún bò Huế" is one lexical item (a specific noodle soup), not three independent tokens. Tokenization via `underthesea` produces `["bún_bò_huế"]` (single token with underscores), preserving compound word semantics for BM25 term matching. A query for "bò Huế" will match "bún_bò_huế" partially (token overlap), while without segmentation the query "bò" would match "bò" in "bò lúc lắc" (a different dish), producing false positives.
+Before anything is fused, a dual-lane relevance gatekeeper determines whether the query is
+worth answering at all. The semantic lane checks the top FAISS result: if its cosine similarity
+is at least 0.35, the lane passes. The lexical lane extracts keywords from the raw query and
+checks whether any keyword appears in the top BM25 or FAISS document text. Either lane can
+approve the query. Only if both lanes fail does retrieval return an empty list, and in that
+case no fusion is performed at all.
 
-**BM25 parameters.** The `BM25Okapi` implementation from `rank_bm25` is used with `k1=1.2` (term frequency saturation) and `b=0.75` (document length normalization). The index is serialized to disk as a pickle file and loaded at agent startup. Raw retrieval retrieves `k=10` documents per query.
+CRAG (§2.5.4) places a comparable check at the same point in the pipeline, but scores relevance
+with a language model call and falls back to a web search when nothing passes. The gate here is
+deterministic and costs no inference: two threshold tests over values the two retrievers have
+already computed. A rejection also returns nothing rather than reaching outside the menu for a
+substitute, which is the correct answer when the restaurant genuinely does not serve what was
+asked for. This prevents the system from returning irrelevant menu
+items for utterances that triggered a search call but are not actually about food: a greeting,
+a complaint, or an out-of-domain question. The agent responds with "Dạ, quán không có món đó
+ạ" rather than feeding noisy results to the language model, which might hallucinate a dish
+based on irrelevant retrieved text.
 
-#### 4.6.2.2 FAISS Dense Index
+A query that clears the gate has its two ranked lists fused by Reciprocal Rank Fusion, which
+operates on document ranks rather than raw scores. This matters because the two scores are not
+comparable: BM25 produces unbounded term-weight sums while FAISS produces cosine similarities in a
+bounded range, and fusing by rank sidesteps the calibration that fusing by score would demand.
+Each list contributes to a document the quantity
 
-**Embedding model.** The `bkai-foundation-models/vietnamese-bi-encoder` (768-dim, L2-normalized) is used as the sentence encoder. This is a Vietnamese-specific bi-encoder trained on Vietnamese sentence pairs — critical for handling diacritic sensitivity. General-domain multilingual models (e.g., `paraphrase-multilingual-MiniLM-L12-v2`) degrade on Vietnamese tonal languages because diacritics carry semantic meaning: "ốc" (snail) and "ọc" (not a word) differ only in tone mark position, yet standard multilingual tokenizers strip or ignore diacritics.
+    1 / (k + r)
 
-**Document representation.** Each dish is represented by a single embedding vector of its combined metadata fields (name + category + tags + taste_profile + description), identical to the BM25 document text but embedded as a dense 768-dimensional vector rather than tokenized.
+where r is the document's rank in that list and k is set to 60, and the two contributions are
+added; a document appearing in only one list receives one contribution. The constant damps the gap
+between neighbouring ranks, which is what makes a document both lanes rank well outrank one that a
+single lane puts first. The fused list is then sorted by descending score, deduplicated by dish
+name so an item returned by both retrievers appears once, and truncated to six final results.
 
-**Index structure.** The FAISS `IndexFlatIP` (inner product, equivalent to cosine similarity on L2-normalized vectors) stores all 217 dish embeddings plus documents for restaurant info, best-seller recommendations, and VIP customer profiles. The index is serialized to `storage/vector/faiss_index/` with a fingerprint file that records the embedding model identifier — on load, the model identity is verified against the fingerprint to prevent dimension mismatches from embedding model changes. Raw retrieval retrieves `k=10` documents per query.
+Table 4.17 collects the settings of the whole pipeline in one place.
 
-**Embedding pipeline.** The rewritten query is embedded via the same bi-encoder, producing a 768-dim L2-normalized vector. Cosine similarity to all document vectors is computed via FAISS inner product search. The top-10 results by similarity score are returned.
+*Table 4.17. Settings of the retrieval pipeline.*
 
-#### 4.6.2.3 RRF Fusion
-
-Reciprocal Rank Fusion (RRF) merges the BM25 and FAISS result lists without requiring comparable scores. BM25 scores are unbounded term-weight sums; FAISS scores are cosine similarities in [−1, 1]. RRF works on ranks, not scores:
-
-```
-score(d) = Σ_{r ∈ rankers} 1 / (k + rank_r(d))
-```
-
-where `k=60` (a constant that smooths rank differences) and `rank_r(d)` is document `d`'s position in retriever `r`'s result list (1-indexed). A document appearing at rank 1 in both lists scores `1/61 + 1/61 ≈ 0.033`; a document at rank 1 in BM25 and rank 5 in FAISS scores `1/61 + 1/65 ≈ 0.032`.
-
-**Parallel execution.** BM25 and FAISS retrieval run concurrently via `ThreadPoolExecutor(max_workers=2)` — the two retrievers are independent and CPU-bound (BM25 token matching) vs. memory-bound (FAISS vector search) on different resources. Combined retrieval wall-clock time is approximately `max(BM25_time, FAISS_time)` rather than `BM25_time + FAISS_time`.
-
-**Fused ranking.** Documents appearing in both result lists receive scores from both rankers. Documents appearing in only one list receive a score from that ranker only. The fused list is sorted by descending RRF score and truncated to `k=5` final results, each annotated with its dish name, price, category, tags, and taste profile for downstream use in response generation.
-
-#### 4.6.2.4 Dual-Lane Gatekeeper
-
-Before fusion, a gatekeeper filters out irrelevant results — preventing noise from entering the LLM's context:
-
-- **Semantic lane:** the top FAISS cosine similarity score must be ≥ 0.35. If all FAISS scores are below this threshold, the semantic lane fails.
-- **Lexical lane:** the RAW (unrewritten) customer utterance must contain at least one token that appears in the top BM25 document's text. If no match, the lexical lane fails.
-
-Both lanes must fail for the query to be rejected. If either lane passes, retrieval proceeds normally. If both fail, the `search` tool returns an empty list — the agent responds with "Dạ, quán không có món đó ạ" rather than fabricating or guessing. This is safer than feeding noisy results to the LLM, which may hallucinate based on irrelevant retrieved text.
-
-**Metadata post-filters.** After RRF fusion, result documents can be filtered by optional criteria: `max_price`, `min_price`, `diet_type` (e.g., "chay"), and `category` (e.g., "Lẩu"). Filters are applied via substring matching to the document metadata and only to documents of type "menu" (not supporting sources like restaurant info or customer profiles).
-
----
+| Stage | Setting | Value |
+|-------|---------|-------|
+| Keyword lane | Term frequency saturation | 1.2 |
+| | Document length normalisation | Disabled, since menu entries are short and near-uniform |
+| | Tokenisation | Vietnamese word segmentation, compounds kept whole |
+| Semantic lane | Embedding dimensions | 768 |
+| | Index | Exact flat inner product over normalised vectors |
+| Both lanes | Candidates returned per lane | 15 |
+| Gatekeeper | Semantic lane, top-1 cosine similarity | At least 0.35 |
+| | Lexical lane | Any query keyword present in the top document |
+| Fusion | Rank constant | 60 |
+| | Results returned | 6, deduplicated by dish name |
+| Sub-queries | Results requested per comma-separated term | 6 |
+| Follow-up memory | Dishes retained for later turns | 5 |
 
 ### 4.6.3 Result Rephrasing
 
-After retrieval returns the top-5 fused dishes, the LLM in the response node evaluates and rephrases them. This is the third stage of the closed-loop — the search worker rewrote the query, the retriever found matching dishes, and now the response node grounds the reply in those dishes.
+The third stage of the loop hands the fused dishes to the response node, which is described in
+§4.5.6. What matters for retrieval is the shape of what is handed over: a typed search context in
+which every dish carries its name, price, category, tags, and taste profile, all read from the
+authoritative menu data rather than produced by the model. The model then judges each dish against
+what the customer originally asked and phrases the reply, so it decides the ordering and the
+wording but never which dishes exist or what they cost.
 
-**What rephrasing does beyond listing results.** A raw list of returned dishes — "Lẩu Cá Tầm Măng Chua 250k, Súp Cua 120k, Cháo Hàu 90k" — is not a conversationally appropriate response. The response node receives the retrieved dishes in a `SearchResponseContext` and performs three operations:
-
-1. **Relevance assessment:** The LLM evaluates each retrieved dish against the original customer intent. If the customer asked for "ấm bụng" dishes, Lẩu Cá Tầm and Cháo Hàu are relevant (hot, filling); Súp Cua is borderline (soup-based but not necessarily filling). The LLM can reorder or deprioritize results based on intent match.
-
-2. **Vietnamese natural language generation:** The LLM produces a conversational reply: "Dạ, cho ngày lạnh quán mình có Lẩu Cá Tầm Măng Chua 250.000đ, Cháo Hải Sản 120.000đ, và Súp Cua 90.000đ ạ. Anh/chị muốn thử món nào ạ?" The reply includes prices (from metadata), natural Vietnamese particles ("ạ", "nha"), and a follow-up prompt that keeps the ordering conversation flowing.
-
-3. **Empty result handling:** If retrieval returned no results (both gatekeeper lanes failed or no dishes matched the rewritten query), the LLM detects the empty context and generates an appropriate apology: "Dạ, quán mình không có món đó ạ. Anh/chị muốn xem thực đơn không ạ?" This prevents hallucination from empty retrieval — the LLM never fabricates a dish because no retrieval context exists to fabricate from.
-
----
+The failure case is what makes the loop closed. When the gatekeeper rejects a query the search
+context is empty, and an empty context is not something a model can embellish: with no dishes to
+name, the reply becomes an apology and an offer to show the menu. Responding differently to a hit
+and to a miss, on evidence rather than on instruction, is the behaviour §2.5 found absent from
+standard RAG pipelines.
 
 ### 4.6.4 Multi-Turn Search Context
 
-Restaurant conversations span multiple turns. A customer may search for "Ốc Hương" in turn 3, add an item to their cart, then search for "Ốc Hương" again in turn 6. Without search context, the agent repeats the same search and presents the same results — the customer perceives the agent as forgetful and the conversation feels unnatural.
+Restaurant conversations span multiple turns. A customer may search for a dish, order it,
+then ask a follow-up question about it several turns later. Without search context, the agent
+repeats the same search and presents the same results; the customer perceives the agent as
+forgetful.
 
-**The "ĐÃ BIẾT" mechanism.** The search worker's system prompt includes a dynamic "ĐÃ BIẾT" (already known) section that lists:
+The search agent injects a dynamic section listing already-known items, drawn from two
+sources. The current search context holds the results of the most recent search call, retained
+across turns so the model can reference previously retrieved dishes without re-querying. The
+active cart holds items the customer has already ordered. When the language model reads this
+list before deciding whether to call the search tool, it can determine that the customer is
+asking about a previously discussed item and delegate to the chat worker, which answers from
+the curated memory rather than re-searching. The curated memory converts the search context
+into structured objects, up to five dishes, each carrying a name, price, tags, and taste
+profile, and passes them to the chat worker for conversational follow-up responses.
 
-1. **Previous search results:** Items returned by the last `search()` call, retained in `AgentState.search_context` across turns. Each item includes the dish name and key attributes (price, category, taste profile).
-2. **Cart items:** All dishes currently in the active cart (`AgentState.active_cart.items`). A customer who already ordered "Ốc Hương Xốt Trứng Muối" may ask about it later — the agent should know it's in the cart and not re-search.
+A cumulative list of all dish names ever returned by search turns is maintained separately.
+This list is injected into the response prompt as an anti-repetition constraint: the language
+model is explicitly instructed to prioritize different dishes when the customer makes
+subsequent search requests, preventing the same recommendations from appearing turn after
+turn. The list is cleared when the cart is emptied or the session resets, so a new customer
+receives fresh recommendations.
 
-When the LLM reads the "ĐÃ BIẾT" section before deciding whether to call `search()`, it can determine: "The customer is asking about Ốc Hương, which was already searched in turn 3. The results are known. I should answer from the existing search context rather than re-querying."
-
-**Implementation.** The "ĐÃ BIẾT" context is injected into the search worker's system prompt at each turn by `chat_worker_node._to_curated_memory()`, which reads from `AgentState.search_context` and `AgentState.active_cart.items`. The mechanism is prompt-based and requires no additional state management infrastructure — it leverages the existing LangGraph conversation memory.
-
-**Limitation.** Currently, `curated_memory` only populates from SEARCH turns, not from ORDER turns. Dishes ordered but never searched are invisible to follow-up questions. A customer who says "Cho 2 Ốc Hương" (no search) then asks "Cái đó có cay không?" receives "Không có trong thực đơn" because no search context exists for the ordered item. This is a known limitation documented in the implementation progress tracker (`inprogress.md`, Problem 1: Entity Tracker), addressed in a planned enhancement.
-
----
-
-### 4.6.5 Index Lifecycle
-
-The hybrid retrieval index is built offline and loaded at startup:
-
-**Building.** The `builder.py` script in the retriever service orchestrates index construction:
-1. `DocumentLoader` reads `menu.json`, `best_seller.json`, `restaurant_info.txt`, and `customer_info.json`.
-2. FAISS index is built from all document embeddings (217 dishes + supporting sources).
-3. BM25 index is built from tokenized document texts (via `underthesea.word_tokenize`).
-4. Both indices are serialized to `storage/vector/faiss_index/` and `storage/vector/bm25.pkl`.
-
-**Loading.** At agent startup (`server.py` warmup sequence), the `RetrieverManager` singleton loads both indices into memory. The FAISS index is loaded via `faiss.read_index()` with `allow_dangerous_deserialization=True` (a FAISS requirement that should be secured with checksum verification in production — see code review issue #25 in `tasks_on_section.md`). The BM25 index is loaded via `pickle.load()`.
-
-**Rebuilding.** When the menu changes (items added, prices updated, categories reorganized), the index must be rebuilt. The `make reindex` target runs the builder, which regenerates both indices from the current menu. The agent service does not hot-reload indices — a restart is required after reindexing.
-
-**Fingerprint verification.** To prevent embedding model/dimension mismatches, the FAISS index stores a fingerprint file recording the model name used at build time. On load, the retriever compares the current embedding model's identity to the fingerprint. A mismatch indicates that the embedding model has changed and the FAISS index must be rebuilt with the new model's dimensions.
+Both indices are built offline and serialized to disk, then loaded during the agent's warmup, so a
+rebuild is needed only when the menu changes. The retrieval pipeline's effectiveness is evaluated
+in §5.4.4.

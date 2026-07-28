@@ -1,0 +1,864 @@
+{
+  "dataset": "cascade_manifest",
+  "version": "1.0",
+  "description": "Danh sách câu cần thu âm cho thí nghiệm cascade (§5.4.5). Mỗi câu được đọc bởi 3 người, thu SẠCH một lần; các mức nhiễu được trộn bằng phần mềm sau đó nên không phát sinh thêm thời gian thu. Ground-truth transcript chính là trường 'text' — người đọc phải đọc đúng câu, không diễn đạt lại.",
+  "seed": 20260723,
+  "speakers": 3,
+  "snr_levels": [
+    "clean",
+    "20db",
+    "10db",
+    "0db"
+  ],
+  "audio_spec": {
+    "format": "wav",
+    "sample_rate": 16000,
+    "channels": 1,
+    "bit_depth": 16
+  },
+  "total_utterances": 60,
+  "total_recordings": 180,
+  "total_eval_items": 720,
+  "items": [
+    {
+      "id": "CAS-001",
+      "text": "Chào em, cho anh 1 Lẩu Cá Tầm Măng Chua nhé",
+      "intent": "CHAT+ORDER",
+      "source": "multi_intent:MI-020",
+      "difficulty": "medium",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-001_spk1.wav",
+        "CAS-001_spk2.wav",
+        "CAS-001_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-002",
+      "text": "Cho 3 Hàu Nướng Mỡ Hành, à mà Chả Giò Hải Sản có ngon không",
+      "intent": "ORDER+SEARCH",
+      "source": "multi_intent:MI-013",
+      "difficulty": "medium",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-002_spk1.wav",
+        "CAS-002_spk2.wav",
+        "CAS-002_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-003",
+      "text": "Quẹt thẻ được hông em",
+      "intent": "PAYMENT",
+      "source": "holdout:HO-030",
+      "difficulty": "medium",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-003_spk1.wav",
+        "CAS-003_spk2.wav",
+        "CAS-003_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-004",
+      "text": "Món Cá Chim Nướng Sa Tế có nhiều xương không",
+      "intent": "SEARCH",
+      "source": "semantic:SEM-054",
+      "difficulty": "medium",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-004_spk1.wav",
+        "CAS-004_spk2.wav",
+        "CAS-004_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-005",
+      "text": "Món này mặn quá, đổi cho mình qua Ốc Hương Hấp Sả đi",
+      "intent": "CHAT+ORDER",
+      "source": "multi_intent:MI-021",
+      "difficulty": "hard",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-005_spk1.wav",
+        "CAS-005_spk2.wav",
+        "CAS-005_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-006",
+      "text": "cho e 2 oc huong xot me r tinh tien lun",
+      "intent": "ORDER+PAYMENT",
+      "source": "multi_intent:MI-018",
+      "difficulty": "hard",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-006_spk1.wav",
+        "CAS-006_spk2.wav",
+        "CAS-006_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-007",
+      "text": "Cho mình thanh toán qua MoMo",
+      "intent": "PAYMENT",
+      "source": "semantic:SEM-071",
+      "difficulty": "easy",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-007_spk1.wav",
+        "CAS-007_spk2.wav",
+        "CAS-007_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-008",
+      "text": "Món Ốc Len Xào Dừa ăn có ngon không",
+      "intent": "SEARCH",
+      "source": "semantic:SEM-051",
+      "difficulty": "easy",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-008_spk1.wav",
+        "CAS-008_spk2.wav",
+        "CAS-008_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-009",
+      "text": "Nãy giờ mình gọi những món gì rồi",
+      "intent": "CHAT",
+      "source": "semantic:SEM-098",
+      "difficulty": "hard",
+      "order_stage": null,
+      "contains_dish_name": false,
+      "files": [
+        "CAS-009_spk1.wav",
+        "CAS-009_spk2.wav",
+        "CAS-009_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-010",
+      "text": "Đổi Ốc Hương Xốt Me thành Xốt Phô Mai, với lại tính tiền giúp mình",
+      "intent": "ORDER+PAYMENT",
+      "source": "multi_intent:MI-012",
+      "difficulty": "hard",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-010_spk1.wav",
+        "CAS-010_spk2.wav",
+        "CAS-010_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-011",
+      "text": "Kiểm tra giúp mình đã thanh toán chưa, nếu rồi thì cho thêm 1 Trà Tắc",
+      "intent": "PAYMENT+ORDER",
+      "source": "multi_intent:MI-024",
+      "difficulty": "hard",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-011_spk1.wav",
+        "CAS-011_spk2.wav",
+        "CAS-011_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-012",
+      "text": "So sánh món ốc hương và món sò điệp giúp mình",
+      "intent": "SEARCH",
+      "source": "semantic:SEM-055",
+      "difficulty": "hard",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-012_spk1.wav",
+        "CAS-012_spk2.wav",
+        "CAS-012_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-013",
+      "text": "thêm 1 phần nữa",
+      "intent": "CHAT",
+      "source": "context:CTX-013",
+      "difficulty": "medium",
+      "order_stage": "IDLE",
+      "contains_dish_name": false,
+      "files": [
+        "CAS-013_spk1.wav",
+        "CAS-013_spk2.wav",
+        "CAS-013_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-014",
+      "text": "cho Ốc Hương đi",
+      "intent": "ORDER",
+      "source": "context:CTX-020",
+      "difficulty": "easy",
+      "order_stage": "IDLE",
+      "contains_dish_name": true,
+      "files": [
+        "CAS-014_spk1.wav",
+        "CAS-014_spk2.wav",
+        "CAS-014_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-015",
+      "text": "cho xin mã qr thanh toán",
+      "intent": "PAYMENT",
+      "source": "holdout:HO-033",
+      "difficulty": "easy",
+      "order_stage": null,
+      "contains_dish_name": false,
+      "files": [
+        "CAS-015_spk1.wav",
+        "CAS-015_spk2.wav",
+        "CAS-015_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-016",
+      "text": "Có món nào không cay cho trẻ em không, với lại quán có chỗ đậu xe chứ",
+      "intent": "SEARCH+SEARCH",
+      "source": "multi_intent:MI-023",
+      "difficulty": "hard",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-016_spk1.wav",
+        "CAS-016_spk2.wav",
+        "CAS-016_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-017",
+      "text": "Hi bạn",
+      "intent": "CHAT",
+      "source": "semantic:SEM-091",
+      "difficulty": "easy",
+      "order_stage": null,
+      "contains_dish_name": false,
+      "files": [
+        "CAS-017_spk1.wav",
+        "CAS-017_spk2.wav",
+        "CAS-017_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-018",
+      "text": "Cho 1 Lẩu Thái, 2 Bia Sài Gòn rồi chốt đơn nhé",
+      "intent": "ORDER+ORDER_CONFIRM",
+      "source": "multi_intent:MI-005",
+      "difficulty": "easy",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-018_spk1.wav",
+        "CAS-018_spk2.wav",
+        "CAS-018_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-019",
+      "text": "hết nhiêu tiền rồi em ơi",
+      "intent": "PAYMENT",
+      "source": "holdout:HO-032",
+      "difficulty": "medium",
+      "order_stage": null,
+      "contains_dish_name": false,
+      "files": [
+        "CAS-019_spk1.wav",
+        "CAS-019_spk2.wav",
+        "CAS-019_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-020",
+      "text": "Ốc Hương giá bao nhiêu vậy?",
+      "intent": "SEARCH",
+      "source": "holdout:HO-017",
+      "difficulty": "easy",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-020_spk1.wav",
+        "CAS-020_spk2.wav",
+        "CAS-020_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-021",
+      "text": "Tạm biệt nhé",
+      "intent": "CHAT",
+      "source": "semantic:SEM-088",
+      "difficulty": "easy",
+      "order_stage": null,
+      "contains_dish_name": false,
+      "files": [
+        "CAS-021_spk1.wav",
+        "CAS-021_spk2.wav",
+        "CAS-021_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-022",
+      "text": "lấy 2 mì xào sò vs 1 bánh mì bơ tỏi nha",
+      "intent": "ORDER",
+      "source": "semantic:SEM-018",
+      "difficulty": "medium",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-022_spk1.wav",
+        "CAS-022_spk2.wav",
+        "CAS-022_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-023",
+      "text": "Check bill giùm mình",
+      "intent": "PAYMENT",
+      "source": "semantic:SEM-080",
+      "difficulty": "medium",
+      "order_stage": null,
+      "contains_dish_name": false,
+      "files": [
+        "CAS-023_spk1.wav",
+        "CAS-023_spk2.wav",
+        "CAS-023_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-024",
+      "text": "Ốc Hương Xốt Me giá bao nhiêu, cho mình 2 phần luôn",
+      "intent": "SEARCH+ORDER",
+      "source": "multi_intent:MI-002",
+      "difficulty": "easy",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-024_spk1.wav",
+        "CAS-024_spk2.wav",
+        "CAS-024_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-025",
+      "text": "chưa muốn đâu",
+      "intent": "CHAT",
+      "source": "context:CTX-017",
+      "difficulty": "hard",
+      "order_stage": "AWAITING_CONFIRMATION",
+      "contains_dish_name": false,
+      "files": [
+        "CAS-025_spk1.wav",
+        "CAS-025_spk2.wav",
+        "CAS-025_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-026",
+      "text": "Gọi 1 phần Sò Điệp Nướng Mỡ Hành ghi chú ít cay",
+      "intent": "ORDER",
+      "source": "semantic:SEM-012",
+      "difficulty": "easy",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-026_spk1.wav",
+        "CAS-026_spk2.wav",
+        "CAS-026_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-027",
+      "text": "chuyển khoản cho mình xin cái mã QR với",
+      "intent": "PAYMENT",
+      "source": "holdout:HO-031",
+      "difficulty": "hard",
+      "order_stage": null,
+      "contains_dish_name": false,
+      "files": [
+        "CAS-027_spk1.wav",
+        "CAS-027_spk2.wav",
+        "CAS-027_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-028",
+      "text": "Cho mình xem menu với lại cho 2 Trứng Cút Lộn",
+      "intent": "SEARCH+ORDER",
+      "source": "multi_intent:MI-007",
+      "difficulty": "medium",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-028_spk1.wav",
+        "CAS-028_spk2.wav",
+        "CAS-028_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-029",
+      "text": "ừ",
+      "intent": "CHAT",
+      "source": "context:CTX-003",
+      "difficulty": "easy",
+      "order_stage": "IDLE",
+      "contains_dish_name": false,
+      "files": [
+        "CAS-029_spk1.wav",
+        "CAS-029_spk2.wav",
+        "CAS-029_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-030",
+      "text": "Lấy thêm 1 Khoai Tây Lắc Phô Mai mang về",
+      "intent": "ORDER",
+      "source": "semantic:SEM-013",
+      "difficulty": "easy",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-030_spk1.wav",
+        "CAS-030_spk2.wav",
+        "CAS-030_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-031",
+      "text": "Tính tiền giùm anh",
+      "intent": "PAYMENT",
+      "source": "holdout:HO-027",
+      "difficulty": "easy",
+      "order_stage": null,
+      "contains_dish_name": false,
+      "files": [
+        "CAS-031_spk1.wav",
+        "CAS-031_spk2.wav",
+        "CAS-031_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-032",
+      "text": "có món nào cay cay không?",
+      "intent": "SEARCH",
+      "source": "context:CTX-021",
+      "difficulty": "easy",
+      "order_stage": "IDLE",
+      "contains_dish_name": true,
+      "files": [
+        "CAS-032_spk1.wav",
+        "CAS-032_spk2.wav",
+        "CAS-032_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-033",
+      "text": "Cho anh xem lại giỏ hàng đang có những gì",
+      "intent": "CHAT",
+      "source": "semantic:SEM-097",
+      "difficulty": "hard",
+      "order_stage": null,
+      "contains_dish_name": false,
+      "files": [
+        "CAS-033_spk1.wav",
+        "CAS-033_spk2.wav",
+        "CAS-033_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-034",
+      "text": "Ê lấy cho anh 1 Tôm Càng Xanh Nướng Phô Mai",
+      "intent": "ORDER",
+      "source": "semantic:SEM-019",
+      "difficulty": "medium",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-034_spk1.wav",
+        "CAS-034_spk2.wav",
+        "CAS-034_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-035",
+      "text": "Thanh toán chuyển khoản được không",
+      "intent": "PAYMENT",
+      "source": "semantic:SEM-063",
+      "difficulty": "easy",
+      "order_stage": null,
+      "contains_dish_name": false,
+      "files": [
+        "CAS-035_spk1.wav",
+        "CAS-035_spk2.wav",
+        "CAS-035_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-036",
+      "text": "Quán có món chay không, mà thôi cho mình Bắp Xào đi",
+      "intent": "SEARCH+ORDER",
+      "source": "multi_intent:MI-004",
+      "difficulty": "medium",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-036_spk1.wav",
+        "CAS-036_spk2.wav",
+        "CAS-036_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-037",
+      "text": "Không gian quán đẹp quá",
+      "intent": "CHAT",
+      "source": "semantic:SEM-094",
+      "difficulty": "medium",
+      "order_stage": null,
+      "contains_dish_name": false,
+      "files": [
+        "CAS-037_spk1.wav",
+        "CAS-037_spk2.wav",
+        "CAS-037_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-038",
+      "text": "Xác nhận đơn hàng tiến hành đi",
+      "intent": "ORDER",
+      "source": "semantic:SEM-023",
+      "difficulty": "easy",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-038_spk1.wav",
+        "CAS-038_spk2.wav",
+        "CAS-038_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-039",
+      "text": "Chia đôi hóa đơn giùm mình",
+      "intent": "PAYMENT",
+      "source": "semantic:SEM-076",
+      "difficulty": "medium",
+      "order_stage": null,
+      "contains_dish_name": false,
+      "files": [
+        "CAS-039_spk1.wav",
+        "CAS-039_spk2.wav",
+        "CAS-039_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-040",
+      "text": "Lẩu Thái cay không em?",
+      "intent": "SEARCH",
+      "source": "holdout:HO-019",
+      "difficulty": "easy",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-040_spk1.wav",
+        "CAS-040_spk2.wav",
+        "CAS-040_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-041",
+      "text": "Quán này dễ thương ghê",
+      "intent": "CHAT",
+      "source": "semantic:SEM-093",
+      "difficulty": "medium",
+      "order_stage": null,
+      "contains_dish_name": false,
+      "files": [
+        "CAS-041_spk1.wav",
+        "CAS-041_spk2.wav",
+        "CAS-041_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-042",
+      "text": "đổi 2 bia Sài Gòn thành 2 bia 333",
+      "intent": "ORDER",
+      "source": "holdout:HO-008",
+      "difficulty": "medium",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-042_spk1.wav",
+        "CAS-042_spk2.wav",
+        "CAS-042_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-043",
+      "text": "ck cho mình cái qr với",
+      "intent": "PAYMENT",
+      "source": "router:RT-031",
+      "difficulty": "hard",
+      "order_stage": null,
+      "contains_dish_name": false,
+      "files": [
+        "CAS-043_spk1.wav",
+        "CAS-043_spk2.wav",
+        "CAS-043_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-044",
+      "text": "Ốc Móng Tay Hấp Sả Quế có gì đặc biệt, cho 2 phần rồi chốt luôn",
+      "intent": "SEARCH+ORDER+ORDER_CONFIRM",
+      "source": "multi_intent:MI-017",
+      "difficulty": "hard",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-044_spk1.wav",
+        "CAS-044_spk2.wav",
+        "CAS-044_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-045",
+      "text": "Bạn là robot hay người thật vậy",
+      "intent": "CHAT",
+      "source": "semantic:SEM-099",
+      "difficulty": "medium",
+      "order_stage": null,
+      "contains_dish_name": false,
+      "files": [
+        "CAS-045_spk1.wav",
+        "CAS-045_spk2.wav",
+        "CAS-045_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-046",
+      "text": "bỏ món mực chiên xù ra khỏi đơn giúp mình",
+      "intent": "ORDER",
+      "source": "holdout:HO-007",
+      "difficulty": "medium",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-046_spk1.wav",
+        "CAS-046_spk2.wav",
+        "CAS-046_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-047",
+      "text": "Xuất hóa đơn đỏ giùm mình",
+      "intent": "PAYMENT",
+      "source": "semantic:SEM-074",
+      "difficulty": "medium",
+      "order_stage": null,
+      "contains_dish_name": false,
+      "files": [
+        "CAS-047_spk1.wav",
+        "CAS-047_spk2.wav",
+        "CAS-047_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-048",
+      "text": "Loại lẩu nào được ưa chuộng nhất",
+      "intent": "SEARCH",
+      "source": "semantic:SEM-052",
+      "difficulty": "easy",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-048_spk1.wav",
+        "CAS-048_spk2.wav",
+        "CAS-048_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-049",
+      "text": "Quán đang phục vụ không bạn",
+      "intent": "CHAT",
+      "source": "semantic:SEM-100",
+      "difficulty": "hard",
+      "order_stage": null,
+      "contains_dish_name": false,
+      "files": [
+        "CAS-049_spk1.wav",
+        "CAS-049_spk2.wav",
+        "CAS-049_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-050",
+      "text": "Cho mình 2 phần Ốc Hương Xốt Me rồi tính tiền luôn nha",
+      "intent": "ORDER+PAYMENT",
+      "source": "multi_intent:MI-001",
+      "difficulty": "easy",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-050_spk1.wav",
+        "CAS-050_spk2.wav",
+        "CAS-050_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-051",
+      "text": "Tính riêng từng người giùm mình",
+      "intent": "PAYMENT",
+      "source": "semantic:SEM-077",
+      "difficulty": "medium",
+      "order_stage": null,
+      "contains_dish_name": false,
+      "files": [
+        "CAS-051_spk1.wav",
+        "CAS-051_spk2.wav",
+        "CAS-051_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-052",
+      "text": "Hàu nướng có những kiểu chế biến nào",
+      "intent": "SEARCH",
+      "source": "semantic:SEM-044",
+      "difficulty": "medium",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-052_spk1.wav",
+        "CAS-052_spk2.wav",
+        "CAS-052_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-053",
+      "text": "Cảm ơn em nhiều nha",
+      "intent": "CHAT",
+      "source": "holdout:HO-036",
+      "difficulty": "easy",
+      "order_stage": null,
+      "contains_dish_name": false,
+      "files": [
+        "CAS-053_spk1.wav",
+        "CAS-053_spk2.wav",
+        "CAS-053_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-054",
+      "text": "Cho mình 1 Mực Cháy Tỏi, mà quán mở cửa tới mấy giờ vậy",
+      "intent": "ORDER+SEARCH",
+      "source": "multi_intent:MI-010",
+      "difficulty": "medium",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-054_spk1.wav",
+        "CAS-054_spk2.wav",
+        "CAS-054_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-055",
+      "text": "Trả bằng MoMo được không bạn",
+      "intent": "PAYMENT",
+      "source": "semantic:SEM-078",
+      "difficulty": "easy",
+      "order_stage": null,
+      "contains_dish_name": false,
+      "files": [
+        "CAS-055_spk1.wav",
+        "CAS-055_spk2.wav",
+        "CAS-055_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-056",
+      "text": "Hàu nướng có những kiểu chế biến nào?",
+      "intent": "SEARCH",
+      "source": "holdout:HO-020",
+      "difficulty": "medium",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-056_spk1.wav",
+        "CAS-056_spk2.wav",
+        "CAS-056_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-057",
+      "text": "trời hôm nay mưa to thật",
+      "intent": "CHAT",
+      "source": "holdout:HO-039",
+      "difficulty": "hard",
+      "order_stage": null,
+      "contains_dish_name": false,
+      "files": [
+        "CAS-057_spk1.wav",
+        "CAS-057_spk2.wav",
+        "CAS-057_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-058",
+      "text": "Lấy 1 Lẩu Thái với 3 chai bia Tiger",
+      "intent": "ORDER",
+      "source": "holdout:HO-002",
+      "difficulty": "easy",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-058_spk1.wav",
+        "CAS-058_spk2.wav",
+        "CAS-058_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-059",
+      "text": "Mình chuyển khoản được không",
+      "intent": "PAYMENT",
+      "source": "semantic:SEM-072",
+      "difficulty": "easy",
+      "order_stage": null,
+      "contains_dish_name": false,
+      "files": [
+        "CAS-059_spk1.wav",
+        "CAS-059_spk2.wav",
+        "CAS-059_spk3.wav"
+      ]
+    },
+    {
+      "id": "CAS-060",
+      "text": "Món Lẩu Thái bao nhiêu tiền, Mực Chiên Sả bao nhiêu tiền",
+      "intent": "SEARCH+SEARCH",
+      "source": "multi_intent:MI-015",
+      "difficulty": "medium",
+      "order_stage": null,
+      "contains_dish_name": true,
+      "files": [
+        "CAS-060_spk1.wav",
+        "CAS-060_spk2.wav",
+        "CAS-060_spk3.wav"
+      ]
+    }
+  ]
+}

@@ -15,6 +15,56 @@
 
 ---
 
+## Chapter 1 — Introduction
+
+### §1.2 Necessity of the Study
+
+Every entry below is a placeholder. All eight support **quantitative** claims in the prose, so none
+of them may be left unverified: if a figure cannot be confirmed against a citable source, the
+sentence that carries it must be softened or removed rather than cited loosely.
+
+**[1.2.1]** *Unverified* — statistics on the United States restaurant workforce remaining
+approximately 3.6 % below pre-pandemic levels as of 2024, and on hospitality quit rates exceeding
+those of other sectors. Needed: US Bureau of Labor Statistics Current Employment Statistics or Job
+Openings and Labor Turnover Survey release, or a National Restaurant Association industry report.
+
+**[1.2.2]** *Unverified* — value of the Vietnamese food and beverage sector in 2024 (stated as over
+590 trillion VND) and its forecast annual growth of 9 to 10 %. Needed: a Vietnamese market research
+report (for example iPOS.vn's annual F&B industry report) or a General Statistics Office of Vietnam
+release.
+
+**[1.2.3]** *Unverified* — 2024 survey finding that 48 % of Vietnamese food and beverage
+enterprises report difficulty recruiting and retaining service staff. Needed: the primary survey,
+with its sample size and method, not a news article reporting the figure.
+
+**[1.2.4]** Straits Research, "Food Robotics Market: size, share and forecast 2026–2034," Straits
+Research. [Online]. Available: https://www.straitsresearch.com. [Accessed: 26-Jul-2026].
+*(Partially verified: publisher, report title and figures taken from the report's own published
+chart, which is reproduced as Figure 1.3 and states a 2025 market size of 3.17 billion USD, a 2034
+projection of 17.11 billion USD and a 20.6 % CAGR for 2026 to 2034. **Still needed:** the exact
+report page URL in place of the bare domain, and confirmation of the report's publication date.)*
+
+**[1.2.5]** *Unverified* — claim that a major Chinese manufacturer had more than 40,000 units
+deployed across over 600 cities as of 2023. Needed: the manufacturer's own press release or annual
+report. **Check this one first:** verifying the Chapter 2 citations already caught an incorrect
+Pudu Robotics unit count, and this is the same class of claim.
+
+**[1.2.6]** *Unverified* — evidence that large language models achieve competitive performance on
+Vietnamese conversational benchmarks. Needed: a named benchmark with a named model and a score, for
+example a VMLU or VLSP evaluation result. The claim as written is too vague to cite and should be
+narrowed to a specific benchmark result.
+
+**[1.2.7]** *Unverified* — Vietnamese speech recognition word error rates below 15 % under clean
+conditions. Needed: the PhoWhisper paper or an equivalent Vietnamese ASR evaluation, quoting the
+test set alongside the figure. Note that §2.3 already surveys this ground; reuse that citation once
+it is settled.
+
+**[1.2.8]** *Unverified* — reliability of ROS 2 navigation stacks on differential-drive platforms
+in mapped indoor environments. Needed: the Nav2 paper (Macenski et al.) or a comparable evaluation
+study.
+
+---
+
 ## Chapter 2 — Related Work
 
 ### §2.1 Overview: Automation of the Restaurant Service Loop
@@ -174,10 +224,12 @@ peer-reviewed hospitality-technology source is preferable to trade press for thi
 > point to; authors, title, venue, year, and pages must be confirmed before submission.
 >
 > **Numeric claims requiring a source.** The §2.3 draft deliberately omits word-error-rate and MOS
-> tables because published figures for these systems are not comparable cell to cell. The figures
-> that *do* remain in the draft and still need attribution are: model footprints and VRAM at float16
-> (Table 2.3b), engine footprints (Table 2.3c), and the 60–70 dB restaurant ambient-noise range
-> [2.3.22]. Verify each against a primary source or a measurement of your own.
+> tables because published figures for these systems are not comparable cell to cell. Two further
+> numeric claims were removed for the same reason: the runtime-memory column of Table 2.3b, which
+> could not be sourced or measured, and the restaurant ambient-noise range in the section opening,
+> which had no candidate source. What remains and still needs attribution is the engine footprints
+> in Table 2.3c. The disk figures in Table 2.3b need no source, being the parameter count at the
+> stated precision, and the table caption says so.
 
 **[2.3.1]** *Unverified* — reference establishing the limits of energy-threshold voice activity detection under noise. A speech-processing textbook treatment is preferable to a web source.
 
@@ -191,9 +243,9 @@ peer-reviewed hospitality-technology source is preferable to trade press for thi
 
 **[2.3.6]** *Unverified* — A. Radford, J. W. Kim, T. Xu, G. Brockman, C. McLeavey, and I. Sutskever, "Robust speech recognition via large-scale weak supervision," in *Proc. ICML*, 2023. *(Whisper. Source for the 680,000-hour training figure and the four model sizes.)*
 
-**[2.3.7]** *Unverified* — SYSTRAN, "faster-whisper: fast inference for Whisper using CTranslate2," GitHub repository; and the CTranslate2 engine documentation. **Key claim to verify:** that faster-whisper models are distributed pre-converted to CTranslate2 format and require no conversion step. This is the criterion on which §2.3.2 selects the multilingual model over PhoWhisper — if it is wrong, the selection argument fails.
+**[2.3.7]** *Unverified* — SYSTRAN, "faster-whisper: fast inference for Whisper using CTranslate2," GitHub repository; and the CTranslate2 engine documentation. **Key claim to verify:** that faster-whisper models are distributed pre-converted to CTranslate2 format and require no conversion step. §2.3.2 reports this as a build-time cost separating the two options; the section selects nothing, and §4.4 selects PhoWhisper in spite of it, so an error here weakens a reported property rather than a selection argument.
 
-**[2.3.8]** *Unverified* — T. Le, L. Nguyen, and D. Q. Nguyen, "PhoWhisper: automatic speech recognition for Vietnamese," 2024. **Three claims to verify:** (a) that PhoWhisper is distributed as Transformers-format checkpoints requiring conversion for CTranslate2 — same dependency as [2.3.7]; (b) that a `medium` size is among the released variants, since Table 2.3b names it specifically; (c) that the released sizes mirror the Whisper architecture exactly, which is what licenses the footprint-parity claim (769M parameters, ~1.5 GB converted, ~3 GB VRAM at fp16). Claim (c) is load-bearing: it is the basis for §2.3.2's statement that the Vietnamese advantage costs nothing in memory, and hence for §6.3 describing the substitution as low-cost.
+**[2.3.8]** *Unverified* — T. Le, L. Nguyen, and D. Q. Nguyen, "PhoWhisper: automatic speech recognition for Vietnamese," 2024. **Three claims to verify, most important first:** (a) that the released sizes mirror the Whisper architecture exactly, which is what licenses the footprint-parity claim (769M parameters, about 1.5 GB of weights once converted at float16); (b) that a `medium` size is among the released variants, since Table 2.3b names it specifically; (c) that PhoWhisper is distributed as Transformers-format checkpoints requiring conversion for CTranslate2, the same dependency as [2.3.7]. Claim (a) is the load-bearing one: it is the basis for §2.3.2's finding that the Vietnamese advantage costs nothing at runtime, which is the finding §4.4 relies on when it selects PhoWhisper.
 
 **[2.3.9]** *Unverified* — VLSP (Vietnamese Language and Speech Processing) shared-task benchmark description for automatic speech recognition.
 
@@ -221,7 +273,7 @@ peer-reviewed hospitality-technology source is preferable to trade press for thi
 
 **[2.3.21]** *Unverified* — ITU-T Recommendation P.800, "Methods for subjective determination of transmission quality," 1996. *(Standard definition of Mean Opinion Score.)*
 
-**[2.3.22]** *Unverified — NO CANDIDATE IDENTIFIED.* Source for restaurant ambient noise levels in the 60–70 dB range. This figure recurs throughout Chapters 1, 2, and 4 and currently has no attribution anywhere. Either cite an acoustics or hospitality-environment study, or replace it with a sound-level measurement taken in the deployment restaurant and report it as such.
+**[2.3.22]** *Retired.* This key carried the 60–70 dB restaurant ambient-noise range, for which no candidate source was ever identified. The figure has been removed from §2.3 and the section now describes the acoustic conditions qualitatively, so the key is no longer cited anywhere. Delete on merge, or reinstate with a sound-level measurement taken in the deployment restaurant and reported as such.
 
 ### §2.4 Conversational AI Agent
 
@@ -253,6 +305,28 @@ peer-reviewed hospitality-technology source is preferable to trade press for thi
 > `src/agent_brain/agent/resources/`. Tokenizing that corpus against an English translation gives a
 > figure that is *specific to this system's tokenizer and domain* — strictly better evidence than a
 > general claim from the literature, and defensible because it is measured rather than cited.
+>
+> **Three keys added or reassigned on 27-Jul-2026, all NO CANDIDATE IDENTIFIED. These are the
+> highest priority in §2.4, because they sit under the routing design that §4.5.2 proposes and
+> §5.4.1 measures.** The corresponding places in the draft carry `<!-- SOURCE NEEDED -->` comments,
+> which are greppable and do not render.
+>
+> **[2.4.42] — state-augmented intent classification.** Needed: a paper defining the approach in
+> which dialogue-state features are concatenated with the utterance representation as input to a
+> fast supervised classifier. This key previously did double duty, also carrying the validation
+> survey in §2.4.5; that use has been moved to [2.4.62] and the two must not be merged again.
+>
+> **[2.4.62] — survey of argument-level validation approaches.** Needed: the source behind
+> §2.4.5's claim that three approaches have been studied, each intervening at a different point in
+> the generation pipeline. A survey of hallucination mitigation in tool-calling agents would serve.
+>
+> **[2.4.63] — English evaluation of state-augmented classification.** Needed: a reported accuracy
+> gain from adding dialogue-state features to a text-only intent classifier, on an English
+> task-oriented dialogue benchmark. This is what licenses §2.4.4's statement that the approach has
+> been assessed only on English, which in turn is what makes the Vietnamese case open.
+>
+> If [2.4.42] and [2.4.63] turn out to be the same paper, cite it twice under one key and say so
+> here; do not delete the second key silently, because §2.4.4 makes two separate claims on it.
 
 ---
 

@@ -7,7 +7,6 @@ total), mark the table as waiting-for-kitchen, and return the saved order.
 
 from fastapi import APIRouter, HTTPException
 
-from ..services import dispatcher
 from ..data.db import get_conn
 from ..schemas import OrderCreate, OrderOut, OrderStatusUpdate, TableOut
 from ..services.sessions import ensure_active_session
@@ -70,8 +69,8 @@ async def create_order(payload: OrderCreate) -> OrderOut:
     await manager.broadcast(
         "panel", {"type": "table.updated", "table": TableOut(**dict(table_row)).model_dump()}
     )
-    # The guest has ordered, so the robot that came to take the order can head back to the dock.
-    await dispatcher.release_robot_at_table(payload.table_id)
+    # Robot stays at the table — the voice module's auto-release timer will send it
+    # home after the guest stops interacting (7 s idle after the confirm reply).
     return order
 
 

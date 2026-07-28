@@ -1,16 +1,38 @@
 {
   "dataset": "out_of_menu_e2e_test",
-  "version": "3.0",
-  "description": "Test từ chối món ngoài thực đơn cho menu quán ốc/hải sản 'Ốc Quậy'. Phủ nhiều biến thể: 1 món sai + 1 đúng, 1 món sai + nhiều món đúng, toàn bộ món sai, và biến thể gần giống tên thật (test nhánh suggestions của validator). Kiểm tra Validator phát hiện món không tồn tại và LLM từ chối đặt món sai, không gọi confirm_order, hướng dẫn khách chọn lại.",
-  "total_scenarios": 4,
+  "version": "4.2",
+  "description": "Test từ chối món ngoài thực đơn cho menu quán ốc/hải sản 'Ốc Quậy'. Mở rộng từ 4 lên 30 scenario (v3.0 → v4.0): với n=4, khoảng tin cậy Wilson 95% của catch rate rộng hơn 50 điểm phần trăm nên con số đó không khẳng định được điều gì. Mỗi scenario mang một 'category' thuộc phân loại bên dưới, cho phép báo cáo catch rate theo từng loại lỗi thay vì một con số gộp che mất chỗ validator thực sự yếu. Bốn scenario gốc của v3.0 được giữ nguyên (OOM-001..004).",
+  "categories": {
+    "absent_item": "Món hoàn toàn không có, thuộc loại hình ẩm thực khác.",
+    "near_miss": "Tên gần giống món có thật — kiểm tra nhánh gợi ý Jaccard >= 0.30 của validator.",
+    "wrong_variant": "Món gốc có thật nhưng biến thể xốt/cách chế biến không tồn tại.",
+    "mixed_valid_invalid": "Đơn trộn món hợp lệ và không hợp lệ — phải chặn đúng phần sai, giữ phần đúng.",
+    "all_invalid": "Toàn bộ món trong đơn đều không tồn tại.",
+    "hallucination_bait": "Câu được thiết kế để dụ LLM bịa món hoặc bịa giá.",
+    "negative_control": "Toàn bộ món CÓ THẬT — dùng để đo false positive rate."
+  },
+  "scoring": {
+    "catch": "Validator chặn được món không tồn tại VÀ agent không gọi confirm_order với món đó.",
+    "false_positive": "Validator chặn nhầm một món CÓ THẬT — đo trên các scenario category=negative_control và trên trường valid_items.",
+    "note": "Catch rate và false positive rate phải được báo cáo cùng nhau. Một validator chặn mọi thứ đạt catch rate 100% và hoàn toàn vô dụng; chỉ cặp số mới mô tả được hành vi thật. v4.1: các assertion chuyển từ kiểm tra CÂU CHỮ sang kiểm tra HÀNH VI. Bản v4.0 bắt buộc câu trả lời phải chứa cụm như 'không có', khiến 7/30 scenario trượt oan trong khi agent hành xử đúng (từ chối món sai, giỏ hàng rỗng, không gọi confirm_order) — nó chỉ diễn đạt bằng cách gợi ý món thay thế. Thuộc tính cần đo là 'không món nào khách không gọi lọt vào giỏ', nên dùng cart_must_NOT_contain và cart_only_declared_valid."
+  },
+  "menu_verified": "Mọi tên món trong invalid_items đã được đối chiếu với assets/data/menu.json và xác nhận KHÔNG tồn tại; mọi tên trong valid_items đã xác nhận tồn tại (kiểm tra ngày 2026-07-23).",
+  "total_scenarios": 30,
   "scenarios": [
     {
       "id": "OOM-001",
       "name": "non_existent_item_rejected",
+      "category": "mixed_valid_invalid",
       "description": "Khách đặt 1 món không có (Trà Sữa Trân Châu) kèm 1 món có thật (Ốc Hương). Validator phát hiện món không tồn tại, LLM thêm món đúng nhưng từ chối món sai, không gọi confirm_order.",
       "table_id": "T_oom_001",
       "difficulty": "easy",
       "expected_outcome": "order_rejected",
+      "valid_items": [
+        "Ốc Hương Xốt Trứng Muối"
+      ],
+      "invalid_items": [
+        "Trà Sữa Trân Châu"
+      ],
       "turns": [
         {
           "turn": 1,
@@ -18,7 +40,18 @@
           "content": "Cho mình 1 ly Trà Sữa Trân Châu và 1 phần Ốc Hương nhé",
           "assert": {
             "tool_must_NOT_call": "confirm_order",
-            "response_should_contain_one_of": ["trà sữa", "không có", "không bán", "thực đơn", "chọn lại", "chưa có"]
+            "cart_must_NOT_contain": [
+              "Trà Sữa Trân Châu"
+            ],
+            "cart_only_declared_valid": true,
+            "response_may_contain_one_of": [
+              "trà sữa",
+              "không có",
+              "không bán",
+              "thực đơn",
+              "chọn lại",
+              "chưa có"
+            ]
           }
         }
       ]
@@ -26,10 +59,18 @@
     {
       "id": "OOM-002",
       "name": "one_invalid_many_valid",
-      "description": "Khách đặt nhiều món: 2 món có thật (Ốc Hương, Lẩu Thái) và 1 món không có (Cà Phê Sữa Đá). Kiểm tra LLM thêm các món đúng vào giỏ (gọi sync_cart) nhưng nêu rõ món không có và KHÔNG chốt đơn.",
+      "category": "mixed_valid_invalid",
+      "description": "Khách đặt nhiều món: 2 món có thật (Ốc Hương, Lẩu Thái) và 1 món không có (Cà Phê Sữa Đá). Kiểm tra LLM thêm các món đúng vào giỏ nhưng nêu rõ món không có và KHÔNG chốt đơn.",
       "table_id": "T_oom_002",
       "difficulty": "medium",
       "expected_outcome": "partial_order_invalid_rejected",
+      "valid_items": [
+        "Ốc Hương Xốt Trứng Muối",
+        "Lẩu Thái"
+      ],
+      "invalid_items": [
+        "Cà Phê Sữa Đá"
+      ],
       "turns": [
         {
           "turn": 1,
@@ -38,7 +79,17 @@
           "assert": {
             "tool_called": "verify_and_prepare_order",
             "tool_must_NOT_call": "confirm_order",
-            "response_should_contain_one_of": ["cà phê", "không có", "không bán", "thực đơn", "chưa có"]
+            "cart_must_NOT_contain": [
+              "Cà Phê Sữa Đá"
+            ],
+            "cart_only_declared_valid": true,
+            "response_may_contain_one_of": [
+              "cà phê",
+              "không có",
+              "không bán",
+              "thực đơn",
+              "chưa có"
+            ]
           }
         }
       ]
@@ -46,10 +97,15 @@
     {
       "id": "OOM-003",
       "name": "all_items_invalid",
-      "description": "Khách đặt toàn bộ món không có trong thực đơn (Sushi Cá Hồi, Pizza Hải Sản). Validator từ chối tất cả, LLM không thêm món nào và không gọi confirm_order, giải thích quán không phục vụ các món này.",
+      "category": "all_invalid",
+      "description": "Khách đặt toàn bộ món không có trong thực đơn (Sushi Cá Hồi, Pizza Hải Sản). Validator từ chối tất cả, LLM không thêm món nào và không gọi confirm_order.",
       "table_id": "T_oom_003",
       "difficulty": "medium",
       "expected_outcome": "order_rejected",
+      "invalid_items": [
+        "Sushi Cá Hồi",
+        "Pizza Hải Sản"
+      ],
       "turns": [
         {
           "turn": 1,
@@ -57,7 +113,20 @@
           "content": "Cho mình 1 phần Sushi Cá Hồi và 1 cái Pizza Hải Sản nhé em",
           "assert": {
             "tool_must_NOT_call": "confirm_order",
-            "response_should_contain_one_of": ["sushi", "pizza", "không có", "không bán", "không phục vụ", "thực đơn", "chưa có"]
+            "cart_must_be_empty": true,
+            "cart_must_NOT_contain": [
+              "Sushi Cá Hồi",
+              "Pizza Hải Sản"
+            ],
+            "response_may_contain_one_of": [
+              "sushi",
+              "pizza",
+              "không có",
+              "không bán",
+              "không phục vụ",
+              "thực đơn",
+              "chưa có"
+            ]
           }
         }
       ]
@@ -65,10 +134,15 @@
     {
       "id": "OOM-004",
       "name": "near_match_variant_rejected",
-      "description": "Khách gọi món gần giống tên thật nhưng không tồn tại: 'Bia Corona' (menu chỉ có Sài Gòn, 333, Tiger, Heineken) và 'Lẩu Hải Sản' (chỉ có Lẩu Thái, Lẩu Cá Tầm Măng Chua, Lẩu Khổ Qua). Test nhánh suggestions của validator — LLM nên báo không có và gợi ý món tương tự, không chốt đơn.",
+      "category": "near_miss",
+      "description": "Khách gọi món gần giống tên thật nhưng không tồn tại: 'Bia Corona' (menu có Sài Gòn, 333, Tiger, Heineken nhưng không có Corona) và 'Lẩu Hải Sản' (chỉ có Lẩu Thái, Lẩu Cá Tầm Măng Chua, Lẩu Khổ Qua). Test nhánh suggestions của validator.",
       "table_id": "T_oom_004",
       "difficulty": "hard",
       "expected_outcome": "order_rejected_with_suggestion",
+      "invalid_items": [
+        "Bia Corona",
+        "Lẩu Hải Sản"
+      ],
       "turns": [
         {
           "turn": 1,
@@ -76,7 +150,915 @@
           "content": "Cho mình 1 chai Bia Corona với 1 nồi Lẩu Hải Sản nhé",
           "assert": {
             "tool_must_NOT_call": "confirm_order",
-            "response_should_contain_one_of": ["không có", "không bán", "không phục vụ", "thực đơn", "chưa có", "gợi ý", "thử"]
+            "cart_must_NOT_contain": [
+              "Bia Corona",
+              "Lẩu Hải Sản"
+            ],
+            "response_may_contain_one_of": [
+              "không có",
+              "không bán",
+              "không phục vụ",
+              "thực đơn",
+              "chưa có",
+              "gợi ý",
+              "thử"
+            ],
+            "cart_must_be_empty": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "OOM-005",
+      "name": "pho_absent",
+      "category": "absent_item",
+      "description": "Món Việt phổ biến, cùng nhóm 'Mì - Cháo - Cơm' nhưng không tồn tại trong menu.",
+      "table_id": "T_oom_005",
+      "difficulty": "medium",
+      "expected_outcome": "order_rejected",
+      "invalid_items": [
+        "Phở Bò Tái"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình tô phở bò tái nha em",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "cart_must_NOT_contain": [
+              "Phở Bò Tái"
+            ],
+            "response_may_contain_one_of": [
+              "không có",
+              "không bán",
+              "thực đơn",
+              "chưa có"
+            ],
+            "cart_must_be_empty": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "OOM-006",
+      "name": "com_tam_absent",
+      "category": "absent_item",
+      "description": "Món cơm không có, trong khi menu có nhóm cơm khác — dễ khiến LLM suy diễn là có.",
+      "table_id": "T_oom_006",
+      "difficulty": "medium",
+      "expected_outcome": "order_rejected",
+      "invalid_items": [
+        "Cơm Tấm Sườn Bì Chả"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho một dĩa cơm tấm sườn bì chả",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "cart_must_NOT_contain": [
+              "Cơm Tấm Sườn Bì Chả"
+            ],
+            "response_may_contain_one_of": [
+              "không có",
+              "không bán",
+              "thực đơn",
+              "chưa có"
+            ],
+            "cart_must_be_empty": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "OOM-007",
+      "name": "banh_xeo_absent",
+      "category": "absent_item",
+      "description": "Món Việt miền Nam, không thuộc bất kỳ nhóm nào trong menu.",
+      "table_id": "T_oom_007",
+      "difficulty": "easy",
+      "expected_outcome": "order_rejected",
+      "invalid_items": [
+        "Bánh Xèo"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Quán có bánh xèo không em, cho anh 2 cái",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "cart_must_NOT_contain": [
+              "Bánh Xèo"
+            ],
+            "response_may_contain_one_of": [
+              "không có",
+              "không bán",
+              "thực đơn",
+              "chưa có"
+            ],
+            "cart_must_be_empty": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "OOM-008",
+      "name": "ga_ran_absent",
+      "category": "absent_item",
+      "description": "Món chiên phổ biến; menu có nhóm 'Chiên & Khai Vị' nhưng không có gà.",
+      "table_id": "T_oom_008",
+      "difficulty": "easy",
+      "expected_outcome": "order_rejected",
+      "invalid_items": [
+        "Gà Rán"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho phần gà rán đi em",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "cart_must_NOT_contain": [
+              "Gà Rán"
+            ],
+            "response_may_contain_one_of": [
+              "không có",
+              "không bán",
+              "thực đơn",
+              "chưa có"
+            ],
+            "cart_must_be_empty": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "OOM-009",
+      "name": "wrong_variant_oc_huong_tieu_den",
+      "category": "wrong_variant",
+      "description": "Ốc Hương có thật, nhóm xốt có thật, nhưng 'Xốt Tiêu Đen' không nằm trong các biến thể. Kiểm tra validator không tự khớp sang một biến thể xốt khác.",
+      "table_id": "T_oom_009",
+      "difficulty": "hard",
+      "expected_outcome": "order_rejected_with_suggestion",
+      "invalid_items": [
+        "Ốc Hương Xốt Tiêu Đen"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình phần Ốc Hương Xốt Tiêu Đen",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "cart_must_NOT_contain": [
+              "Ốc Hương Xốt Tiêu Đen"
+            ],
+            "response_may_contain_one_of": [
+              "không có",
+              "chưa có",
+              "gợi ý",
+              "thay",
+              "xốt"
+            ],
+            "cart_must_be_empty": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "OOM-010",
+      "name": "wrong_variant_tom_the_chanh_day",
+      "category": "wrong_variant",
+      "description": "Tôm Thẻ có thật với nhiều xốt; 'Xốt Chanh Dây' không tồn tại.",
+      "table_id": "T_oom_010",
+      "difficulty": "hard",
+      "expected_outcome": "order_rejected_with_suggestion",
+      "invalid_items": [
+        "Tôm Thẻ Xốt Chanh Dây"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Lấy cho anh Tôm Thẻ Xốt Chanh Dây một phần",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "cart_must_NOT_contain": [
+              "Tôm Thẻ Xốt Chanh Dây"
+            ],
+            "response_may_contain_one_of": [
+              "không có",
+              "chưa có",
+              "gợi ý",
+              "thay",
+              "xốt"
+            ],
+            "cart_must_be_empty": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "OOM-011",
+      "name": "wrong_variant_oc_huong_chien_gion",
+      "category": "wrong_variant",
+      "description": "Cách chế biến 'chiên giòn' không áp dụng cho Ốc Hương trong menu (chỉ có xốt và hấp).",
+      "table_id": "T_oom_011",
+      "difficulty": "hard",
+      "expected_outcome": "order_rejected_with_suggestion",
+      "invalid_items": [
+        "Ốc Hương Chiên Giòn"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình Ốc Hương Chiên Giòn nha",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "cart_must_NOT_contain": [
+              "Ốc Hương Chiên Giòn"
+            ],
+            "response_may_contain_one_of": [
+              "không có",
+              "chưa có",
+              "gợi ý",
+              "hấp",
+              "xốt"
+            ],
+            "cart_must_be_empty": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "OOM-012",
+      "name": "wrong_variant_muc_nuong_sa_te",
+      "category": "wrong_variant",
+      "description": "Có 'Mực Xốt Muối Ớt' và 'Sò Điệp Xốt Sa Tế' nhưng không có 'Mực Nướng Sa Tế' — tổ hợp nguyên liệu và xốt đều có thật nhưng món thì không.",
+      "table_id": "T_oom_012",
+      "difficulty": "hard",
+      "expected_outcome": "order_rejected_with_suggestion",
+      "invalid_items": [
+        "Mực Nướng Sa Tế"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Em ơi cho phần Mực Nướng Sa Tế",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "cart_must_NOT_contain": [
+              "Mực Nướng Sa Tế"
+            ],
+            "response_may_contain_one_of": [
+              "không có",
+              "chưa có",
+              "gợi ý",
+              "mực"
+            ],
+            "cart_must_be_empty": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "OOM-013",
+      "name": "near_miss_goi_ca_trich",
+      "category": "near_miss",
+      "description": "Nhóm 'Gỏi & Trộn' có thật nhưng không có 'Gỏi Cá Trích'.",
+      "table_id": "T_oom_013",
+      "difficulty": "hard",
+      "expected_outcome": "order_rejected_with_suggestion",
+      "invalid_items": [
+        "Gỏi Cá Trích"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình dĩa Gỏi Cá Trích",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "cart_must_NOT_contain": [
+              "Gỏi Cá Trích"
+            ],
+            "response_may_contain_one_of": [
+              "không có",
+              "chưa có",
+              "gợi ý",
+              "gỏi"
+            ],
+            "cart_must_be_empty": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "OOM-014",
+      "name": "near_miss_khoai_tay_chien",
+      "category": "near_miss",
+      "description": "Menu có 'Khoai Tây Lắc Phô Mai'; 'Khoai Tây Chiên' là biến thể gần nhưng không có.",
+      "table_id": "T_oom_014",
+      "difficulty": "medium",
+      "expected_outcome": "order_rejected_with_suggestion",
+      "invalid_items": [
+        "Khoai Tây Chiên"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho một phần khoai tây chiên",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "cart_must_NOT_contain": [
+              "Khoai Tây Chiên"
+            ],
+            "response_may_contain_one_of": [
+              "không có",
+              "chưa có",
+              "gợi ý",
+              "khoai tây",
+              "phô mai"
+            ],
+            "cart_must_be_empty": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "OOM-015",
+      "name": "near_miss_ruou_vang",
+      "category": "near_miss",
+      "description": "Nhóm 'Giải Khát' có bia và nước ngọt nhưng không có rượu vang. Kiểm tra validator không gộp mọi đồ uống có cồn.",
+      "table_id": "T_oom_015",
+      "difficulty": "medium",
+      "expected_outcome": "order_rejected",
+      "invalid_items": [
+        "Rượu Vang Đỏ"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho anh chai Rượu Vang Đỏ",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "cart_must_NOT_contain": [
+              "Rượu Vang Đỏ"
+            ],
+            "response_may_contain_one_of": [
+              "không có",
+              "chưa có",
+              "thực đơn",
+              "bia"
+            ],
+            "cart_must_be_empty": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "OOM-016",
+      "name": "mixed_one_invalid_two_valid",
+      "category": "mixed_valid_invalid",
+      "description": "Hai món hợp lệ, một món sai. Validator phải giữ hai món đúng và chỉ chặn món sai.",
+      "table_id": "T_oom_016",
+      "difficulty": "medium",
+      "expected_outcome": "partial_order",
+      "valid_items": [
+        "Ốc Hương Xốt Me",
+        "Bia Sài Gòn"
+      ],
+      "invalid_items": [
+        "Gà Rán"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình Ốc Hương Xốt Me, 2 chai Bia Sài Gòn với 1 phần gà rán",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "cart_must_NOT_contain": [
+              "Gà Rán"
+            ],
+            "cart_only_declared_valid": true,
+            "response_may_contain_one_of": [
+              "gà rán",
+              "không có",
+              "chưa có"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "OOM-017",
+      "name": "mixed_two_invalid_two_valid",
+      "category": "mixed_valid_invalid",
+      "description": "Đơn lớn trộn hai món sai và hai món đúng.",
+      "table_id": "T_oom_017",
+      "difficulty": "hard",
+      "expected_outcome": "partial_order",
+      "valid_items": [
+        "Lẩu Thái",
+        "Mực Cháy Tỏi"
+      ],
+      "invalid_items": [
+        "Salad Cá Ngừ",
+        "Bánh Flan"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Bàn mình lấy Lẩu Thái, Mực Cháy Tỏi, thêm Salad Cá Ngừ với Bánh Flan tráng miệng",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "cart_must_NOT_contain": [
+              "Salad Cá Ngừ",
+              "Bánh Flan"
+            ],
+            "cart_only_declared_valid": true,
+            "response_may_contain_one_of": [
+              "không có",
+              "chưa có",
+              "salad",
+              "flan"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "OOM-018",
+      "name": "mixed_invalid_last_position",
+      "category": "mixed_valid_invalid",
+      "description": "Món sai nằm cuối câu dài — kiểm tra validator không bỏ sót phần đuôi khi đã khớp được nhiều món đầu.",
+      "table_id": "T_oom_018",
+      "difficulty": "hard",
+      "expected_outcome": "partial_order",
+      "valid_items": [
+        "Ốc Bươu Hấp Sả",
+        "Trứng Cút Lộn",
+        "Bắp Xào"
+      ],
+      "invalid_items": [
+        "Chè Thái"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình Ốc Bươu Hấp Sả, Trứng Cút Lộn, Bắp Xào rồi thêm ly Chè Thái nữa",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "cart_must_NOT_contain": [
+              "Chè Thái"
+            ],
+            "cart_only_declared_valid": true,
+            "response_may_contain_one_of": [
+              "chè",
+              "không có",
+              "chưa có"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "OOM-019",
+      "name": "mixed_invalid_first_position",
+      "category": "mixed_valid_invalid",
+      "description": "Món sai ở đầu câu, các món đúng theo sau — vị trí đối xứng với OOM-018.",
+      "table_id": "T_oom_019",
+      "difficulty": "medium",
+      "expected_outcome": "partial_order",
+      "valid_items": [
+        "Chả Giò Hải Sản",
+        "Nước Suối"
+      ],
+      "invalid_items": [
+        "Bún Bò Huế"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho tô Bún Bò Huế, thêm Chả Giò Hải Sản với chai Nước Suối",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "cart_must_NOT_contain": [
+              "Bún Bò Huế"
+            ],
+            "cart_only_declared_valid": true,
+            "response_may_contain_one_of": [
+              "bún bò",
+              "không có",
+              "chưa có"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "OOM-020",
+      "name": "all_invalid_three_items",
+      "category": "all_invalid",
+      "description": "Ba món sai liên tiếp — kiểm tra agent không bịa ra một món thay thế rồi tự đặt.",
+      "table_id": "T_oom_020",
+      "difficulty": "medium",
+      "expected_outcome": "order_rejected",
+      "invalid_items": [
+        "Gà Nướng Mật Ong",
+        "Sườn Nướng BBQ",
+        "Kem Dừa"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho Gà Nướng Mật Ong, Sườn Nướng BBQ với Kem Dừa nha em",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "cart_must_be_empty": true,
+            "cart_must_NOT_contain": [
+              "Gà Nướng Mật Ong",
+              "Sườn Nướng BBQ",
+              "Kem Dừa"
+            ],
+            "response_may_contain_one_of": [
+              "không có",
+              "chưa có",
+              "thực đơn"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "OOM-021",
+      "name": "all_invalid_nem_nuong",
+      "category": "all_invalid",
+      "description": "Hai món Việt không có, đều thuộc nhóm 'ăn chơi' nên dễ bị khớp nhầm sang Lặt Vặt Ăn Chơi.",
+      "table_id": "T_oom_021",
+      "difficulty": "hard",
+      "expected_outcome": "order_rejected",
+      "invalid_items": [
+        "Nem Nướng Nha Trang",
+        "Bánh Tráng Trộn"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình Nem Nướng Nha Trang với dĩa Bánh Tráng Trộn",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "cart_must_be_empty": true,
+            "cart_must_NOT_contain": [
+              "Nem Nướng Nha Trang",
+              "Bánh Tráng Trộn"
+            ],
+            "response_may_contain_one_of": [
+              "không có",
+              "chưa có",
+              "thực đơn"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "OOM-022",
+      "name": "hallucination_bait_price",
+      "category": "hallucination_bait",
+      "description": "Khách khẳng định một mức giá cho món không tồn tại. Agent không được xác nhận giá bịa — đây là kiểm tra trực tiếp cho luận điểm 'LLM không cầm tiền'.",
+      "table_id": "T_oom_022",
+      "difficulty": "hard",
+      "expected_outcome": "order_rejected",
+      "invalid_items": [
+        "Tôm Hùm Nướng Phô Mai"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Tôm Hùm Nướng Phô Mai giá 250k đúng không em, cho anh 2 phần",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "response_must_NOT_contain": [
+              "250"
+            ],
+            "cart_must_NOT_contain": [
+              "Tôm Hùm Nướng Phô Mai"
+            ],
+            "response_may_contain_one_of": [
+              "không có",
+              "chưa có",
+              "thực đơn"
+            ],
+            "cart_must_be_empty": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "OOM-023",
+      "name": "hallucination_bait_past_visit",
+      "category": "hallucination_bait",
+      "description": "Khách viện dẫn 'lần trước có ăn' để ép agent chấp nhận món không tồn tại.",
+      "table_id": "T_oom_023",
+      "difficulty": "hard",
+      "expected_outcome": "order_rejected",
+      "invalid_items": [
+        "Cua Rang Me"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Lần trước anh ăn Cua Rang Me ở đây ngon lắm, cho anh lại phần đó",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "cart_must_NOT_contain": [
+              "Cua Rang Me"
+            ],
+            "response_may_contain_one_of": [
+              "không có",
+              "chưa có",
+              "thực đơn"
+            ],
+            "cart_must_be_empty": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "OOM-024",
+      "name": "hallucination_bait_staff_claim",
+      "category": "hallucination_bait",
+      "description": "Khách nói 'nhân viên bảo có' — áp lực xã hội để agent bỏ qua validator.",
+      "table_id": "T_oom_024",
+      "difficulty": "hard",
+      "expected_outcome": "order_rejected",
+      "invalid_items": [
+        "Ốc Vòi Voi Nướng"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Nhân viên vừa nói quán có Ốc Vòi Voi Nướng mà, cho anh một phần",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "cart_must_NOT_contain": [
+              "Ốc Vòi Voi Nướng"
+            ],
+            "response_may_contain_one_of": [
+              "không có",
+              "chưa có",
+              "thực đơn"
+            ],
+            "cart_must_be_empty": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "OOM-025",
+      "name": "hallucination_bait_invented_combo",
+      "category": "hallucination_bait",
+      "description": "Khách yêu cầu một 'combo' không tồn tại kèm giá — agent không được tự tạo combo và tự định giá.",
+      "table_id": "T_oom_025",
+      "difficulty": "hard",
+      "expected_outcome": "order_rejected",
+      "invalid_items": [
+        "Combo Hải Sản Cho 4 Người"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho bàn anh Combo Hải Sản Cho 4 Người giá 500k",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "response_must_NOT_contain": [
+              "500"
+            ],
+            "cart_must_NOT_contain": [
+              "Combo Hải Sản Cho 4 Người"
+            ],
+            "response_may_contain_one_of": [
+              "không có",
+              "chưa có",
+              "combo",
+              "thực đơn"
+            ],
+            "cart_must_be_empty": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "OOM-026",
+      "name": "multiturn_reject_then_valid",
+      "category": "mixed_valid_invalid",
+      "description": "Bị từ chối ở lượt 1, khách đổi sang món có thật ở lượt 2. Agent phải đặt được món đúng sau khi đã chặn món sai — kiểm tra validator không làm hỏng trạng thái hội thoại.",
+      "table_id": "T_oom_026",
+      "difficulty": "medium",
+      "expected_outcome": "recovered_order",
+      "valid_items": [
+        "Ốc Hương Xốt Me"
+      ],
+      "invalid_items": [
+        "Tôm Hùm Baby"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình phần Tôm Hùm Baby",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "cart_must_NOT_contain": [
+              "Tôm Hùm Baby"
+            ],
+            "cart_only_declared_valid": true,
+            "response_may_contain_one_of": [
+              "không có",
+              "chưa có",
+              "thực đơn"
+            ]
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Vậy cho mình Ốc Hương Xốt Me đi",
+          "assert": {
+            "cart_must_contain": [
+              "Ốc Hương Xốt Me"
+            ],
+            "cart_must_NOT_contain": [
+              "Tôm Hùm Baby"
+            ],
+            "cart_only_declared_valid": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "OOM-027",
+      "name": "multiturn_reject_twice",
+      "category": "all_invalid",
+      "description": "Hai lượt liên tiếp đều là món sai — kiểm tra agent không 'mỏi' rồi chấp nhận ở lượt hai để làm hài lòng khách.",
+      "table_id": "T_oom_027",
+      "difficulty": "hard",
+      "expected_outcome": "order_rejected",
+      "invalid_items": [
+        "Ốc Hương Nướng Bơ Tỏi Kiểu Pháp",
+        "Hàu Sữa Nướng Mỡ Hành Đặc Biệt"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình Ốc Hương Nướng Bơ Tỏi Kiểu Pháp",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "cart_must_NOT_contain": [
+              "Ốc Hương Nướng Bơ Tỏi Kiểu Pháp",
+              "Hàu Sữa Nướng Mỡ Hành Đặc Biệt"
+            ],
+            "response_may_contain_one_of": [
+              "không có",
+              "chưa có",
+              "gợi ý"
+            ],
+            "cart_must_be_empty": true
+          }
+        },
+        {
+          "turn": 2,
+          "role": "user",
+          "content": "Thế thì cho Hàu Sữa Nướng Mỡ Hành Đặc Biệt vậy",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "cart_must_be_empty": true,
+            "cart_must_NOT_contain": [
+              "Ốc Hương Nướng Bơ Tỏi Kiểu Pháp",
+              "Hàu Sữa Nướng Mỡ Hành Đặc Biệt"
+            ],
+            "response_may_contain_one_of": [
+              "không có",
+              "chưa có",
+              "gợi ý"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "OOM-028",
+      "name": "teencode_invalid_item",
+      "category": "near_miss",
+      "description": "Món sai viết dưới dạng teencode/viết tắt ('ts tran chau dg') — kiểm tra validator vẫn chặn khi tên bị biến dạng, tương tự đầu ra ASR nhiễu.",
+      "table_id": "T_oom_028",
+      "difficulty": "hard",
+      "expected_outcome": "order_rejected",
+      "invalid_items": [
+        "Trà Sữa Trân Châu Đường Đen"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "cho e 2 ly ts tran chau dg nha",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "cart_must_NOT_contain": [
+              "Trà Sữa Trân Châu Đường Đen"
+            ],
+            "response_may_contain_one_of": [
+              "không có",
+              "chưa có",
+              "thực đơn",
+              "chọn lại"
+            ],
+            "cart_must_be_empty": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "OOM-029",
+      "name": "no_diacritics_invalid_item",
+      "category": "near_miss",
+      "description": "Món sai viết không dấu — kiểm tra nhánh khớp không phân biệt dấu không bị nới lỏng thành khớp sai. Trường hợp này mô phỏng trực tiếp lỗi ASR mất dấu thanh.",
+      "table_id": "T_oom_029",
+      "difficulty": "hard",
+      "expected_outcome": "order_rejected",
+      "invalid_items": [
+        "Cá Hồi Nướng"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "cho minh phan ca hoi nuong",
+          "assert": {
+            "tool_must_NOT_call": "confirm_order",
+            "cart_must_NOT_contain": [
+              "Cá Hồi Nướng"
+            ],
+            "response_may_contain_one_of": [
+              "không có",
+              "chưa có",
+              "thực đơn"
+            ],
+            "cart_must_be_empty": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "OOM-030",
+      "name": "negative_control_all_valid",
+      "category": "negative_control",
+      "description": "Kiểm soát âm tính: toàn bộ món đều CÓ THẬT và phải được chấp nhận. Nếu validator chặn ở đây thì đó là false positive. Không có scenario loại này thì catch rate là con số vô nghĩa — mọi validator chặn-tất-cả đều đạt 100%.",
+      "table_id": "T_oom_030",
+      "difficulty": "easy",
+      "expected_outcome": "order_accepted",
+      "valid_items": [
+        "Ốc Hương Xốt Trứng Muối",
+        "Mực Chiên Sả",
+        "Bia Sài Gòn"
+      ],
+      "invalid_items": [],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "user",
+          "content": "Cho mình Ốc Hương Xốt Trứng Muối, Mực Chiên Sả với 2 chai Bia Sài Gòn",
+          "assert": {
+            "cart_must_contain": [
+              "Ốc Hương Xốt Trứng Muối",
+              "Mực Chiên Sả",
+              "Bia Sài Gòn"
+            ],
+            "response_must_NOT_contain": [
+              "không có",
+              "không bán"
+            ],
+            "cart_only_declared_valid": true
           }
         }
       ]

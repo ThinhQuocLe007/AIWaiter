@@ -77,13 +77,12 @@
         4.4.1 Component Selection
         4.4.2 Threaded Pipeline Architecture
 4.5 Conversational Agent               → Need 3, C5, C7
-        4.5.1 Graph Topology and Execution Flow
+        4.5.1 Agent Architecture
         4.5.2 Intent Classification
-        4.5.3 Tool-Calling Workers
+        4.5.3 Specialized Agents and Prompt Architecture
         4.5.4 Deterministic Validator
-        4.5.5 Tool Execution and State Management
+        4.5.5 State Management
         4.5.6 Response Generation
-        4.5.7 Prompt Architecture
    4.6 Knowledge Retrieval Pipeline       → Need 4, C8
        4.6.1 Query Rewriting
        4.6.2 Hybrid Retrieval
@@ -100,14 +99,38 @@
         4.8.3 Management Panel
 4.9 Deployment Topology
 
-5. EXPERIMENTS AND RESULTS
-   5.1 Evaluation Methodology
-   5.2 ROS2 Navigation Experiments        → Need 1
-   5.3 AI Agent Experiments               → Need 3, Need 4
-   5.4 Voice Pipeline Experiments         → Need 2
-   5.5 System Integration Tests           → Need 5
-   5.6 Web System Experiments
-   5.7 Results Summary & Gap-to-Validation Traceability
+ 5. EXPERIMENTS AND RESULTS
+    5.1 System Under Test
+        5.1.1 Server Hardware
+        5.1.2 Robot Platform
+        5.1.3 Software & Network Stack
+    5.2 Evaluation Design
+        5.2.1 Datasets Summary
+        5.2.2 Metrics Definition
+        5.2.3 Statistical Protocol
+        5.2.4 Experiment Inventory & Reproduction
+    5.3 ROS2 Navigation Experiments        → Need 1
+        5.3.1 Odometry Accuracy
+        5.3.2 Map Building & Localization
+        5.3.3 Navigation & Docking
+        5.3.4 Dynamic Goal Assignment
+    5.4 AI Agent Experiments               → Need 3, Need 4
+        5.4.1 Intent Classification & Routing
+        5.4.2 Action Validation & Safety
+        5.4.3 Multi-Intent Execution & Verbalisation
+        5.4.4 Knowledge Retrieval
+        5.4.5 End-to-End System Evaluation
+        5.4.6 Agent Latency & Cost
+    5.5 Backend & Web System Experiments    → Need 5, Need 6
+        5.5.1 API Responsiveness & WebSocket Propagation
+        5.5.2 Multi-Table Concurrency & Session Isolation
+        5.5.3 Fleet Management & Fault Recovery
+        5.5.4 Multi-Role State Consistency
+    5.6 Results Summary
+        5.6.1 Objective Scorecard
+        5.6.2 Failure Budget Allocation
+        5.6.3 Need → Requirement → Experiment Traceability
+        5.6.4 Threats to Validity
 
 6. CONCLUSION AND FUTURE WORKS
    6.1 Conclusion
@@ -149,7 +172,7 @@ Measurable targets (checked against Ch.5 results):
 - Integrate TWD platform into ROS2 with **EKF-fused encoder+IMU odometry** (return-to-start error ≤ X cm)
 - Build restaurant map with **RTAB-Map (A2M8 + D435)**; navigate kitchen → table with success rate ≥ X%
 - **ArUco docking error < X cm / X°**
-- **Intent router accuracy ≥ 90%** (achieved 97.44% on holdout, 95.6% on 45-case eval)
+- **Intent router accuracy ≥ 90%** (see §5.4.1 for measured results)
 - **RAG precision/recall@5 targets**
 - **End-to-end Vietnamese voice ordering** completion rate
 
@@ -567,7 +590,7 @@ The gap for §2.7 is a documented architecture and framework selection for a mul
 #### 2.8.7 Prior Work on Jetson in Robotics
 
 - Extensively used for ROS2 SLAM, Nav2, sensor fusion; speech workloads separately documented. Suitability for either category alone is not in question.
-- The gap is the *combination*: published work measures each subsystem in isolation, leaving the concurrent resident footprint on a unified-memory board uncharacterised. Answered by measurement in §5.4.4.
+- The gap is the *combination*: published work measures each subsystem in isolation, leaving the concurrent resident footprint on a unified-memory board uncharacterised. The edge resource budget is acknowledged as unevaluated in §5.6.4.
 
 ---
 
@@ -577,13 +600,13 @@ The gap for §2.7 is a documented architecture and framework selection for a mul
 
   | §   | Need | → Requirements | → Method | → Validated In |
   | --- | ---- | -------------- | -------- | -------------- |
-  | 2.2 | Dynamic goal navigation — navigation targets assigned by AI agent, not pre-set, with ArUco business-context docking | §3.1 R1–R7 (navigation, docking, odometry) | §3.4–§3.7 (EKF, RTAB-Map, ArUco, Nav2 + dynamic goal coupling) | §5.2.1–§5.2.3 |
-  | 2.3 | Vietnamese voice on Jetson edge — component selection (VAD, STT, TTS) driven by restaurant deployment constraints | §4.1 NFR latency, §4.4 architecture | §4.4 (selected components: Silero VAD, PhoWhisper, Piper TTS; threaded pipeline, barge-in) | §5.4 |
-  | 2.4 | Conversational AI agent — classifier handling teencode/context/multi-intent/domain-vocab + deterministic post-generation validation | §4.1 functional requirements, §4.5.1–§4.5.7 (agent architecture) | §4.5.2 (MLP classifier with embedding from §2.5.2), §4.5.3 (tool-calling LLM — Qwen2.5 14B, surveyed §2.4.2), §4.5.4 (validator) | §5.3.1–§5.3.3 |
-  | 2.5 | Menu knowledge retrieval — closed-loop rewrite→retrieve→rephrase for Vietnamese food domain, driven by Vietnamese-specific embeddings (§2.5.2) | §4.1 menu search requirement, §4.6 | §4.6 (query rewriting, hybrid retrieval with embeddings from §2.5.2, result rephrasing, dedup) | §5.3.4 |
-  | 2.6 | AI-driven restaurant operations — lightweight fleet dispatch with voice binding, multi-role real-time sync, session lifecycle | §4.1 concurrency/multi-role requirement, §4.7 | §4.7 (REST + WS hub, fleet dispatcher, session lifecycle) | §5.5, §5.6 |
-  | 2.7 | Multi-role web interfaces — AI-driven Vue SPA architecture with shared TS client, role-based WS pub/sub, SSE streaming | §4.1 multi-role UI requirement, §4.8 | §4.8 (3 SPAs + shared client lib + WS event catalog) | §5.6 |
-  | 2.8 | Edge computing platform — accelerator class satisfying general-purpose programmability, decode bandwidth, and native fp16; 8 GB unified-memory ceiling determining the edge/server split | §3.3 (robot hardware), §4.4.1 (edge/server split) | §4.4.1 (memory budget analysis leading to edge/server architecture) | §5.4.4 |
+  | 2.2 | Dynamic goal navigation — navigation targets assigned by AI agent, not pre-set, with ArUco business-context docking | §3.1 R1–R7 (navigation, docking, odometry) | §3.4–§3.7 (EKF, RTAB-Map, ArUco, Nav2 + dynamic goal coupling) | §5.3.1–§5.3.3 |
+  | 2.3 | Vietnamese voice on Jetson edge — component selection (VAD, STT, TTS) driven by restaurant deployment constraints | §4.1 NFR latency, §4.4 architecture | §4.4 (selected components: Silero VAD, PhoWhisper, Piper TTS; threaded pipeline, barge-in) | *(voice pipeline unevaluated; see §5.6.4)* |
+  | 2.4 | Conversational AI agent — classifier handling teencode/context/multi-intent/domain-vocab + deterministic post-generation validation | §4.1 functional requirements, §4.5.1–§4.5.6 (agent architecture) | §4.5.2 (MLP classifier with embedding from §2.5.2), §4.5.3 (tool-calling LLM — Qwen2.5 14B, surveyed §2.4.2), §4.5.4 (validator) | §5.4.1–§5.4.3 |
+  | 2.5 | Menu knowledge retrieval — closed-loop rewrite→retrieve→rephrase for Vietnamese food domain, driven by Vietnamese-specific embeddings (§2.5.2) | §4.1 menu search requirement, §4.6 | §4.6 (query rewriting, hybrid retrieval with embeddings from §2.5.2, result rephrasing, dedup) | §5.4.4 |
+  | 2.6 | AI-driven restaurant operations — lightweight fleet dispatch with voice binding, multi-role real-time sync, session lifecycle | §4.1 concurrency/multi-role requirement, §4.7 | §4.7 (REST + WS hub, fleet dispatcher, session lifecycle) | §5.5 |
+  | 2.7 | Multi-role web interfaces — AI-driven Vue SPA architecture with shared TS client, role-based WS pub/sub, SSE streaming | §4.1 multi-role UI requirement, §4.8 | §4.8 (3 SPAs + shared client lib + WS event catalog) | §5.5 |
+  | 2.8 | Edge computing platform — accelerator class satisfying general-purpose programmability, decode bandwidth, and native fp16; 8 GB unified-memory ceiling determining the edge/server split | §3.3 (robot hardware), §4.4.1 (edge/server split) | §4.4.1 (memory budget analysis leading to edge/server architecture) | *(edge resource budget unevaluated; see §5.6.4)* |
 
 - **The integration gap:** each need has been addressed individually in prior work — autonomous navigation (ROS2 delivery robots), Vietnamese speech (standalone STT/TTS/VAD), edge computing (Jetson deployments), conversational agents (cloud chatbots), intent classification (NLU pipelines), menu retrieval (academic RAG), fleet management (warehouse frameworks), restaurant software (POS/KDS), and SPA web interfaces (Vue/React dashboards). No prior system has integrated all into a single deployed system where the AI agent directly drives physical delivery and real-time UI state across all roles.
 
@@ -852,7 +875,7 @@ The conversational agent is the system's decision engine. §4.1 requires it to a
 
 This section presents the five-stage pipeline that addresses both: every utterance is classified into an intent, a worker LLM selects the tool to invoke, a deterministic validator inspects the arguments, the tool executes and state is updated, and a response is generated. Figure 2 shows the full component overview; Figure 3 shows the graph topology.
 
-#### 4.5.1 Graph Topology and Execution Flow
+#### 4.5.1 Agent Architecture
 
 The agent is built as a directed graph — not a monolithic LLM call — for three reasons. First, deterministic code runs between every LLM call: the validator inspects tool arguments before execution, the state updater advances the order stage machine, and the outcome node resets per-turn fields. The LLM never directly affects the cart, confirms an order, or requests payment. Second, every utterance follows a traceable path through the graph, making errors inspectable. Third, a circuit breaker limits retries to three attempts — the graph cannot loop indefinitely.
 
@@ -886,7 +909,7 @@ The first stage of every utterance must decide what the customer wants — order
 
 - What this design solves. The MLP classifier addresses the informality challenge by combining semantic understanding (the bi-encoder embedding handles Vietnamese vocabulary and teencode) with state awareness (the context features resolve ambiguous short utterances). The embedding model is the same one used for menu retrieval — a deliberate coupling that ensures the classifier and the search system share the same Vietnamese semantic space. The classifier is not perfect: context-dependent affirmations and multi-intent utterances remain hard cases that the downstream validator and retry loop must catch. But it provides a fast, deterministic first decision that sets the graph in motion on every turn.
 
-#### 4.5.3 Tool-Calling Workers
+#### 4.5.3 Specialized Agents and Prompt Architecture
 
 After the classifier decides the intent, a worker must decide the action. This is the second challenge from §4.2: the LLM is a probabilistic component in a system that must behave deterministically. The worker LLM can propose the wrong tool, fabricate a dish name, or produce impossible quantities. The response to this challenge is not to prevent the LLM from erring — that is not achievable without fine-tuning — but to give it a constrained surface to work on and let the downstream validator catch what slips through.
 
@@ -897,6 +920,18 @@ After the classifier decides the intent, a worker must decide the action. This i
 - Delegate escape hatch. A delegate tool is bound alongside domain tools in every LLM worker. When the LLM cannot map the utterance to a meaningful domain action — a customer asks about pricing during an order turn, or asks for a recommendation during a search turn — it calls delegate with a reason string. The graph routes delegate-only calls to the chat worker, which handles the turn as a conversational query rather than a tool action. This mechanism means the LLM is never forced to produce a wrong action: if no domain tool fits, it delegates to conversation instead.
 
 - Retry with corrective feedback. When the validator rejects a tool call — a dish name does not resolve, a quantity is invalid, or the order stage forbids the action — the rejection includes a feedback message explaining what failed and how to fix it. This feedback is injected into the worker's next prompt as a mandatory correction instruction. The LLM sees its previous attempt, the validator's specific complaint, and retries with the corrected arguments. This retry loop runs up to three times. After three failures, a circuit breaker triggers: the turn is terminated with an apology response, and no tool executes. The graph never loops indefinitely.
+
+Prompt architecture (merged in from the former 4.5.7). Every LLM call in the agent is driven by prompts; there is no fine-tuned model and no domain-specific training. The prompts are the only surface through which the LLM learns the restaurant domain, Vietnamese service etiquette, and the tool-calling protocol. This makes the prompt architecture a first-class design element, not an implementation detail.
+
+- System prompts. Seven files, all written in Vietnamese. Each LLM-calling node has its own prompt: the order worker's prompt defines the cart CRUD role and the critical rule that only new items should be passed to add (never re-pass the entire cart), the search worker's prompt defines how to rewrite conversational queries into search parameters, and the response node's prompt defines how to paraphrase structured contexts into polite Vietnamese service speech. Each prompt is roughly fifty to eighty lines — concise enough to leave room for conversation history within the context window, detailed enough to constrain the LLM's behavior.
+
+- Few-shot examples. Static sequences of Vietnamese utterances paired with the correct tool calls, loaded at startup and injected between the system prompt and the conversation history. The order worker receives eleven examples covering basic addition, multi-item addition, removal, cart clearing, confirmation, substitution, delegate instruction, and conversational edge cases. The search worker receives eleven examples covering direct lookup, conversational rewrite, price filtering, dietary filtering, combined filters, delegate instruction, and menu-info queries. These examples are static — positioned before the dynamic conversation, they benefit from Ollama's key-value cache and are loaded once per session.
+
+- Dynamic context. Three pieces of information are injected fresh on every turn. The last two conversation turns give the LLM awareness of what was just discussed. A section labeled "ĐÃ BIẾT" (already known) lists dishes from prior search results and the current cart to prevent redundant queries. When the validator rejects a tool call, its specific feedback message is injected as a mandatory correction instruction — the LLM sees exactly what failed and how to fix it.
+
+- Model configuration. All LLM nodes use the same Qwen2.5 14B model served by Ollama, pinned in GPU memory with keep-alive enabled so no request waits for model loading. Temperature varies by role: 0.1 for workers (low variation — the LLM should consistently select the correct tool), 0.1 for the response node (low enough to stay faithful to structured context while allowing mild variation in natural speech). The router uses the trained MLP classifier — no LLM call at all.
+
+---
 
 #### 4.5.4 Deterministic Validator
 
@@ -916,7 +951,7 @@ The validator is the safety net between the probabilistic LLM and the determinis
 
 - What this design solves. The validator provides a guarantee that no other component in the pipeline can offer: every action that affects the cart, the backend, or the payment system has been inspected against an authoritative source. The LLM is free to hallucinate; the validator catches it before any damage is done. The five-stage cascade handles the full range of Vietnamese dish name variation — from exact matches to domain-specific abbreviations to diacritic-stripped informal text. Combined with the circuit breaker in the worker (§4.5.3), the system guarantees bounded execution with zero side effects from invalid tool calls.
 
-#### 4.5.5 Tool Execution and State Management
+#### 4.5.5 State Management
 
 The validator has approved the tool call. Now it must execute, and its results must update the shared state that subsequent turns will read. This is the fourth stage of the pipeline — the bridge between decision and effect.
 
@@ -939,20 +974,6 @@ The final stage produces the Vietnamese spoken reply. After the tools have execu
 - Streaming delivery. The response node streams the LLM output sentence-by-sentence through a thread-safe queue bridged to an SSE endpoint. The edge voice device receives each sentence as it is produced and dispatches it to TTS immediately — the first sentence reaches the speaker before the full response is generated. This reduces perceived latency from the full graph execution time to the time of the first sentence, roughly half a second.
 
 - Safety after generation. Even after the response is generated, two guard functions run. The grounding guard verifies that any dish names in an LLM-generated search response are present in the actual retrieval results — if the LLM hallucinates a recommendation, the response is replaced with a deterministic listing of what the retriever actually found. The sentence sanitization guard strips residual CJK characters and markdown formatting that Qwen2.5 occasionally leaks into Vietnamese output, ensuring the TTS engine receives clean text.
-
-#### 4.5.7 Prompt Architecture
-
-Every LLM call in the agent is driven by prompts — there is no fine-tuned model, no domain-specific training. The prompts are the only surface through which the LLM learns the restaurant domain, Vietnamese service etiquette, and the tool-calling protocol. This makes the prompt architecture a first-class design element, not an implementation detail.
-
-- System prompts. Seven files, all written in Vietnamese. Each LLM-calling node has its own prompt: the order worker's prompt defines the cart CRUD role and the critical rule that only new items should be passed to add (never re-pass the entire cart), the search worker's prompt defines how to rewrite conversational queries into search parameters, and the response node's prompt defines how to paraphrase structured contexts into polite Vietnamese service speech. Each prompt is roughly fifty to eighty lines — concise enough to leave room for conversation history within the context window, detailed enough to constrain the LLM's behavior.
-
-- Few-shot examples. Static sequences of Vietnamese utterances paired with the correct tool calls, loaded at startup and injected between the system prompt and the conversation history. The order worker receives eleven examples covering basic addition, multi-item addition, removal, cart clearing, confirmation, substitution, delegate instruction, and conversational edge cases. The search worker receives eleven examples covering direct lookup, conversational rewrite, price filtering, dietary filtering, combined filters, delegate instruction, and menu-info queries. These examples are static — positioned before the dynamic conversation, they benefit from Ollama's key-value cache and are loaded once per session.
-
-- Dynamic context. Three pieces of information are injected fresh on every turn. The last two conversation turns give the LLM awareness of what was just discussed. A section labeled "ĐÃ BIẾT" (already known) lists dishes from prior search results and the current cart to prevent redundant queries. When the validator rejects a tool call, its specific feedback message is injected as a mandatory correction instruction — the LLM sees exactly what failed and how to fix it.
-
-- Model configuration. All LLM nodes use the same Qwen2.5 14B model served by Ollama, pinned in GPU memory with keep-alive enabled so no request waits for model loading. Temperature varies by role: 0.1 for workers (low variation — the LLM should consistently select the correct tool), 0.1 for the response node (low enough to stay faithful to structured context while allowing mild variation in natural speech). The router uses the trained MLP classifier — no LLM call at all.
-
----
 
 ### 4.6 Knowledge Retrieval Pipeline
 
@@ -1121,182 +1142,58 @@ The system runs on three classes of hardware connected by the restaurant's local
 ## CHAPTER 5: EXPERIMENTS AND RESULTS
 
 > **Chapter requirements — this chapter answers:**
-> - How was evaluation conducted? (5.1: hardware setup, datasets, metrics definitions)
+> - What hardware and software was the system tested on? (5.1: server, robot, software stack)
+> - How was evaluation designed? (5.2: datasets, metrics, statistical protocol)
 > - For each §1.3 objective and each Ch.2 need: what was tested, what were the results, do the results meet the target?
 > - Per experiment: goal → dataset → methodology → metrics → results → analysis → ablation (where applicable)
-> - What is the failure budget? Which component contributed the most failures? (5.7)
-> - Do the aggregate results confirm the system design proposed in Ch.3–Ch.4? (5.7 traceability)
+> - What is the failure budget? Which component contributed the most failures? (5.6)
+> - Do the aggregate results confirm the system design proposed in Ch.3–Ch.4? (5.6 traceability)
 
 > *Each experiment validates one or more requirements from §3.1 and §4.1, which trace back to needs identified in Chapter 2. Structure per experiment: goal → dataset → methodology → metrics → results → analysis → ablation.*
 
 ---
 
-### 5.1 Evaluation Methodology
+### 5.1 System Under Test
 
-#### 5.1.1 Hardware & Environment
+#### 5.1.1 Server Hardware
 
-| Component | Specification |
-|-----------|--------------|
-| Server GPU | NVIDIA GeForce RTX 3070 Laptop (CUDA 12.1) |
-| Server CPU | Intel Core i7 (x86_64) |
-| Robot compute | Jetson Orin Nano (aarch64, CUDA 12.6) |
-| Robot sensors | RPLiDAR A2M8, Intel RealSense D435, MPU6050 IMU |
-| LLM backend | Ollama serving Qwen2.5 14B Instruct Q6_K (`keep_alive=-1`) |
-| Embedding model | bkai-foundation-models/vietnamese-bi-encoder (768-dim) |
-| STT model | faster-whisper medium, PhoWhisper weights, `language=vi`, `beam_size=5` |
-| OS | Ubuntu 22.04 LTS, ROS 2 Humble |
-| Network | Local WiFi (server ↔ Jetson ↔ browser clients) |
+*(See `05-01-system-under-test.md` for full prose.)*
 
-#### 5.1.2 Datasets Summary
+#### 5.1.2 Robot Platform
 
-All datasets are authored against the menu of a single reference restaurant (*Ốc Quậy*, a
-Vietnamese seafood establishment), so dish names in every set resolve against the same
-`assets/data/menu.json`. Sizes are chosen so that the Wilson 95 % confidence interval on an
-accuracy near 0.95 is narrower than the effect each experiment must detect (§5.1.3).
+*(See `05-01-system-under-test.md` for full prose.)*
 
-| Dataset | File | Size | Purpose | Validates Need |
-|---------|------|------|---------|---------------|
-| Router evaluation | `evals/data/router/router_eval.json` | 45 cases | Intent classification accuracy | §2.4 |
-| Router evaluation (semantic) | `evals/data/router/semantic_eval.json` | 100 cases | Balanced single-intent accuracy | §2.4 |
-| Router context-dependent | `evals/data/router/router_context_eval.json` | 21 cases | Context-feature ablation (arm D vs E) | §2.4 |
-| Router holdout | `training_semantic_router/data/test_holdout.json` | 39 cases | Clean holdout (never seen during training) | §2.4 |
-| Retrieval evaluation | `evals/data/retrieval/retrieval_eval.json` | 24 queries | Menu search relevance | §2.5 |
-| E2E conversations (Part 1) | `evals/data/e2e/e2e_conversations_part1.json` | 6 scenarios | Happy-path ordering flows | §2.4, §2.6 |
-| E2E conversations (Part 2) | `evals/data/e2e/e2e_conversations_part2.json` | 5 scenarios | Edge-case flows | §2.4, §2.6 |
-| Out-of-menu robustness | `evals/data/e2e/e2e_out_of_menu_test.json` | 30 scenarios | Validator off-menu rejection | §2.4 |
-| Multi-intent completeness | `evals/data/e2e/multi_intent_eval.json` | 25 turns | Intents executed vs. intents verbalized | §2.4 |
-| Real-life scenarios | `evals/data/e2e/e2e_real_life.json` | 4 scenarios | Qualitative multi-turn case studies | §2.4 |
-| Validator name resolution | `evals/data/validator/name_resolution_eval.json` | 70 pairs | Per-stage name resolution accuracy | §2.4 |
-| Validator ambiguity | `evals/data/validator/ambiguity_eval.json` | 25 cases | Generic-name ambiguity detection | §2.4 |
-| Cascade (audio → text) | `evals/data/cascade/manifest.json` | 60 utterances × 3 speakers | ASR-degradation of routing accuracy | §2.3, §2.4 |
-| VAD boundary detection | *(derived from cascade recordings)* | 180 clips × 4 SNR | VAD accuracy in restaurant noise | §2.3 |
+#### 5.1.3 Software & Network Stack
 
-**Provenance note.** `test_holdout.json` is derived from the hand-authored `router_eval.json`
-cases, *not* from the LLM generator that produced the training corpus
-(`synthetic_augmented.json`). It is therefore a genuine holdout with respect to the training
-distribution. Its remaining limitation is that it is written text rather than recogniser output;
-the cascade dataset (§5.4.5) exists to close exactly that gap.
-
-**Cascade construction.** The 60 utterances are recorded **clean, once, per speaker** (180 files,
-≈35 min of reading). Restaurant noise is then mixed in digitally at 20 dB, 10 dB and 0 dB SNR,
-yielding 720 evaluation items and a controlled noise axis without additional recording effort.
-The same recordings serve as ground truth for the VAD boundary experiment (§5.4.2), so one
-recording session supplies three experiments.
-
-#### 5.1.3 Metrics Definition
-
-Every metric defined here is used by at least one experiment in §5.2–§5.6, and every number
-reported there is defined here. Metrics are grouped by the layer they measure; the final
-subsection fixes the statistical treatment that applies to all of them.
-
-##### AI Classification & Retrieval Metrics
-
-| Metric | Formula | Measures | Maps to Need | Maps to §1.3 Objective |
-|--------|---------|----------|-------------|------------------------|
-| **Accuracy** | correct / total | Classification correctness | §2.4 | Router accuracy ≥ 90% |
-| **Confusion matrix** | Heatmap: predicted vs actual (5×5) | Per-intent-pair error patterns | §2.4 | Router correctness |
-| **Precision@k** | |relevant ∩ retrieved| / k | Fraction of top-k results relevant | §2.5 | RAG precision target |
-| **Recall@k** | |relevant ∩ retrieved| / |relevant| | Fraction of all relevant items found | §2.5 | RAG recall target |
-| **MRR** | 1 / rank of first relevant hit | Rank of first correct result | §2.5 | Search ranking quality |
-| **Hit Rate** | queries with ≥1 relevant / total | Queries returning any useful result | §2.5 | RAG completeness |
-| **Pass Rate** | passed scenarios / total | E2E scenario completion | §2.4, §2.6 | Voice ordering completion |
-
-##### Speech Pipeline Metrics
-
-| Metric | Formula | Measures | Maps to Need |
-|--------|---------|----------|-------------|
-| **WER** | (S + D + I) / N | STT accuracy on Vietnamese restaurant speech | §2.3 |
-| **CER** | Same at character level | Tonal diacritic accuracy (6 tones) | §2.3 |
-| **VAD false trigger rate** | false_positive_triggers / total_silence | VAD triggering on restaurant noise | §2.3 |
-| **VAD missed utterance rate** | missed / total utterances | VAD failing to detect speech onset | §2.3 |
-| **VAD cut-off rate** | utterances_with_premature_end / total | VAD trimming utterance tails | §2.3 |
-| **Barge-in success rate** | successful_barge_in / attempted | Customer interrupts TTS correctly | §2.3 |
-
-##### Safety & Robustness Metrics
-
-| Metric | Formula | Measures | Maps to Need |
-|--------|---------|----------|-------------|
-| **Validator catch rate** | blocked / total_hallucinated | Validator correctly blocks hallucinated tool calls | §2.4 |
-| **Validator false positive rate** | wrongly_blocked / total_valid_calls | Validator incorrectly blocks correct calls | §2.4 |
-| **Circuit breaker rate** | breaker_triggered / total_retries | How often retry exhausts; LLM quality indicator | §2.4 |
-| **Delegate rate** | delegate_calls / total_tool_calls | How often LLM cannot find domain action; escape hatch quality | §2.4 |
-| **Multi-intent verbalisation rate** | intents_mentioned / intents_executed | Whether every executed action reaches the customer | §2.4 |
-
-##### Cost Metrics — Latency and Memory
-
-The routing contribution is a cost claim as much as an accuracy claim, so cost is measured with
-the same rigour as correctness. Latency is reported as **p50 and p95**, never as a mean: a mean
-hides the tail that a customer actually experiences, and the LLM arms have heavily skewed
-distributions.
-
-| Metric | Definition | Measures | Maps to Need |
-|--------|-----------|----------|-------------|
-| **Stage latency (p50, p95)** | Wall-clock ms per LangGraph node, per turn | Where the turn budget is spent | §2.4, §2.8 |
-| **Turn latency (p50, p95)** | End of utterance → first TTS audio sample | What the customer perceives | §2.3, §2.8 |
-| **Router latency (p50, p95)** | Utterance in → intent out, per arm | Cost axis of the routing comparison | §2.4 |
-| **Peak resident memory** | Max GPU (MB) + host RAM (MB) while the arm is serving | Deployability on a fixed board | §2.8 |
-| **Accuracy-per-cost** | Arm accuracy ÷ arm p50 latency | Combines the two axes into one ranking | §2.4, §2.8 |
-
-##### Cascade Metrics — Speech-to-Decision Degradation
-
-These quantify what the recogniser costs the components downstream of it. They are the only
-metrics in the chapter measured on the real audio path rather than on typed text.
-
-| Metric | Formula | Measures | Maps to Need |
-|--------|---------|----------|-------------|
-| **Dish-name substitution rate** | dish_tokens_wrong / dish_tokens_total | Whether ASR damages the tokens the validator resolves on | §2.3, §2.4 |
-| **Cascade accuracy delta** | acc(clean text) − acc(ASR text) | Routing accuracy lost to recognition, per SNR level | §2.3, §2.4 |
-| **Cascade E2E delta** | pass(clean text) − pass(ASR text) | Task completion lost to recognition | §2.3, §2.4 |
-
-##### Navigation Metrics (from §2.2)
-
-| Metric | Measures | Maps to Need |
-|--------|----------|-------------|
-| **Return-to-start error** | EKF odometry drift after kitchen→table→kitchen | §2.2 |
-| **Navigation success rate** | Kitchen→table trips with arrival at ArUco zone | §2.2 |
-| **ArUco docking error** | Final pose error (cm + degrees) after marker correction | §2.2 |
-| **Goal assignment latency** | Backend event → Nav2 goal active → robot starts moving | §2.2, §2.6 |
-
-##### Statistical Treatment
-
-Several components of this system are stochastic: the tool-calling LLM, the SLM router arm and
-the LLM router arm all sample from a distribution, so a single run reports one draw from that
-distribution rather than the system's behaviour. The following protocol therefore applies to
-every result in this chapter.
-
-**Determinism where it exists.** The MLP classifier, the centroid router, BM25, FAISS and the
-deterministic validator are all deterministic given fixed weights and a fixed index; these are
-run once and reported as exact fractions. Every arm involving an LLM is not, and is treated as
-below.
-
-**Repeated runs.** Any experiment whose outcome depends on an LLM is executed **N = 5** times.
-Reported values are the mean across runs, accompanied by the observed minimum and maximum, in
-the form `mean [min–max]`. Sampling temperature is fixed at the value used in deployment and
-stated per experiment; the seed is varied deliberately across runs so that the spread reflects
-genuine sampling variance rather than one lucky trajectory.
-
-**Interval estimation.** Accuracies and pass rates are proportions estimated from small samples,
-where the normal approximation is unreliable near 1.0. All such quantities are reported with a
-**Wilson 95 % confidence interval**, which stays inside [0, 1] and remains well-behaved for
-p̂ near the boundary. Sample sizes in §5.1.2 were chosen so that this interval is narrower than
-the effect the experiment must resolve.
-
-**Comparing two systems.** Router arms are evaluated on **identical items**, so comparisons are
-paired and use **McNemar's exact test** on the discordant pairs — the cases where one arm is
-correct and the other is not. Concordant cases carry no information about which arm is better
-and are excluded. This is substantially more powerful than comparing two independent accuracy
-figures, which is what makes a decisive comparison possible at the sample sizes available here.
-Differences are reported with the discordant counts (b, c) and the exact p-value.
-
-**Reporting precision.** No proportion is reported to more significant figures than its sample
-size supports. With n = 39, an accuracy is quoted as a fraction (37/39) with its interval, not
-as `94.87 %`; three-decimal precision on forty items is spurious and is avoided throughout.
+*(See `05-01-system-under-test.md` for full prose.)*
 
 ---
 
-### 5.2 ROS2 Navigation Experiments *(→ Need 1, §2.2)*
+### 5.2 Evaluation Design
 
-#### 5.2.1 Odometry Accuracy Test
+#### 5.2.1 Datasets Summary
+
+*(See `05-02-evaluation-design.md` for full prose.)*
+
+#### 5.2.2 Metrics Definition
+
+*(See `05-02-evaluation-design.md` for full prose.)*
+
+#### 5.2.3 Statistical Protocol
+
+*(See `05-02-evaluation-design.md` for full prose.)*
+
+#### 5.2.4 Experiment Inventory and Reproduction
+
+*(See `05-02-evaluation-design.md` for full prose.)*
+
+---
+
+### 5.3 ROS2 Navigation Experiments
+
+---
+
+#### 5.3.1 Odometry Accuracy Test
 
 - Goal: validate EKF-fused odometry accuracy on TWD platform
 - Dataset: 10–20 return trips, kitchen → table → kitchen, varied table distances
@@ -1305,14 +1202,18 @@ as `94.87 %`; three-decimal precision on forty items is spurious and is avoided 
 - Ablation: encoder-only vs. EKF-fused (with and without IMU yaw)
 - **→ Validates requirement R(odometry) from §3.1; maps to §2.2 gap**
 
-#### 5.2.2 Map Building and Localization Test
+#### 5.3.2 Map Building and Localization Test
 
 - Goal: evaluate RTAB-Map map quality and localization reliability
 - Dataset: offline mapping run + localization-only runs
 - Methodology: build map → run localization → measure localization consistency
 - Metrics: loop closure events, localization drift over time, map resolution
+- Additional: verify the map is queryable as navigation infrastructure — table waypoint poses
+  and the dock pose resolvable by the backend, which is the §2.2.2 gap rather than map quality
+  alone
+- **→ Validates requirement R(mapping) from §3.1; maps to §2.2.2 gap**
 
-#### 5.2.3 Navigation and Docking Test
+#### 5.3.3 Navigation and Docking Test
 
 - Goal: end-to-end navigation + ArUco docking precision
 - Dataset: kitchen → 6 tables → kitchen, 5–10 trials per table
@@ -1321,7 +1222,7 @@ as `94.87 %`; three-decimal precision on forty items is spurious and is avoided 
 - Ablation: with and without ArUco correction on final approach
 - **→ Validates requirements R(navigation) + R(docking) from §3.1; maps to §2.2 gap**
 
-#### 5.2.4 Dynamic Goal Assignment Test
+#### 5.3.4 Dynamic Goal Assignment Test
 
 - Goal: validate that backend-generated Nav2 goals are executed correctly
 - Dataset: 10 sequences: backend API → goal change mid-navigation
@@ -1331,131 +1232,223 @@ as `94.87 %`; three-decimal precision on forty items is spurious and is avoided 
 
 ---
 
-### 5.3 AI Agent Experiments *(→ Need 3, §2.4)*
+### 5.4 AI Agent Experiments *(→ Need 3, §2.4; Need 4, §2.5)*
 
-#### 5.3.1 Intent Classification Accuracy
+> *This section carries the thesis's primary contribution. It is ordered by the agent's own
+> execution path — classify (§5.4.1), validate (§5.4.2), execute and verbalise (§5.4.3),
+> retrieve (§5.4.4) — then evaluates the composition of those stages end to end (§5.4.5) and
+> against its cost (§5.4.6). All experiments in §5.4 feed the agent typed text; the voice
+> pipeline is described architecturally in §4.4 and acknowledged as unevaluated in §5.6.4.*
 
-- Goal: validate MLP classifier against all 5 baseline approaches
-- Datasets: router_eval (45), semantic_eval (100), test_holdout (39)
-- Methodology: per-utterance classification, compare predicted vs. actual
-- Metrics: accuracy, per-class precision/recall/F1, confusion matrix, per-difficulty breakdown
-- Ablation: MLP vs. centroid router (original) vs. two-tier hybrid vs. LLM routing
-- Per-challenge analysis: accuracy on teencode utterances, context-dependent utterances, multi-intent utterances, domain-vocabulary utterances
-- **→ Validates requirement R(classification) from §4.1; maps to §2.4 gap**
+#### 5.4.1 Intent Classification & Routing *(→ §2.4.4)*
 
-#### 5.3.2 Validator Safety Test
+The routing contribution is a joint claim about accuracy **and** cost: a trained classifier
+reaches LLM-level routing accuracy at a fraction of the latency.
 
-- Goal: validate deterministic validator catches hallucinated tool calls
-- Dataset: out-of-menu test (4 scenarios) + injected hallucination cases
-- Methodology: feed LLM prompts designed to elicit hallucination → verify validator blocks
-- Metrics: validator catch rate, false positive rate, circuit breaker rate, delegate rate
-- **→ Validates requirement R(validation) from §4.1; maps to §2.4 hallucination gap**
+- **Six-arm paired ablation.** Locate the proposed classifier against every routing approach
+  surveyed in §2.4.4 on 130 identical cases. Arms: Centroid, SLM (qwen2.5:3b), Hybrid
+  semantic→SLM, MLP with context ablated, MLP+context (proposed), and LLM zero-shot
+  (qwen2.5:14b-instruct). Metrics: accuracy with Wilson CI, confusion matrix, p50/p95 latency, peak
+  memory, accuracy-per-cost. Statistics: paired McNemar exact against the proposed arm,
+  reporting discordant counts and exact p-values. The defensible claim is the latency ratio at
+  statistically indistinguishable accuracy.
 
-#### 5.3.3 End-to-End Agent Test
+- **Context-feature ablation.** Arm D vs. arm E on 21 context-dependent utterances where
+  "ok" at IDLE differs from "ok" at AWAITING_CONFIRMATION. At n=21 the comparison cannot reach
+  significance; report the effect with its interval and state the required sample size.
 
-- Goal: validate full agent pipeline on complete ordering scenarios
-- Datasets: e2e_conversations_part1 (6), e2e_conversations_part2 (5)
-- Methodology: run automated conversations through agent → check all outputs
-- Metrics: pass rate, per-stage failures, per-difficulty pass rate
-- Failure analysis: which agent stage (router → worker → validator → response) fails most often
-- **→ Validates requirements R(agent) + R(e2e) from §4.1; maps to §2.4 overall gap**
+- **Clean holdout.** 39-case set partitioned before augmentation, never used for tuning.
+  Reported as a fraction with its Wilson interval — the number that gets defended.
 
-#### 5.3.4 Retrieval Evaluation
+- **Vocabulary-coverage diagnostic.** Measure the training corpus's unique-token count and
+  per-evaluation-set out-of-vocabulary rate. Cross-tabulate misclassifications against OOV
+  membership and confidence. Establishes *why* the classifier fails: a narrow-corpus softmax
+  over an unseen region is confidently wrong, which is why a confidence threshold fails.
+  The corpus regeneration attempt and its coverage-vs-quality trade-off are reported as a
+  negative result. → Feeds §6.2 with measured evidence.
 
-- Goal: validate closed-loop RAG pipeline accuracy
-- Dataset: retrieval_eval (24 queries)
-- Methodology: query rewriting → hybrid retrieval → result rephrasing → evaluate correctness
-- Metrics: Precision@5, Recall@5, MRR, Hit Rate, per-difficulty breakdown
-- Ablation: BM25-only vs. FAISS-only vs. hybrid; with and without query rewriting
-- **→ Validates requirement R(retrieval) from §4.1; maps to §2.5 gap**
+#### 5.4.2 Action Validation & Safety *(→ §2.4.5)*
 
----
+- **Name resolution by stage.** 70 pairs through the five-stage cascade (normalise → exact →
+  diacritic → prefix → substring → token-Jaccard). Accuracy per stage; rejection correctness on
+  misspelled inputs. Run once, reported as exact fractions.
 
-### 5.4 Voice Pipeline Experiments *(→ Need 2, §2.3)*
+- **Ambiguity detection.** 25 cases where a generic name matches multiple menu variants (e.g.
+  "Ốc Hương" → 11 sauce variants). Metrics: precision, recall, false positive/negative rates.
+  The validator flags ambiguity for clarification and never auto-selects.
 
-#### 5.4.1 STT Word Error Rate (WER)
+- **Validator ablation — the central safety claim.** The validator node is replaced by a
+  pass-through before graph construction. Run 41 scenarios in both arms (ON vs OFF) and measure
+  what reaches the cart, the kitchen, and the payment system. Off-menu leakage must be
+  determined by resolving item names against `menu.json`, not read from an `is_valid` flag
+  written by the validator. A null result bounds the claim to "the validator is a guarantee,
+  not an observed-necessary correction." Metrics: off-menu items reaching the cart, scenario
+  pass rate, validator catch rate, circuit-breaker rate.
 
-- Goal: evaluate STT accuracy on Vietnamese restaurant speech
-- Dataset: 50–100 recorded restaurant utterances with ground-truth transcripts
-- Methodology: faster-whisper medium, PhoWhisper weights → compare transcript vs. ground truth
-- Metrics: WER, CER, per-utterance breakdown, key dish-name substitution rate
-- Ablation: Whisper base vs. medium, with and without PhoWhisper weights
+- **Out-of-menu robustness.** 30 adversarial scenarios across 7 categories, including a
+  negative control (on-menu request that must not be rejected). Metrics: pass rate, off-menu
+  leak rate, false-rejection rate. The assertion runner must fail on any unrecognised key.
 
-#### 5.4.2 VAD Accuracy in Restaurant Noise
+- **Delegate escape hatch.** With `tool_choice="any"`, a worker obliged to call a tool when
+  none applies can call `delegate(reason)` instead. Measure delegate rate per worker,
+  correctness of each delegation, and — with the delegate unbound — the count of wrong tool
+  calls. → Validates R(validation) from §4.1; maps to the §2.4.5 gap.
 
-- Goal: evaluate VAD boundary detection under ambient restaurant noise
-- Dataset: ~30 annotated audio clips with speech/silence ground truth
-- Methodology: Silero VAD with varied sensitivity thresholds → compare detected vs. ground truth boundaries
-- Metrics: false trigger rate, missed utterance rate, cut-off rate
-- Ablation: different sensitivity thresholds; Silero vs. WebRTC
+#### 5.4.3 Multi-Intent Execution & Verbalisation *(→ §2.4.7)*
 
-#### 5.4.3 Barge-In Test
+- **Goal:** for one utterance carrying several intents, measure separately whether the system
+  (a) executed them all and (b) told the customer about all of them.
+- **Dataset:** 25 multi-intent turns with per-intent lexical evidence.
+- **Metrics:** verbalisation rate, coverage of what the customer asked, router-queued-all rate,
+  each broken down by the number of intents in the turn.
+- **Analysis:** attribute the loss between the router and the response layer. Report how the
+  rate degrades as intents accumulate. This is expected to be a negative result — a quantified,
+  mechanism-explained limitation is stronger than an unmeasured claim of completeness.
 
-- Goal: validate barge-in interrupts TTS correctly
-- Dataset: 10–15 simulated barge-in scenarios
-- Methodology: TTS playing → speak during playback → verify interrupt → verify new utterance captured
-- Metrics: barge-in success rate, interrupt latency
+#### 5.4.4 Knowledge Retrieval *(→ Need 4, §2.5)*
 
-#### 5.4.4 Edge Performance Benchmark
+- **Retrieval quality.** 24 menu queries with graded relevance. Metrics: P@5, R@5, MRR, Hit
+  Rate, per-difficulty breakdown. In a conversational suggestion setting, recall and hit rate
+  matter more than precision — the agent presents candidates and the customer selects.
 
-- Goal: validate voice pipeline runs within Jetson VRAM budget
-- Methodology: monitor GPU memory usage during concurrent operation (ROS2 + VAD + STT + TTS)
-- Metrics: GPU memory (MB), CPU utilization (%), STT/TTS latency (ms)
-- **→ Validates C6; maps to §2.3 gap**
+- **Retriever ablation.** BM25-only vs. FAISS-only vs. RRF fusion on the same 24 queries.
+  Second ablation: with and without query rewriting, isolating the rewriter's contribution.
 
----
+- **Dual-lane gatekeeper.** Per-query characterisation: semantic-lane pass, lexical-lane pass,
+  both, neither; correct rejections, false rejections, false approvals; raw top-1 similarity
+  distribution. → Validates R(retrieval) from §4.1; maps to the §2.5 closed-loop gap.
 
-### 5.5 System Integration Tests *(→ Need 5, §2.6)*
+#### 5.4.5 End-to-End System Evaluation *(→ §2.4, §2.6)*
 
-#### 5.5.1 End-to-End Integration
+- **E2E conversations.** 11 scripted ordering flows (6 happy-path, 5 edge-case) plus 4
+  real-life scenarios as qualitative case studies. Per-turn assertions on tool calls, cart
+  state, and order stage. Metrics: scenario pass rate with Wilson CI, per-turn failure
+  attribution by stage. Where the agent verbalises an action it never took, record it as a
+  distinct failure mode — the validator protects state but not free text.
 
-- Goal: validate full system: voice → agent → backend → kitchen display → robot dispatch
-- Dataset: 5–10 integration scenarios
-- Methodology: automated scripts simulating customer voice ordering through full pipeline
-- Metrics: pass rate, end-to-end latency, per-component failure attribution
+- **Long-conversation state integrity.** A 15-turn couple's visit: browse, ask, order across
+  several turns, substitute, review cart, confirm, pay. Metrics: cart correctness at each
+  checkpoint, order-stage transitions, context retention on late references to items discussed
+  early, and turn latency drift as history grows. Validates the memory architecture of §4.5.5.
+  → Validates R(agent) + R(e2e) from §4.1.
 
-#### 5.5.2 Multi-Table Concurrency
+#### 5.4.6 Agent Latency & Cost *(→ §2.4, §2.8)*
 
-- Goal: validate correct session isolation across simultaneous conversations
-- Dataset: 2–3 concurrent voice sessions at different tables
-- Methodology: simultaneous automated conversations → verify no context bleed
-- Metrics: session isolation accuracy, per-table cart correctness
-
-#### 5.5.3 Fleet Management
-
-- Goal: validate dispatcher task assignment, watchdog recovery, voice binding
-- Methodology: simulated robot connect/disconnect → verify requeue + rebind
-- Metrics: task requeue latency, voice rebind correctness
-
----
-
-### 5.6 Web System Experiments
-
-#### 5.6.1 UI Correctness
-
-- Goal: validate 3 SPAs display correct data under real-time updates
-- Methodology: automated UI checks via browser testing → verify state mirrors backend
-- Metrics: data consistency across roles, WS event → UI update latency
-
-#### 5.6.2 WebSocket Stress Test
-
-- Goal: validate WS hub handles concurrent connections
-- Methodology: multiple simultaneous WS clients across all 4 roles
-- Metrics: connection stability, event delivery rate, reconnect success
+- **Goal:** account for the turn budget — where the time goes and which stage dominates.
+- **Methodology:** instrument every LangGraph node with high-resolution timestamps over the E2E
+  set; compare cold-start against warm-cache.
+- **Metrics:** stage latency p50/p95 per node, turn latency p50/p95 per intent class, peak GPU
+  and host memory. Percentiles, never means — LLM stages are heavily skewed.
+- **Analysis:** identify the dominant stage and state what it implies for the deployment
+  decision (LLM on the server, not the robot). → Supplies the cost half of the §5.4.1 trade-off.
 
 ---
 
-### 5.7 Results Summary & Gap-to-Validation Traceability
+### 5.5 Backend & Web System Experiments *(→ Need 5, §2.6; Need 6, §2.7)*
 
-Table mapping each Ch.2 need → requirement → experiment → key result:
+> *These experiments validate the orchestrator and web interfaces as infrastructure that
+> supports the AI agent, not as independent web-engineering contributions.*
+
+#### 5.5.1 API Responsiveness & WebSocket Propagation
+
+- **Goal:** validate that the FastAPI + SQLite + WebSocket design meets the real-time
+  requirement — the claim in §4.7 that push replaces polling.
+- **Methodology:** exercise all REST endpoints under concurrent table load; measure event
+  propagation by stamping `sent_at` server-side and `received_at` at a subscribed client,
+  N = 50 events per type.
+- **Metrics:** per-endpoint latency p50/p95/p99, per-event-type propagation latency, SQLite
+  read/write latency. Compare against the 5–10 s poll cycle of KDS systems surveyed in §2.6.4.
+
+#### 5.5.2 Multi-Table Concurrency & Session Isolation
+
+- **Goal:** validate that simultaneous conversations at different tables do not bleed into one
+  another — the correctness property that makes per-table state trustworthy.
+- **Methodology:** 2–3 concurrent voice sessions at different tables, ordering overlapping
+  dishes.
+- **Metrics:** session isolation accuracy, per-table cart correctness, cross-session leakage
+  count (which must be zero, reported as a count, not a rate).
+
+#### 5.5.3 Fleet Management & Fault Recovery
+
+- **Goal:** validate dispatcher assignment, watchdog liveness detection, and dynamic voice
+  binding — including the failure path (§2.6.3).
+- **Methodology:** simulate robot connect, arrival, disconnect and silent-zombie conditions;
+  verify task requeue, WebSocket close, and voice rebinding.
+- **Metrics:** task assignment latency, watchdog detection time, task requeue latency, voice
+  rebind correctness, and whether a customer-visible interruption occurs.
+
+#### 5.5.4 Multi-Role State Consistency
+
+- **Goal:** validate that all three SPAs reflect a single source of truth when the AI agent —
+  not a human operator — is the one changing state.
+- **Methodology:** drive an agent-initiated change (cart update, order created, robot
+  dispatched) and verify each role's view converges to the backend state.
+- **Metrics:** cross-role data consistency, WebSocket event → visible UI update latency,
+  reconnect success and recovery time under forced disconnection.
+
+---
+
+### 5.6 Results Summary
+
+#### 5.6.1 Objective Scorecard
+
+Each measurable target from §1.3 against its measured result, with the experiment that produced
+it and an explicit verdict. Targets that were not met, and targets that could not be measured,
+appear with the same prominence as those that were.
+
+| # | Objective (§1.3) | Target | Experiment | Result | Verdict |
+|---|-----------------|--------|-----------|--------|---------|
+| 1 | EKF-fused odometry error | ≤ X cm | §5.3.1 | | |
+| 2 | Navigation success rate | ≥ X% | §5.3.3 | | |
+| 3 | ArUco docking error | < X cm / X° | §5.3.3 | | |
+| 4 | Intent router accuracy | ≥ 90% | §5.4.1 | | |
+| 5 | Retrieval quality | [set target] | §5.4.4 | | |
+| 6 | E2E ordering completion | [set target] | §5.4.5 | | |
+| 7 | Voice turn latency | < 5 s | §5.4.6 | | |
+| 8 | Validator off-menu leak rate | 0% | §5.4.2 | | |
+
+#### 5.6.2 Failure Budget Allocation
+
+Every failure observed across all experiments, categorised by root cause and attributed to a
+component. Identifies the system's weakest link for §6.3.
+
+| Failure Category | Count | % of Total | Component (§4.x) |
+|-----------------|-------|-----------|------------------|
+| Router misclassification | | | Intent classifier (§4.5.2) |
+| Worker tool-call error | | | Tool-calling worker (§4.5.3) |
+| Validator false positive | | | Validator (§4.5.4) |
+| Response verbalisation error | | | Response generation (§4.5.6) |
+| Retrieval miss | | | Knowledge retrieval (§4.6) |
+| Backend / infrastructure | | | Orchestrator (§4.7) |
+
+#### 5.6.3 Need → Requirement → Experiment Traceability
 
 | Need (§2) | Requirement | Experiment | Key Result |
 |-----------|-------------|------------|------------|
-| 2.2 Dynamic nav | R1–R7 | §5.2.1–§5.2.4 | Odometry error X cm, docking error Y cm, nav success Z% |
-| 2.3 Vietnamese voice | §4.1 NFR | §5.4.1–§5.4.4 | STT WER X%, VAD false trigger Y%, edge VRAM Z MB |
-| 2.4 Informal speech → action | §4.1 agent | §5.3.1–§5.3.3 | Classifier 97.4% holdout, validator catch rate X%, E2E pass Y% |
-| 2.5 Sensory → relevant items | §4.1 search | §5.3.4 | P@5 X, R@5 Y, MRR Z |
-| 2.6 AI-driven operations | §4.1 concurrency | §5.5.1–§5.5.3, §5.6 | Integration pass rate X%, session isolation Y%, fleet recovery Zs |
+| 2.2 Dynamic navigation | §3.1 R(odometry, nav, docking) | §5.3.1–§5.3.4 | |
+| 2.4 Informal speech → action | §4.1 R(classification, validation, agent) | §5.4.1–§5.4.5 | |
+| 2.5 Sensory → relevant items | §4.1 R(retrieval) | §5.4.4 | |
+| 2.6 AI-driven operations | §4.1 R(concurrency, fleet) | §5.5.1–§5.5.3 | |
+| 2.7 Multi-role interfaces | §4.1 R(web) | §5.5.4 | |
+
+#### 5.6.4 Threats to Validity
+
+- **Typed text vs. speech.** Every experiment in §5.4 feeds the agent clean text. The voice
+  pipeline (§4.4) is described architecturally with component selection justified against the
+  Chapter 2 survey, but it has not been evaluated experimentally — STT word error rate, VAD
+  boundary accuracy, barge-in effectiveness, and the speech-to-decision cascade remain
+  unmeasured. Results in §5.4 are upper bounds on what a customer speaking through the
+  deployed voice pipeline would experience.
+- **Self-authored evaluation data.** The datasets were written by the author against one
+  restaurant's menu. They are not an independent benchmark, and dish-name familiarity may
+  flatter both retrieval and name resolution.
+- **Sample sizes.** Several comparisons are underpowered; where a difference does not reach
+  significance, the chapter says so rather than reporting the point estimate as a finding.
+- **Stochastic components.** Any result from a single run of an LLM-dependent arm is one draw
+  from a distribution; §5.2.3's N = 5 protocol applies, and any result not yet meeting it is
+  marked as such.
+- **Single deployment.** One restaurant, one menu, one robot, one network. Nothing here
+  establishes behaviour at multi-restaurant or multi-robot scale.
 
 ---
 
@@ -1471,7 +1464,7 @@ Table mapping each Ch.2 need → requirement → experiment → key result:
 - Tick each §1.3 objective against Ch.5 numbers
 - Summarize both contribution legs:
   - Autonomous TWD navigation + EKF-fused odometry + RTAB-Map + Nav2 + ArUco docking
-  - Trained MLP intent classifier (97.4% holdout, 95.6% A/B) + agentic LangGraph workflow (multi-intent queue, tool execution, deterministic validator) + closed-loop RAG (rewrite→retrieve→rephrase for Vietnamese menus) + voice pipeline + 3 web UIs
+  - Trained MLP intent classifier + agentic LangGraph workflow (multi-intent queue, tool execution, deterministic validator) + closed-loop RAG (rewrite→retrieve→rephrase for Vietnamese menus) + voice pipeline + 3 web UIs
 
 ### 6.2 Limitations
 
@@ -1479,8 +1472,8 @@ Table mapping each Ch.2 need → requirement → experiment → key result:
 - Wheel slip on smooth floors
 - ArUco docking: lighting sensitivity (D435), no final-approach controller implemented
 - Router: SEARCH accuracy 80% (on 100-case balanced set); delivery query confusion with PAYMENT; teencode-heavy utterances degrade embedding quality; ORDER_CONFIRM critical error on "Ghi nhận đơn hàng của tôi" (→PAYMENT at conf=1.00)
+- Voice pipeline: STT, VAD and TTS components are selected and described architecturally (§4.4) but not evaluated experimentally — WER, VAD boundary accuracy, barge-in, and speech-to-decision cascade remain unmeasured
 - E2E: backend dependency failures inflate error rates; chitchat→order transitions fragile
-- TTS not yet fully wired; some UIs unfinished
 - Single-robot, single-restaurant scope
 
 ### 6.3 Future Works
@@ -1493,6 +1486,7 @@ Table mapping each Ch.2 need → requirement → experiment → key result:
 - Returning-customer recognition (persistent preferences)
 - Multi-language support (English, additional)
 - Real payment gateway integration (replace mock VietQR)
+- Voice pipeline evaluation: measure STT WER/CER, VAD accuracy under restaurant noise, and speech-to-decision cascade degradation with native Vietnamese speakers
 - Complete all UIs + TTS integration
 
 ---

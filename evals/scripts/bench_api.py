@@ -47,7 +47,7 @@ ENDPOINTS = [
 ]
 
 N_WARMUP = 2
-N_SAMPLES = 10
+N_SAMPLES = 100
 
 
 def benchmark_endpoint(client: httpx.Client, method: str, path: str, body: dict | None = None) -> dict:

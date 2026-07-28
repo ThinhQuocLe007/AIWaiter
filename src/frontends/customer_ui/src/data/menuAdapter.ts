@@ -16,17 +16,18 @@ export interface RawMenuItem {
 // Must stay in sync with the `category` values in assets/data/menu.json.
 const CATEGORY_META: Record<string, { id: string; icon: string; order: number }> = {
   'Ốc & Sò':           { id: 'oc-so',        icon: '🐚', order: 1  },
-  'Ốc Hấp':            { id: 'oc-hap',       icon: '🦪', order: 2  },
-  'Món Nướng':         { id: 'nuong',        icon: '🍖', order: 3  },
-  'Tôm':               { id: 'tom',          icon: '🦐', order: 4  },
-  'Chiên & Khai Vị':   { id: 'chien-khai-vi', icon: '🍤', order: 5 },
-  'Gỏi & Trộn':        { id: 'goi-tron',     icon: '🥗', order: 6  },
-  'Lặt Vặt Ăn Chơi':  { id: 'lat-vat',      icon: '🍢', order: 7  },
-  'Khô Lai Rai':       { id: 'kho-lai-rai',  icon: '🐟', order: 8  },
-  'Món Lẩu':           { id: 'lau',          icon: '🍲', order: 9  },
-  'Món Chính':         { id: 'mon-chinh',    icon: '🍛', order: 10 },
+  'Món Nướng':         { id: 'nuong',        icon: '🍖', order: 2  },
+  'Tôm':               { id: 'tom',          icon: '🦐', order: 3  },
+  'Chiên & Khai Vị':   { id: 'chien-khai-vi', icon: '🍤', order: 4 },
+  'Gỏi & Trộn':        { id: 'goi-tron',     icon: '🥗', order: 5  },
+  'Lặt Vặt Ăn Chơi':  { id: 'lat-vat',      icon: '🍢', order: 6  },
+  'Khô Lai Rai':       { id: 'kho-lai-rai',  icon: '🐟', order: 7  },
+  'Món Lẩu':           { id: 'lau',          icon: '🍲', order: 8  },
+  'Món Chính':         { id: 'mon-chinh',    icon: '🍛', order: 9  },
+  'Rau & Canh':        { id: 'rau-canh',     icon: '🥬', order: 10 },
   'Mì - Cháo - Cơm':   { id: 'mi-chao-com',  icon: '🍜', order: 11 },
-  'Giải Khát':         { id: 'giai-khat',    icon: '🥤', order: 12 },
+  'Tráng Miệng':       { id: 'trang-mieng',  icon: '🍧', order: 12 },
+  'Giải Khát':         { id: 'giai-khat',    icon: '🥤', order: 13 },
 }
 
 const DEFAULT_ICON = '🍽️'

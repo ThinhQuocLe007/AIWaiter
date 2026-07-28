@@ -91,7 +91,7 @@ class AgentState(TypedDict):
     # The typed handoff from the implement stage to the response stage.
     # Set by chat_worker (CHAT path) or state_outcome (tool path), read and
     # cleared by response_node. Nothing else in the graph touches it.
-    response_context: ResponseContext | None
+    response_context: ResponseContext | list[ResponseContext] | None
 
     # When a worker calls delegate(reason="..."), the reason is stored here so
     # that chat_worker → ChatResponseContext → response_node can tailor the reply.
@@ -109,3 +109,8 @@ class AgentState(TypedDict):
     # recommending the same dish (e.g. "Lẩu Thái") across consecutive turns.
     # Cleared on clear_cart / session reset.
     shown_dishes: list[str] | None
+
+    # Per-request Queue for SSE sentence streaming. Set by server.py on /chat/stream
+    # requests, None (the default) on plain /chat. Never checkpointed — this field is
+    # purely an in-memory tunnel from the request thread to the graph worker thread.
+    stream_queue: Any | None

@@ -129,6 +129,21 @@
   },
   {
     "role": "user",
+    "content": "bỏ hết mấy món chân gà đi"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "name": "clear_cart",
+        "args": {},
+        "id": "call_clear_batch_1"
+      }
+    ]
+  },
+  {
+    "role": "user",
     "content": "Thôi hủy đơn đi, anh không đặt nữa"
   },
   {

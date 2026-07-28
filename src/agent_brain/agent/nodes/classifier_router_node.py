@@ -35,11 +35,21 @@ _CLASSIFY_IMPORT_FAILED = False
 
 CLASSIFIER_THRESHOLD = 0.7
 
-_MULTI_CLAUSE_RE = re.compile(r"\b(rồi|và|thì|xong|rồi thì|với lại)\b")
+_MULTI_CLAUSE_RE = re.compile(r"\b(rồi thì|với lại|rồi|và|thì|xong)\b|à mà|,\s*mà\b")
 
 
 def _has_boundary_markers(utterance: str) -> bool:
-    return bool(_MULTI_CLAUSE_RE.search(utterance.lower()))
+    """A boundary marker only splits a clause when it sits BETWEEN two clauses.
+    ``rồi`` at the end of an utterance is an aspect particle ("hết nhiêu tiền rồi em ơi"),
+    not a clause boundary, and treating it as one costs a ~1 s rewriter call on roughly
+    one single-intent utterance in nine."""
+    low = utterance.lower()
+    for m in _MULTI_CLAUSE_RE.finditer(low):
+        before = low[:m.start()].split()
+        after = low[m.end():].split()
+        if len(before) >= 2 and len(after) >= 2:
+            return True
+    return False
 
 
 def _build_classifier_state(state: AgentState) -> dict[str, Any]:

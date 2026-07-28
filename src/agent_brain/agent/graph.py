@@ -1,4 +1,5 @@
 import logging
+from queue import Queue
 from typing import Any, Literal
 
 import httpx
@@ -18,7 +19,6 @@ from src.agent_brain.agent.nodes.search_worker_node import search_worker_node
 from src.agent_brain.agent.nodes.state_outcome_node import state_outcome_node
 from src.agent_brain.agent.nodes.update_state_node import recalc_cart, update_state_node
 from src.agent_brain.agent.state import AgentState
-from src.agent_brain.schemas.order import Cart, OrderItem
 from src.agent_brain.agent.tools import (
     add_cart,
     clear_cart,
@@ -28,6 +28,7 @@ from src.agent_brain.agent.tools import (
     search,
     verify_payment,
 )
+from src.agent_brain.schemas.order import Cart, OrderItem
 from src.agent_brain.services.orchestrator_client import OrchestratorClient
 from src.agent_brain.utils import resolve_menu_name
 
@@ -61,18 +62,7 @@ def _route_by_intent(state: AgentState) -> str:
     return _get_next_worker(state)
 
 
-def _route_if_tool_call(state: AgentState) -> Literal["tools", "chat_worker", "response_node"]:
-    """
-    Routes worker output:
-        - has tool_calls -> "tools" (validator runs next)
-        - no tool_calls + ORDER/ORDER_CONFIRM intent -> "chat_worker"
-          (question routed to ORDER by mistake — let CHAT handle it with curated memory)
-        - no tool_calls + other intent -> "response_node" (defensive verbalization)
-
-    With ``tool_choice="any"`` in the worker LLMs the no-tool-calls branch should
-    be unreachable. Kept as defense-in-depth: if Ollama or a model ever ignores
-    the tool choice, the response is still verbalized instead of silently dropped.
-    """
+def _route_if_tool_call(state: AgentState) -> Literal["tools", "chat_worker", "response_node", "state_updater"]:
     last_msg = state["messages"][-1]
     if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
         non_delegate = [tc for tc in last_msg.tool_calls if tc.get("name") != "delegate"]
@@ -91,11 +81,12 @@ def _route_if_tool_call(state: AgentState) -> Literal["tools", "chat_worker", "r
         return "state_updater"
     intents = state.get("current_intents") or []
     if intents and intents[0] in ("ORDER", "ORDER_CONFIRM"):
-        logger.info(
-            "ORDER worker produced no tool call — redirecting to chat_worker "
-            "(question misrouted to ORDER)"
+        state["delegate_reason"] = "không rõ"
+        logger.warning(
+            "ORDER worker produced no tool call despite tool_choice='any' — "
+            "advancing to state_updater to avoid hallucinated confirmation"
         )
-        return "chat_worker"
+        return "state_updater"
     logger.warning(
         "Worker produced no tool_calls despite tool_choice='any'; "
         "routing to state_updater to advance to next intent."
@@ -258,6 +249,11 @@ class AIWaiterGraph:
                 "order_worker": "order_worker",
                 "search_worker": "search_worker",
                 "payment_dispatch": "payment_dispatch",
+                # _route_after_validator falls through to _get_next_worker, which resolves via
+                # INTENT_TO_WORKER (where CHAT -> chat_worker) and defaults to DEFAULT_WORKER,
+                # itself chat_worker. Omitting the key raised KeyError('chat_worker') and killed
+                # the whole turn rather than degrading it.
+                "chat_worker": "chat_worker",
                 "state_outcome": "state_outcome",
             },
         )
@@ -279,6 +275,10 @@ class AIWaiterGraph:
                 "order_worker": "order_worker",
                 "search_worker": "search_worker",
                 "payment_dispatch": "payment_dispatch",
+                # A multi-intent turn whose remaining intent is CHAT lands here -- "cho 1 Lẩu
+                # Thái rồi chốt đơn nhé" style utterances, and any turn where the queue drains
+                # to a chat intent. Without this key the turn crashed instead of answering.
+                "chat_worker": "chat_worker",
                 "state_outcome": "state_outcome",
             },
         )
@@ -351,7 +351,8 @@ class AIWaiterGraph:
         )
         return {"thread_id": thread_id, "stage": stage, "cart": _serialize_cart(cart)}
 
-    def chat(self, query: str, table_id: str = "T1", session_id: str = None) -> dict[str, Any]:
+    def chat(self, query: str, table_id: str = "T1", session_id: str = None,
+             stream_queue: Queue | None = None) -> dict[str, Any]:
         # Resolve the table's CURRENT backend session so the LangGraph thread tracks it. Callers
         # should pass session_id=None every turn: within a visit this returns the same id (memory
         # persists); after payment closes the session it returns None until the next seating opens
@@ -383,6 +384,7 @@ class AIWaiterGraph:
             "ui_action": None,  # reset each turn so a command never leaks to the next
             "order_confirmed": False,  # per-turn flag, same lifecycle as ui_action
             "cart_touched": False,  # per-turn flag, same lifecycle as ui_action
+            "stream_queue": stream_queue,
         }
         result = self.app.invoke(inputs, config)
 

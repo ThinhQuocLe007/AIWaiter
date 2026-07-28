@@ -1,0 +1,291 @@
+{
+  "dataset": "multi_intent_eval",
+  "version": "1.0",
+  "description": "Đo độ đầy đủ của câu trả lời khi một lượt nói chứa nhiều intent. Agent thực thi lần lượt N intent qua hàng đợi, nhưng state_outcome._pick_tool_message chỉ chọn MỘT ResponseContext để nói ra. Bộ dữ liệu này lượng hoá hệ quả: bao nhiêu phần trăm hành động đã thực thi thực sự đến tai khách. Đây là một giới hạn đã biết của hệ thống; mục đích của bộ test là báo cáo nó bằng con số thay vì để người phản biện tự phát hiện.",
+  "metric": {
+    "name": "multi_intent_verbalisation_rate",
+    "formula": "intents_mentioned_in_response / intents_executed",
+    "note": "Tính trên từng lượt, sau đó lấy trung bình vĩ mô (macro) trên các lượt. Một lượt hai intent chỉ nói ra một intent cho tỉ lệ 0.5, không phải 'fail' — mức độ mất mát mới là thứ cần báo cáo."
+  },
+  "scoring": {
+    "intents_executed": "Số intent trong current_intents sau khi router chạy.",
+    "intents_mentioned": "Số intent có bằng chứng từ vựng trong câu trả lời cuối cùng, khớp theo evidence_any của từng intent.",
+    "both_executed": "Kiểm tra phụ: cả hai hành động có thực sự tác động lên state hay không (giỏ hàng, thanh toán, kết quả tìm kiếm)."
+  },
+  "total_cases": 25,
+  "cases": [
+    {
+      "id": "MI-001",
+      "utterance": "Cho mình 2 phần Ốc Hương Xốt Me rồi tính tiền luôn nha",
+      "expected_intents": ["ORDER", "PAYMENT"],
+      "difficulty": "easy",
+      "evidence": {
+        "ORDER": ["ốc hương", "xốt me", "thêm", "giỏ", "món"],
+        "PAYMENT": ["thanh toán", "tính tiền", "tổng", "hoá đơn", "hóa đơn", "qr"]
+      },
+      "note": "Cặp kinh điển: đặt món rồi thanh toán trong cùng một câu."
+    },
+    {
+      "id": "MI-002",
+      "utterance": "Ốc Hương Xốt Me giá bao nhiêu, cho mình 2 phần luôn",
+      "expected_intents": ["SEARCH", "ORDER"],
+      "difficulty": "easy",
+      "evidence": {
+        "SEARCH": ["giá", "đồng", "k", "vnd"],
+        "ORDER": ["thêm", "giỏ", "2 phần", "đã"]
+      },
+      "note": "Hỏi giá rồi đặt ngay — câu trả lời phải chứa cả giá lẫn xác nhận đã thêm."
+    },
+    {
+      "id": "MI-003",
+      "utterance": "Bỏ món mực chiên đi, thêm cho mình 1 Lẩu Thái",
+      "expected_intents": ["ORDER", "ORDER"],
+      "difficulty": "medium",
+      "evidence": {
+        "ORDER": ["bỏ", "xoá", "xóa", "mực", "lẩu thái", "thêm"]
+      },
+      "note": "Hai thao tác giỏ hàng ngược chiều trong một lượt; cả hai đều phải được nhắc."
+    },
+    {
+      "id": "MI-004",
+      "utterance": "Quán có món chay không, mà thôi cho mình Bắp Xào đi",
+      "expected_intents": ["SEARCH", "ORDER"],
+      "difficulty": "medium",
+      "evidence": {
+        "SEARCH": ["chay", "không có", "có", "món"],
+        "ORDER": ["bắp xào", "thêm", "giỏ"]
+      },
+      "note": "Khách tự đổi ý giữa câu — kiểm tra agent không bỏ mất vế hỏi."
+    },
+    {
+      "id": "MI-005",
+      "utterance": "Cho 1 Lẩu Thái, 2 Bia Sài Gòn rồi chốt đơn nhé",
+      "expected_intents": ["ORDER", "ORDER_CONFIRM"],
+      "difficulty": "easy",
+      "evidence": {
+        "ORDER": ["lẩu thái", "bia", "thêm"],
+        "ORDER_CONFIRM": ["chốt", "xác nhận", "đơn", "gửi bếp"]
+      },
+      "note": "Đặt và chốt trong một lượt."
+    },
+    {
+      "id": "MI-006",
+      "utterance": "Món nào bán chạy nhất quán, cho mình một phần rồi tính tiền",
+      "expected_intents": ["SEARCH", "ORDER", "PAYMENT"],
+      "difficulty": "hard",
+      "evidence": {
+        "SEARCH": ["bán chạy", "best seller", "gợi ý", "món"],
+        "ORDER": ["thêm", "giỏ", "phần"],
+        "PAYMENT": ["thanh toán", "tính tiền", "tổng", "qr"]
+      },
+      "note": "Ba intent trong một lượt — trường hợp căng nhất cho lớp trả lời."
+    },
+    {
+      "id": "MI-007",
+      "utterance": "Cho mình xem menu với lại cho 2 Trứng Cút Lộn",
+      "expected_intents": ["SEARCH", "ORDER"],
+      "difficulty": "medium",
+      "evidence": {
+        "SEARCH": ["menu", "thực đơn", "món"],
+        "ORDER": ["trứng cút", "thêm", "giỏ"]
+      },
+      "note": "Dùng liên từ 'với lại' — một trong các boundary marker của router."
+    },
+    {
+      "id": "MI-008",
+      "utterance": "Ốc Bươu Hấp Sả cay không, nếu không cay thì cho 2 phần",
+      "expected_intents": ["SEARCH", "ORDER"],
+      "difficulty": "hard",
+      "evidence": {
+        "SEARCH": ["cay", "vị", "không cay"],
+        "ORDER": ["ốc bươu", "thêm", "2 phần"]
+      },
+      "note": "Intent thứ hai có điều kiện — agent phải trả lời vế hỏi trước khi hành động."
+    },
+    {
+      "id": "MI-009",
+      "utterance": "Xoá hết giỏ hàng rồi cho mình bắt đầu lại với 1 Lẩu Thái",
+      "expected_intents": ["ORDER", "ORDER"],
+      "difficulty": "medium",
+      "evidence": {
+        "ORDER": ["xoá", "xóa", "trống", "lẩu thái", "thêm"]
+      },
+      "note": "clear_cart rồi add_cart trong một lượt."
+    },
+    {
+      "id": "MI-010",
+      "utterance": "Cho mình 1 Mực Cháy Tỏi, mà quán mở cửa tới mấy giờ vậy",
+      "expected_intents": ["ORDER", "SEARCH"],
+      "difficulty": "medium",
+      "evidence": {
+        "ORDER": ["mực cháy tỏi", "thêm", "giỏ"],
+        "SEARCH": ["giờ", "mở cửa", "đóng cửa"]
+      },
+      "note": "Thứ tự đảo: hành động trước, câu hỏi sau."
+    },
+    {
+      "id": "MI-011",
+      "utterance": "Thêm 1 Bia Sài Gòn nữa và cho xin mã QR thanh toán",
+      "expected_intents": ["ORDER", "PAYMENT"],
+      "difficulty": "easy",
+      "evidence": {
+        "ORDER": ["bia", "thêm", "giỏ"],
+        "PAYMENT": ["qr", "mã", "thanh toán", "chuyển khoản"]
+      },
+      "note": "Yêu cầu QR là nhánh request_payment cụ thể."
+    },
+    {
+      "id": "MI-012",
+      "utterance": "Đổi Ốc Hương Xốt Me thành Xốt Phô Mai, với lại tính tiền giúp mình",
+      "expected_intents": ["ORDER", "PAYMENT"],
+      "difficulty": "hard",
+      "evidence": {
+        "ORDER": ["đổi", "phô mai", "xốt me", "thay"],
+        "PAYMENT": ["thanh toán", "tính tiền", "tổng"]
+      },
+      "note": "Đổi món = remove + add, cộng thêm intent thanh toán."
+    },
+    {
+      "id": "MI-013",
+      "utterance": "Cho 3 Hàu Nướng Mỡ Hành, à mà Chả Giò Hải Sản có ngon không",
+      "expected_intents": ["ORDER", "SEARCH"],
+      "difficulty": "medium",
+      "evidence": {
+        "ORDER": ["hàu", "thêm", "3"],
+        "SEARCH": ["chả giò", "ngon", "vị"]
+      },
+      "note": "'à mà' là dấu ngắt tự nhiên trong lời nói."
+    },
+    {
+      "id": "MI-014",
+      "utterance": "Giảm Ốc Hương xuống còn 1 phần thôi rồi chốt đơn",
+      "expected_intents": ["ORDER", "ORDER_CONFIRM"],
+      "difficulty": "medium",
+      "evidence": {
+        "ORDER": ["ốc hương", "1 phần", "giảm", "sửa"],
+        "ORDER_CONFIRM": ["chốt", "xác nhận", "đơn"]
+      },
+      "note": "Sửa số lượng rồi chốt."
+    },
+    {
+      "id": "MI-015",
+      "utterance": "Món Lẩu Thái bao nhiêu tiền, Mực Chiên Sả bao nhiêu tiền",
+      "expected_intents": ["SEARCH", "SEARCH"],
+      "difficulty": "medium",
+      "evidence": {
+        "SEARCH": ["lẩu thái", "mực chiên sả", "giá", "đồng", "k"]
+      },
+      "note": "Hai truy vấn cùng loại — câu trả lời phải chứa cả hai mức giá, không chỉ một."
+    },
+    {
+      "id": "MI-016",
+      "utterance": "Cho mình Gỏi Hải Sản với Bánh Mì Bơ Tỏi, thanh toán tiền mặt được không",
+      "expected_intents": ["ORDER", "SEARCH"],
+      "difficulty": "hard",
+      "evidence": {
+        "ORDER": ["gỏi", "bánh mì", "thêm"],
+        "SEARCH": ["tiền mặt", "thanh toán", "được", "phương thức"]
+      },
+      "note": "Vế sau là câu hỏi về phương thức thanh toán, không phải yêu cầu thanh toán."
+    },
+    {
+      "id": "MI-017",
+      "utterance": "Ốc Móng Tay Hấp Sả Quế có gì đặc biệt, cho 2 phần rồi chốt luôn",
+      "expected_intents": ["SEARCH", "ORDER", "ORDER_CONFIRM"],
+      "difficulty": "hard",
+      "evidence": {
+        "SEARCH": ["móng tay", "sả quế", "đặc biệt", "vị"],
+        "ORDER": ["thêm", "2 phần", "giỏ"],
+        "ORDER_CONFIRM": ["chốt", "xác nhận", "đơn"]
+      },
+      "note": "Ba intent, chuỗi hỏi → đặt → chốt."
+    },
+    {
+      "id": "MI-018",
+      "utterance": "cho e 2 oc huong xot me r tinh tien lun",
+      "expected_intents": ["ORDER", "PAYMENT"],
+      "difficulty": "hard",
+      "evidence": {
+        "ORDER": ["ốc hương", "xốt me", "thêm"],
+        "PAYMENT": ["thanh toán", "tính tiền", "tổng"]
+      },
+      "note": "Bản teencode không dấu của MI-001 — kiểm tra đa intent còn nhận ra được khi văn bản biến dạng như đầu ra ASR."
+    },
+    {
+      "id": "MI-019",
+      "utterance": "Bỏ hết mấy món nước đi, thêm 2 Nước Suối, xong tính tiền",
+      "expected_intents": ["ORDER", "ORDER", "PAYMENT"],
+      "difficulty": "hard",
+      "evidence": {
+        "ORDER": ["bỏ", "xoá", "xóa", "nước suối", "thêm"],
+        "PAYMENT": ["thanh toán", "tính tiền", "tổng"]
+      },
+      "note": "Dùng 'xong' — boundary marker được router liệt kê."
+    },
+    {
+      "id": "MI-020",
+      "utterance": "Chào em, cho anh 1 Lẩu Cá Tầm Măng Chua nhé",
+      "expected_intents": ["CHAT", "ORDER"],
+      "difficulty": "medium",
+      "evidence": {
+        "CHAT": ["chào", "dạ", "vâng", "em"],
+        "ORDER": ["lẩu cá tầm", "thêm", "giỏ"]
+      },
+      "note": "Chào hỏi kèm hành động — kiểm tra CHAT không nuốt mất vế ORDER."
+    },
+    {
+      "id": "MI-021",
+      "utterance": "Món này mặn quá, đổi cho mình qua Ốc Hương Hấp Sả đi",
+      "expected_intents": ["CHAT", "ORDER"],
+      "difficulty": "hard",
+      "evidence": {
+        "CHAT": ["xin lỗi", "mặn", "tiếc", "dạ"],
+        "ORDER": ["ốc hương hấp sả", "đổi", "thêm"]
+      },
+      "note": "Phàn nàn kèm yêu cầu đổi món — câu trả lời chỉ nói vế đổi là thiếu lịch sự, đây là lỗi UX thật."
+    },
+    {
+      "id": "MI-022",
+      "utterance": "Cho 1 Tré Trộn Thái, 1 Khô Mực Nướng, 2 Bia 333, chốt đơn giúp mình",
+      "expected_intents": ["ORDER", "ORDER_CONFIRM"],
+      "difficulty": "medium",
+      "evidence": {
+        "ORDER": ["tré trộn", "khô mực", "bia 333", "thêm"],
+        "ORDER_CONFIRM": ["chốt", "xác nhận", "đơn", "gửi bếp"]
+      },
+      "note": "Đơn ba món rồi chốt — kiểm tra phần liệt kê món không bị cắt."
+    },
+    {
+      "id": "MI-023",
+      "utterance": "Có món nào không cay cho trẻ em không, với lại quán có chỗ đậu xe chứ",
+      "expected_intents": ["SEARCH", "SEARCH"],
+      "difficulty": "hard",
+      "evidence": {
+        "SEARCH": ["không cay", "trẻ em", "đậu xe", "chỗ", "bãi"]
+      },
+      "note": "Hai câu hỏi khác chủ đề — một về món, một về tiện ích quán."
+    },
+    {
+      "id": "MI-024",
+      "utterance": "Kiểm tra giúp mình đã thanh toán chưa, nếu rồi thì cho thêm 1 Trà Tắc",
+      "expected_intents": ["PAYMENT", "ORDER"],
+      "difficulty": "hard",
+      "evidence": {
+        "PAYMENT": ["thanh toán", "đã", "chưa", "kiểm tra"],
+        "ORDER": ["trà tắc", "thêm", "giỏ"]
+      },
+      "note": "verify_payment rồi add_cart — intent thứ hai phụ thuộc kết quả intent thứ nhất."
+    },
+    {
+      "id": "MI-025",
+      "utterance": "Cho mình Sò Điệp Nướng Phô Mai và Sò Điệp Nướng Mỡ Hành, mỗi thứ 2 phần, tổng bao nhiêu",
+      "expected_intents": ["ORDER", "SEARCH"],
+      "difficulty": "hard",
+      "evidence": {
+        "ORDER": ["sò điệp", "phô mai", "mỡ hành", "thêm"],
+        "SEARCH": ["tổng", "bao nhiêu", "giá", "đồng"]
+      },
+      "note": "Hai biến thể cùng nhóm món kèm câu hỏi tổng tiền — dễ khiến agent chỉ nói tổng mà quên liệt kê món."
+    }
+  ]
+}

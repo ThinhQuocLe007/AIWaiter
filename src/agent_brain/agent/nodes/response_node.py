@@ -4,9 +4,12 @@ Reads ``state["response_context"]``, produces a Vietnamese AIMessage reply.
 Dispatches by context type to templates (imported from ``response_template``)
 or LLM paraphrasing (for search results, off-menu suggestions, free-form chat).
 
-Streaming: when ``set_output_queue()`` is called before graph invocation, LLM-based
-rewriters stream sentences through ``_stream.emit()``; template-based rewriters push
-their full text as a single sentence.
+Streaming: the per-request ``Queue`` is carried through ``AgentState.stream_queue``,
+set by server.py on /chat/stream and read by response_node. LLM-based rewriters
+stream sentences through the queue; template-based rewriters push their full text
+as a single sentence. Per-request isolation is guaranteed because a fresh
+``_StreamContext`` is built from ``state["stream_queue"]`` at the top of every
+``response_node`` invocation.
 """
 
 import logging
@@ -104,19 +107,12 @@ def _sanitize_reply(text: str) -> str:
 
 
 class _StreamContext:
-    """Stream state shared by the request thread and the thread running the graph.
+    """Per-invocation stream helper wrapping the request's Queue from ``AgentState``.
 
-    Deliberately a module-level singleton, NOT ``threading.local``: ``server.py`` calls
-    ``set_output_queue()`` on the request thread but runs the graph on a separate
-    ``ThreadPoolExecutor`` worker, so a per-thread context would leave the worker with an
-    empty queue and ``emit()`` would silently no-op — /chat/stream then degrades to
-    progress+done with no ``sentence`` events at all. Keep this global unless the executor
-    in ``chat_stream`` goes away too.
-
-    The cost of being global: one queue for the whole process, so two tables streaming at
-    the same time would have their sentences interleaved into whichever queue was set last.
-    Fine for v1 (one voice device), but this is what to fix first when a second one lands —
-    pass the queue through the graph call instead of parking it in module state.
+    ``response_node`` builds one from ``state["stream_queue"]`` at the top of every call.
+    /chat/stream sends a real ``Queue`` through the graph; plain /chat passes ``None``
+    so ``emit()`` silently no-ops. This stays per-invocation — two concurrent requests
+    never share a context, each graph invocation creates its own from its own state.
     """
 
     def __init__(self):
@@ -144,13 +140,6 @@ class _StreamContext:
     def was_streamed(self) -> bool:
         return self._streamed
 
-
-_stream = _StreamContext()
-
-
-def set_output_queue(q: Queue | None) -> None:
-    _stream.set_queue(q)
-
 # ── LLM client + static prompts (loaded once at module level) ───────────────
 _response_llm = ChatOllama(
     model=settings.RESPONSE_MODEL,
@@ -177,9 +166,10 @@ def _llm_invoke(system_prompt: str, context_text: str, fallback: str) -> str:
         return fallback
 
 
-def _llm_stream(system_prompt: str, context_text: str, fallback: str) -> str:
+def _llm_stream(
+    system_prompt: str, context_text: str, fallback: str, stream: _StreamContext,
+) -> str:
     """Stream LLM output, emitting complete sentences (punctuation + whitespace)."""
-    stream = _stream
     full_text: list[str] = []
     buffer = ""
     try:
@@ -299,10 +289,10 @@ def _ground_reply(reply: str, dishes: list[tuple[str, float]], where: str) -> st
     return _deterministic_listing(dishes)
 
 
-def _emit_sentences(text: str) -> None:
+def _emit_sentences(text: str, stream: _StreamContext) -> None:
     for sentence in re.split(r"(?<=[.!?])\s+", text):
         if sentence.strip():
-            _stream.emit(sentence.strip())
+            stream.emit(sentence.strip())
 
 
 # ── Context formatters (text passed to the LLM as CONTEXT) ──────────────────
@@ -352,16 +342,18 @@ def _format_chat_for_llm(ctx: ChatResponseContext) -> str:
     blocks.append(f"Trạng thái đơn: {ctx.order_stage}")
 
     if ctx.curated_memory:
-        # No per-dish prices here (same reason as _format_search_for_llm): suggestions are
-        # spoken by TTS while the tablet shows price cards. Cart lines above DO keep prices —
-        # "tổng bao nhiêu?" must still be answerable out loud.
         mem_lines = []
-        for d in ctx.curated_memory:
+        for i, d in enumerate(ctx.curated_memory):
             tags_part = ", ".join(d.tags) if d.tags else ""
             taste_part = d.taste_profile or ""
-            parts = [p for p in [d.name, tags_part, taste_part] if p]
-            mem_lines.append(f"  - {' | '.join(parts)}")
-        blocks.append("Món đã thảo luận (từ các lần tìm kiếm trước):\n" + "\n".join(mem_lines))
+            price_part = f"{_vnd(d.price)}" if d.price else ""
+            parts = [p for p in [d.name, price_part, tags_part, taste_part] if p]
+            prefix = "→ " if i == 0 else "  - "
+            mem_lines.append(f"{prefix}{' | '.join(parts)}")
+        blocks.append(
+            "Món đã thảo luận (từ các lần tìm kiếm trước — món đầu tiên là phù hợp nhất):\n"
+            + "\n".join(mem_lines)
+        )
 
     history_text = _format_history_for_llm(ctx.chat_history)
     blocks.append(f"Lịch sử hội thoại:\n{history_text}" if history_text else "(chưa có lịch sử)")
@@ -371,8 +363,7 @@ def _format_chat_for_llm(ctx: ChatResponseContext) -> str:
 
 
 # ── Per-context-type rewriters ──────────────────────────────────────────────
-def _rewrite_order(ctx: OrderResponseContext) -> str:
-    stream = _stream
+def _rewrite_order(ctx: OrderResponseContext, stream: _StreamContext) -> str:
     if ctx.ambiguous:
         reply = _format_ambiguity(ctx)
         stream.emit(reply)
@@ -406,8 +397,7 @@ def _rewrite_order(ctx: OrderResponseContext) -> str:
     return reply
 
 
-def _rewrite_search(ctx: SearchResponseContext) -> str:
-    stream = _stream
+def _rewrite_search(ctx: SearchResponseContext, stream: _StreamContext) -> str:
     if ctx.status == "error":
         reply = "Dạ, em chưa tìm thấy món phù hợp ạ. Anh/chị thử từ khóa khác nhé ạ."
         stream.emit(reply)
@@ -425,12 +415,11 @@ def _rewrite_search(ctx: SearchResponseContext) -> str:
     # the alternative is telling the guest about a dish the kitchen does not have.
     raw = _llm_invoke(_WAITER_PROMPT, _format_search_for_llm(ctx), _FALLBACK_REPLY)
     reply = _ground_reply(raw, _retrieved_dishes(ctx), "recommendation")
-    _emit_sentences(reply)
+    _emit_sentences(reply, stream)
     return reply
 
 
-def _rewrite_payment(ctx: PaymentResponseContext) -> str:
-    stream = _stream
+def _rewrite_payment(ctx: PaymentResponseContext, stream: _StreamContext) -> str:
     if ctx.tool == "request_payment":
         if ctx.status == "error" or not ctx.amount_vnd:
             reply = "Dạ, hiện chưa có đơn hàng nào trong phiên này ạ."
@@ -457,8 +446,7 @@ def _rewrite_payment(ctx: PaymentResponseContext) -> str:
     return reply
 
 
-def _rewrite_chat(ctx: ChatResponseContext) -> str:
-    stream = _stream
+def _rewrite_chat(ctx: ChatResponseContext, stream: _StreamContext) -> str:
     reason = ctx.delegate_reason
     if reason and "xem lại" in reason:
         cart = ctx.active_cart
@@ -493,44 +481,51 @@ def _rewrite_chat(ctx: ChatResponseContext) -> str:
     if curated:
         raw = _llm_invoke(_CHAT_PROMPT, _format_chat_for_llm(ctx), _FALLBACK_REPLY)
         reply = _ground_reply(raw, curated, "chat recommendation")
-        _emit_sentences(reply)
+        _emit_sentences(reply, stream)
         return reply
-    return _llm_stream(_CHAT_PROMPT, _format_chat_for_llm(ctx), _FALLBACK_REPLY)
+    return _llm_stream(_CHAT_PROMPT, _format_chat_for_llm(ctx), _FALLBACK_REPLY, stream)
 
 
-def _rewrite_retry(ctx: RetryResponseContext) -> str:
+def _rewrite_retry(ctx: RetryResponseContext, stream: _StreamContext) -> str:
     reply = f"Dạ, em xin lỗi anh/chị, {ctx.feedback} Anh/chị kiểm tra lại giúp em nhé ạ."
-    _stream.emit(reply)
+    stream.emit(reply)
     return reply
 
 
 # ── Top-level dispatcher ────────────────────────────────────────────────────
-def _rewrite(ctx: ResponseContext) -> str:
+def _rewrite(ctx: ResponseContext, stream: _StreamContext) -> str:
     if isinstance(ctx, OrderResponseContext):
-        return _rewrite_order(ctx)
+        return _rewrite_order(ctx, stream)
     if isinstance(ctx, SearchResponseContext):
-        return _rewrite_search(ctx)
+        return _rewrite_search(ctx, stream)
     if isinstance(ctx, PaymentResponseContext):
-        return _rewrite_payment(ctx)
+        return _rewrite_payment(ctx, stream)
     if isinstance(ctx, ChatResponseContext):
-        return _rewrite_chat(ctx)
+        return _rewrite_chat(ctx, stream)
     if isinstance(ctx, RetryResponseContext):
-        return _rewrite_retry(ctx)
+        return _rewrite_retry(ctx, stream)
     return _FALLBACK_REPLY
 
 
 # ── Public node entry point ─────────────────────────────────────────────────
 @trace_latency("Response Node", run_type="chain")
 def response_node(state: AgentState) -> dict[str, Any]:
-    stream = _stream
+    stream = _StreamContext()
+    stream.set_queue(state.get("stream_queue"))
     ctx = state.get("response_context")
     if ctx is None:
         if not stream.was_streamed:
             stream.emit(_FALLBACK_REPLY)
         return {"messages": [AIMessage(content=_FALLBACK_REPLY)], "response_context": None}
-    # Sanitise here too, not only in emit(): this text is what /chat returns and what the
-    # tablet renders, and on the streaming path it never passes through emit() at all.
-    reply = _sanitize_reply(_rewrite(ctx))
+
+    if isinstance(ctx, list):
+        replies = []
+        for item in ctx:
+            replies.append(_sanitize_reply(_rewrite(item, stream)))
+        reply = " ".join(r for r in replies if r) or _FALLBACK_REPLY
+    else:
+        reply = _sanitize_reply(_rewrite(ctx, stream))
+
     if not stream.was_streamed:
         stream.emit(reply)
     return {"messages": [AIMessage(content=reply)], "response_context": None}

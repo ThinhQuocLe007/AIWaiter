@@ -13,11 +13,11 @@ The AI Waiter system is deployed across three physical machine classes connected
 
 | Machine | Hardware | OS | Role | Services |
 |---------|----------|-----|------|----------|
-| **Central Server** | x86 PC with NVIDIA GPU (RTX 3070 Laptop, 8 GB VRAM) | Ubuntu 22.04 LTS | AI brain + backend | Ollama (Qwen2.5 7B), Agent Brain (:8100), Orchestrator (:8000), RAG indices, SQLite databases |
+| **Central Server** | x86 PC with NVIDIA GPU (16 GB VRAM or more) | Ubuntu 22.04 LTS | AI brain + backend | Ollama (Qwen2.5 14B), Agent Brain (:8100), Orchestrator (:8000), RAG indices, SQLite databases |
 | **Robot** | Jetson Orin Nano 8 GB (aarch64, CUDA 12.6) | Ubuntu 22.04 + ROS 2 Humble | Voice I/O + navigation | Edge voice pipeline (Silero VAD, faster-whisper STT, Piper/edge-tts TTS), ROS2 Nav2 stack, sensor drivers |
 | **Client devices** | Laptops / tablets (browser only) | Any | Staff interfaces | Customer tablet (menu, voice mirror, payment), Kiosk (check-in), Panel (kitchen + fleet) |
 
-**Server GPU requirement.** The LLM (Qwen2.5 7B Instruct at float16 precision) requires approximately 6–8 GB VRAM. With `keep_alive=-1`, the model is pinned in GPU memory permanently — memory usage is constant, not per-turn.
+**Server GPU requirement.** The LLM (Qwen2.5 14B Instruct at Q6_K quantization) requires approximately 12 GB VRAM. With `keep_alive=-1`, the model is pinned in GPU memory permanently — memory usage is constant, not per-turn. This is the single hardware constraint that keeps the language model on the server rather than on the robot.
 
 **Jetson memory budget.** The Jetson Orin Nano's 8 GB unified memory is shared between the voice pipeline (~3 GB for faster-whisper medium at float16), the ROS2 navigation stack (~500 MB), and sensor drivers (~200 MB). Piper TTS adds ~200 MB. Total memory pressure is within the 8 GB budget, though headroom is limited.
 
@@ -25,7 +25,7 @@ The AI Waiter system is deployed across three physical machine classes connected
 
 ### 4.8.2 LLM Configuration
 
-A single Qwen2.5 7B Instruct model is served by Ollama on the central server. Three `ChatOllama` instances point to the same model with different runtime configurations for different agent stages:
+A single Qwen2.5 14B Instruct model is served by Ollama on the central server. Three `ChatOllama` instances point to the same model with different runtime configurations for different agent stages:
 
 | Stage | Temperature | Key Configuration | Purpose |
 |-------|-------------|-------------------|---------|
@@ -87,7 +87,7 @@ The system starts in dependency order, enforced by the `Makefile`:
 ```
 1. Ollama (must be running first)
    └── ollama serve      # or systemd service
-   └── ollama pull qwen2.5:7b-instruct   # one-time model download
+   └── ollama pull qwen2.5:14b-instruct-q6_K   # one-time model download
 
 2. Orchestrator (:8000)
    └── make backend      # uv run uvicorn src.server_orchestrator.main:app --port 8000

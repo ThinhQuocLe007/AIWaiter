@@ -28,6 +28,10 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+
+# The `lib/` rule above targets distutils build output, but it is unanchored and so also
+# swallows evals/lib/ -- the statistical harness the Chapter 5 results are computed with.
+!evals/lib/
 MANIFEST
 
 # Python Virtual Environments

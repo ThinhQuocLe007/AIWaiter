@@ -1465,7 +1465,7 @@ values in older design docs; where the two disagree, the code is right.
 | | tools | `search, add_cart, remove_cart, clear_cart, confirm_order, request_payment, verify_payment` (+ `delegate`) | `graph.py`, `tools/` |
 | Validator | menu resolution | exact → single prefix/substring → ambiguous → modifier-strip retry → Jaccard suggestion | `menu_utils.py` |
 | | suggestion floor | Jaccard `>= 0.30` | `menu_utils.py` |
-| LLM | model | `qwen2.5:7b-instruct` (code default) / `qwen2.5:14b-instruct-q6_K` (`.env.template`) | `agent_config.py` |
+| LLM | model | `qwen2.5:14b-instruct-q6_K` (code default and `.env.template`) | `agent_config.py` |
 | | context window | `LLM_NUM_CTX = 16384` | `agent_config.py` |
 | | keep-alive | `-1` (pinned resident) + startup warmup | `agent_config.py`, `server.py` |
 | RAG | candidates per lane | 15 | `hybrid_retriever.py` |
@@ -1485,12 +1485,10 @@ values in older design docs; where the two disagree, the code is right.
 | | DB pose snapshot | every `15.0` s | `dispatcher.py` |
 | Ports | agent / orchestrator / frontends | 8100 / 8000 / 5173 | `server.py`, `main.py` |
 
-### Three drift risks to fix before submitting
+### Two drift risks to fix before submitting
 
 1. **`PhoWhisperSTT` loads Whisper-medium, not PhoWhisper** (Figure 8). Rename or swap.
 2. **The `DRAFTING` order stage is dead**, and two of the classifier's ten context dims are always
    zero (Figures 4 and 9). Both are safe to describe accurately; neither is safe to overclaim.
-3. **The LLM model differs between the code default (7B) and `.env.template` (14B-q6_K).** Ch.5
-   results are only reproducible if you state which one produced them, on which hardware.
 
 ---

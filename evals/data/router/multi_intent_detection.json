@@ -1,0 +1,278 @@
+{
+  "dataset": "multi_intent_detection",
+  "version": "1.0",
+  "description": "Multi-intent detection benchmark. Metric: fraction of cases where MLP confidence < 0.7. The correct response to multi-intent input is the rewriter path, not a single-label guess.",
+  "total_cases": 30,
+  "cases": [
+    {
+      "utterance": "Cho 2 Ốc Hương rồi tính tiền luôn",
+      "intents": [
+        "ORDER",
+        "PAYMENT"
+      ],
+      "difficulty": "easy",
+      "note": "gọi món rồi thanh toán"
+    },
+    {
+      "utterance": "Thêm 3 bia Tiger rồi bill luôn nha",
+      "intents": [
+        "ORDER",
+        "PAYMENT"
+      ],
+      "difficulty": "easy",
+      "note": "thêm rồi bill"
+    },
+    {
+      "utterance": "Lấy 1 Lẩu Thái rồi thanh toán cho anh",
+      "intents": [
+        "ORDER",
+        "PAYMENT"
+      ],
+      "difficulty": "easy",
+      "note": "gọi rồi thanh toán"
+    },
+    {
+      "utterance": "Xác nhận đơn cũ và thanh toán luôn",
+      "intents": [
+        "ORDER",
+        "PAYMENT"
+      ],
+      "difficulty": "easy",
+      "note": "xác nhận + thanh toán"
+    },
+    {
+      "utterance": "Gọi thêm 1 phần xong tính tiền",
+      "intents": [
+        "ORDER",
+        "PAYMENT"
+      ],
+      "difficulty": "easy",
+      "note": "gọi xong tính tiền"
+    },
+    {
+      "utterance": "Cho 2 hàu nướng và tính tiền giùm anh",
+      "intents": [
+        "ORDER",
+        "PAYMENT"
+      ],
+      "difficulty": "medium",
+      "note": "gọi và tính tiền"
+    },
+    {
+      "utterance": "Xoá món cũ rồi thanh toán tổng luôn",
+      "intents": [
+        "ORDER",
+        "PAYMENT"
+      ],
+      "difficulty": "medium",
+      "note": "xoá rồi thanh toán"
+    },
+    {
+      "utterance": "Chốt đơn với bill luôn đi em",
+      "intents": [
+        "ORDER",
+        "PAYMENT"
+      ],
+      "difficulty": "hard",
+      "note": "chốt đơn + bill, gộp sát"
+    },
+    {
+      "utterance": "Lẩu Thái cay không? Không cay thì cho mình 1 phần",
+      "intents": [
+        "SEARCH",
+        "ORDER"
+      ],
+      "difficulty": "easy",
+      "note": "hỏi trước rồi gọi có điều kiện"
+    },
+    {
+      "utterance": "Ốc Hương giá bao nhiêu rồi lấy 2 phần luôn",
+      "intents": [
+        "SEARCH",
+        "ORDER"
+      ],
+      "difficulty": "easy",
+      "note": "hỏi giá rồi gọi"
+    },
+    {
+      "utterance": "Có món chay không? Có thì cho 2 phần",
+      "intents": [
+        "SEARCH",
+        "ORDER"
+      ],
+      "difficulty": "easy",
+      "note": "hỏi menu rồi gọi"
+    },
+    {
+      "utterance": "Cho mình xem menu rồi lấy 1 cháo hàu",
+      "intents": [
+        "SEARCH",
+        "ORDER"
+      ],
+      "difficulty": "easy",
+      "note": "xem menu rồi gọi món"
+    },
+    {
+      "utterance": "Món nào ngon, gợi ý rồi gọi cho 2 phần luôn",
+      "intents": [
+        "SEARCH",
+        "ORDER"
+      ],
+      "difficulty": "medium",
+      "note": "gợi ý rồi gọi"
+    },
+    {
+      "utterance": "Hàu nướng có những kiểu nào? Cho mình kiểu phô mai với 1 phần",
+      "intents": [
+        "SEARCH",
+        "ORDER"
+      ],
+      "difficulty": "medium",
+      "note": "hỏi kiểu rồi gọi"
+    },
+    {
+      "utterance": "Có Lẩu Cá Tầm không vậy, có thì cho 1 phần",
+      "intents": [
+        "SEARCH",
+        "ORDER"
+      ],
+      "difficulty": "medium",
+      "note": "hỏi có rồi gọi"
+    },
+    {
+      "utterance": "Món nào best seller, lấy 2 món đó cho anh",
+      "intents": [
+        "SEARCH",
+        "ORDER"
+      ],
+      "difficulty": "medium",
+      "note": "best seller rồi gọi"
+    },
+    {
+      "utterance": "Cho 2 ốc hương, à mà quán đẹp ghê ha",
+      "intents": [
+        "ORDER",
+        "CHAT"
+      ],
+      "difficulty": "medium",
+      "note": "gọi món + khen quán"
+    },
+    {
+      "utterance": "Thêm 3 bia, mà quán đông quá hén",
+      "intents": [
+        "ORDER",
+        "CHAT"
+      ],
+      "difficulty": "medium",
+      "note": "gọi + tán gẫu"
+    },
+    {
+      "utterance": "Cảm ơn em, cho anh xin bill luôn nha",
+      "intents": [
+        "CHAT",
+        "PAYMENT"
+      ],
+      "difficulty": "medium",
+      "note": "cảm ơn + bill"
+    },
+    {
+      "utterance": "Gọi 1 lẩu thái nha, trời mưa ăn lẩu là đúng bài",
+      "intents": [
+        "ORDER",
+        "CHAT"
+      ],
+      "difficulty": "hard",
+      "note": "gọi + tán gẫu thời tiết"
+    },
+    {
+      "utterance": "Tính tiền đi, à mà món nào đang giảm giá vậy?",
+      "intents": [
+        "PAYMENT",
+        "SEARCH"
+      ],
+      "difficulty": "easy",
+      "note": "thanh toán trước rồi hỏi khuyến mãi"
+    },
+    {
+      "utterance": "Bill hết bao nhiêu, với ship về quận 7 không?",
+      "intents": [
+        "PAYMENT",
+        "SEARCH"
+      ],
+      "difficulty": "medium",
+      "note": "bill + hỏi ship"
+    },
+    {
+      "utterance": "Thanh toán rồi cho mình xin cái menu mang về nha",
+      "intents": [
+        "PAYMENT",
+        "SEARCH"
+      ],
+      "difficulty": "medium",
+      "note": "thanh toán + xin menu"
+    },
+    {
+      "utterance": "Tính tiền xong cho hỏi quán mở cửa tới mấy giờ",
+      "intents": [
+        "PAYMENT",
+        "SEARCH"
+      ],
+      "difficulty": "medium",
+      "note": "thanh toán + hỏi giờ"
+    },
+    {
+      "utterance": "Cho mình xem menu rồi lấy 1 cháo hàu xong tính tiền luôn",
+      "intents": [
+        "SEARCH",
+        "ORDER",
+        "PAYMENT"
+      ],
+      "difficulty": "hard",
+      "note": "3 intents: xem + gọi + tính tiền"
+    },
+    {
+      "utterance": "Món này ngon quá, cho thêm 1 phần rồi bill luôn nha em",
+      "intents": [
+        "CHAT",
+        "ORDER",
+        "PAYMENT"
+      ],
+      "difficulty": "hard",
+      "note": "3 intents: khen + gọi + bill"
+    },
+    {
+      "utterance": "Cảm ơn em, cho hỏi có ship quận 7 không rồi tính tiền luôn",
+      "intents": [
+        "CHAT",
+        "SEARCH",
+        "PAYMENT"
+      ],
+      "difficulty": "hard",
+      "note": "3 intents: cảm ơn + hỏi + tính tiền"
+    },
+    {
+      "utterance": "Tính tiền rồi cho anh cái bill",
+      "intents": [
+        "PAYMENT"
+      ],
+      "difficulty": "hard",
+      "note": "tính tiền + bill, thực chất cùng intent"
+    },
+    {
+      "utterance": "Cho xem thực đơn với menu có gì ngon",
+      "intents": [
+        "SEARCH"
+      ],
+      "difficulty": "hard",
+      "note": "thực đơn + menu, thực chất cùng intent"
+    },
+    {
+      "utterance": "Gọi 2 ốc hương và lấy thêm 3 bia",
+      "intents": [
+        "ORDER"
+      ],
+      "difficulty": "hard",
+      "note": "gọi + lấy thêm, vẫn cùng ORDER"
+    }
+  ]
+}

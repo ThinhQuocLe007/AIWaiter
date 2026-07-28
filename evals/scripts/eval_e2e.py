@@ -166,9 +166,11 @@ def check_assertions(asserts: dict, ai_response: str, tool_calls: List[Dict],
 
     not_expected = asserts.get('tool_must_NOT_call')
     if not_expected:
-        if not_expected in tool_call_names:
-            logs.append(f"    [FAIL] Tool '{not_expected}' was called but shouldn't")
-            details.append({"check": f"tool_must_NOT_call:{not_expected}", "passed": False})
+        _not_list = not_expected if isinstance(not_expected, list) else [not_expected]
+        violations = [ne for ne in _not_list if ne in tool_call_names]
+        if violations:
+            logs.append(f"    [FAIL] Tool(s) {violations} called but shouldn't")
+            details.append({"check": f"tool_must_NOT_call:{not_expected}", "passed": False, "violations": violations})
             passed = False
         else:
             logs.append(f"    [PASS] Tool '{not_expected}' correctly NOT called")
@@ -215,15 +217,21 @@ def check_assertions(asserts: dict, ai_response: str, tool_calls: List[Dict],
 
     must_contain = asserts.get('confirmed_items_must_contain')
     if must_contain:
+        _must_list = must_contain if isinstance(must_contain, list) else [must_contain]
         confirm_tc = next((tc for tc in tool_calls if tc.get('name') == 'confirm_order'), None)
         if confirm_tc:
             item_names = [i.get('name', '') for i in confirm_tc.get('args', {}).get('items', [])]
-            if any(must_contain.lower() in n.lower() for n in item_names):
+            all_found = all(
+                any(mc.lower() in n.lower() for n in item_names)
+                for mc in _must_list
+            )
+            if all_found:
                 logs.append(f"    [PASS] Confirmed items contain '{must_contain}'")
                 details.append({"check": f"confirmed_items_must_contain:{must_contain}", "passed": True})
             else:
-                logs.append(f"    [FAIL] Confirmed items {item_names} missing '{must_contain}'")
-                details.append({"check": f"confirmed_items_must_contain:{must_contain}", "passed": False, "actual": item_names})
+                missing = [mc for mc in _must_list if not any(mc.lower() in n.lower() for n in item_names)]
+                logs.append(f"    [FAIL] Confirmed items {item_names} missing {missing}")
+                details.append({"check": f"confirmed_items_must_contain:{must_contain}", "passed": False, "actual": item_names, "missing": missing})
                 passed = False
         else:
             logs.append(f"    [FAIL] confirm_order not called, can't check '{must_contain}'")
@@ -232,15 +240,20 @@ def check_assertions(asserts: dict, ai_response: str, tool_calls: List[Dict],
 
     must_not_contain = asserts.get('confirmed_items_must_NOT_contain')
     if must_not_contain:
+        _must_not_list = must_not_contain if isinstance(must_not_contain, list) else [must_not_contain]
         confirm_tc = next((tc for tc in tool_calls if tc.get('name') == 'confirm_order'), None)
         if confirm_tc:
             item_names = [i.get('name', '') for i in confirm_tc.get('args', {}).get('items', [])]
-            if not any(must_not_contain.lower() in n.lower() for n in item_names):
+            if not any(
+                any(mnc.lower() in n.lower() for n in item_names)
+                for mnc in _must_not_list
+            ):
                 logs.append(f"    [PASS] Confirmed items don't contain '{must_not_contain}'")
                 details.append({"check": f"confirmed_items_must_NOT_contain:{must_not_contain}", "passed": True})
             else:
-                logs.append(f"    [FAIL] Confirmed items {item_names} contain forbidden '{must_not_contain}'")
-                details.append({"check": f"confirmed_items_must_NOT_contain:{must_not_contain}", "passed": False, "actual": item_names})
+                found = [mnc for mnc in _must_not_list if any(mnc.lower() in n.lower() for n in item_names)]
+                logs.append(f"    [FAIL] Confirmed items {item_names} contain forbidden {found}")
+                details.append({"check": f"confirmed_items_must_NOT_contain:{must_not_contain}", "passed": False, "actual": item_names, "forbidden_found": found})
                 passed = False
         else:
             logs.append(f"    [FAIL] confirm_order not called, can't check NOT '{must_not_contain}'")
@@ -395,21 +408,6 @@ def run_evaluation(limit: int = None, datasets: List[str] = None):
             conn.commit()
             conn.close()
             log(f"Reset orchestrator DB tables: {orchestrator_db}")
-
-            # Seed sessions for all tables that eval scenarios will use.
-            # Without an active session, confirm_order / request_payment return 404.
-            try:
-                import httpx
-                back_url = os.getenv("ORCHESTRATOR_URL", "http://localhost:8000")
-                with httpx.Client(base_url=back_url, timeout=httpx.Timeout(5.0)) as cli:
-                    for tid in range(1, 16):
-                        try:
-                            cli.post("/seatings", json={"table_id": tid, "party_size": 2})
-                        except Exception:
-                            pass  # table may not exist, that's fine
-                log("Seeded eval table sessions (1-15)")
-            except Exception as e:
-                log(f"Session seeding skipped (backend not running?): {e}")
         except sqlite3.Error as e:
             log(f"Orchestrator DB reset failed (non-fatal): {e}")
 
@@ -432,8 +430,9 @@ def run_evaluation(limit: int = None, datasets: List[str] = None):
     scenario_queue = []
 
     if datasets is None:
-        datasets = ["e2e_conversations_part1.json"]
+        datasets = ["e2e_scenarios.json"]
 
+    scenario_queue = []
     for ds in datasets:
         path = os.path.join(E2E_DATA_DIR, ds)
         if not os.path.exists(path):
@@ -441,12 +440,26 @@ def run_evaluation(limit: int = None, datasets: List[str] = None):
             continue
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        scenarios = data.get("scenarios", [])
-        log(f"Loaded {len(scenarios)} scenarios from {ds}")
-        scenario_queue.extend(scenarios)
+            queue = data.get("scenarios", data.get("cases", []))
+            scenario_queue.extend(queue)
 
     if limit:
         scenario_queue = scenario_queue[:limit]
+
+    # Seed sessions for all table IDs used in the scenarios.
+    eval_table_ids = sorted(set(s["table_id"] for s in scenario_queue))
+    try:
+        import httpx
+        back_url = os.getenv("ORCHESTRATOR_URL", "http://localhost:8000")
+        with httpx.Client(base_url=back_url, timeout=httpx.Timeout(5.0)) as cli:
+            for tid in eval_table_ids:
+                try:
+                    cli.post("/seatings", json={"table_id": tid, "party_size": 2})
+                except Exception:
+                    pass
+        log(f"Seeded eval table sessions: {eval_table_ids}")
+    except Exception as e:
+        log(f"Session seeding skipped (backend not running?): {e}")
 
     log(f"Executing {len(scenario_queue)} scenarios...")
 

@@ -82,14 +82,14 @@ def _handle_remove_cart_result(state: AgentState, tool_result) -> dict[str, Any]
         if item.name != removed_name:
             items.append(item)
             continue
-        # The matching line: keep what's left over, or drop it entirely.
         if remove_qty is not None and remove_qty < item.quantity:
             items.append(item.model_copy(update={"quantity": item.quantity - remove_qty}))
 
+    prev_stage = state.get("order_stage", "IDLE")
     cart = recalc_cart(Cart(items=items, total_price=existing.total_price))
     return {
         "active_cart": cart,
-        "order_stage": "AWAITING_CONFIRMATION" if cart.items else "IDLE",
+        "order_stage": "AWAITING_CONFIRMATION" if (cart.items and prev_stage != "CONFIRMED") else ("IDLE" if not cart.items else prev_stage),
     }
 
 
@@ -98,7 +98,7 @@ def _handle_clear_cart_result(state: AgentState, tool_result) -> dict[str, Any]:
 
 
 def _handle_confirm_order_result(state: AgentState, tool_result) -> dict[str, Any]:
-    return {"order_stage": "CONFIRMED"}
+    return {"order_stage": "CONFIRMED", "active_cart": Cart()}
 
 
 def _handle_search_result(state: AgentState, tool_result) -> dict[str, Any]:

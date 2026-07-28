@@ -91,6 +91,16 @@ class MenuResolution(TypedDict):
     candidates: List[str]     # all matching official names (for "ambiguous")
 
 
+def _contains_token_run(needle: str, haystack: str) -> bool:
+    """True when every token of `needle` appears as a contiguous run of whole tokens
+    inside `haystack`. Character-level containment matched "ga ran" inside "ga rang"
+    and resolved a customer's fried chicken to the restaurant's chicken feet."""
+    s, f = needle.split(), haystack.split()
+    if not s or len(s) > len(f):
+        return False
+    return any(f[i:i + len(s)] == s for i in range(len(f) - len(s) + 1))
+
+
 def resolve_menu_name(name: str) -> MenuResolution:
     """
     Resolve a customer-spoken dish name against the menu, tolerant of case,
@@ -111,9 +121,12 @@ def resolve_menu_name(name: str) -> MenuResolution:
         return {"kind": "exact", "resolved": norm_menu[norm], "candidates": [norm_menu[norm]]}
 
     # 2. Prefix matches first (most intuitive: "Ốc Hương" -> "Ốc Hương Xốt ..."),
-    #    fall back to substring matches if no prefix hit.
+    #    fall back to whole-token substring matches if no prefix hit.  Token-level
+    #    containment prevents character-level matches like "ga ran" resolving to
+    #    "chan ga rang muoi hong kong" (fried chicken → chicken feet).
     prefix = [official for n, official in norm_menu.items() if n.startswith(norm)]
-    candidates = prefix or [official for n, official in norm_menu.items() if norm in n]
+    candidates = prefix or [official for n, official in norm_menu.items()
+                            if _contains_token_run(norm, n)]
 
     if len(candidates) == 1:
         return {"kind": "single", "resolved": candidates[0], "candidates": candidates}

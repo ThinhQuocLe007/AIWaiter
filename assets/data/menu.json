@@ -111,26 +111,6 @@
     "image": "/dishes/oc-huong.jpg"
   },
   {
-    "name": "Ốc Cà Na Xốt Trứng Muối",
-    "price": "75000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Giòn dai, đậm đà, béo cay",
-    "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Cà Na",
-    "image": "/dishes/oc-ca-na.jpg"
-  },
-  {
-    "name": "Ốc Cà Na Xốt Phô Mai",
-    "price": "75000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Giòn dai, đậm đà, béo cay",
-    "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Cà Na",
-    "image": "/dishes/oc-ca-na.jpg"
-  },
-  {
     "name": "Ốc Cà Na Xốt Me",
     "price": "75000",
     "diet_type": "mặn",
@@ -141,37 +121,7 @@
     "image": "/dishes/oc-ca-na.jpg"
   },
   {
-    "name": "Ốc Cà Na Xốt Bơ Cay",
-    "price": "75000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Giòn dai, đậm đà, béo cay",
-    "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Cà Na",
-    "image": "/dishes/oc-ca-na.jpg"
-  },
-  {
     "name": "Ốc Cà Na Xốt Bơ Tỏi Cay",
-    "price": "75000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Giòn dai, đậm đà, béo cay",
-    "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Cà Na",
-    "image": "/dishes/oc-ca-na.jpg"
-  },
-  {
-    "name": "Ốc Cà Na Xốt Thái Siêu Cay",
-    "price": "75000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Giòn dai, đậm đà, béo cay",
-    "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Cà Na",
-    "image": "/dishes/oc-ca-na.jpg"
-  },
-  {
-    "name": "Ốc Cà Na Xốt Sa Tế",
     "price": "75000",
     "diet_type": "mặn",
     "category": "Ốc & Sò",
@@ -211,46 +161,6 @@
     "image": "/dishes/oc-bulot.jpg"
   },
   {
-    "name": "Ốc Bulot Xốt Phô Mai",
-    "price": "85000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Thịt to giòn, đậm đà, béo cay",
-    "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Bulot",
-    "image": "/dishes/oc-bulot.jpg"
-  },
-  {
-    "name": "Ốc Bulot Xốt Me",
-    "price": "85000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Thịt to giòn, đậm đà, béo cay",
-    "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Bulot",
-    "image": "/dishes/oc-bulot.jpg"
-  },
-  {
-    "name": "Ốc Bulot Xốt Muối Tắc",
-    "price": "85000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Thịt to giòn, đậm đà, béo cay",
-    "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Bulot",
-    "image": "/dishes/oc-bulot.jpg"
-  },
-  {
-    "name": "Ốc Bulot Xốt Bơ Cay",
-    "price": "85000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Thịt to giòn, đậm đà, béo cay",
-    "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Bulot",
-    "image": "/dishes/oc-bulot.jpg"
-  },
-  {
     "name": "Ốc Bulot Xốt Bơ Tỏi Cay",
     "price": "85000",
     "diet_type": "mặn",
@@ -262,16 +172,6 @@
   },
   {
     "name": "Ốc Bulot Xốt Thái Siêu Cay",
-    "price": "85000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Thịt to giòn, đậm đà, béo cay",
-    "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Bulot",
-    "image": "/dishes/oc-bulot.jpg"
-  },
-  {
-    "name": "Ốc Bulot Xốt Sa Tế",
     "price": "85000",
     "diet_type": "mặn",
     "category": "Ốc & Sò",
@@ -311,36 +211,6 @@
     "image": "/dishes/oc-bulot.jpg"
   },
   {
-    "name": "Ốc Bulot Nướng Tiêu Xanh",
-    "price": "85000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Thịt to giòn, đậm đà, béo cay",
-    "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Bulot",
-    "image": "/dishes/oc-bulot.jpg"
-  },
-  {
-    "name": "Ốc Bulot Nướng Mỡ Hành",
-    "price": "85000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Thịt to giòn, đậm đà, béo cay",
-    "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Bulot",
-    "image": "/dishes/oc-bulot.jpg"
-  },
-  {
-    "name": "Ốc Bulot Nướng Mắm Ớt",
-    "price": "85000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Thịt to giòn, đậm đà, béo cay",
-    "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Bulot",
-    "image": "/dishes/oc-bulot.jpg"
-  },
-  {
     "name": "Ốc Mỡ Xốt Trứng Muối",
     "price": "95000",
     "diet_type": "mặn",
@@ -361,57 +231,7 @@
     "image": "/dishes/oc-mo.jpg"
   },
   {
-    "name": "Ốc Mỡ Xốt Me",
-    "price": "95000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Béo mềm, đậm đà, cay nhẹ",
-    "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Mỡ",
-    "image": "/dishes/oc-mo.jpg"
-  },
-  {
-    "name": "Ốc Mỡ Xốt Bơ Cay",
-    "price": "95000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Béo mềm, đậm đà, cay nhẹ",
-    "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Mỡ",
-    "image": "/dishes/oc-mo.jpg"
-  },
-  {
-    "name": "Ốc Mỡ Xốt Bơ Tỏi Cay",
-    "price": "95000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Béo mềm, đậm đà, cay nhẹ",
-    "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Mỡ",
-    "image": "/dishes/oc-mo.jpg"
-  },
-  {
-    "name": "Ốc Mỡ Xốt Thái Siêu Cay",
-    "price": "95000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Béo mềm, đậm đà, cay nhẹ",
-    "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Mỡ",
-    "image": "/dishes/oc-mo.jpg"
-  },
-  {
     "name": "Ốc Mỡ Xốt Sa Tế",
-    "price": "95000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Béo mềm, đậm đà, cay nhẹ",
-    "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Mỡ",
-    "image": "/dishes/oc-mo.jpg"
-  },
-  {
-    "name": "Ốc Mỡ Rang Muối",
     "price": "95000",
     "diet_type": "mặn",
     "category": "Ốc & Sò",
@@ -441,26 +261,6 @@
     "image": "/dishes/oc-mong-tay.jpg"
   },
   {
-    "name": "Ốc Móng Tay Xào Tỏi",
-    "price": "75000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Ngọt thịt, thơm sả, đậm đà",
-    "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Móng Tay",
-    "image": "/dishes/oc-mong-tay.jpg"
-  },
-  {
-    "name": "Ốc Móng Tay Xào Sa Tế",
-    "price": "75000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Ngọt thịt, thơm sả, đậm đà",
-    "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Móng Tay",
-    "image": "/dishes/oc-mong-tay.jpg"
-  },
-  {
     "name": "Ốc Móng Tay Hấp Sả",
     "price": "75000",
     "diet_type": "mặn",
@@ -472,16 +272,6 @@
   },
   {
     "name": "Ốc Móng Tay Hấp Sả Quế",
-    "price": "75000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Ngọt thịt, thơm sả, đậm đà",
-    "tags": "món mặn, ốc, hải sản, nhậu",
-    "group": "Ốc Móng Tay",
-    "image": "/dishes/oc-mong-tay.jpg"
-  },
-  {
-    "name": "Ốc Móng Tay Xốt Thái Siêu Cay",
     "price": "75000",
     "diet_type": "mặn",
     "category": "Ốc & Sò",
@@ -526,7 +316,7 @@
     "diet_type": "mặn",
     "category": "Ốc & Sò",
     "taste_profile": "Thịt dai giòn, thơm sả tiêu, đậm đà",
-    "tags": "món mặn, ốc, hải sản, nhậu",
+    "tags": "món mặn, ốc, hải sản, nhậu, nướng",
     "group": "Ốc Bươu",
     "image": "/dishes/oc-buou.jpg"
   },
@@ -561,16 +351,6 @@
     "image": "/dishes/oc-muong.jpg"
   },
   {
-    "name": "Ốc Muỗng Nướng Mắm Ớt",
-    "price": "85000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Thịt giòn, thơm nướng, béo cay",
-    "tags": "món mặn, ốc, hải sản, nướng, nhậu",
-    "group": "Ốc Muỗng",
-    "image": "/dishes/oc-muong.jpg"
-  },
-  {
     "name": "Ốc Muỗng Nướng Bơ Tỏi",
     "price": "85000",
     "diet_type": "mặn",
@@ -591,28 +371,7 @@
     "image": "/dishes/rang-muc.jpg"
   },
   {
-    "name": "Răng Mực Xốt Bơ Tỏi Cay",
-    "price": "75000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Giòn sần sật, đậm đà, béo cay",
-    "tags": "món mặn, hải sản, mực, nhậu, best seller",
-    "group": "Răng Mực",
-    "featured_name": "Răng Mực Bơ Tỏi Cay",
-    "image": "/dishes/rang-muc.jpg"
-  },
-  {
     "name": "Răng Mực Xốt Thái Siêu Cay",
-    "price": "75000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Giòn sần sật, đậm đà, béo cay",
-    "tags": "món mặn, hải sản, mực, nhậu",
-    "group": "Răng Mực",
-    "image": "/dishes/rang-muc.jpg"
-  },
-  {
-    "name": "Răng Mực Xốt Sa Tế",
     "price": "75000",
     "diet_type": "mặn",
     "category": "Ốc & Sò",
@@ -652,26 +411,6 @@
     "image": "/dishes/ngheu.jpg"
   },
   {
-    "name": "Nghêu Hấp Sả Tắc",
-    "price": "65000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Ngọt nước, thơm sả, chua cay nhẹ",
-    "tags": "món mặn, hải sản, nghêu, nhậu",
-    "group": "Nghêu",
-    "image": "/dishes/ngheu.jpg"
-  },
-  {
-    "name": "Nghêu Hấp Sả Ớt Cay",
-    "price": "65000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Ngọt nước, thơm sả, chua cay nhẹ",
-    "tags": "món mặn, hải sản, nghêu, nhậu",
-    "group": "Nghêu",
-    "image": "/dishes/ngheu.jpg"
-  },
-  {
     "name": "Nghêu Xào Me",
     "price": "65000",
     "diet_type": "mặn",
@@ -702,47 +441,7 @@
     "image": "/dishes/so-huyet.jpg"
   },
   {
-    "name": "Sò Huyết Cháy Tỏi",
-    "price": "75000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Ngọt béo, đậm đà, chua cay",
-    "tags": "món mặn, hải sản, sò, nhậu",
-    "group": "Sò Huyết",
-    "image": "/dishes/so-huyet.jpg"
-  },
-  {
-    "name": "Sò Huyết Xào Me",
-    "price": "75000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Ngọt béo, đậm đà, chua cay",
-    "tags": "món mặn, hải sản, sò, nhậu",
-    "group": "Sò Huyết",
-    "image": "/dishes/so-huyet.jpg"
-  },
-  {
     "name": "Sò Huyết Xào Tỏi",
-    "price": "75000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Ngọt béo, đậm đà, chua cay",
-    "tags": "món mặn, hải sản, sò, nhậu",
-    "group": "Sò Huyết",
-    "image": "/dishes/so-huyet.jpg"
-  },
-  {
-    "name": "Sò Huyết Xốt Me",
-    "price": "75000",
-    "diet_type": "mặn",
-    "category": "Ốc & Sò",
-    "taste_profile": "Ngọt béo, đậm đà, chua cay",
-    "tags": "món mặn, hải sản, sò, nhậu",
-    "group": "Sò Huyết",
-    "image": "/dishes/so-huyet.jpg"
-  },
-  {
-    "name": "Sò Huyết Xốt Bơ Tỏi Cay",
     "price": "75000",
     "diet_type": "mặn",
     "category": "Ốc & Sò",
@@ -777,7 +476,7 @@
     "diet_type": "mặn",
     "category": "Ốc & Sò",
     "taste_profile": "Ngọt thịt, thơm mỡ hành",
-    "tags": "món mặn, hải sản, sò, nhậu",
+    "tags": "món mặn, hải sản, sò, nhậu, nướng",
     "group": "Sò Lông",
     "image": "/dishes/so-long.jpg"
   },
@@ -810,16 +509,6 @@
     "image": "/dishes/tom-the.jpg"
   },
   {
-    "name": "Tôm Thẻ Xốt Phô Mai",
-    "price": "115000",
-    "diet_type": "mặn",
-    "category": "Tôm",
-    "taste_profile": "Ngọt thịt, béo đậm, cay nhẹ",
-    "tags": "món mặn, hải sản, tôm, nhậu",
-    "group": "Tôm Thẻ",
-    "image": "/dishes/tom-the.jpg"
-  },
-  {
     "name": "Tôm Thẻ Xốt Me",
     "price": "115000",
     "diet_type": "mặn",
@@ -830,37 +519,7 @@
     "image": "/dishes/tom-the.jpg"
   },
   {
-    "name": "Tôm Thẻ Xốt Bơ Cay",
-    "price": "115000",
-    "diet_type": "mặn",
-    "category": "Tôm",
-    "taste_profile": "Ngọt thịt, béo đậm, cay nhẹ",
-    "tags": "món mặn, hải sản, tôm, nhậu",
-    "group": "Tôm Thẻ",
-    "image": "/dishes/tom-the.jpg"
-  },
-  {
     "name": "Tôm Thẻ Xốt Bơ Tỏi Cay",
-    "price": "115000",
-    "diet_type": "mặn",
-    "category": "Tôm",
-    "taste_profile": "Ngọt thịt, béo đậm, cay nhẹ",
-    "tags": "món mặn, hải sản, tôm, nhậu",
-    "group": "Tôm Thẻ",
-    "image": "/dishes/tom-the.jpg"
-  },
-  {
-    "name": "Tôm Thẻ Xốt Thái Siêu Cay",
-    "price": "115000",
-    "diet_type": "mặn",
-    "category": "Tôm",
-    "taste_profile": "Ngọt thịt, béo đậm, cay nhẹ",
-    "tags": "món mặn, hải sản, tôm, nhậu",
-    "group": "Tôm Thẻ",
-    "image": "/dishes/tom-the.jpg"
-  },
-  {
-    "name": "Tôm Thẻ Xốt Sa Tế",
     "price": "115000",
     "diet_type": "mặn",
     "category": "Tôm",
@@ -949,16 +608,6 @@
     "image": "/dishes/vem-new-zealand.jpg"
   },
   {
-    "name": "Vẹm New Zealand Hấp Thái",
-    "price": "85000",
-    "diet_type": "mặn",
-    "category": "Món Nướng",
-    "taste_profile": "Thịt to ngọt, béo, thơm nướng",
-    "tags": "món mặn, hải sản, vẹm, nướng",
-    "group": "Vẹm New Zealand",
-    "image": "/dishes/vem-new-zealand.jpg"
-  },
-  {
     "name": "Vẹm New Zealand Nướng Mỡ Hành",
     "price": "85000",
     "diet_type": "mặn",
@@ -970,16 +619,6 @@
   },
   {
     "name": "Vẹm New Zealand Nướng Phô Mai",
-    "price": "85000",
-    "diet_type": "mặn",
-    "category": "Món Nướng",
-    "taste_profile": "Thịt to ngọt, béo, thơm nướng",
-    "tags": "món mặn, hải sản, vẹm, nướng",
-    "group": "Vẹm New Zealand",
-    "image": "/dishes/vem-new-zealand.jpg"
-  },
-  {
-    "name": "Vẹm New Zealand Xào Lá Quế",
     "price": "85000",
     "diet_type": "mặn",
     "category": "Món Nướng",
@@ -1091,16 +730,6 @@
   },
   {
     "name": "Ốc Tỏi Nướng Mỡ Hành",
-    "price": "89000",
-    "diet_type": "mặn",
-    "category": "Món Nướng",
-    "taste_profile": "Giòn ngọt, thơm nướng, béo cay",
-    "tags": "món mặn, ốc, hải sản, nướng",
-    "group": "Ốc Tỏi Nướng",
-    "image": "/dishes/oc-toi-nuong.jpg"
-  },
-  {
-    "name": "Ốc Tỏi Nướng Mắm Ớt",
     "price": "89000",
     "diet_type": "mặn",
     "category": "Món Nướng",
@@ -1222,7 +851,7 @@
     "name": "Tôm Càng Hấp Sả",
     "price": "115000",
     "diet_type": "mặn",
-    "category": "Ốc Hấp",
+    "category": "Ốc & Sò",
     "taste_profile": "Ngọt thanh, thơm sả",
     "tags": "món mặn, hải sản, tôm, hấp sả",
     "image": "/dishes/tom-cang-xanh.jpg"
@@ -1257,16 +886,6 @@
   },
   {
     "name": "Mực Chiên Sả",
-    "price": "135000",
-    "diet_type": "mặn",
-    "category": "Món Chính",
-    "taste_profile": "Giòn ngọt, đậm đà, cay thơm",
-    "tags": "món mặn, hải sản, mực",
-    "group": "Mực",
-    "image": "/dishes/muc.jpg"
-  },
-  {
-    "name": "Mực Hấp Gừng",
     "price": "135000",
     "diet_type": "mặn",
     "category": "Món Chính",
@@ -1311,7 +930,7 @@
     "diet_type": "mặn",
     "category": "Món Chính",
     "taste_profile": "Giòn ngọt, đậm đà, cay thơm",
-    "tags": "món mặn, hải sản, mực, best seller",
+    "tags": "món mặn, hải sản, mực, best seller, nướng",
     "group": "Mực",
     "image": "/dishes/muc.jpg"
   },
@@ -1327,26 +946,6 @@
   },
   {
     "name": "Càng Ghẹ Rang Me",
-    "price": "105000",
-    "diet_type": "mặn",
-    "category": "Món Chính",
-    "taste_profile": "Ngọt chắc, đậm đà, béo cay",
-    "tags": "món mặn, hải sản, ghẹ",
-    "group": "Càng Ghẹ",
-    "image": "/dishes/cang-ghe.jpg"
-  },
-  {
-    "name": "Càng Ghẹ Xào Me",
-    "price": "105000",
-    "diet_type": "mặn",
-    "category": "Món Chính",
-    "taste_profile": "Ngọt chắc, đậm đà, béo cay",
-    "tags": "món mặn, hải sản, ghẹ",
-    "group": "Càng Ghẹ",
-    "image": "/dishes/cang-ghe.jpg"
-  },
-  {
-    "name": "Càng Ghẹ Xốt Bơ Tỏi Cay",
     "price": "105000",
     "diet_type": "mặn",
     "category": "Món Chính",
@@ -1381,7 +980,7 @@
     "diet_type": "mặn",
     "category": "Món Chính",
     "taste_profile": "Giòn sần sật, chua cay, đậm đà",
-    "tags": "món mặn, chân gà, nhậu",
+    "tags": "món mặn, chân gà, nhậu, nướng, thịt nướng",
     "group": "Chân Gà",
     "image": "/dishes/chan-ga.jpg"
   },
@@ -1406,82 +1005,20 @@
     "image": "/dishes/chan-ga.jpg"
   },
   {
-    "name": "Ốc Bươu Hấp Sả",
-    "price": "65000",
-    "diet_type": "mặn",
-    "category": "Ốc Hấp",
-    "taste_profile": "Dai giòn, thơm sả",
-    "tags": "món mặn, ốc, hấp sả",
-    "image": "/dishes/oc-buou.jpg"
-  },
-  {
-    "name": "Ốc Hương Hấp Sả",
-    "price": "85000",
-    "diet_type": "mặn",
-    "category": "Ốc Hấp",
-    "taste_profile": "Giòn ngọt, thơm sả",
-    "tags": "món mặn, ốc, hấp sả",
-    "image": "/dishes/oc-huong.jpg"
-  },
-  {
     "name": "Ốc Bươu Nhồi Thịt Hấp Sả",
     "price": "85000",
     "diet_type": "mặn",
-    "category": "Ốc Hấp",
+    "category": "Ốc & Sò",
     "taste_profile": "Đậm đà, thơm sả, nhân thịt béo",
     "tags": "món mặn, ốc, nhồi thịt, hấp sả",
-    "image": "/dishes/oc-buou-nhoi-thit-hap-sa.jpg"
-  },
-  {
-    "name": "Ốc Bulot Hấp Sả",
-    "price": "85000",
-    "diet_type": "mặn",
-    "category": "Ốc Hấp",
-    "taste_profile": "Giòn ngọt, thơm sả",
-    "tags": "món mặn, ốc, hấp sả",
-    "image": "/dishes/oc-bulot.jpg"
-  },
-  {
-    "name": "Ốc Móng Tay Hấp Sả Quế",
-    "price": "75000",
-    "diet_type": "mặn",
-    "category": "Ốc Hấp",
-    "taste_profile": "Ngọt thịt, thơm sả quế",
-    "tags": "món mặn, ốc, hấp sả",
-    "image": "/dishes/oc-mong-tay.jpg"
-  },
-  {
-    "name": "Sò Lông Hấp Sả",
-    "price": "75000",
-    "diet_type": "mặn",
-    "category": "Ốc Hấp",
-    "taste_profile": "Ngọt thịt, thơm sả",
-    "tags": "món mặn, hải sản, sò, hấp sả",
-    "image": "/dishes/so-long.jpg"
-  },
-  {
-    "name": "Sò Huyết Hấp Sả",
-    "price": "75000",
-    "diet_type": "mặn",
-    "category": "Ốc Hấp",
-    "taste_profile": "Ngọt béo, thơm sả",
-    "tags": "món mặn, hải sản, sò huyết, hấp sả",
-    "image": "/dishes/so-huyet.jpg"
-  },
-  {
-    "name": "Vẹm Hấp Sả",
-    "price": "85000",
-    "diet_type": "mặn",
-    "category": "Ốc Hấp",
-    "taste_profile": "Ngọt thịt, thơm sả",
-    "tags": "món mặn, hải sản, vẹm, hấp sả",
-    "image": "/dishes/vem-new-zealand.jpg"
+    "image": "/dishes/oc-buou-nhoi-thit-hap-sa.jpg",
+    "group": "Ốc Bươu"
   },
   {
     "name": "Hàu Sữa Hấp Sả",
     "price": "65000",
     "diet_type": "mặn",
-    "category": "Ốc Hấp",
+    "category": "Ốc & Sò",
     "taste_profile": "Béo ngậy, thơm sả",
     "tags": "món mặn, hải sản, hàu, hấp sả",
     "image": "/dishes/hau-nuong.jpg"
@@ -1496,22 +1033,14 @@
     "image": "/dishes/trung-cut-lon.jpg"
   },
   {
-    "name": "Bạch Tuộc Hấp Sả",
-    "price": "85000",
-    "diet_type": "mặn",
-    "category": "Ốc Hấp",
-    "taste_profile": "Giòn dai, thơm sả",
-    "tags": "món mặn, hải sản, bạch tuộc, hấp sả",
-    "image": "/dishes/bach-tuoc.jpg"
-  },
-  {
     "name": "Mực Hấp Sả Gừng",
     "price": "135000",
     "diet_type": "mặn",
-    "category": "Ốc Hấp",
+    "category": "Món Chính",
     "taste_profile": "Giòn ngọt, thơm sả gừng",
     "tags": "món mặn, hải sản, mực, hấp sả",
-    "image": "/dishes/muc.jpg"
+    "image": "/dishes/muc.jpg",
+    "group": "Mực"
   },
   {
     "name": "Tré Trộn Thái",
@@ -1785,10 +1314,9 @@
     "name": "Rau Muống Xào Tỏi",
     "price": "45000",
     "diet_type": "chay",
-    "category": "Món Chính",
+    "category": "Rau & Canh",
     "taste_profile": "Giòn xanh, thơm tỏi, thanh nhẹ",
-    "tags": "món chay, rau, rau muống, thanh đạm",
-    "group": "Món Chay"
+    "tags": "món chay, rau, rau muống, thanh đạm"
   },
   {
     "name": "Mì Xào Ốc Móng Tay",
@@ -1941,6 +1469,38 @@
     "image": "/dishes/com-chien.jpg"
   },
   {
+    "name": "Sườn Nướng Mật Ong",
+    "price": "145000",
+    "diet_type": "mặn",
+    "category": "Món Nướng",
+    "taste_profile": "Ngọt mật ong, thịt mềm thơm, đậm đà",
+    "tags": "món mặn, thịt nướng, sườn, heo, best seller"
+  },
+  {
+    "name": "Bò Nướng Lá Lốt",
+    "price": "125000",
+    "diet_type": "mặn",
+    "category": "Món Nướng",
+    "taste_profile": "Thịt bò thơm lừng, lá lốt đặc trưng, chấm mắm nêm",
+    "tags": "món mặn, thịt nướng, bò, lá lốt, best seller"
+  },
+  {
+    "name": "Gà Nướng Muối Ớt",
+    "price": "135000",
+    "diet_type": "mặn",
+    "category": "Món Nướng",
+    "taste_profile": "Da giòn, thịt mềm ngọt, cay thơm muối ớt",
+    "tags": "món mặn, thịt nướng, gà, món cay, best seller"
+  },
+  {
+    "name": "Heo Rừng Nướng Riềng Mẻ",
+    "price": "165000",
+    "diet_type": "mặn",
+    "category": "Món Nướng",
+    "taste_profile": "Thịt rừng dai ngọt, thơm riềng mẻ, chấm muối chanh",
+    "tags": "món mặn, thịt nướng, heo rừng, đặc sản, best seller"
+  },
+  {
     "name": "Lẩu Khổ Qua Cá Thác Lác",
     "price": "255000",
     "diet_type": "mặn",
@@ -1973,6 +1533,7 @@
   {
     "name": "Nước Suối",
     "price": "10000",
+    "diet_type": "đồ uống",
     "category": "Giải Khát",
     "taste_profile": "Tinh khiết",
     "tags": "thức uống, giải khát, nước suối"
@@ -1980,6 +1541,7 @@
   {
     "name": "Trà Tắc",
     "price": "15000",
+    "diet_type": "đồ uống",
     "category": "Giải Khát",
     "taste_profile": "Chua ngọt, mát",
     "tags": "thức uống, giải khát, trà"
@@ -1987,6 +1549,7 @@
   {
     "name": "Trà Ổi",
     "price": "17000",
+    "diet_type": "đồ uống",
     "category": "Giải Khát",
     "taste_profile": "Thơm ngọt, mát",
     "tags": "thức uống, giải khát, trà"
@@ -1994,6 +1557,7 @@
   {
     "name": "Nước Ngọt",
     "price": "15000",
+    "diet_type": "đồ uống",
     "category": "Giải Khát",
     "taste_profile": "Ngọt, có ga",
     "tags": "thức uống, giải khát, nước ngọt"
@@ -2001,6 +1565,7 @@
   {
     "name": "Bò Húc",
     "price": "20000",
+    "diet_type": "đồ uống",
     "category": "Giải Khát",
     "taste_profile": "Ngọt, tăng lực",
     "tags": "thức uống, giải khát, tăng lực"
@@ -2008,6 +1573,7 @@
   {
     "name": "Bia Sài Gòn",
     "price": "15000",
+    "diet_type": "đồ uống",
     "category": "Giải Khát",
     "taste_profile": "Đắng nhẹ, mát",
     "tags": "thức uống, bia, nhậu",
@@ -2016,6 +1582,7 @@
   {
     "name": "Bia 333",
     "price": "20000",
+    "diet_type": "đồ uống",
     "category": "Giải Khát",
     "taste_profile": "Đắng nhẹ, mát",
     "tags": "thức uống, bia, nhậu",
@@ -2024,6 +1591,7 @@
   {
     "name": "Bia Tiger Nâu",
     "price": "20000",
+    "diet_type": "đồ uống",
     "category": "Giải Khát",
     "taste_profile": "Đắng, đậm",
     "tags": "thức uống, bia, nhậu",
@@ -2032,6 +1600,7 @@
   {
     "name": "Bia Tiger Bạc",
     "price": "22000",
+    "diet_type": "đồ uống",
     "category": "Giải Khát",
     "taste_profile": "Đắng nhẹ, mát",
     "tags": "thức uống, bia, nhậu",
@@ -2040,6 +1609,7 @@
   {
     "name": "Bia Tiger Bạc Nhỏ",
     "price": "18000",
+    "diet_type": "đồ uống",
     "category": "Giải Khát",
     "taste_profile": "Đắng nhẹ, mát",
     "tags": "thức uống, bia, nhậu",
@@ -2048,6 +1618,7 @@
   {
     "name": "Bia Heineken",
     "price": "25000",
+    "diet_type": "đồ uống",
     "category": "Giải Khát",
     "taste_profile": "Đắng nhẹ, thơm",
     "tags": "thức uống, bia, nhậu",
@@ -2056,6 +1627,7 @@
   {
     "name": "Bia Heineken Nhỏ",
     "price": "22000",
+    "diet_type": "đồ uống",
     "category": "Giải Khát",
     "taste_profile": "Đắng nhẹ, thơm",
     "tags": "thức uống, bia, nhậu",
@@ -2117,5 +1689,491 @@
     "tags": "món mặn, hải sản, soup, lẩu",
     "group": "Soup Tomyum",
     "image": "/dishes/soup-tomyum.jpg"
+  },
+  {
+    "name": "Chè Khúc Bạch",
+    "price": "35000",
+    "diet_type": "chay",
+    "category": "Tráng Miệng",
+    "taste_profile": "Mát lạnh, béo nhẹ, thơm hạnh nhân",
+    "tags": "món chay, tráng miệng, chè, ngọt, mát"
+  },
+  {
+    "name": "Chè Thái Sầu Riêng",
+    "price": "40000",
+    "diet_type": "chay",
+    "category": "Tráng Miệng",
+    "taste_profile": "Ngọt béo, thơm sầu riêng, nhiều topping",
+    "tags": "món chay, tráng miệng, chè, ngọt"
+  },
+  {
+    "name": "Rau Câu Dừa",
+    "price": "30000",
+    "diet_type": "chay",
+    "category": "Tráng Miệng",
+    "taste_profile": "Giòn mát, béo nước cốt dừa",
+    "tags": "món chay, tráng miệng, rau câu, ngọt, mát"
+  },
+  {
+    "name": "Kem Dừa",
+    "price": "45000",
+    "diet_type": "chay",
+    "category": "Tráng Miệng",
+    "taste_profile": "Lạnh béo, thơm dừa, rắc đậu phộng",
+    "tags": "món chay, tráng miệng, kem, ngọt, mát"
+  },
+  {
+    "name": "Kem Xôi Chiên",
+    "price": "45000",
+    "diet_type": "chay",
+    "category": "Tráng Miệng",
+    "taste_profile": "Xôi giòn nóng, kem lạnh béo",
+    "tags": "món chay, tráng miệng, kem, chiên, ngọt"
+  },
+  {
+    "name": "Trái Cây Theo Mùa",
+    "price": "55000",
+    "diet_type": "chay",
+    "category": "Tráng Miệng",
+    "taste_profile": "Tươi mát, ngọt thanh, giải ngấy",
+    "tags": "món chay, tráng miệng, trái cây, mát, thanh đạm"
+  },
+  {
+    "name": "Bánh Flan Cà Phê",
+    "price": "30000",
+    "diet_type": "chay",
+    "category": "Tráng Miệng",
+    "taste_profile": "Mềm mịn, béo trứng, đắng nhẹ cà phê",
+    "tags": "món chay, tráng miệng, bánh flan, ngọt"
+  },
+  {
+    "name": "Sữa Chua Nếp Cẩm",
+    "price": "35000",
+    "diet_type": "chay",
+    "category": "Tráng Miệng",
+    "taste_profile": "Chua nhẹ, nếp cẩm dẻo bùi",
+    "tags": "món chay, tráng miệng, sữa chua, ngọt, mát"
+  },
+  {
+    "name": "Rau Muống Xào Chao",
+    "price": "55000",
+    "diet_type": "chay",
+    "category": "Rau & Canh",
+    "taste_profile": "Giòn xanh, đậm béo vị chao",
+    "tags": "món chay, rau, rau muống, xào, thanh đạm"
+  },
+  {
+    "name": "Cải Thìa Xào Nấm Đông Cô",
+    "price": "65000",
+    "diet_type": "chay",
+    "category": "Rau & Canh",
+    "taste_profile": "Ngọt mềm, thơm nấm đông cô",
+    "tags": "món chay, rau, nấm, xào, thanh đạm"
+  },
+  {
+    "name": "Bông Bí Xào Tỏi",
+    "price": "65000",
+    "diet_type": "chay",
+    "category": "Rau & Canh",
+    "taste_profile": "Mềm ngọt, thơm tỏi phi",
+    "tags": "món chay, rau, bông bí, xào, thanh đạm"
+  },
+  {
+    "name": "Đọt Su Su Xào Tỏi",
+    "price": "55000",
+    "diet_type": "chay",
+    "category": "Rau & Canh",
+    "taste_profile": "Giòn ngọt, thơm tỏi",
+    "tags": "món chay, rau, su su, xào, thanh đạm"
+  },
+  {
+    "name": "Rau Lang Luộc Chấm Kho Quẹt",
+    "price": "69000",
+    "diet_type": "mặn",
+    "category": "Rau & Canh",
+    "taste_profile": "Rau luộc thanh, kho quẹt mặn béo",
+    "tags": "món mặn, rau, luộc, kho quẹt, ăn kèm"
+  },
+  {
+    "name": "Canh Chua Cá Lóc",
+    "price": "125000",
+    "diet_type": "mặn",
+    "category": "Rau & Canh",
+    "taste_profile": "Chua thanh, cá ngọt, thơm ngò om",
+    "tags": "món mặn, canh, cá, canh chua, chia sẻ"
+  },
+  {
+    "name": "Canh Chua Hải Sản",
+    "price": "135000",
+    "diet_type": "mặn",
+    "category": "Rau & Canh",
+    "taste_profile": "Chua cay, hải sản ngọt, nóng hổi",
+    "tags": "món mặn, canh, hải sản, canh chua, chia sẻ"
+  },
+  {
+    "name": "Canh Rong Biển Đậu Hũ",
+    "price": "65000",
+    "diet_type": "chay",
+    "category": "Rau & Canh",
+    "taste_profile": "Thanh nhẹ, ngọt nước, mát ruột",
+    "tags": "món chay, canh, rong biển, đậu hũ, thanh đạm"
+  },
+  {
+    "name": "Canh Cải Thịt Bằm",
+    "price": "75000",
+    "diet_type": "mặn",
+    "category": "Rau & Canh",
+    "taste_profile": "Ngọt nước, cải mềm, thịt bằm đậm",
+    "tags": "món mặn, canh, rau cải, thịt bằm"
+  },
+  {
+    "name": "Canh Bí Đao Tôm Khô",
+    "price": "75000",
+    "diet_type": "mặn",
+    "category": "Rau & Canh",
+    "taste_profile": "Ngọt thanh, thơm tôm khô, giải nhiệt",
+    "tags": "món mặn, canh, bí đao, tôm khô"
+  },
+  {
+    "name": "Ba Chỉ Bò Mỹ Nướng Sa Tế",
+    "price": "145000",
+    "diet_type": "mặn",
+    "category": "Món Nướng",
+    "taste_profile": "Béo mềm, cay nồng sa tế, thơm nướng",
+    "tags": "món mặn, thịt nướng, bò, món cay, nhậu"
+  },
+  {
+    "name": "Ba Rọi Heo Nướng Mắm Ruốc",
+    "price": "125000",
+    "diet_type": "mặn",
+    "category": "Món Nướng",
+    "taste_profile": "Da giòn mỡ béo, đậm mắm ruốc",
+    "tags": "món mặn, thịt nướng, heo, ba rọi, nhậu"
+  },
+  {
+    "name": "Vịt Nướng Chao",
+    "price": "155000",
+    "diet_type": "mặn",
+    "category": "Món Nướng",
+    "taste_profile": "Thịt chắc, thơm chao béo, da vàng giòn",
+    "tags": "món mặn, thịt nướng, vịt, nhậu, chia sẻ"
+  },
+  {
+    "name": "Dê Nướng Ngũ Vị",
+    "price": "165000",
+    "diet_type": "mặn",
+    "category": "Món Nướng",
+    "taste_profile": "Thịt dê thơm, đậm ngũ vị, chấm chao",
+    "tags": "món mặn, thịt nướng, dê, đặc sản, nhậu"
+  },
+  {
+    "name": "Cánh Gà Nướng Mật Ong",
+    "price": "95000",
+    "diet_type": "mặn",
+    "category": "Món Nướng",
+    "taste_profile": "Da bóng ngọt mật ong, thịt mềm",
+    "tags": "món mặn, thịt nướng, gà, cánh gà, nhậu"
+  },
+  {
+    "name": "Nầm Heo Nướng Riềng",
+    "price": "115000",
+    "diet_type": "mặn",
+    "category": "Món Nướng",
+    "taste_profile": "Giòn sần sật, thơm riềng mẻ",
+    "tags": "món mặn, thịt nướng, heo, nầm, nhậu"
+  },
+  {
+    "name": "Lòng Heo Nướng Sa Tế",
+    "price": "105000",
+    "diet_type": "mặn",
+    "category": "Món Nướng",
+    "taste_profile": "Giòn dai, cay thơm sa tế",
+    "tags": "món mặn, thịt nướng, heo, lòng, món cay, nhậu"
+  },
+  {
+    "name": "Bò Xào Lúc Lắc",
+    "price": "135000",
+    "diet_type": "mặn",
+    "category": "Món Chính",
+    "taste_profile": "Bò mềm ngọt, xốt đậm, ăn kèm salad",
+    "tags": "món mặn, bò, xào, món chính"
+  },
+  {
+    "name": "Gà Chiên Nước Mắm",
+    "price": "125000",
+    "diet_type": "mặn",
+    "category": "Món Chính",
+    "taste_profile": "Giòn rụm, mặn ngọt đậm đà",
+    "tags": "món mặn, gà, chiên, nước mắm, nhậu"
+  },
+  {
+    "name": "Sườn Xào Chua Ngọt",
+    "price": "125000",
+    "diet_type": "mặn",
+    "category": "Món Chính",
+    "taste_profile": "Sườn mềm, xốt chua ngọt bám đều",
+    "tags": "món mặn, heo, sườn, xào, món chính"
+  },
+  {
+    "name": "Gà Kho Gừng",
+    "price": "115000",
+    "diet_type": "mặn",
+    "category": "Món Chính",
+    "taste_profile": "Thịt gà thấm, cay ấm vị gừng",
+    "tags": "món mặn, gà, kho, món chính"
+  },
+  {
+    "name": "Heo Quay Giòn Bì",
+    "price": "145000",
+    "diet_type": "mặn",
+    "category": "Món Chính",
+    "taste_profile": "Bì giòn tan, thịt mềm béo",
+    "tags": "món mặn, heo, heo quay, nhậu, chia sẻ"
+  },
+  {
+    "name": "Nấm Đùi Gà Nướng Sa Tế",
+    "price": "75000",
+    "diet_type": "chay",
+    "category": "Món Chính",
+    "taste_profile": "Dai ngọt như thịt, cay thơm sa tế",
+    "tags": "món chay, nấm, nướng, món cay",
+    "group": "Món Chay"
+  },
+  {
+    "name": "Đậu Hũ Chiên Sả Ớt",
+    "price": "65000",
+    "diet_type": "chay",
+    "category": "Món Chính",
+    "taste_profile": "Giòn ngoài mềm trong, thơm sả ớt",
+    "tags": "món chay, đậu hũ, chiên, món cay",
+    "group": "Món Chay"
+  },
+  {
+    "name": "Nấm Kim Châm Xào Bơ Tỏi",
+    "price": "69000",
+    "diet_type": "chay",
+    "category": "Món Chính",
+    "taste_profile": "Mềm ngọt, béo bơ, thơm tỏi",
+    "tags": "món chay, nấm, xào, thanh đạm",
+    "group": "Món Chay"
+  },
+  {
+    "name": "Nước Ép Cam",
+    "price": "35000",
+    "diet_type": "đồ uống",
+    "category": "Giải Khát",
+    "taste_profile": "Chua ngọt, tươi mát",
+    "tags": "thức uống, giải khát, nước ép, trái cây"
+  },
+  {
+    "name": "Nước Ép Dưa Hấu",
+    "price": "30000",
+    "diet_type": "đồ uống",
+    "category": "Giải Khát",
+    "taste_profile": "Ngọt thanh, mát lạnh",
+    "tags": "thức uống, giải khát, nước ép, trái cây"
+  },
+  {
+    "name": "Nước Ép Thơm",
+    "price": "30000",
+    "diet_type": "đồ uống",
+    "category": "Giải Khát",
+    "taste_profile": "Chua ngọt đậm, thơm nồng",
+    "tags": "thức uống, giải khát, nước ép, trái cây"
+  },
+  {
+    "name": "Sinh Tố Bơ",
+    "price": "40000",
+    "diet_type": "đồ uống",
+    "category": "Giải Khát",
+    "taste_profile": "Đặc béo, ngọt dịu",
+    "tags": "thức uống, giải khát, sinh tố, trái cây"
+  },
+  {
+    "name": "Sinh Tố Xoài",
+    "price": "35000",
+    "diet_type": "đồ uống",
+    "category": "Giải Khát",
+    "taste_profile": "Ngọt thơm, sánh mịn",
+    "tags": "thức uống, giải khát, sinh tố, trái cây"
+  },
+  {
+    "name": "Soda Chanh",
+    "price": "30000",
+    "diet_type": "đồ uống",
+    "category": "Giải Khát",
+    "taste_profile": "Chua mát, nhiều ga",
+    "tags": "thức uống, giải khát, soda, có ga"
+  },
+  {
+    "name": "Soda Việt Quất",
+    "price": "35000",
+    "diet_type": "đồ uống",
+    "category": "Giải Khát",
+    "taste_profile": "Ngọt chua, màu tím, nhiều ga",
+    "tags": "thức uống, giải khát, soda, có ga"
+  },
+  {
+    "name": "Trà Đào Cam Sả",
+    "price": "35000",
+    "diet_type": "đồ uống",
+    "category": "Giải Khát",
+    "taste_profile": "Thơm sả, ngọt đào, mát lạnh",
+    "tags": "thức uống, giải khát, trà, trái cây"
+  },
+  {
+    "name": "Cà Phê Sữa Đá",
+    "price": "25000",
+    "diet_type": "đồ uống",
+    "category": "Giải Khát",
+    "taste_profile": "Đậm đắng, béo ngọt sữa đặc",
+    "tags": "thức uống, giải khát, cà phê"
+  },
+  {
+    "name": "Dừa Tươi",
+    "price": "30000",
+    "diet_type": "đồ uống",
+    "category": "Giải Khát",
+    "taste_profile": "Ngọt thanh tự nhiên, mát",
+    "tags": "thức uống, giải khát, dừa, trái cây"
+  },
+  {
+    "name": "Khô Gà Lá Chanh",
+    "price": "75000",
+    "diet_type": "mặn",
+    "category": "Khô Lai Rai",
+    "taste_profile": "Dai xé sợi, cay mặn, thơm lá chanh",
+    "tags": "món mặn, khô, gà, lai rai, nhậu"
+  },
+  {
+    "name": "Khô Cá Chỉ Vàng Nướng",
+    "price": "95000",
+    "diet_type": "mặn",
+    "category": "Khô Lai Rai",
+    "taste_profile": "Dai ngọt, thơm nướng, chấm tương ớt",
+    "tags": "món mặn, khô, cá, nướng, lai rai, nhậu"
+  },
+  {
+    "name": "Khô Cá Đuối Nướng",
+    "price": "125000",
+    "diet_type": "mặn",
+    "category": "Khô Lai Rai",
+    "taste_profile": "Dày thịt, dai ngọt, đậm đà",
+    "tags": "món mặn, khô, cá, nướng, lai rai, nhậu"
+  },
+  {
+    "name": "Khô Nai Xé Sợi",
+    "price": "110000",
+    "diet_type": "mặn",
+    "category": "Khô Lai Rai",
+    "taste_profile": "Dai mềm, mặn ngọt, cay nhẹ",
+    "tags": "món mặn, khô, nai, lai rai, nhậu"
+  },
+  {
+    "name": "Khô Trâu Gác Bếp",
+    "price": "135000",
+    "diet_type": "mặn",
+    "category": "Khô Lai Rai",
+    "taste_profile": "Thớ thịt dai, thơm khói, cay mắc khén",
+    "tags": "món mặn, khô, trâu, đặc sản, lai rai, nhậu"
+  },
+  {
+    "name": "Chả Giò Chay",
+    "price": "65000",
+    "diet_type": "chay",
+    "category": "Chiên & Khai Vị",
+    "taste_profile": "Vỏ giòn, nhân nấm rau thanh nhẹ",
+    "tags": "món chay, chả giò, chiên, khai vị",
+    "group": "Chả Giò"
+  },
+  {
+    "name": "Gỏi Cuốn Tôm Thịt",
+    "price": "75000",
+    "diet_type": "mặn",
+    "category": "Chiên & Khai Vị",
+    "taste_profile": "Tươi mát, chấm mắm nêm đậm đà",
+    "tags": "món mặn, gỏi cuốn, khai vị, thanh đạm"
+  },
+  {
+    "name": "Bò Bía",
+    "price": "55000",
+    "diet_type": "mặn",
+    "category": "Chiên & Khai Vị",
+    "taste_profile": "Mềm mát, béo lạp xưởng, chấm tương",
+    "tags": "món mặn, cuốn, khai vị, ăn vặt"
+  },
+  {
+    "name": "Cánh Gà Chiên Nước Mắm",
+    "price": "95000",
+    "diet_type": "mặn",
+    "category": "Chiên & Khai Vị",
+    "taste_profile": "Giòn rụm, mặn ngọt bám đều",
+    "tags": "món mặn, gà, chiên, nước mắm, nhậu"
+  },
+  {
+    "name": "Gỏi Ngó Sen Chay",
+    "price": "75000",
+    "diet_type": "chay",
+    "category": "Gỏi & Trộn",
+    "taste_profile": "Giòn mát, chua ngọt, thơm rau răm",
+    "tags": "món chay, gỏi, ngó sen, thanh đạm"
+  },
+  {
+    "name": "Gỏi Gà Bắp Cải",
+    "price": "105000",
+    "diet_type": "mặn",
+    "category": "Gỏi & Trộn",
+    "taste_profile": "Giòn ngọt, gà xé mềm, chua cay",
+    "tags": "món mặn, gỏi, gà, bắp cải"
+  },
+  {
+    "name": "Mì Xào Chay Thập Cẩm",
+    "price": "65000",
+    "diet_type": "chay",
+    "category": "Mì - Cháo - Cơm",
+    "taste_profile": "Sợi mì dai, nhiều rau nấm, thanh nhẹ",
+    "tags": "món chay, mì xào, thanh đạm",
+    "group": "Mì Xào",
+    "image": "/dishes/mi-xao.jpg"
+  },
+  {
+    "name": "Cơm Chiên Chay",
+    "price": "70000",
+    "diet_type": "chay",
+    "category": "Mì - Cháo - Cơm",
+    "taste_profile": "Hạt cơm tơi, thơm rau củ",
+    "tags": "món chay, cơm chiên, thanh đạm",
+    "group": "Cơm Chiên",
+    "image": "/dishes/com-chien.jpg"
+  },
+  {
+    "name": "Cháo Gà Lá Chanh",
+    "price": "95000",
+    "diet_type": "mặn",
+    "category": "Mì - Cháo - Cơm",
+    "taste_profile": "Cháo sánh, gà xé ngọt, thơm lá chanh",
+    "tags": "món mặn, cháo, gà",
+    "group": "Cháo",
+    "image": "/dishes/chao.jpg"
+  },
+  {
+    "name": "Lẩu Nấm Chay",
+    "price": "195000",
+    "diet_type": "chay",
+    "category": "Món Lẩu",
+    "taste_profile": "Nước dùng ngọt thanh, nhiều loại nấm",
+    "tags": "món chay, lẩu, nấm, thanh đạm, chia sẻ",
+    "group": "Lẩu",
+    "image": "/dishes/lau.jpg"
+  },
+  {
+    "name": "Lẩu Gà Lá É",
+    "price": "285000",
+    "diet_type": "mặn",
+    "category": "Món Lẩu",
+    "taste_profile": "Nước ngọt đậm, thơm lá é, cay nhẹ",
+    "tags": "món mặn, lẩu, gà, đặc sản, chia sẻ",
+    "group": "Lẩu",
+    "image": "/dishes/lau.jpg"
   }
 ]
