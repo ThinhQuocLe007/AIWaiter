@@ -1,0 +1,13 @@
+{
+  "test": "navigation",
+  "enable_visual_align": true,
+  "n_trials": 5,
+  "n_success": 5,
+  "nav_success_rate_pct": 100.0,
+  "trip_time_s_mean_std": "65.01 ± 4.62",
+  "lateral_err_cm_mean_std": "1.57 ± 0.58",
+  "range_err_cm_mean_std": "15.15 ± 3.51",
+  "abs_dpsi_deg_mean_std": "0.30 ± 0.06",
+  "run_dir": "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/src/real/tarkbot_robot/evaluate/logs/20260729_235317_nav_align_on",
+  "thesis_table": "5.4"
+}

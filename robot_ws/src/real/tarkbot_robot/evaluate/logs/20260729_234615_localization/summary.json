@@ -1,0 +1,18 @@
+{
+  "test": "localization",
+  "n_trials": 5,
+  "run_dir": "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/src/real/tarkbot_robot/evaluate/logs/20260729_234615_localization",
+  "table_1_arrival": {
+    "abs_dx_cm": "12.96 ± 4.45",
+    "abs_dy_cm": "16.84 ± 3.67",
+    "abs_dpsi_deg": "11.56 ± 3.08",
+    "n": 3
+  },
+  "dock_return": {
+    "abs_dx_cm": "18.07 ± 7.77",
+    "abs_dy_cm": "11.67 ± 5.61",
+    "abs_dpsi_deg": "15.15 ± 2.75",
+    "n": 3
+  },
+  "thesis_table": "5.3"
+}

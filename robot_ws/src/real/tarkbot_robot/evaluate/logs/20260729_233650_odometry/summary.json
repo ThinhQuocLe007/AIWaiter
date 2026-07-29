@@ -1,0 +1,33 @@
+{
+  "test": "odometry",
+  "n_trials": 5,
+  "n_ok": 5,
+  "table_id": 1,
+  "run_dir": "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/src/real/tarkbot_robot/evaluate/logs/20260729_233650_odometry",
+  "trajectories_dir": "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/src/real/tarkbot_robot/evaluate/logs/20260729_233650_odometry/trajectories",
+  "trajectory_files": [
+    "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/src/real/tarkbot_robot/evaluate/logs/20260729_233650_odometry/trajectories/trial_01.csv",
+    "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/src/real/tarkbot_robot/evaluate/logs/20260729_233650_odometry/trajectories/trial_02.csv",
+    "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/src/real/tarkbot_robot/evaluate/logs/20260729_233650_odometry/trajectories/trial_03.csv",
+    "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/src/real/tarkbot_robot/evaluate/logs/20260729_233650_odometry/trajectories/trial_04.csv",
+    "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/src/real/tarkbot_robot/evaluate/logs/20260729_233650_odometry/trajectories/trial_05.csv"
+  ],
+  "position_cm_mean_std": "45.00 ± 16.93",
+  "heading_deg_mean_std": "15.89 ± 9.76",
+  "position_cm_values": [
+    23.79286055144343,
+    66.7825066434379,
+    45.00079308530509,
+    55.24673996164099,
+    34.19666079954815
+  ],
+  "heading_deg_values": [
+    5.079766713429393,
+    14.2832404958761,
+    21.83983038469418,
+    9.00420244104069,
+    29.246494320696996
+  ],
+  "thesis_table": "5.1",
+  "thesis_figure": "5.2"
+}

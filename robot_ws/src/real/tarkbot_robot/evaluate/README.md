@@ -8,12 +8,11 @@ Script ROS2 để thu thập **log + metrics thật** cho các bảng thực ngh
 2. Database localize khớp map đã export: `~/.ros/rtabmap.db` (cùng nguồn với `maps/restaurant.pgm` / `restaurant.yaml`).
 3. `config/floorplan.json` đã khảo sát (dock + Table 1).
 4. Làn phục vụ trống; dừng khẩn bằng Ctrl-C.
-5. Workspace đã build + source (**nên dùng symlink-install** để log ghi vào `evaluate/logs/` trong source tree):
+5. Workspace đã build + source (mỗi terminal mới). Dùng profile `real` — script đã `colcon build --symlink-install` nên log ghi vào `evaluate/logs/` trong source tree:
 
 ```bash
 cd robot_ws
-colcon build --packages-select tarkbot_robot --symlink-install
-source install/setup.bash
+source setup_env.sh real
 ```
 
 Tuỳ chọn: đặt thư mục log tường minh:
