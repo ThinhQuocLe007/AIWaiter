@@ -162,13 +162,12 @@ pip install matplotlib
 # Cả hai (5.2 lấy run odometry mới nhất có trajectories/)
 ros2 run tarkbot_robot eval_plot_figures
 
+# HOẶCCCC
+
 # Chỉ 5.2 từ một run cụ thể
 ros2 run tarkbot_robot eval_plot_figures -- \
   --only 5.2 \
   --odom-run evaluate/logs/YYYYMMDD_HHMMSS_odometry
-
-# Chỉ 5.3 (không cần chạy robot)
-ros2 run tarkbot_robot eval_plot_figures -- --only 5.3
 ```
 
 Ảnh ra `evaluate/figures/`:
