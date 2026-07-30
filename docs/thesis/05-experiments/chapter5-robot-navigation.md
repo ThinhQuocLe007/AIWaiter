@@ -94,4 +94,4 @@ Before field trials, the restaurant scenario is reproduced in **Ignition Gazebo*
 | RTAB-Map map quality and localization drift | Map building and localization test | **[TBD]** |
 | Nav2 delivery success and Table 1 docking precision | Navigation and docking test | **[TBD]** % / **[TBD]** cm |
 
-**Discussion.** **[TBD]** Sim-first development; real evaluation on one dock and one table; limitations (IMU drift, ArUco lighting) are noted for the conclusion.
+**Discussion.** Although `/odometry/filtered` drifts over a delivery loop, RTAB-Map localization (LiDAR and ArUco) compensates for that offset so the robot’s pose on the map remains usable for Nav2. Sim-first development and a one-dock / one-table real setup remain the scope of this excerpt; IMU drift and ArUco lighting remain practical limits noted for the conclusion.

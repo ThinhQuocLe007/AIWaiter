@@ -52,6 +52,7 @@ setup(
             f'pose_record = {package_name}.pose_record:main',
             f'deliver_test = {package_name}.deliver_test:main',
             'eval_odometry = evaluate.odometry_test:main',
+            'eval_map_path = evaluate.map_path_test:main',
             'eval_localization = evaluate.localization_test:main',
             'eval_navigation = evaluate.navigation_test:main',
             'eval_map_summary = evaluate.map_summary:main',

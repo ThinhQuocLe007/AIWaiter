@@ -3,6 +3,7 @@
 __all__ = [
     'common',
     'odometry_test',
+    'map_path_test',
     'localization_test',
     'navigation_test',
     'map_summary',

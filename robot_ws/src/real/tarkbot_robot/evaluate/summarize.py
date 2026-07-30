@@ -131,6 +131,27 @@ def build_markdown(latest: dict[str, dict]) -> str:
     nav_table('Table 5.4 — With visual align', 'navigation_align_on')
     nav_table('Table 5.5 — Without visual align', 'navigation_align_off')
 
+    mp = latest.get('map_path')
+    lines.append('## Map-path (localized TF vs floorplan GT)')
+    lines.append('')
+    lines.append(
+        '| Trials | Nav success | Table pos (cm) | Dock pos (cm) | Trip time (s) |')
+    lines.append(
+        '|--------|-------------|----------------|---------------|---------------|')
+    if mp:
+        n = mp.get('n_ok', mp.get('n_trials'))
+        rate = mp.get('nav_success_rate_pct')
+        rate_s = f'{rate:.0f}%' if isinstance(rate, (int, float)) else rate
+        lines.append(
+            f"| {n} | {_md_escape(rate_s)} | "
+            f"{_md_escape(mp.get('table_pos_err_cm_mean_std'))} | "
+            f"{_md_escape(mp.get('dock_pos_err_cm_mean_std'))} | "
+            f"{_md_escape(mp.get('trip_time_s_mean_std'))} |")
+    else:
+        lines.append(
+            '| — | **[missing]** | **[missing]** | **[missing]** | **[missing]** |')
+    lines.append('')
+
     lines.append('## Table 5.6 — Traceability')
     lines.append('')
     lines.append('| Objective | Experiment | Result |')
@@ -147,6 +168,11 @@ def build_markdown(latest: dict[str, dict]) -> str:
     lines.append(f'| EKF-fused odometry return-to-start accuracy | Odometry accuracy test | {odom_pos} cm |')
     lines.append(f'| RTAB-Map map quality and localization drift | Map building and localization test | {loc_note} |')
     lines.append(f'| Nav2 delivery success and Table 1 docking precision | Navigation and docking test | {nav_res} |')
+    if mp:
+        lines.append(
+            f"| Localized path vs floorplan (map GT) | Map-path test | "
+            f"table {_md_escape(mp.get('table_pos_err_cm_mean_std'))} / "
+            f"dock {_md_escape(mp.get('dock_pos_err_cm_mean_std'))} cm |")
     lines.append('')
     return '\n'.join(lines)
 

@@ -1,0 +1,27 @@
+{
+  "test": "map_path",
+  "frame_id": "map",
+  "pose_source": "TF map → base_footprint",
+  "ground_truth": "floorplan.json approach poses",
+  "table_id": 1,
+  "n_trials": 5,
+  "enable_visual_align": true,
+  "floorplan": "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/install/tarkbot_robot/share/tarkbot_robot/config/floorplan.json",
+  "map_yaml": "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/src/real/tarkbot_robot/maps/restaurant.yaml",
+  "map_pgm": "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/src/real/tarkbot_robot/maps/restaurant.pgm",
+  "gt_approaches": {
+    "dock": {
+      "x": -2.417,
+      "y": -2.069,
+      "yaw_deg": -65.2
+    },
+    "Table 1": {
+      "x": 0.243,
+      "y": 2.276,
+      "yaw_deg": -58.6
+    }
+  },
+  "run_dir": "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/src/real/tarkbot_robot/evaluate/logs/20260730_200237_map_path",
+  "trajectories_dir": "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/src/real/tarkbot_robot/evaluate/logs/20260730_200237_map_path/trajectories",
+  "csv_columns": "t,x,y,yaw (map frame, metres / rad)"
+}

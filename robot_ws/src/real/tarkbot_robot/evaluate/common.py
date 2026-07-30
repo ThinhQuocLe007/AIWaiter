@@ -176,7 +176,7 @@ class TeeLogger:
 
 
 class EvalHelperNode(Node):
-    """Parameter holder + /odometry/filtered cache for evaluate scripts."""
+    """Parameter holder + /odometry/filtered cache + map-TF trajectory recorder."""
 
     def __init__(self, node_name: str = 'eval_helper'):
         super().__init__(node_name)
@@ -192,6 +192,12 @@ class EvalHelperNode(Node):
         self._recording = False
         self._traj: list[dict[str, float]] = []
         self.create_subscription(Odometry, ODOM_TOPIC, self._on_odom, 50)
+
+        self._map_lock = threading.Lock()
+        self._map_recording = False
+        self._map_traj: list[dict[str, float]] = []
+        # ~20 Hz poll of map→base (downsampled in callback)
+        self.create_timer(0.05, self._on_map_timer)
 
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
@@ -229,6 +235,56 @@ class EvalHelperNode(Node):
         with self._odom_lock:
             self._recording = False
             return list(self._traj)
+
+    def _lookup_map_sample(self) -> dict[str, float] | None:
+        try:
+            tf = self.tf_buffer.lookup_transform(
+                MAP_FRAME, BASE_FRAME, Time(),
+                timeout=rclpy.duration.Duration(seconds=0.0))
+            t = tf.transform.translation
+            q = tf.transform.rotation
+            stamp = float(tf.header.stamp.sec) + float(tf.header.stamp.nanosec) * 1e-9
+            if stamp <= 0.0:
+                # Some drivers leave stamp zero; wall time is fine for plotting.
+                import time
+                stamp = time.time()
+            return {
+                't': stamp,
+                'x': float(t.x),
+                'y': float(t.y),
+                'yaw': float(yaw_from_quat(q.z, q.w)),
+            }
+        except TransformException:
+            return None
+
+    def _on_map_timer(self) -> None:
+        with self._map_lock:
+            if not self._map_recording:
+                return
+        sample = self._lookup_map_sample()
+        if sample is None:
+            return
+        with self._map_lock:
+            if not self._map_recording:
+                return
+            if not self._map_traj:
+                self._map_traj.append(sample)
+                return
+            last = self._map_traj[-1]
+            dist = math.hypot(sample['x'] - last['x'], sample['y'] - last['y'])
+            dt = sample['t'] - last['t']
+            if dist >= 0.01 or dt >= 0.1:
+                self._map_traj.append(sample)
+
+    def start_map_traj_recording(self) -> None:
+        with self._map_lock:
+            self._map_traj = []
+            self._map_recording = True
+
+    def stop_map_traj_recording(self) -> list[dict[str, float]]:
+        with self._map_lock:
+            self._map_recording = False
+            return list(self._map_traj)
 
     def snapshot_odom(self, timeout_s: float = 5.0) -> dict[str, float] | None:
         import time

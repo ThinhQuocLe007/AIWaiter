@@ -44,7 +44,8 @@ Log mỗi lần chạy: `evaluate/logs/YYYYMMDD_HHMMSS_<test>/`
 | `metrics.jsonl` | Từng trial (JSON một dòng) |
 | `summary.json` | mean ± std / tỷ lệ thành công |
 | `console.log` | stdout/stderr |
-| `trajectories/trial_XX.csv` | (odometry) quỹ đạo `/odometry/filtered` cho Figure 5.2 |
+| `run_meta.json` | (map_path) frame, map/floorplan paths, GT |
+| `trajectories/trial_XX.csv` | quỹ đạo: odom (`eval_odometry`) hoặc map TF (`eval_map_path`) |
 
 ---
 
@@ -84,6 +85,37 @@ ros2 run tarkbot_robot eval_odometry --ros-args \
 ```
 
 Mỗi trial ghi thêm quỹ đạo `/odometry/filtered` vào `trajectories/trial_XX.csv` (dùng cho Figure 5.2).
+
+---
+
+## 2b. Localized map-path (map GT + overlay trên `restaurant.pgm`)
+
+Đường: dock → Table 1 → dock. Ghi **TF `map → base_footprint`**, chấm điểm so với approach trong `floorplan.json`. Path Nav2 khác nhau vẫn ổn — overlay lên map sẽ thấy robot đi trong làn (không xuyên tường như odom thuần).
+
+```bash
+ros2 run tarkbot_robot eval_map_path --ros-args \
+  -p n_trials:=5 \
+  -p table_id:=1
+```
+
+Artifacts mỗi run (`evaluate/logs/YYYYMMDD_HHMMSS_map_path/`):
+
+| File | Nội dung |
+|------|----------|
+| `run_meta.json` | `frame_id=map`, đường dẫn map/floorplan, GT approaches |
+| `trajectories/trial_XX.csv` | `t,x,y,yaw` trong **map frame** |
+| `metrics.jsonl` | `table_err` / `dock_err` vs floorplan + nav ok |
+| `summary.json` | mean ± std position tại bàn / dock |
+
+Vẽ overlay:
+
+```bash
+ros2 run tarkbot_robot eval_plot_figures -- \
+  --only map_path \
+  --map-path-run evaluate/logs/YYYYMMDD_HHMMSS_map_path
+```
+
+Ảnh: `evaluate/figures/figure_map_path_overlay.png`.
 
 ---
 
@@ -148,7 +180,7 @@ Script lấy **run mới nhất** theo từng loại test.
 
 ---
 
-## 6. Vẽ figure luận văn (5.2 / 5.3)
+## 6. Vẽ figure luận văn (5.2 / 5.3 / map_path)
 
 Offline, cần `matplotlib`:
 
@@ -162,18 +194,25 @@ pip install matplotlib
 # Cả hai (5.2 lấy run odometry mới nhất có trajectories/)
 ros2 run tarkbot_robot eval_plot_figures
 
-# HOẶCCCC
-
 # Chỉ 5.2 từ một run cụ thể
 ros2 run tarkbot_robot eval_plot_figures -- \
   --only 5.2 \
   --odom-run evaluate/logs/YYYYMMDD_HHMMSS_odometry
 ```
 
+**Map-path overlay** (TF map trên `restaurant.pgm`):
+
+```bash
+ros2 run tarkbot_robot eval_plot_figures -- \
+  --only map_path \
+  --map-path-run evaluate/logs/YYYYMMDD_HHMMSS_map_path
+```
+
 Ảnh ra `evaluate/figures/`:
 
 - `figure_5_2_odometry_paths.png`
 - `figure_5_3_occupancy_grid.png`
+- `figure_map_path_overlay.png` (sau `eval_map_path`)
 
 **Figure 5.1** (Gazebo sim) vẫn chụp tay từ simulation — không nằm trong evaluate.
 
@@ -184,7 +223,8 @@ ros2 run tarkbot_robot eval_plot_figures -- \
 | Mục | Script | Metric / asset |
 |------|--------|----------------|
 | Table 5.1 | `eval_odometry` | `pos_err_cm`, `abs_yaw_err_deg` |
-| Figure 5.2 | `eval_odometry` + `eval_plot_figures` | `trajectories/*.csv` |
+| Figure 5.2 | `eval_odometry` + `eval_plot_figures` | `trajectories/*.csv` (odom) |
+| Map-path overlay | `eval_map_path` + `eval_plot_figures --only map_path` | TF map traj trên `restaurant.pgm` |
 | Table 5.2 | `eval_map_summary` | resolution, loop closures geom/ArUco |
 | Table 5.3 | `eval_localization` | `|Δx|`, `|Δy|`, `|Δψ|` vs floorplan |
 | Figure 5.3 | `eval_plot_figures --only 5.3` | `restaurant.pgm` + `floorplan.json` |

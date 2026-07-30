@@ -3,6 +3,7 @@
 
 Figure 5.2 — overlaid odometry paths (from ``eval_odometry`` trajectory CSVs).
 Figure 5.3 — occupancy grid with dock + Table 1 (from ``restaurant.pgm`` + floorplan).
+map_path — localized TF paths overlaid on ``restaurant.pgm`` (from ``eval_map_path``).
 
 Requires: ``pip install matplotlib`` (and numpy, usually already present).
 """
@@ -38,11 +39,11 @@ def _require_matplotlib():
         ) from exc
 
 
-def _latest_odometry_run(logs: Path) -> Path | None:
+def _latest_run(logs: Path, suffix: str) -> Path | None:
     if not logs.is_dir():
         return None
     runs = sorted(
-        [p for p in logs.iterdir() if p.is_dir() and p.name.endswith('_odometry')],
+        [p for p in logs.iterdir() if p.is_dir() and p.name.endswith(suffix)],
         reverse=True,
     )
     for run in runs:
@@ -50,6 +51,14 @@ def _latest_odometry_run(logs: Path) -> Path | None:
         if traj.is_dir() and any(traj.glob('trial_*.csv')):
             return run
     return runs[0] if runs else None
+
+
+def _latest_odometry_run(logs: Path) -> Path | None:
+    return _latest_run(logs, '_odometry')
+
+
+def _latest_map_path_run(logs: Path) -> Path | None:
+    return _latest_run(logs, '_map_path')
 
 
 def plot_figure_52(odom_run: Path, out: Path, plt) -> Path:
@@ -88,6 +97,22 @@ def plot_figure_52(odom_run: Path, out: Path, plt) -> Path:
     return out
 
 
+def _map_extent(map_yaml: Path, map_pgm: Path):
+    meta = read_map_yaml(map_yaml)
+    resolution = float(meta['resolution'])
+    origin = meta['origin']
+    ox, oy = float(origin[0]), float(origin[1])
+    pgm = map_pgm
+    if 'image' in meta:
+        candidate = map_yaml.parent / meta['image']
+        if candidate.is_file():
+            pgm = candidate
+    gray, width, height = load_pgm_gray(pgm)
+    xmin, xmax = ox, ox + width * resolution
+    ymin, ymax = oy, oy + height * resolution
+    return gray, (xmin, xmax, ymin, ymax), pgm
+
+
 def plot_figure_53(
     map_yaml: Path,
     map_pgm: Path,
@@ -97,24 +122,7 @@ def plot_figure_53(
 ) -> Path:
     import numpy as np
 
-    meta = read_map_yaml(map_yaml)
-    resolution = float(meta['resolution'])
-    origin = meta['origin']  # [ox, oy, yaw]
-    ox, oy = float(origin[0]), float(origin[1])
-
-    # Prefer yaml-relative image name next to yaml
-    pgm = map_pgm
-    if 'image' in meta:
-        candidate = map_yaml.parent / meta['image']
-        if candidate.is_file():
-            pgm = candidate
-
-    gray, width, height = load_pgm_gray(pgm)
-    # World extents: cell (0,0) is bottom-left of image in ROS map_server convention
-    # (row 0 in file is top of image; imshow origin='upper' matches file rows)
-    xmin, xmax = ox, ox + width * resolution
-    ymin, ymax = oy, oy + height * resolution
-
+    gray, (xmin, xmax, ymin, ymax), _ = _map_extent(map_yaml, map_pgm)
     fp = json.loads(floorplan.read_text(encoding='utf-8'))
     dock = fp['dock']
     table = next(t for t in fp['tables'] if int(t['id']) == 1)
@@ -133,7 +141,6 @@ def plot_figure_53(
         m = node['marker']
         ax.plot(a['x'], a['y'], 'o', color=color, markersize=8, label=f'{label} approach')
         ax.plot(m['x'], m['y'], 's', color=color, markersize=7, label=f'{label} marker')
-        # yaw arrow at approach
         yaw = np.deg2rad(float(a.get('yaw_deg', 0.0)))
         ax.arrow(
             a['x'], a['y'],
@@ -160,13 +167,105 @@ def plot_figure_53(
     return out
 
 
+def plot_map_path_overlay(
+    map_path_run: Path,
+    map_yaml: Path,
+    map_pgm: Path,
+    floorplan: Path,
+    out: Path,
+    plt,
+) -> Path:
+    """Overlay map-frame trajectories on restaurant.pgm (no start-align)."""
+    import numpy as np
+
+    traj_dir = map_path_run / 'trajectories'
+    files = sorted(traj_dir.glob('trial_*.csv')) if traj_dir.is_dir() else []
+    if not files:
+        raise SystemExit(f'No trial_*.csv under {traj_dir}')
+
+    meta_path = map_path_run / 'run_meta.json'
+    if meta_path.is_file():
+        meta = json.loads(meta_path.read_text(encoding='utf-8'))
+        my = Path(meta.get('map_yaml') or map_yaml)
+        mp = Path(meta.get('map_pgm') or map_pgm)
+        fp_path = Path(meta.get('floorplan') or floorplan)
+        if my.is_file():
+            map_yaml = my
+        if mp.is_file():
+            map_pgm = mp
+        if fp_path.is_file():
+            floorplan = fp_path
+
+    gray, (xmin, xmax, ymin, ymax), _ = _map_extent(map_yaml, map_pgm)
+    fp = json.loads(floorplan.read_text(encoding='utf-8'))
+    dock = fp['dock']
+    table = next(t for t in fp['tables'] if int(t['id']) == 1)
+
+    fig, ax = plt.subplots(figsize=(7.5, 6.5), dpi=150)
+    ax.imshow(
+        gray,
+        cmap='gray',
+        origin='upper',
+        extent=[xmin, xmax, ymin, ymax],
+        interpolation='nearest',
+    )
+
+    cmap = plt.get_cmap('tab10')
+    for i, f in enumerate(files):
+        raw = load_trajectory_csv(f)
+        if len(raw) < 2:
+            continue
+        xs = [p['x'] for p in raw]
+        ys = [p['y'] for p in raw]
+        color = cmap(i % 10)
+        ax.plot(xs, ys, color=color, linewidth=1.5, alpha=0.85, label=f'Trial {i + 1}')
+        ax.plot(xs[0], ys[0], 'o', color=color, markersize=5)
+        ax.plot(xs[-1], ys[-1], 'x', color=color, markersize=7)
+
+    for node, label, color in (
+        (dock, 'Dock', '#c0392b'),
+        (table, 'Table 1', '#2980b9'),
+    ):
+        a, m = node['approach'], node['marker']
+        ax.plot(a['x'], a['y'], 'o', color=color, markersize=8, zorder=5)
+        ax.plot(m['x'], m['y'], 's', color=color, markersize=7, zorder=5)
+        yaw = np.deg2rad(float(a.get('yaw_deg', 0.0)))
+        ax.arrow(
+            a['x'], a['y'],
+            0.35 * np.cos(yaw), 0.35 * np.sin(yaw),
+            head_width=0.12, head_length=0.1, fc=color, ec=color,
+            length_includes_head=True, zorder=5,
+        )
+        ax.annotate(
+            label, (m['x'], m['y']),
+            textcoords='offset points', xytext=(6, 6), fontsize=9, color=color,
+        )
+
+    ax.set_xlabel('x (m, map)')
+    ax.set_ylabel('y (m, map)')
+    ax.set_title(
+        'Localized paths on restaurant map\n'
+        '(TF map→base_footprint; alternate Nav2 routes OK)')
+    ax.set_aspect('equal', adjustable='box')
+    ax.legend(loc='upper right', fontsize=8, framealpha=0.9)
+    fig.tight_layout()
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out)
+    plt.close(fig)
+    return out
+
+
 def main(args=None) -> None:
     parser = argparse.ArgumentParser(
-        description='Generate Chapter 5 figures 5.2 and 5.3')
+        description='Generate Chapter 5 figures (5.2, 5.3, map_path overlay)')
     parser.add_argument(
         '--odom-run', type=Path, default=None,
         help='Odometry eval run dir containing trajectories/ '
              '(default: latest *_odometry under evaluate/logs)')
+    parser.add_argument(
+        '--map-path-run', type=Path, default=None,
+        help='Map-path eval run dir containing trajectories/ '
+             '(default: latest *_map_path under evaluate/logs)')
     parser.add_argument(
         '--logs', type=Path, default=None, help='evaluate/logs root')
     parser.add_argument(
@@ -179,7 +278,7 @@ def main(args=None) -> None:
         '--out-dir', type=Path, default=None,
         help='Output directory (default: evaluate/figures)')
     parser.add_argument(
-        '--only', choices=('5.2', '5.3', 'all'), default='all')
+        '--only', choices=('5.2', '5.3', 'map_path', 'all'), default='all')
     ns = parser.parse_args(args=args)
 
     plt = _require_matplotlib()
@@ -187,9 +286,9 @@ def main(args=None) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     written: list[Path] = []
+    logs = ns.logs or logs_root()
 
     if ns.only in ('5.2', 'all'):
-        logs = ns.logs or logs_root()
         run = ns.odom_run or _latest_odometry_run(logs)
         if run is None:
             raise SystemExit(
@@ -213,7 +312,33 @@ def main(args=None) -> None:
         written.append(path)
         print(f'Figure 5.3 → {path}')
 
-    print(f'Done ({len(written)} figure(s)). Paste into chapter5-robot-navigation.md.')
+    if ns.only == 'map_path':
+        run = ns.map_path_run or _latest_map_path_run(logs)
+        if run is None:
+            raise SystemExit(
+                f'No map_path run found under {logs}. '
+                'Run eval_map_path first, or pass --map-path-run.')
+        map_yaml = ns.map_yaml or default_map_yaml()
+        map_pgm = ns.map_pgm or default_map_pgm()
+        floorplan = ns.floorplan or default_floorplan_json()
+        path = plot_map_path_overlay(
+            run, map_yaml, map_pgm, floorplan,
+            out_dir / 'figure_map_path_overlay.png', plt)
+        written.append(path)
+        print(f'Map-path overlay → {path}  (from {run})')
+    elif ns.only == 'all':
+        run = ns.map_path_run or _latest_map_path_run(logs)
+        if run is not None:
+            map_yaml = ns.map_yaml or default_map_yaml()
+            map_pgm = ns.map_pgm or default_map_pgm()
+            floorplan = ns.floorplan or default_floorplan_json()
+            path = plot_map_path_overlay(
+                run, map_yaml, map_pgm, floorplan,
+                out_dir / 'figure_map_path_overlay.png', plt)
+            written.append(path)
+            print(f'Map-path overlay → {path}  (from {run})')
+
+    print(f'Done ({len(written)} figure(s)).')
 
 
 if __name__ == '__main__':
