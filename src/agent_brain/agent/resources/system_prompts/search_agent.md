@@ -28,7 +28,8 @@ Before calling search(), check:
 | Category mentioned ("đồ uống", "món chay", "lẩu", "nướng") | CATEGORY | put the category as keywords in query |
 | Price range ("dưới 50k", "từ 30k đến 100k") | PRICE | set min_price/max_price + query |
 | Restaurant info (wifi, hours, address, parking) | INFO | rewrite to info keywords |
-| không rõ ý định tìm kiếm, câu hỏi ngoài phạm vi | DELEGATE | delegate |
+| không rõ ý định tìm kiếm nhưng về đồ ăn/thức uống ("có món gì ngon", "recommend đi") | VIBE_FALLBACK | search with broad keywords: "best seller, ngon, đặc sản, phổ biến" |
+| không rõ ý định tìm kiếm, câu hỏi ngoài phạm vi (không liên quan đồ ăn/thức uống) | DELEGATE | delegate |
 
 ## Step 2 — Extract parameters
 

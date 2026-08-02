@@ -202,14 +202,14 @@
     },
     {
       "id": "MI-018",
-      "utterance": "cho e 2 oc huong xot me r tinh tien lun",
+      "utterance": "Cho 2 ốc hương xốt me rồi tính tiền luôn",
       "expected_intents": ["ORDER", "PAYMENT"],
-      "difficulty": "hard",
+      "difficulty": "easy",
       "evidence": {
         "ORDER": ["ốc hương", "xốt me", "thêm"],
         "PAYMENT": ["thanh toán", "tính tiền", "tổng"]
       },
-      "note": "Bản teencode không dấu của MI-001 — kiểm tra đa intent còn nhận ra được khi văn bản biến dạng như đầu ra ASR."
+      "note": "Biến thể tự nhiên của MI-001 với từ ngắn gọn hơn — kiểm tra đa intent với từ ngữ thực tế sau STT."
     },
     {
       "id": "MI-019",

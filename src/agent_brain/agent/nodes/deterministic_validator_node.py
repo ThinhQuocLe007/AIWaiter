@@ -22,6 +22,18 @@ _MODIFIER_PATTERNS = [
 ]
 
 
+def _turn_index(state: AgentState) -> int:
+    """Number of guest utterances so far — one per turn, so a stable turn counter.
+
+    ``len(messages)`` is not usable for this: it also grows mid-turn as tool results and
+    worker replies are appended, so the count at validation time depends on how many
+    retries happened.
+    """
+    return sum(
+        1 for m in (state.get("messages") or []) if getattr(m, "type", None) == "human"
+    )
+
+
 def _is_item_mentioned(name: str, user_text: str) -> bool:
     """Check if item was mentioned in an ORDERING context (not comparison/description).
 
@@ -247,13 +259,27 @@ def deterministic_validator_node(state: AgentState) -> dict[str, Any]:
     if not hasattr(last_message, "tool_calls") or not last_message.tool_calls:
         return {"is_valid": True, "feedback": None}
 
-    errors: list[str] = []
+    # (tool_name | None, message). The tool name has to travel WITH the message:
+    # errors used to be bare strings and the per-tool ToolMessage was rebuilt by
+    # substring-matching the tool name inside the text, which mostly failed and fell
+    # back to handing every tool every error.
+    errors: list[tuple[str | None, str]] = []
+    # Rejections the worker cannot fix by rewriting its call, because they describe a
+    # STATE fact rather than a malformed argument: an empty cart has nothing to confirm,
+    # a missing dish cannot be removed, an unconfirmed cancel needs the guest's answer.
+    # Sending these back to the worker asks a 7B model to re-derive a conclusion this
+    # node already reached; measured, it re-issued the same rejected tool 4 times out of
+    # 4. When this list is non-empty the turn is routed straight to the chat system.
+    delegate_reasons: list[str] = []
     unavailable_items: list[dict[str, Any]] = []
     ambiguous_items: list[dict[str, Any]] = []
 
     tool_names = {tc.get("name") for tc in last_message.tool_calls}
     _CART_TOOLS = {"add_cart", "remove_cart", "clear_cart"}
     _needs_confirm_revisit = False
+    # Set when a clear_cart was refused for lack of confirmation. Stamps the turn index on
+    # the way out so the NEXT turn — and only the next — may go through with the clear.
+    _clear_needs_confirm = False
     if "confirm_order" in tool_names and _CART_TOOLS & tool_names:
         cart_tools_present = _CART_TOOLS & tool_names
         last_message.tool_calls = [
@@ -267,9 +293,18 @@ def deterministic_validator_node(state: AgentState) -> dict[str, Any]:
             cart_tools_present,
         )
 
+    def _with_clear_mark(result: dict) -> dict:
+        """Stamp the clear-confirmation window. Deliberately never writes None: the
+        permission expires on its own (see AgentState.clear_confirm_at), and a reset path
+        here would let an unrelated valid tool call in the SAME turn erase the stamp the
+        refusal had just written."""
+        if _clear_needs_confirm:
+            result["clear_confirm_at"] = _turn_index(state)
+        return result
+
     def _with_confirm_revisit(result: dict) -> dict:
         if not _needs_confirm_revisit:
-            return result
+            return _with_clear_mark(result)
         queue = (state.get("current_intents") or [])[:]
         if "ORDER_CONFIRM" not in queue:
             queue.append("ORDER_CONFIRM")
@@ -277,7 +312,7 @@ def deterministic_validator_node(state: AgentState) -> dict[str, Any]:
         queries = dict(state.get("intent_queries") or {})
         queries["ORDER_CONFIRM"] = "Xác nhận đơn hàng"
         result["intent_queries"] = queries
-        return result
+        return _with_clear_mark(result)
 
     for tool_call in last_message.tool_calls:
         tool_name = tool_call.get("name")
@@ -290,25 +325,30 @@ def deterministic_validator_node(state: AgentState) -> dict[str, Any]:
 
         if tool_name == "add_cart":
             items = args.get("items", [])
+            item_errors: list[str] = []
             valid_items = _validate_menu_items(
-                items, errors, unavailable_items, ambiguous_items
+                items, item_errors, unavailable_items, ambiguous_items
             )
+            errors.extend((tool_name, e) for e in item_errors)
             args["items"] = _restore_cart_if_additive(state, valid_items)
 
         elif tool_name == "remove_cart":
             name = args.get("name")
             if not name or not isinstance(name, str):
-                errors.append("Thiếu tên món cần xóa (name).")
+                errors.append((tool_name, "Thiếu tên món cần xóa (name)."))
             else:
                 cart = state.get("active_cart")
                 if not cart or not cart.items:
                     if state.get("order_stage") == "CONFIRMED":
-                        errors.append(
+                        errors.append((tool_name,
                             "Đơn hàng đã được xác nhận và gửi xuống bếp rồi, "
                             "không thể xóa món được nữa. Anh/chị có muốn gọi thêm món mới không ạ?"
-                        )
+                        ))
+                        delegate_reasons.append(
+                            "đơn đã gửi bếp rồi nên không xóa món được, hỏi khách có muốn gọi thêm không")
                     else:
-                        errors.append("Giỏ hàng trống, không thể xóa món.")
+                        errors.append((tool_name, "Giỏ hàng trống, không thể xóa món."))
+                        delegate_reasons.append("giỏ hàng đang trống, không có món nào để xóa")
                 else:
                     resolved = _resolve_remove_name(name, cart)
                     if resolved:
@@ -318,25 +358,51 @@ def deterministic_validator_node(state: AgentState) -> dict[str, Any]:
                         )
                     else:
                         cart_names = ", ".join(i.name for i in cart.items)
-                        errors.append(
+                        errors.append((tool_name,
                             f"Món '{name}' không có trong giỏ hàng hiện tại. "
                             f"Giỏ hàng đang có: {cart_names}."
-                        )
+                        ))
+                        delegate_reasons.append(
+                            f"khách muốn bỏ '{name}' nhưng món đó không có trong giỏ; "
+                            f"giỏ đang có: {cart_names}")
 
         elif tool_name == "clear_cart":
+            # The guard used to fire ONLY when the cart was already empty, which protected
+            # the harmless case and waved through the damaging one: a guest saying "thôi"
+            # over a full cart had it wiped, and because clear_cart is in
+            # CART_MUTATING_TOOLS the wipe was mirrored onto the tablet draft too.
             cart = state.get("active_cart")
             if not cart or not cart.items:
-                errors.append("Giỏ hàng đã trống, không cần xóa thêm.")
+                errors.append((tool_name, "Giỏ hàng đã trống, không cần xóa thêm."))
+                delegate_reasons.append("giỏ hàng đang trống nên không có gì để hủy")
+            elif state.get("clear_confirm_at") != _turn_index(state) - 1:
+                _clear_needs_confirm = True
+                delegate_reasons.append(
+                    "hỏi khách có chắc muốn hủy TOÀN BỘ đơn không, liệt kê các món đang có")
+                errors.append((tool_name,
+                    f"Giỏ hàng đang có {len(cart.items)} món — KHÔNG được xóa khi chưa hỏi khách. "
+                    "Hãy gọi delegate với lý do: hỏi khách có chắc muốn hủy toàn bộ đơn không. "
+                    "Nếu lượt sau khách đồng ý thì mới gọi clear_cart."
+                ))
 
         elif tool_name == "confirm_order":
-            if state.get("order_stage") != "AWAITING_CONFIRMATION":
-                errors.append(
-                    "Chưa thể xác nhận đơn hàng! "
-                    "Phải gọi add_cart và hỏi khách xác nhận trước."
-                )
             cart = state.get("active_cart")
             if not cart or not cart.items:
-                errors.append("Giỏ hàng trống, không thể xác nhận đơn.")
+                # Empty cart first, and never point at add_cart here: the guest said
+                # something like "chốt đi em" without naming a dish, so there is nothing
+                # to add. The old text sent the worker to add_cart, which it cannot
+                # satisfy, and the retry loop converged on delegate only 1 time in 7.
+                errors.append((tool_name,
+                    "Giỏ hàng đang trống nên KHÔNG có gì để xác nhận."
+                ))
+                delegate_reasons.append(
+                    "giỏ hàng đang trống, chưa có món nào để xác nhận đơn")
+            elif state.get("order_stage") != "AWAITING_CONFIRMATION":
+                errors.append((tool_name,
+                    "Chưa thể xác nhận đơn hàng khi chưa hỏi khách."
+                ))
+                delegate_reasons.append(
+                    "đọc lại giỏ hàng cho khách và hỏi khách xác nhận trước khi chốt đơn")
             else:
                 args["items"] = [
                     {
@@ -350,11 +416,11 @@ def deterministic_validator_node(state: AgentState) -> dict[str, Any]:
 
         elif tool_name == "request_payment":
             if not args.get("table_id"):
-                errors.append("Thiếu tham số 'table_id' cho yêu cầu thanh toán.")
+                errors.append((tool_name, "Thiếu tham số 'table_id' cho yêu cầu thanh toán."))
 
         elif tool_name == "verify_payment":
             if not args.get("table_id"):
-                errors.append("Thiếu tham số 'table_id' cho xác nhận thanh toán.")
+                errors.append((tool_name, "Thiếu tham số 'table_id' cho xác nhận thanh toán."))
 
     if errors:
         loop_count = state.get("loop_count", 0) + 1
@@ -365,13 +431,22 @@ def deterministic_validator_node(state: AgentState) -> dict[str, Any]:
             tool_call_id = tool_call.get("id") or "dummy_id"
             t_name = tool_call.get("name")
             tool_names.append(t_name)
-            tool_errors = [e for e in errors if t_name in e or "add_cart" in e]
-            if not tool_errors:
-                tool_errors = errors
-            per_tool_feedback = (
-                "[Lỗi Xác Thực cho " + t_name + "]:\n"
-                + "\n".join(f"- {err}" for err in tool_errors)
-            )
+            # Owner-matched, not substring-matched. `None` means the error is not tied to
+            # one tool and applies to all of them. A tool with nothing against it gets a
+            # neutral note rather than the whole turn's errors — every tool_call still
+            # needs exactly one ToolMessage, but it must not be told to fix someone
+            # else's problem.
+            tool_errors = [msg for owner, msg in errors if owner in (None, t_name)]
+            if tool_errors:
+                per_tool_feedback = (
+                    "[Lỗi Xác Thực cho " + t_name + "]:\n"
+                    + "\n".join(f"- {err}" for err in tool_errors)
+                )
+            else:
+                per_tool_feedback = (
+                    f"[{t_name} không có lỗi. Lượt này bị chặn vì tool khác — "
+                    f"đừng sửa {t_name}.]"
+                )
             tool_messages.append(
                 ToolMessage(content=per_tool_feedback, name=t_name, tool_call_id=tool_call_id)
             )
@@ -391,9 +466,10 @@ def deterministic_validator_node(state: AgentState) -> dict[str, Any]:
 
         return _with_confirm_revisit({
             "is_valid": False,
-            "feedback": "\n".join(
-                f"- {e}" for e in errors
-            ),
+            # Set only for state-based rejections. _route_after_validator reads it and sends
+            # the turn to the chat system instead of round-tripping the worker.
+            "delegate_reason": "; ".join(delegate_reasons) if delegate_reasons else None,
+            "feedback": "\n".join(f"- {msg}" for _, msg in errors),
             "messages": tool_messages,
             "loop_count": loop_count,
             "last_tool": last_tool,

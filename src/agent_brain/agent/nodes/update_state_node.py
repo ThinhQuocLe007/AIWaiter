@@ -56,9 +56,10 @@ def _handle_add_cart_result(state: AgentState, tool_result) -> dict[str, Any]:
                 cart.items.append(new_item)
         cart = recalc_cart(cart)
 
+    # order_stage is the single-writer domain of state_outcome_node._finalize.
+    # This node only mutates the cart; the stage is derived from the turn outcome.
     return {
         "active_cart": cart,
-        "order_stage": "AWAITING_CONFIRMATION" if cart.items else "IDLE",
     }
 
 
@@ -72,7 +73,7 @@ def _handle_remove_cart_result(state: AgentState, tool_result) -> dict[str, Any]
     """
     existing = state.get("active_cart")
     if existing is None:
-        return {"active_cart": Cart(), "order_stage": "IDLE"}
+        return {"active_cart": Cart()}
 
     removed_name = tool_result.removed
     remove_qty = getattr(tool_result, "quantity", None)
@@ -85,20 +86,18 @@ def _handle_remove_cart_result(state: AgentState, tool_result) -> dict[str, Any]
         if remove_qty is not None and remove_qty < item.quantity:
             items.append(item.model_copy(update={"quantity": item.quantity - remove_qty}))
 
-    prev_stage = state.get("order_stage", "IDLE")
     cart = recalc_cart(Cart(items=items, total_price=existing.total_price))
     return {
         "active_cart": cart,
-        "order_stage": "AWAITING_CONFIRMATION" if (cart.items and prev_stage != "CONFIRMED") else ("IDLE" if not cart.items else prev_stage),
     }
 
 
 def _handle_clear_cart_result(state: AgentState, tool_result) -> dict[str, Any]:
-    return {"active_cart": Cart(), "order_stage": "IDLE", "shown_dishes": None}
+    return {"active_cart": Cart(), "shown_dishes": None}
 
 
 def _handle_confirm_order_result(state: AgentState, tool_result) -> dict[str, Any]:
-    return {"order_stage": "CONFIRMED", "active_cart": Cart()}
+    return {"active_cart": Cart(), "shown_dishes": None}
 
 
 def _handle_search_result(state: AgentState, tool_result) -> dict[str, Any]:
@@ -108,9 +107,10 @@ def _handle_search_result(state: AgentState, tool_result) -> dict[str, Any]:
         for r in tool_result.results
         if r.document.metadata.get("name")
     ]
+    merged = list(dict.fromkeys(existing + new_names))
     return {
         "search_context": tool_result.results,
-        "shown_dishes": list(dict.fromkeys(existing + new_names)),
+        "shown_dishes": merged[-10:] if len(merged) > 10 else merged,
     }
 
 

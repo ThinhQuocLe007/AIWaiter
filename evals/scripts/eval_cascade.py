@@ -30,10 +30,13 @@ import argparse
 import json
 import re
 import sys
+import tempfile
 import unicodedata
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+
+import soundfile as sf
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
@@ -41,7 +44,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 MANIFEST = PROJECT_ROOT / "evals" / "data" / "cascade" / "manifest.json"
 MENU = PROJECT_ROOT / "assets" / "data" / "menu.json"
 RESULTS = PROJECT_ROOT / "evals" / "results"
-SAVED = PROJECT_ROOT / "src" / "training_semantic_router" / "classifier" / "saved"
+SAVED = PROJECT_ROOT / "src" / "training_semantic_router" / "classifier" / "saved_v2"
 
 
 # --------------------------------------------------------------------------------------
@@ -207,17 +210,23 @@ def main() -> int:
     stt = WhisperModel(args.model, device=args.device,
                        compute_type="float16" if args.device == "cuda" else "int8")
 
+    import tempfile
+
+    TMP = Path(tempfile.mkdtemp(prefix="cascade_"))
     rows: list[dict[str, Any]] = []
     for item in manifest["items"]:
-        # Multi-intent references have no single gold label, so they contribute to WER but are
-        # excluded from the routing delta rather than scored against an arbitrary first intent.
         single_intent = "+" not in item["intent"]
         for fname in item["files"]:
-            clean = load_wav(args.audio_dir / fname)
+            src = args.audio_dir / fname
             for cond in conditions:
-                audio = clean if cond == "clean" else mix_at_snr(
-                    clean, noise_audio, float(cond.replace("db", "")))
-                segments, _ = stt.transcribe(audio, language="vi", beam_size=5)
+                if cond == "clean":
+                    audio_path = src
+                else:
+                    audio = mix_at_snr(
+                        load_wav(src), noise_audio, float(cond.replace("db", "")))
+                    audio_path = TMP / f"{Path(fname).stem}_{cond}.wav"
+                    sf.write(str(audio_path), audio.astype(np.float32), 16000, subtype="PCM_16")
+                segments, _ = stt.transcribe(str(audio_path), language="vi", beam_size=5)
                 hypothesis = " ".join(s.text for s in segments).strip()
 
                 w_err, w_n = wer(item["text"], hypothesis)

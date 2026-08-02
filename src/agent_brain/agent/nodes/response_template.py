@@ -2,11 +2,32 @@
 
 All functions are pure (ctx → str), no LLM call, no side effects.
 Imported by ``response_node.py`` and used by the per-type rewriters.
+
+Template variants (2-3 per function) are selected deterministically from
+the cart size so the same state always produces the same wording, but
+different carts sound different instead of every turning echoing identically.
 """
+
+import hashlib
 
 from src.agent_brain.schemas import OrderResponseContext
 
 _FALLBACK_REPLY = "Xin lỗi, em chưa rõ, anh/chị nói lại giúp em nhé ạ."
+
+
+def _pick(variants: list[str], seed: str = "") -> str:
+    """Deterministic variant selection from a short list."""
+    if not variants:
+        return ""
+    idx = int(hashlib.md5(seed.encode()).hexdigest(), 16) % len(variants) if seed else 0
+    return variants[idx]
+
+
+def _cart_seed(items) -> str:
+    """Stable seed from cart contents — same cart → same wording."""
+    if not items:
+        return "empty"
+    return "|".join(f"{i.name}:{i.quantity}" for i in items[:5])
 
 
 # ── Formatting helpers ──────────────────────────────────────────────────────
@@ -102,16 +123,23 @@ def _format_cart_echo(ctx: OrderResponseContext) -> str:
     if not ctx.cart:
         return "Dạ, giỏ hàng hiện đang trống ạ. Anh/chị muốn gọi món gì không ạ?"
     cart = _format_cart_lines(ctx.cart)
-    suffix = "\nAnh/chị xác nhận đặt hàng chưa ạ?" if ctx.stage == "AWAITING_CONFIRMATION" else ""
-    return (
-        f"Dạ, giỏ hàng của anh/chị hiện có:\n{cart}\n"
-        f"Tổng tạm tính {ctx.total_vnd}"  # already ₫-suffixed by _vnd()
-        f"{'.' + suffix if suffix else '.'}"
-    )
+    seed = _cart_seed(ctx.cart)
+    prefix = _pick([
+        f"Dạ, giỏ hàng của anh/chị hiện có:\n{cart}",
+        f"Dạ, em điểm lại món anh/chị gọi nè:\n{cart}",
+        f"Dạ, đơn của mình đang có:\n{cart}",
+    ], seed)
+    suffix = "\nAnh/chị xác nhận đặt hàng chưa ạ?" if ctx.cart else ""
+    return f"{prefix}\nTổng tạm tính {ctx.total_vnd}{'.' + suffix if suffix else '.'}"
 
 
 def _format_confirm_reply(order_id: int) -> str:
-    return f"Dạ, em đã xác nhận đơn hàng #{order_id} ạ. Món đang được chuẩn bị. Anh/chị có muốn gọi thêm món gì nữa không ạ?"
+    seed = str(order_id)
+    return _pick([
+        f"Dạ, em đã xác nhận đơn hàng #{order_id} ạ. Món đang được chuẩn bị. Anh/chị có muốn gọi thêm món gì nữa không ạ?",
+        f"Dạ, đơn #{order_id} đã được gửi bếp rồi nha. Anh/chị muốn gọi thêm gì không ạ?",
+        f"Dạ, em gửi đơn #{order_id} xuống bếp rồi ạ. Anh/chị chờ một xíu nha, có cần gọi thêm món gì không ạ?",
+    ], seed)
 
 
 def _format_remove_reply(ctx: OrderResponseContext) -> str:
@@ -119,13 +147,23 @@ def _format_remove_reply(ctx: OrderResponseContext) -> str:
 
 
 def _format_clear_reply() -> str:
-    return "Dạ, em đã hủy toàn bộ đơn hàng ạ. Anh/chị muốn gọi món khác không ạ?"
+    return _pick([
+        "Dạ, em đã hủy toàn bộ đơn hàng ạ. Anh/chị muốn gọi món khác không ạ?",
+        "Dạ, em xóa hết giỏ hàng rồi nha. Anh/chị muốn đặt lại món gì không ạ?",
+    ], "clear")
 
 
 # ── Greeting / thanks ───────────────────────────────────────────────────────
 def _format_greeting() -> str:
-    return "Dạ, em chào anh/chị ạ. Em có thể giúp gì cho anh/chị ạ?"
+    return _pick([
+        "Dạ, em chào anh/chị ạ. Em có thể giúp gì cho anh/chị ạ?",
+        "Dạ anh/chị ơi, em chào anh/chị. Anh/chị muốn gọi món gì hôm nay ạ?",
+        "Dạ, chào anh/chị! Quán mình hôm nay có nhiều món ngon lắm, anh/chị muốn em giới thiệu không ạ?",
+    ], "greet")
 
 
 def _format_thanks() -> str:
-    return "Dạ, không có gì ạ. Anh/chị cần em hỗ trợ gì thêm không ạ?"
+    return _pick([
+        "Dạ, không có gì ạ. Anh/chị cần em hỗ trợ gì thêm không ạ?",
+        "Dạ không có chi ạ. Anh/chị muốn gọi thêm món gì nữa không ạ?",
+    ], "thanks")

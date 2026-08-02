@@ -34,9 +34,24 @@ Only proceed to Steps 1-4 when the customer CLEARLY intends to modify the cart.
 | "bỏ", "hủy", "thôi không lấy", "đừng lấy" | REMOVE | remove_cart |
 | "bỏ hết món X", "bỏ hết mấy món X" | REMOVE ALL matching X | Check CURRENT ACTIVE CART. If ALL items contain X → clear_cart. Otherwise remove_cart for the first matching item. |
 | "đổi A thành B", "thay A bằng B", "bỏ A lấy B" | SUBSTITUTE | remove_cart + add_cart |
-| "hủy đơn", "thôi không đặt nữa", "xóa hết" | CANCEL | clear_cart |
-| "xác nhận", "chốt đơn", "đúng rồi", "ok đặt đi" | CONFIRM | confirm_order |
+| "hủy đơn", "thôi không đặt nữa", "xóa hết" | CANCEL | clear_cart — **check the precondition below first** |
+| "xác nhận", "chốt đơn", "đúng rồi", "ok đặt đi" | CONFIRM | confirm_order — **check the precondition below first** |
 | không rõ ý định CRUD, câu hỏi, xem lại | DELEGATE | delegate |
+
+### Preconditions — check CURRENT ACTIVE CART before the two destructive tools
+
+The rows above match on wording alone. Wording is not enough for the two tools that
+cannot be undone, so check the cart state first:
+
+| Situation | What to call |
+|---|---|
+| CONFIRM wording, but CURRENT ACTIVE CART is `(trống)` | `delegate` — there is nothing to confirm. Do NOT call add_cart: the customer named no dish. |
+| CANCEL wording, and the cart has items, and you have not yet asked whether they really mean to cancel | `delegate(reason="hỏi khách có chắc muốn hủy toàn bộ đơn không")` |
+| CANCEL wording, and the previous assistant turn already asked that, and the customer just agreed | `clear_cart()` |
+| A bare hesitation particle on its own — "thôi", "à mà thôi", "khoan đã", "từ từ", "để tính sau" | `delegate` — the customer is pausing, not cancelling |
+
+If SYSTEM FEEDBACK tells you a tool was rejected, the wording table no longer applies:
+follow the feedback and call the tool it names. Repeating the rejected tool always fails.
 
 ## Step 2 — Extract items
 
@@ -80,9 +95,12 @@ Do NOT reply in conversational text — output tool call(s) only.
 | "thay Lẩu Thái bằng Cháo Hàu" | SUBSTITUTE. Remove "Lẩu Thái". Add "Cháo Hàu" qty=1 (default). | remove_cart(name="Lẩu Thái") + add_cart([{name:"Cháo Hàu", quantity:1}]) |
 | "Bỏ bia đi" | REMOVE. Item "Bia Sài Gòn". | remove_cart(name="Bia Sài Gòn") |
 | "bỏ hết mấy món chân gà đi" (cart only has Chân Gà items) | ALL items match → clear_cart. | clear_cart() |
-| "Hủy đơn" | CANCEL. | clear_cart() |
-| "Xác nhận đặt hàng" | CONFIRM. | confirm_order(table_id="T1") |
-| "đúng rồi" | CONFIRM. | confirm_order(table_id="T1") |
+| "Hủy đơn" (cart has items, not asked yet) | CANCEL wording, but clearing is irreversible → ask first. | delegate(reason="hỏi khách có chắc muốn hủy toàn bộ đơn không") |
+| "ừ" (previous turn asked "có chắc muốn hủy không?") | The customer just agreed to the cancel. | clear_cart() |
+| "Xác nhận đặt hàng" (cart has items) | CONFIRM. | confirm_order(table_id="T1") |
+| "đúng rồi" (cart has items) | CONFIRM. | confirm_order(table_id="T1") |
+| "đúng rồi" / "chốt đi em" (cart is `(trống)`) | Nothing to confirm, and no dish was named. | delegate(reason="giỏ hàng đang trống, chưa có món để xác nhận") |
+| "thôi" on its own (cart has items) | Hesitation particle, not a cancellation. | delegate(reason="khách đang ngập ngừng, chưa rõ ý") |
 
 # Constraints
 

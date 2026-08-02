@@ -28,7 +28,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger("evaluate")
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
-SAVED_DIR = Path(__file__).resolve().parent.parent / "classifier" / "saved"
+SAVED_DIR = Path(__file__).resolve().parent.parent / "classifier" / "saved_v2"
 
 
 def _per_class_metrics(

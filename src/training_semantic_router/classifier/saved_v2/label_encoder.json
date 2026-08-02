@@ -1,0 +1,6 @@
+{
+  "ORDER": 0,
+  "SEARCH": 1,
+  "PAYMENT": 2,
+  "CHAT": 3
+}

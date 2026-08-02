@@ -107,35 +107,84 @@ def get_sentence_transformer() -> SentenceTransformer:
     )
 
 
+def _segment(text: str) -> str:
+    """Word-segment Vietnamese text one line at a time.
+
+    `underthesea.word_tokenize` does not treat a newline as a token boundary. Run it
+    over the whole multi-line menu document and it glues the last word of one line to
+    the first of the next: the template
+
+        Tên món: Lẩu Thái
+        Giá: 255000
+
+    segments to `... Lẩu Thái_Giá : 255000 ...`, so the dish name is destroyed at index
+    time while the query "cho xem lẩu thái" segments cleanly to `lẩu_thái`. The two can
+    then never match: measured cosine between that query and its own document was 0.06
+    with whole-text segmentation against 0.49 without it.
+
+    Segmenting per line keeps the boundary. Note that changing this function changes how
+    documents are encoded, so the FAISS index must be rebuilt; the embedding-model
+    fingerprint does not catch a preprocessing change because the model name is
+    unchanged.
+    """
+    return "\n".join(
+        underthesea.word_tokenize(line, format="text") if line.strip() else line
+        for line in text.split("\n")
+    )
+
+
 def _preprocess(texts: List[str], prefix: str, word_segment: bool) -> List[str]:
     out: List[str] = []
     for t in texts:
         if word_segment:
-            t = underthesea.word_tokenize(t, format="text")
+            t = _segment(t)
         out.append(prefix + t if prefix else t)
     return out
 
 
-def encode_documents(texts: List[str]) -> np.ndarray:
-    """Encode passages (menu/docs) with the active model's passage-side profile."""
+# Word segmentation is a per-consumer choice, not a per-model one.
+#
+# The profile's `word_segment` is what PhoBERT-family models were pretrained on, and the
+# intent classifier and the semantic router were trained on vectors produced with it, so
+# they must keep it or their weights no longer match their input.
+#
+# Retrieval is the opposite case. Its documents are a multi-line `Field: value` template,
+# and underthesea segments that template differently from the way it segments a natural
+# customer question: the indexed text of Lẩu Thái came out with the dish name split
+# across two tokens while the query "cho xem lẩu thái" came out as the compound
+# `lẩu_thái`, so the two could never match. Measured over the 24-query evaluation set,
+# turning segmentation off for retrieval moves the dense lane from R@5 0.434 to 0.529 and
+# its hit rate from 0.583 to 0.708.
+#
+# Both consumers still share one SentenceTransformer instance; only this step differs.
+RETRIEVAL_WORD_SEGMENT = False
+
+
+def encode_documents(texts: List[str], word_segment: bool | None = None) -> np.ndarray:
+    """Encode passages (menu/docs) with the active model's passage-side profile.
+
+    `word_segment` overrides the profile default; see RETRIEVAL_WORD_SEGMENT above.
+    """
     p = get_profile()
+    seg = p["word_segment"] if word_segment is None else word_segment
     return get_sentence_transformer().encode(
-        _preprocess(texts, p["passage_prefix"], p["word_segment"]),
+        _preprocess(texts, p["passage_prefix"], seg),
         convert_to_numpy=True,
         normalize_embeddings=p["normalize"],
     )
 
 
-def encode_queries(texts: List[str]) -> np.ndarray:
+def encode_queries(texts: List[str], word_segment: bool | None = None) -> np.ndarray:
     """Encode queries/utterances with the active model's query-side profile.
 
-    Shared by FAISS search, the semantic router, and centroid building so every
-    query-time vector is produced identically to the others (and comparable to the
-    indexed documents).
+    Shared by FAISS search, the semantic router, and centroid building. Callers that do
+    not pass `word_segment` get the profile default, which is what the trained router
+    and classifier weights expect.
     """
     p = get_profile()
+    seg = p["word_segment"] if word_segment is None else word_segment
     return get_sentence_transformer().encode(
-        _preprocess(texts, p["query_prefix"], p["word_segment"]),
+        _preprocess(texts, p["query_prefix"], seg),
         convert_to_numpy=True,
         normalize_embeddings=p["normalize"],
     )
@@ -144,16 +193,16 @@ def encode_queries(texts: List[str]) -> np.ndarray:
 class SharedEmbeddings(Embeddings):
     """LangChain Embeddings adapter over the shared SentenceTransformer singleton.
 
-    Routes document/query encoding through the model-aware helpers above so the
-    correct preprocessing (prefixes / word-seg / normalization) is applied for
-    whichever EMBEDDING_MODEL is active.
+    Used by the FAISS index only, so it applies the retrieval-side segmentation setting
+    on both the document and the query side. Both sides must agree, or indexed vectors
+    and query vectors are not comparable.
     """
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        return encode_documents(texts).tolist()
+        return encode_documents(texts, word_segment=RETRIEVAL_WORD_SEGMENT).tolist()
 
     def embed_query(self, text: str) -> List[float]:
-        return encode_queries([text])[0].tolist()
+        return encode_queries([text], word_segment=RETRIEVAL_WORD_SEGMENT)[0].tolist()
 
 
 def get_embedding_model() -> Embeddings:

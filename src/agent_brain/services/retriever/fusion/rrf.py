@@ -1,8 +1,20 @@
+import re
+import unicodedata
 from typing import List, Tuple
 from langchain_core.documents import Document
 from src.agent_brain.schemas.search import SearchResult
 from src.agent_brain.services.retriever.indices.embeddings import get_profile
 from src.agent_brain.utils import logger
+
+SEMANTIC_THRESHOLD = 0.25
+
+# Lane weights for reciprocal rank fusion. Equal weights let the dense lane demote a
+# lexical exact match: on a menu corpus the customer types the words printed on the
+# menu, so BM25 is the stronger lane nearly everywhere and the dense lane earns its
+# place by covering the queries BM25 misses, not by voting equally on the ones it does
+# not. Set from the sweep in evals/scripts/eval_rrf_weights.py.
+BM25_WEIGHT = 3.0
+VECTOR_WEIGHT = 1.0
 
 
 def compute_reciprocal_rank(rank: int, k: int = 60) -> float:
@@ -17,6 +29,87 @@ def _raw_score_to_cosine(raw_score: float, normalize: bool) -> float:
     return cosine
 
 
+def _keywords(query: str) -> list[str]:
+    """Split a query into the terms the lexical lane looks for.
+
+    Common Vietnamese function words are stripped because they match in virtually every
+    menu document. A query like "cho xem món pizza" would otherwise pass the lexical gate
+    on "món" alone and admit a hallucinated result set for a dish the kitchen cannot
+    produce.
+    """
+    _STOPWORDS = {
+        "có", "món", "gì", "cho", "không", "với", "nào", "này",
+        "kia", "đó", "là", "và", "thì", "mà", "nên", "sẽ", "đã",
+        "đang", "cũng", "chỉ", "vẫn",
+    }
+    clean = query.lower().replace("?", "").replace(".", "")
+    parts = [kw.strip() for kw in clean.split(",") if kw.strip()]
+    if len(parts) == 1 and " " in parts[0]:
+        parts = [w.strip() for w in parts[0].split() if w.strip()]
+    return [p for p in parts if p not in _STOPWORDS]
+
+
+def _contains_term(haystack: str, term: str) -> bool:
+    """Whole-term containment, not substring.
+
+    A plain `in` test matches across word boundaries, which on a Vietnamese menu is
+    almost always a false positive: "đông" in "có gì cho nhóm đông người chia sẻ"
+    matches inside "Cải Thìa Xào Nấm Đông Cô" and admits a query the corpus cannot
+    answer. Single syllables are common enough that substring matching makes the
+    lexical lane fire on nearly every query.
+    """
+    if not term:
+        return False
+    return re.search(rf"(?<!\w){re.escape(term)}(?!\w)", haystack) is not None
+
+
+def gate_decision(
+    bm25_results: List[Tuple[Document, float]],
+    vector_results: List[Tuple[Document, float]],
+    query: str,
+    normalize: bool | None = None,
+) -> dict:
+    """The dual-lane gatekeeper decision, in one place.
+
+    Both the deployed retriever and the evaluation harness call this. They used to
+    implement it separately and had drifted: the harness checked query terms against
+    the dense lane's top document only, so it recorded rejections the deployed gate
+    would never make.
+
+    The semantic lane passes when the dense engine's top-1 cosine similarity reaches
+    the threshold. The lexical lane passes when a query term appears, as a whole term,
+    in the top-3 documents of either lane (top-1 was too strict — vibe terms like
+    "ấm bụng" sitting at rank 2-3 were missed). A query is admitted when either lane
+    passes.
+    """
+    if normalize is None:
+        normalize = get_profile().get("normalize", False)
+
+    raw_top = vector_results[0][1] if vector_results else 0.0
+    cos_sim = _raw_score_to_cosine(raw_top, normalize)
+    semantic_pass = cos_sim >= SEMANTIC_THRESHOLD
+
+    haystack = ""
+    for _, (doc, _) in enumerate(bm25_results[:3]):
+        haystack += doc.page_content.lower() + " "
+    for _, (doc, _) in enumerate(vector_results[:3]):
+        haystack += doc.page_content.lower() + " "
+    haystack = unicodedata.normalize("NFC", haystack)
+
+    terms = _keywords(query)
+    matched = [t for t in terms if _contains_term(haystack, unicodedata.normalize("NFC", t))]
+    lexical_pass = bool(matched)
+
+    return {
+        "semantic_pass": bool(semantic_pass),
+        "lexical_pass": lexical_pass,
+        "passed": bool(semantic_pass or lexical_pass),
+        "raw_top": float(raw_top),
+        "cos_sim": float(cos_sim),
+        "matched_terms": matched,
+    }
+
+
 class RRFFusion:
     def fuse(self, 
              bm25_results: List[Tuple[Document, float]], 
@@ -26,39 +119,25 @@ class RRFFusion:
         
         query = kwargs.get("query", "")
         rrf_k = kwargs.get("rrf_k", 60)
+        w_bm25 = kwargs.get("w_bm25", BM25_WEIGHT)
+        w_vector = kwargs.get("w_vector", VECTOR_WEIGHT)
         normalize = get_profile().get("normalize", False)
 
         # --- 1. DUAL-LANE GATEKEEPER ---
-        raw_top = vector_results[0][1] if vector_results else 0.0
-        cos_sim = _raw_score_to_cosine(raw_top, normalize)
-        semantic_match = cos_sim >= 0.35
-        
-        lexical_match = False
-        clean_query = query.lower().replace("?", "").replace(".", "")
-        keywords = [kw.strip() for kw in clean_query.split(",") if kw.strip()]
-        if len(keywords) == 1 and " " in keywords[0]:
-            keywords = [w.strip() for w in keywords[0].split() if w.strip()]
-            
-        if keywords:
-            top_docs_text = ""
-            if bm25_results:
-                top_docs_text += bm25_results[0][0].page_content.lower()
-            if vector_results:
-                top_docs_text += " " + vector_results[0][0].page_content.lower()
-                
-            if any(kw in top_docs_text for kw in keywords):
-                lexical_match = True
-                
-        if not semantic_match and not lexical_match:
+        gate = gate_decision(bm25_results, vector_results, query, normalize)
+
+        if not gate["passed"]:
             logger.info(
                 f"[GATEKEEPER] Rejected query: '{query}' "
-                f"(raw={raw_top:.3f}, cos={cos_sim:.3f} < 0.35, Lexical Match: {lexical_match})"
+                f"(raw={gate['raw_top']:.3f}, cos={gate['cos_sim']:.3f} "
+                f"< {SEMANTIC_THRESHOLD}, Lexical Match: False)"
             )
             return []
-            
+
         logger.info(
             f"[GATEKEEPER] Approved query: '{query}' "
-            f"(raw={raw_top:.3f}, cos={cos_sim:.3f}, Lexical Match: {lexical_match})"
+            f"(raw={gate['raw_top']:.3f}, cos={gate['cos_sim']:.3f}, "
+            f"Lexical Match: {gate['lexical_pass']} {gate['matched_terms']})"
         )
 
         fusion_scores = {}
@@ -67,15 +146,15 @@ class RRFFusion:
             doc_id = hash(doc.page_content)
             fusion_scores[doc_id] = {
                 "doc": doc,
-                "score": compute_reciprocal_rank(rank, rrf_k),
+                "score": w_bm25 * compute_reciprocal_rank(rank, rrf_k),
                 "bm25_score": raw_score,
                 "vector_score": 0.0
             }
 
         for rank, (doc, raw_score) in enumerate(vector_results, 1):
             doc_id = hash(doc.page_content)
-            rrf_contrib = compute_reciprocal_rank(rank, rrf_k)
-            
+            rrf_contrib = w_vector * compute_reciprocal_rank(rank, rrf_k)
+
             if doc_id in fusion_scores:
                 fusion_scores[doc_id]["score"] += rrf_contrib
                 fusion_scores[doc_id]["vector_score"] = raw_score

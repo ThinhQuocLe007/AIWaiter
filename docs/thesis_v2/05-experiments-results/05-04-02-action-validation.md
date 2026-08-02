@@ -38,7 +38,7 @@ force-matched to a plausible neighbour, and the 4 names too unlike any dish rece
 than a barely related one. Neither mechanism guesses. The ambiguity rows test the same discipline on valid
 input: "Ốc Hương" is a prefix of eleven sauce variants on the reference menu, and the validator flags
 every such name for clarification instead of silently resolving to one of them, at no cost to the
-unambiguous names. Appendix G.3 shows a live turn and the clarification the customer hears.
+unambiguous names. Appendix G.5 shows a live turn and the clarification the customer hears.
 
 #### What the Gate Is Worth
 
@@ -59,8 +59,8 @@ validator to set that flag and a measurement based on it would report zero by co
 The 32 leaked names originate in fourteen distinct scenarios. In a deployed restaurant they would be
 dishes the kitchen cannot cook appearing on a customer's bill.
 
-The pass rate is not where the validator shows up, and that is worth stating plainly. It is no better with
-the gate than without it, and on this run marginally worse. The turn-level assertions check tool selection
+The pass rate is not where the validator shows up. It is no better with the gate than without it, and on
+this run marginally worse. The turn-level assertions check tool selection
 and conversational flow, which the validator does not affect; what it changes is the content of the
 arguments, which is what the leakage columns measure and the pass rate does not. The validator is a
 guarantee, not a correction the system visibly depends on to complete tasks.
@@ -73,10 +73,7 @@ guarantee, not a correction the system visibly depends on to complete tasks.
 Two further runs test the gate from the outside. Thirty adversarial scenarios across seven categories,
 non-existent dishes, near-miss variants, mixed orders with one invalid item, hallucination bait quoting an
 invented combo at a specific price, teencode, missing diacritics, and a negative control of entirely valid
-items, all pass: 30 of 30, with no off-menu item admitted and no valid item wrongly refused. An earlier
-measurement on the same scenarios put the rate at 28 of 30, and since the resolution logic did not change
-between the runs, the improvement belongs to the model proposing cleaner arguments rather than to the gate
-catching more.
+items, all pass: 30 of 30, with no off-menu item admitted and no valid item wrongly refused.
 
 The second run tests the escape hatch. Workers run under `tool_choice="any"`, so the model must emit a
 tool call on every turn, and without an escape a worker receiving an utterance none of its tools fit would

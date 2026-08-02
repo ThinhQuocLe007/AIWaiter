@@ -16,7 +16,6 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-import re
 import sys
 import time
 from collections import defaultdict
@@ -31,6 +30,7 @@ load_dotenv()
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from src.agent_brain.utils.boundary_utils import has_boundary_markers  # noqa: E402
 from src.training_semantic_router.classifier.predict import classify  # noqa: E402
 
 logging.basicConfig(level=logging.WARNING, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -38,7 +38,7 @@ logger = logging.getLogger("eval_mlp")
 
 DATA_DIR = PROJECT_ROOT / "evals" / "data" / "router"
 RESULTS_DIR = PROJECT_ROOT / "evals" / "results"
-SAVED_DIR = PROJECT_ROOT / "src" / "training_semantic_router" / "classifier" / "saved"
+SAVED_DIR = PROJECT_ROOT / "src" / "training_semantic_router" / "classifier" / "saved_v2"
 
 DATASETS = {
     "single": DATA_DIR / "single_intent_eval.json",
@@ -48,18 +48,6 @@ DATASETS = {
 
 LABELS = ["ORDER", "SEARCH", "PAYMENT", "CHAT"]
 THRESHOLD = 0.7
-
-_BOUNDARY_RE = re.compile(r"\b(rồi thì|với lại|rồi|và|thì|xong)\b|à mà|,\s*mà\b")
-
-
-def _has_boundary_markers(utterance: str) -> bool:
-    low = utterance.lower()
-    for m in _BOUNDARY_RE.finditer(low):
-        before = low[:m.start()].split()
-        after = low[m.end():].split()
-        if len(before) >= 2 and len(after) >= 2:
-            return True
-    return False
 
 
 def _per_class_metrics(y_true: list[str], y_pred: list[str]) -> dict:
@@ -104,8 +92,7 @@ def eval_single_intent(data_path: Path) -> dict:
         start = time.perf_counter()
         result = classify(utterance, state=None,
                           model_path=SAVED_DIR / "model.pt",
-                          label_path=SAVED_DIR / "label_encoder.json",
-                          scaler_path=SAVED_DIR / "scaler.npz")
+                          label_path=SAVED_DIR / "label_encoder.json")
         latency_ms = (time.perf_counter() - start) * 1000
 
         predicted = result["intent"]
@@ -188,9 +175,8 @@ def eval_multi_intent_detection(data_path: Path) -> dict:
     for case in true_multi:
         result = classify(case["utterance"], state=None,
                           model_path=SAVED_DIR / "model.pt",
-                          label_path=SAVED_DIR / "label_encoder.json",
-                          scaler_path=SAVED_DIR / "scaler.npz")
-        has_boundary = _has_boundary_markers(case["utterance"])
+                          label_path=SAVED_DIR / "label_encoder.json")
+        has_boundary = has_boundary_markers(case["utterance"])
         low_conf = result["confidence"] < THRESHOLD
         detected = has_boundary or low_conf
 
@@ -221,9 +207,8 @@ def eval_multi_intent_detection(data_path: Path) -> dict:
     for case in pseudo_multi:
         result = classify(case["utterance"], state=None,
                           model_path=SAVED_DIR / "model.pt",
-                          label_path=SAVED_DIR / "label_encoder.json",
-                          scaler_path=SAVED_DIR / "scaler.npz")
-        has_boundary = _has_boundary_markers(case["utterance"])
+                          label_path=SAVED_DIR / "label_encoder.json")
+        has_boundary = has_boundary_markers(case["utterance"])
         low_conf = result["confidence"] < THRESHOLD
         detected = has_boundary or low_conf
         if detected:
@@ -289,9 +274,13 @@ def eval_context_dependent(data_path: Path) -> dict:
     with open(data_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
+    # This set is NOT a with/without-context ablation. The v2 router is text-only:
+    # predict.classify() accepts `state` and ignores it, so passing the case's context and
+    # passing None run the same code path and cannot differ. What the set measures is plain
+    # accuracy on utterances whose intent depends on the conversation state, which is the
+    # weakness the deterministic validator is there to absorb.
     cases = data["cases"]
-    correct_with_context = 0
-    correct_without_context = 0
+    correct = 0
     details = []
 
     for case in cases:
@@ -299,86 +288,52 @@ def eval_context_dependent(data_path: Path) -> dict:
         expected = case["intent"]
         ctx = case.get("context", {})
 
-        # With context
-        result_ctx = classify(utterance, state=ctx if ctx else None,
-                              model_path=SAVED_DIR / "model.pt",
-                              label_path=SAVED_DIR / "label_encoder.json",
-                              scaler_path=SAVED_DIR / "scaler.npz")
-        correct_ctx = result_ctx["intent"] == expected
-        if correct_ctx:
-            correct_with_context += 1
-
-        # Without context (IDLE defaults)
-        result_noctx = classify(utterance, state=None,
-                                model_path=SAVED_DIR / "model.pt",
-                                label_path=SAVED_DIR / "label_encoder.json",
-                                scaler_path=SAVED_DIR / "scaler.npz")
-        correct_noctx = result_noctx["intent"] == expected
-        if correct_noctx:
-            correct_without_context += 1
+        result = classify(utterance,
+                          model_path=SAVED_DIR / "model.pt",
+                          label_path=SAVED_DIR / "label_encoder.json")
+        is_correct = result["intent"] == expected
+        if is_correct:
+            correct += 1
 
         details.append({
             "id": case.get("id", "?"),
             "utterance": utterance,
             "expected": expected,
             "order_stage": case.get("order_stage", ctx.get("order_stage", "?")),
-            "predicted_with_context": result_ctx["intent"],
-            "conf_with_context": round(result_ctx["confidence"], 4),
-            "correct_with_context": correct_ctx,
-            "predicted_without_context": result_noctx["intent"],
-            "conf_without_context": round(result_noctx["confidence"], 4),
-            "correct_without_context": correct_noctx,
+            "predicted": result["intent"],
+            "confidence": round(result["confidence"], 4),
+            "correct": is_correct,
         })
 
-    acc_ctx = correct_with_context / len(cases) if cases else 0
-    acc_noctx = correct_without_context / len(cases) if cases else 0
-
-    # Count cases that NEED context (where without-context is wrong but with-context is right)
-    context_helped = sum(1 for d in details if not d["correct_without_context"] and d["correct_with_context"])
-    context_hurt = sum(1 for d in details if d["correct_without_context"] and not d["correct_with_context"])
+    acc = correct / len(cases) if cases else 0
 
     print("\n" + "=" * 65)
     print(f"  CONTEXT-DEPENDENT EVALUATION — {len(cases)} cases")
     print("=" * 65)
-    print(f"\n  With context:    {correct_with_context}/{len(cases)} = {acc_ctx*100:.1f}%")
-    print(f"  Without context: {correct_without_context}/{len(cases)} = {acc_noctx*100:.1f}%")
-    print(f"  Context helped:  {context_helped} cases")
-    print(f"  Context hurt:    {context_hurt} cases")
+    print(f"\n  Text-only accuracy: {correct}/{len(cases)} = {acc*100:.1f}%")
 
-    helped = [d for d in details if not d["correct_without_context"] and d["correct_with_context"]]
-    if helped:
-        print(f"\n  Cases where context fixed the prediction:")
-        for d in helped:
-            print(f"    [{d['order_stage']}] '{d['utterance']}' → {d['predicted_with_context']} (conf={d['conf_with_context']:.3f})")
-
-    hurt = [d for d in details if d["correct_without_context"] and not d["correct_with_context"]]
-    if hurt:
-        print(f"\n  Cases where context broke the prediction:")
-        for d in hurt:
-            print(f"    [{d['order_stage']}] '{d['utterance']}' → {d['predicted_with_context']} (exp: {d['expected']})")
-
-    both_wrong = [d for d in details if not d["correct_without_context"] and not d["correct_with_context"]]
-    if both_wrong:
-        print(f"\n  Cases wrong in both modes:")
-        for d in both_wrong:
-            print(f"    [{d['order_stage']}] '{d['utterance']}' → ctx={d['predicted_with_context']}, noctx={d['predicted_without_context']} (exp: {d['expected']})")
+    wrong = [d for d in details if not d["correct"]]
+    if wrong:
+        print(f"\n  Misrouted ({len(wrong)}):")
+        for d in wrong:
+            print(f"    [{d['order_stage']}] '{d['utterance']}' → {d['predicted']} (exp: {d['expected']})")
 
     return {
         "benchmark": "context_dependent",
         "total": len(cases),
-        "accuracy_with_context": round(acc_ctx, 4),
-        "accuracy_without_context": round(acc_noctx, 4),
-        "context_helped": context_helped,
-        "context_hurt": context_hurt,
-        "correct_with_context": correct_with_context,
-        "correct_without_context": correct_without_context,
+        "accuracy": round(acc, 4),
+        "correct": correct,
         "details": details,
     }
 
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate MLP intent classifier")
-    parser.add_argument("--datasets", nargs="+", default=["single", "multi", "context"],
+    # `context` is no longer run by default. It is 61 pairs of one utterance at two order stages
+    # with different labels, so a text-only router cannot exceed 62/123 on it by construction and
+    # the resulting figure is not an accuracy. Chapter 5 no longer reports it; §4.5.2 makes the
+    # argument by design instead. Still selectable for the context-model comparison if that is run.
+    parser.add_argument("--datasets", nargs="+", default=["single", "multi"],
                         choices=["single", "multi", "context", "all"],
                         help="Which datasets to evaluate (default: all three)")
     parser.add_argument("--threshold", type=float, default=0.7,

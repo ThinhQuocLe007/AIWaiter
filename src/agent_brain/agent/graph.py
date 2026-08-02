@@ -101,12 +101,26 @@ def _route_after_validator(state: AgentState) -> str:
     Order matters — check circuit breaker FIRST:
         1. loop_count >= MAX_RETRY_LOOPS -> state_outcome (build retry context, then verbalize)
         2. is_valid -> tools (execute the tool call)
-        3. otherwise -> back to the current worker for correction
+        3. validator set delegate_reason -> chat_worker (nothing for the worker to fix)
+        4. otherwise -> back to the current worker for correction
+
+    Step 3 exists because step 4 was being asked to do the impossible. A rejection like
+    "the cart is empty, there is nothing to confirm" is not a malformed call the worker can
+    rewrite — it is a fact about state that the validator has already established. Handing
+    it back as prose and asking a 7B worker to infer "call delegate instead" measured 0/4
+    on cancel and 2/7 on confirm, and every failure burned the full three retry loops before
+    the turn fell out with an apology. The validator knows the answer, so it routes.
     """
     if state.get("loop_count", 0) >= MAX_RETRY_LOOPS:
         return "state_outcome"
     if state.get("is_valid"):
         return "tools"
+    if state.get("delegate_reason"):
+        logger.info(
+            "[validator] unfixable by worker — routing to chat_worker: %s",
+            state["delegate_reason"],
+        )
+        return "chat_worker"
     return _get_next_worker(state)
 
 
@@ -336,9 +350,9 @@ class AIWaiterGraph:
         config = create_thread_config(table_id, session_id)
 
         cart = _cart_from_tablet(items)
-        # Same stage semantics as the cart tools (see update_state_node): a non-empty draft is
-        # waiting to be confirmed, an empty one means there's nothing in play.
-        stage = "AWAITING_CONFIRMATION" if cart.items else "IDLE"
+        # Same semantics as the rule table in state_outcome_node._finalize: a tablet
+        # draft that nobody has asked about is DRAFTING, not AWAITING_CONFIRMATION.
+        stage = "DRAFTING" if cart.items else "IDLE"
         self.app.update_state(
             config,
             {"active_cart": cart, "order_stage": stage},

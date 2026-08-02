@@ -12,8 +12,19 @@ logger = logging.getLogger(__name__)
 
 INTENT_LABELS = ["ORDER", "SEARCH", "PAYMENT", "CHAT"]
 EMBEDDING_DIM = 768
-CONTEXT_DIM = 10
-INPUT_DIM = EMBEDDING_DIM + CONTEXT_DIM
+
+# Text only. The router used to concatenate a 10-dim context block (order_stage one-hot,
+# cart size, search-context size) onto the embedding, which turned out to be a mistake on
+# two counts. Measured: the block contributed nothing on unseen utterances (0.868 with it,
+# 0.868 without), and after StandardScaler its norm was 2.4-3.4x the norm of the entire
+# L2-normalised 768-dim embedding, so ten synthetic dimensions dominated the input geometry
+# and flipped predictions on their own.
+#
+# The check the block was trying to make already exists downstream and deterministically:
+# deterministic_validator_node rejects confirm_order unless order_stage is
+# AWAITING_CONFIRMATION and the cart is non-empty. Duplicating it here as a probabilistic
+# feature was redundant, and it coupled the router's weights to the state machine.
+INPUT_DIM = EMBEDDING_DIM
 
 
 class IntentClassifier(nn.Module):

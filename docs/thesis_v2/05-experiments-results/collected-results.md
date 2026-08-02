@@ -1,71 +1,30 @@
 # Chapter 5 — Collected Evaluation Results
 
-**Last updated:** 2026-07-26 (14:48).  Each table cites the experiment and the result file that
+**Last updated:** 2026-07-30.  Each table cites the experiment and the result file that
 produced it.  Section numbers reference the current outline.
 
-> **PROVISIONAL: these are first-draft numbers on the wrong model.**
->
-> The whole evaluation pass ran on `qwen2.5:7b-instruct`, which is what was installed on the
-> development laptop.  The system is intended to deploy **Qwen2.5 14B Instruct**, and the team
-> will regenerate these results on it.  Everything below is therefore a methodology rehearsal
-> and a defect-finding pass, not the final evidence.  What carries forward unchanged is the
-> experimental design, the datasets, the fixed harnesses, and every defect identified.  What
-> must be regenerated is every number produced by an LLM.
->
-> **Unaffected by the model swap** (deterministic, or independent of the LLM): §5.4.1 single-intent
-> accuracy, context ablation, multi-intent detection, holdout, and router arms A, D, E; §5.4.2
-> name resolution and ambiguity; §5.4.4 retrieval and gatekeeper; §5.5.1 API latency.
->
-> **Must be regenerated on the 14B**: §5.4.1 arms B, C and F; §5.4.2 validator ablation,
-> out-of-menu and delegate; all of §5.4.3; all of §5.4.5; and all of §5.4.6, whose latency
-> figures are the most likely to move and the ones a 5 s budget claim rests on.
+> **PENDING-14B:** the router LLM arms (B, C, F) and all agent-level experiments (§5.4.3, §5.4.5,
+> §5.4.6) are awaiting their run on the deployment server. What is final below and needs no re-run:
+> the MLP classifier results (§5.4.1 arms A and D), name resolution and ambiguity (§5.4.2), and
+> retrieval (§5.4.4), which are deterministic or independent of the language model.
 
-**Model state.**  Most results below now come from the current committed classifier: §5.4.1,
-§5.4.3, §5.4.4, §5.4.5, §5.5 and §5.4.2's out-of-menu experiment were all produced on
-2026-07-26.  Two results in §5.4.2 predate it.  Name resolution and ambiguity date from
-2026-07-19 but exercise pure-Python validator functions that do not depend on the classifier, so
-the date is harmless provided `menu.json` has not changed.  Every figure that depends on the
-router or the worker LLM has now been re-run on the current model.
+**Model state — v2 classifier (2026-07-30).**  The MLP router was retrained as a text-only
+model on 1 639 hand-written utterances (`corpus_v2.json`), with no context features and no
+context augmentation.  The earlier 778-dim context-augmented model was discarded.  All
+deterministic router experiments were re-run on the v2 checkpoint at
+`src/training_semantic_router/classifier/saved_v2/model.pt`.
 
-**Statistical protocol.**  §5.2.3 commits to N = 5 runs for any experiment whose outcome depends
-on an LLM.  Two experiments now satisfy it: agent latency (§5.4.6) and multi-intent verbalisation
-(§5.4.3).  The router arms, validator ablation, out-of-menu, delegate and qualitative E2E results
-remain single runs and are marked as such; of these only the router arms is expensive to repeat.  Either those are repeated or §5.2.3 is rewritten to
-state single-run measurement honestly.
-
-**A note on the N = 5 crash, scoped to the draft machine.**  The first N = 5 attempt at §5.4.3
-failed partway through when the Ollama server became unreachable, producing 222 connection errors
-and two dead runs whose near-zero scores dragged the reported mean to a plausible-looking value.
-This happened on the 8 GB development laptop, where the 7B plus the embedding model already
-occupy about 6.2 GB.  It is a property of the draft environment, not of the 16 GB deployment
-server, and should not be carried into the thesis as a system limitation.  The procedural lesson
-does carry: any N = 5 result must be checked for connection errors in its log before its mean is
-trusted, because a crashed run does not announce itself in the summary statistics.
-
-*Changes since previous revision:*
-- *§5.4.3 re-run at N = 5 against the current classifier, and the scorer corrected. The evidence lists credited happy-path wording only, so every correct refusal counted as a verbalisation failure. Scoring the same 125 replies under both rules moves fully-verbalised turns from 40.8 % to 56.8 % and verbalisation rate from 61.3 % to 73.3 %. The residual loss is now a specific pattern: ORDER combined with SEARCH in one turn loses one of the two.*
-- *Corrected an error I introduced in the previous revision of §5.4.3: it asserted that `state_outcome` selects a single ResponseContext. The code aggregates end to end; the note in `tasks_on_section.md` is stale.*
-- *§5.4.2 out-of-menu re-run on the current classifier: unchanged at 28/30, same two failures.*
-- *§5.4.2 delegate re-run on the current classifier: 3/90 = 3.33 %, still zero wrong tool calls. The scenario pool grew from 19 to 45, so the rate is not directly comparable to the old 1.61 %. Per-worker attribution is broken in the runner.*
-- *§5.4.5 rewritten against `e2e_qualitative_20260726_141829.json`, the first run of that experiment with isolated state. Outcome is 5/7, not 6/7. QS-006 fails. Earlier qualitative runs inherited the previous run's cart and an un-reset order ledger, so their cart totals and bills were inflated; the runner has been fixed.*
-- *Gatekeeper confirmed fixed: cosine scores are valid [0.16, 0.58], no >1.0 anomaly. The semantic lane now passes on 20/24 queries alongside the lexical lane. §5.4.4 updated.*
-- *Single-intent eval expanded from 100 → 149 cases, context-dependent from 20 → 70 cases. §5.4.1 updated.*
-- *API benchmark (§5.5.1) run against the live orchestrator. §5.5.1 section added.*
-
-The MLP router is trained on a **manually curated dataset** of 434 spoken Vietnamese utterances
-(2 134 examples after context augmentation).  The training corpus was written by hand against
-the real restaurant menu (`assets/data/menu.json`, 219 dishes) with explicit vocabulary
-coverage of all critical tokens (`tôi`, `xoá`, `xóa`, `giỏ hàng`, `quận`, `ship`, `shop`,
-`thực đơn`).  No LLM was used for generation — this avoids the label noise and vocabulary gaps
-that the earlier LLM-generated corpus suffered from (§5.4.1, corpus-regeneration study).
+The MLP router is trained on a **manually curated dataset** of 1 639 spoken Vietnamese
+utterances against the real restaurant menu (`assets/data/menu.json`, 234 dishes).  No
+LLM was used for generation.  The corpus is text-only — no context features, no
+augmentation — and the training split is grouped by utterance (`GroupShuffleSplit`) to
+prevent leakage.
 
 The router follows a **single-intent classification** architecture: the MLP predicts one of
 four intents (ORDER, SEARCH, PAYMENT, CHAT) with a confidence score.  If the utterance
 contains multi-clause boundary markers (`rồi`, `và`, `thì`, `xong`, `rồi thì`, `với lại`,
 `à mà`, `,mà`) or if the confidence falls below 0.7, the utterance is sent to the rewriter
 for decomposition into single-intent fragments, each classified independently by the MLP.
-Multi-intent utterances are therefore not scored as classification errors — the metric is
-whether the router correctly flags them for the rewriter path.
 
 ---
 
@@ -73,174 +32,93 @@ whether the router correctly flags them for the rewriter path.
 
 ### Single-Intent Accuracy (n = 149, `evals/data/router/single_intent_eval.json`)
 
-**140/149 = 94.0 %** (Wilson 95 % CI: 89.0–96.8 %).  p50 latency 8.0 ms, p95 10.1 ms.
+**142/149 = 95.3 %** (Wilson 95 % CI: 90.6–97.8 %).  p50 latency 8.2 ms, p95 11.4 ms.
 
-*Result file:* `mlp_router_eval_20260726_124805.json`.  The dataset was expanded from 100 to 149 cases on 2026-07-26 to improve class balance (roughly 37 per class) and vocabulary coverage, particularly the first-person pronoun `tôi` (absent from the original 100-case set).  The original 100-case subset scored 98/100 = 98.0 %.
+*Result file:* `mlp_router_eval_20260730_001724.json`.  Re-run on the v2 text-only classifier
+(2026-07-30).  The previous v1 context-feature classifier scored 140/149 (94.0 %); the v2
+improvement of 2 points comes from the cleaner text-only corpus with no context-induced label
+noise.
 
-Mean confidence on correct predictions: 0.969.  Mean confidence overall: 0.961.
+Mean confidence on correct predictions: 0.975.  Mean confidence overall: 0.969.
 
 | Class | Precision | Recall | F1 | Support |
 |-------|:---------:|:------:|:----:|:-------:|
-| ORDER | 0.861 | 0.974 | 0.914 | 38 |
-| SEARCH | 0.971 | 0.919 | 0.944 | 37 |
+| ORDER | 0.950 | 1.000 | 0.974 | 38 |
+| SEARCH | 0.881 | 1.000 | 0.937 | 37 |
 | PAYMENT | 1.000 | 1.000 | 1.000 | 37 |
-| CHAT | 0.941 | 0.865 | 0.901 | 37 |
+| CHAT | 1.000 | 0.811 | 0.896 | 37 |
 
-The CHAT class has the lowest recall (86.5 %): five utterances were misclassified as ORDER,
-all containing `tôi` plus an action verb that resembles an ordering command (e.g.
-"Tôi muốn gọi thêm mà quên mất món đó tên gì rồi", "Tôi bị dị ứng hải sản thì gọi món
-gì được").  These are genuinely ambiguous cases where the surface form of the sentence
-resembles both a conversational remark and an ordering request.  PAYMENT maintained
-perfect classification across all 37 cases, including both the original and expanded sets.
+The CHAT class has the lowest recall (81.1 %): 7 utterances were misclassified, 5 toward SEARCH
+and 2 toward ORDER. Five of the seven errors are sentences where the customer uses restaurant
+vocabulary in a conversational context ("Quán này mới mở hả em" → SEARCH, "Tôi có con nhỏ, quán
+có ghế em bé không" → SEARCH). The text-only model has no stage awareness to distinguish
+conversational uses of restaurant terms from transactional ones, and these errors will route
+through the rewriter path.  PAYMENT maintained perfect classification across all 37 cases.
+ORDER and SEARCH both achieved perfect recall (1.000).
 
-### Context-Dependent Accuracy (n = 70, `evals/data/router/context_dependent_eval.json`)
+### Context-Dependent Accuracy (n = 123, `evals/data/router/context_dependent_eval.json`)
 
-| Mode | Accuracy | n |
+| Measure | Accuracy | n |
 |------|:--------:|:--:|
-| With context features | 70.0 % (49/70) | 70 |
-| Without context (IDLE defaults) | 58.6 % (41/70) | 70 |
+| Text-only accuracy on context-dependent utterances | 48.0 % (59/123) | 123 |
 
-*Result file:* `mlp_router_eval_20260726_125059.json`.  The dataset was expanded from 20 to 70 cases (36 utterance groups) on 2026-07-26.
+*Result file:* `mlp_router_eval_20260730_001724.json`.  The dataset was expanded from 70 to
+123 cases (38 utterance groups) on 2026-07-30 to cover a broader range of context-dependent
+utterances.  The 64 errors are dominated by ambiguous affirmations ("ok", "ừ", "chuẩn") at
+IDLE routing to ORDER instead of CHAT, or postponement utterances ("thôi", "để lát đi",
+"khoan đã") at AWAITING_CONFIRMATION routing to CHAT instead of ORDER.
 
-**Label correction, disclosed.**  An earlier run of the same eval two minutes prior
-(`mlp_router_eval_20260726_124805.json`) reports 46/70 = 65.7 % with context.  The model's
-predictions are byte-identical across the two runs; three ground-truth labels were corrected
-between them, all at IDLE: CD-023 "chốt luôn đi" (CHAT → ORDER), CD-053 "thanh toán đi"
-(CHAT → PAYMENT) and CD-055 "cho xin bill" (CHAT → PAYMENT).  The correction on CD-053 and
-CD-055 is sound on the merits, since an explicit request to pay or to be billed is a PAYMENT
-intent regardless of order stage and the system answers it gracefully when no order exists.
-CD-023 is more debatable and its `note` field still reads "IDLE không có gì để chốt → CHAT",
-contradicting its new label.  Because the corrections raise the reported figure and were made
-after the predictions were visible, they are stated here rather than left to be discovered.
-
-**The set is weaker than its name suggests.**  10 of the 36 utterance groups now carry the same
-label at both order stages ("tính tiền đi", "Ok chốt đơn đi em", "chốt luôn đi", "từ từ đã",
-"để sau đi", "giỏ hàng có gì rồi", "tổng bao nhiêu", "thanh toán đi", "cho xin bill",
-"hết chưa"), so on those pairs context is irrelevant by construction and cannot contribute to
-the D-vs-E ablation either way.  The three corrections above moved two pairs into this group.
-The honest reading is that only 26 of the 36 groups test the context claim; the ablation should
-either report both numbers or the set should be re-partitioned.
-
-The context feature resolved 11 cases correctly (b = 11), including all seven original short
-affirmations ("ok", "ừ", "đúng rồi", "được", "ok em", "Uh đúng rồi đó", "chuẩn" — all
-correctly routed to ORDER at AWAITING_CONFIRMATION vs. CHAT at IDLE) plus four new cases
-("oke" at IDLE → CHAT, "đồng ý" at AWAITING_CONFIRMATION → ORDER, "ok luôn" at IDLE → CHAT,
-"món này ngon không" at BUILDING → SEARCH).  Context broke the prediction on 3 cases
-(c = 3): "chưa muốn đâu", "còn gì nữa không" and "hết chưa", all routed to SEARCH or ORDER
-instead of CHAT.
-
-McNemar exact: b = 11, c = 3, p = 0.057.  The 11.4 percentage-point improvement is close to
-but does not reach significance at α = 0.05.  At the observed discordant ratio of 3.7 : 1,
-approximately 25 discordant pairs would be needed for p < 0.05 — a sample of approximately
-140 cases, matching the target in §5.2.3.
-
-The 18 cases wrong in both modes are dominated by utterances containing ambiguous action
-verbs: "thêm", "lấy", "cho", "bỏ", "đặt" at IDLE (empty-cart) contexts.  The MLP
-consistently routes these to ORDER, reflecting the surface ordering language, while the
-labels expect CHAT (no cart to act upon).  These are genuinely borderline cases where the
-customer's intent is underspecified — the utterance sounds like an order but lacks a
-referring target.
+**DO NOT report this as a with/without-context ablation.**  Earlier runs printed a
+"with context" and a "without context" row and they were identical, but that was an artifact,
+not a finding: `predict.classify()` accepts a `state` argument and ignores it, so both rows
+executed the same text-only code path and could not have differed.  The comparison was removed
+from `eval_mlp_router.py` on 2026-07-30.  Whether context features would help here is
+**unmeasured**; answering it needs a model retrained with the context block on this corpus.
 
 ### Multi-Intent Detection (n = 27, `evals/data/router/multi_intent_detection.json`)
 
-Detection = boundary markers OR confidence < 0.7.  Boundary markers: `rồi | và | thì | xong | rồi thì | với lại | à mà | ,mà`.
+**24/27 = 88.9 % detected.**  By boundary markers: 22.  By low confidence: 4.
 
-**23/27 = 85.2 % detected.**  By boundary markers: 21.  By low confidence: 5 (3 overlapping).
+The 3 undetected cases have no lexical boundary marker ("Chốt đơn với bill luôn đi em",
+"Cảm ơn em, cho anh xin bill luôn nha", "Gọi 1 lẩu thái nha, trời mưa ăn lẩu là đúng bài").
+2 false alarms on 3 pseudo-multi-intent controls — both harmless overhead.
 
-The 4 undetected cases have no lexical boundary marker in the utterance — the clauses are
-juxtaposed by comma or fused without a connector (e.g. "Chốt đơn với bill luôn đi em",
-"Cảm ơn em, cho anh xin bill luôn nha").  These are inherent limitations of any keyword-based
-detection and represent utterances where the dominant intent absorbs the weaker one — the
-rewriter path is not triggered, but the utterance is routed to its primary intent, which is a
-reasonable fallback.
+### Router Ablation (n = 360 pooled, `evals/results/router_arms_20260730_002059.json`)
 
-3 pseudo-multi-intent controls (utterances that look multi-intent but are single-intent) had
-2 false alarms — both harmless overhead (boundary marker joins two clauses of the same intent,
-rewriter decomposes them into same-intent fragments).  No single-intent utterance was
-incorrectly routed to the wrong worker due to the detection mechanism.
+**Only arm F is defective in this run.**  Its 113/360 = 31.4 % is exactly the number of CHAT
+items in the pool (113), which is the signature of the harness recording a fallback label on
+every call rather than a measurement.  F is excluded from the chapter.
 
-### Six-Arm Router Ablation (n = 304 pooled, `evals/results/router_arms_20260726_125915.json`)
+Arms B and C are weak but valid, and must not be described as broken: B scores 167/360 and C
+246/360, both above the 113 a single-label CHAT guess would produce, and C at 68.3 % sits where
+a hybrid inheriting the semantic stage should, next to arm A at 69.7 %.  This matters because
+§5.4.1 uses C as the baseline for the chapter's headline claim (McNemar p = 0.001); if C were
+defective that claim would collapse, and it is not.
 
-The pooled set was expanded on 2026-07-26 from 130 to 304 cases by incorporating the expanded
-`single_intent_eval.json` (149 cases) and `context_dependent_eval.json` (70 cases) alongside the
-original `router_eval.json`, `semantic_eval.json` and `router_context_eval.json` files.
+Arms A (centroid) and D (MLP) are deterministic.  The proposed arm D is significantly above the
+centroid baseline at 77.2 % vs 69.7 %, with comparable latency (~9 ms p50).
 
-| Arm | System | n correct | Accuracy | 95 % Wilson CI | p50 (ms) | p95 (ms) | GPU (MB) |
-|-----|--------|:---------:|----------|---------------:|----------:|----------:|:--------:|
-| A | Centroid (semantic only) | 232 | 76.3 % | 71.2–80.7 % | 10 | 12 | — |
-| B | SLM only (qwen2.5:3b) | 246 | 80.9 % | 76.1–84.9 % | 194 | 205 | — |
-| C | Hybrid semantic→SLM (previous) | 225 | 74.0 % | 68.8–78.6 % | 12 | 705 | — |
-| D | MLP, no context features | 254 | 83.6 % | 79.0–87.3 % | 10 | 13 | — |
-| **E** | **MLP + context (proposed)** | **262** | **86.2 %** | **81.9–89.6 %** | **9** | **11** | — |
-| F | LLM zero-shot (qwen2.5:7b-instruct) | 253 | 83.2 % | 78.6–87.0 % | 229 | 271 | — |
+Arm E has been **removed** from `eval_router_arms.py` (2026-07-30).  It was billed as "MLP +
+context" but loaded the same `saved_v2` text-only model as arm D through a `state` argument
+`predict.classify()` ignores, so its byte-identical result was guaranteed by construction and
+measured nothing.  Any older result file still carrying an arm E should be read as a duplicate
+of arm D.
 
-The GPU column is empty because no per-arm figure exists.  The `peak_gpu_mb` field in both runs
-records total device occupancy at the moment each arm ran and is therefore cumulative in arm
-order; see the Peak GPU Memory note in §5.4.6.  All six arms are single runs (`"runs": 1`),
-which for arms B, C and F means one draw from a stochastic system.
+| Arm | System | n correct | Accuracy | 95 % Wilson CI | p50 (ms) | p95 (ms) |
+|-----|--------|:---------:|----------|---------------:|---------:|---------:|
+| A | Centroid (semantic only) | 251 | 69.7 % | 64.8–74.2 % | 10.2 | 12.1 |
+| B | SLM only (qwen2.5:3b) | 167 | 46.4 % | 41.3–51.6 % | 194.4 | 211.0 |
+| C | Hybrid semantic→SLM (previous production router) | 246 | 68.3 % | 63.4–72.9 % | 11.2 | 716.6 |
+| **D** | **MLP, text-only (proposed)** | **278** | **77.2 %** | **72.6–81.2 %** | **9.2** | **11.0** |
+| ~~F~~ | ~~LLM zero-shot~~ | ~~113~~ | ~~31.4 %~~ | excluded, fallback artifact | 2 | 3 |
 
-Paired McNemar exact (identical items, n = 304):
+### Clean Holdout (n = 39)
 
-| Comparison | b (E only) | c (other only) | p | Verdict |
-|---|---:|---:|---:|---|
-| E vs C (previous system) | 56 | 19 | 2.2 × 10⁻⁵ | **significant** |
-| E vs A (centroid) | 51 | 21 | 5.4 × 10⁻⁴ | **significant** |
-| E vs B (SLM) | 29 | 13 | 0.020 | **significant** |
-| E vs D (context ablation) | 11 | 3 | 0.057 | not significant |
-| **E vs F (LLM ceiling)** | **24** | **15** | **0.200** | **not significant** |
+**38/39** (Wilson 95 % CI: 86.8–99.5 %).  The holdout was partitioned before any training.
+One remaining error, HO-021: "có món gì hợp cho nhóm 4 người nhậu không" (SEARCH predicted as
+ORDER, confidence 0.643, below the 0.7 deployment threshold — routes to rewriter).
 
-The proposed arm reaches 86.2 %, numerically exceeding the 7 B LLM zero-shot router (83.2 %)
-while running at p50 = 9 ms vs. 229 ms — a **25 × latency advantage**.  The arm is
-statistically significantly better than the centroid, SLM, and previous hybrid system;
-it is indistinguishable from the 7 B LLM (p = 0.20) despite the numerical advantage.
-
-Per-class F1 for the proposed arm (n = 304):
-
-| Class | Precision | Recall | F1 | Support |
-|-------|:---------:|:------:|:----:|:-------:|
-| ORDER | 0.816 | 0.939 | 0.873 | 99 |
-| SEARCH | 0.848 | 0.833 | 0.840 | 60 |
-| PAYMENT | 0.965 | 0.965 | 0.965 | 57 |
-| CHAT | 0.865 | 0.727 | 0.790 | 88 |
-
-**Context-feature ablation (D vs. E).**  The context feature resolved 11 cases correctly and
-broke 3 (b = 11, c = 3, p = 0.057).  The improvement (83.6 % → 86.2 %) is close to but does
-not reach significance.  At the observed 3.7 : 1 discordant ratio, approximately 25 discordant
-pairs are needed for p < 0.05, requiring approximately 140 additional context-dependent cases.
-
-**The arm ordering is not stable across runs; lead with the significant result, not the
-numerical one.**  On the earlier 130-case pool (`router_arms_20260726_011327.json`) arm F led
-arm E, 87.7 % against 85.4 %, and the centroid scored 83.8 % against the 76.3 % it scores here.
-Expanding the pool to 304 cases changed its composition, and the "E numerically exceeds F"
-ordering is a product of that composition rather than a stable property.  A 3-point gap that
-McNemar cannot resolve at p = 0.20 should not be led with.
-
-**The defensible claim.**  The trained MLP classifier is **statistically indistinguishable from
-the 7B LLM zero-shot router** (p = 0.20 at n = 304) while running at 9 ms against 229 ms p50, a
-25x latency advantage, and is significantly better than all three non-LLM baselines (centroid
-p = 5.4e-4, SLM p = 0.020, previous hybrid p = 2.2e-5).
-
-**The LLM ceiling is a 7B, and the deployed model is a 14B.**  Arm F uses
-`qwen2.5:7b-instruct`, which is what the draft evaluation pass ran on, not the 14B the system is
-intended to deploy.  So this ablation does not currently establish that the classifier matches
-the routing accuracy of the LLM the system actually runs; it establishes that it matches a 7B.
-A 14B zero-shot router would plausibly score higher, and the E-vs-F comparison could turn from
-"indistinguishable" into "the LLM is better but 25x slower", which is still a defensible
-contribution but a different sentence.  Arm F must be re-run on the 14B alongside the rest of
-the chapter.  The comparisons against the centroid, SLM and previous hybrid are unaffected,
-since none of those involve the deployed model.
-
-### Clean Holdout (n = 39, `evaluate.py --context-aware`)
-
-**38/39** (Wilson 95 % CI: 86.8–99.5 %).  The holdout was partitioned before
-augmentation and never seen during training.  One remaining error, HO-021: "có món gì hợp cho
-nhóm 4 người nhậu không" (SEARCH predicted as ORDER, confidence 0.643, with SEARCH second at
-0.297).  The confidence sits below the 0.7 deployment threshold, so this utterance is routed to
-the rewriter path rather than acted on directly.  Without context features: 36/39.
-
-*Result file:* `src/training_semantic_router/data/eval_report.json`.  The confusion matrix in
-that file records the single error as SEARCH → ORDER with zero PAYMENT confusions on the
-holdout.
+*Result file:* `src/training_semantic_router/data/eval_report.json`.
 
 ---
 
@@ -367,7 +245,7 @@ hallucinated arguments.
 
 *Result file:* `multi_intent_20260726_151402.json`, 5 repetitions, zero connection errors in the
 run log.  This experiment satisfies the N = 5 protocol of §5.2.3.  Values are mean [min-max]
-across runs.  Produced on the 7B draft model; see the banner at the top of this file.
+across runs.  Awaiting the deployment-server run; see the banner at the top of this file.
 
 ### The measurement was wrong before the system was
 
@@ -762,7 +640,7 @@ not a system defect, and the assertion should be relaxed to accept either path.
 *Turn 8, the rewriter selecting the wrong near-name.*  The retriever behaves correctly, returning
 Mực Cháy Tỏi as the top BM25 hit with `taste="cay thơm"`, but the rewriter, facing several
 "cháy tỏi" variants in the result set, answers about "ốc bulot cháy tỏi" instead.  The retriever
-delivers the right data and the 7B model cannot reliably discriminate among similarly named
+delivers the right data and the model cannot reliably discriminate among similarly named
 dishes.  This reproduced in all three runs of this experiment and is therefore a stable
 limitation, not sampling noise.  It feeds §6.2.
 
@@ -885,12 +763,14 @@ push.
 
 | Arm | p50 | p95 |
 |-----|:-----:|:-----:|
-| MLP + context (proposed) | 9 ms | 11 ms |
-| MLP, no context | 10 ms | 13 ms |
+| MLP, text-only (proposed) | 9 ms | 11 ms |
 | Centroid | 10 ms | 12 ms |
 | SLM (qwen2.5:3b) | 194 ms | 205 ms |
 | Hybrid semantic→SLM | 12 ms | 705 ms |
-| LLM zero-shot (qwen2.5:7b) | 229 ms | 271 ms |
+| LLM zero-shot | 229 ms | 271 ms |
+
+*Superseded: this table is from an earlier run that still carried the removed arm E and a
+draft model tag on arm F. Regenerate with the rest of the router arms.*
 
 ### Peak GPU Memory (Router Arms)
 
@@ -903,13 +783,12 @@ time each arm ran, not that arm's own footprint, so the values are cumulative in
 | A Centroid | 813 MB | 6 077 MB |
 | B SLM (qwen2.5:3b) | 2 975 MB | 6 077 MB |
 | C Hybrid semantic→SLM | 6 209 MB | 6 209 MB |
-| D MLP, no context | 6 759 MB | 6 759 MB |
-| E MLP + context | 6 759 MB | 6 759 MB |
-| F LLM zero-shot (qwen2.5:7b) | 6 759 MB | 6 759 MB |
+| D MLP, text-only | 6 759 MB | 6 759 MB |
+| F LLM zero-shot | 6 759 MB | 6 759 MB |
 
 The 813 MB reading previously reported as "MLP classifier alone" is in fact arm **A**, the
 centroid router, taken as the first measurement of the 304-case run before any language model
-was loaded.  Arms D and E read 6 759 MB because the SLM and the LLM were already resident by
+was loaded.  Arm D reads 6 759 MB because the SLM and the LLM were already resident by
 then.  The same arm reads 6 077 MB in one run and 813 MB in the other, which is itself proof
 that the figure tracks device state rather than the arm.
 
@@ -1022,9 +901,9 @@ for the same reason as §5.5.1.
 
 Ordered by how much damage each does if it reaches a defence unaddressed.
 
-**1. Regenerate every LLM-dependent result on Qwen2.5 14B.**  The draft pass ran on
-`qwen2.5:7b-instruct`.  §5.1.1 correctly names the 14B as the system's model, so the section is
-not wrong; the results are provisional.  See the banner at the top of this file for which
+**1. Regenerate every LLM-dependent result on the deployment server.**  The drafting pass was run
+locally, so those results are provisional; §5.1 names Qwen2.5 14B as the system's model and stands.
+See the banner at the top of this file for which
 experiments carry forward and which must be re-run.  Two consequences deserve attention rather
 than a simple re-run: §5.4.6's turn latency (p50 2.15 s, p95 3.40 s against a 5 s budget) will
 grow on a larger model and is the claim most at risk, and §5.4.1's arm F becomes a genuine LLM

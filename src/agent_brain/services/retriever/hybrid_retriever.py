@@ -23,7 +23,8 @@ class RetrieverManager:
                max_price: float = None,
                min_price: float = None,
                diet_type: str = None,
-               category: str = None) -> List[SearchResult]:
+               category: str = None,
+               **fusion_kwargs) -> List[SearchResult]:
         k = k or self.k
         threshold = threshold or self.score_threshold
 
@@ -39,7 +40,10 @@ class RetrieverManager:
             k=k,
             threshold=threshold,
             rrf_k=rrf_k,
-            query=query
+            query=query,
+            # Lane weights and any other strategy-specific option, so a sweep can vary
+            # them without a second code path that could drift from this one.
+            **fusion_kwargs,
         )
 
     def _get_raw_scores(self, query: str, k: int) -> Tuple[list, list]:

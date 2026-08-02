@@ -10,7 +10,7 @@ sensor suite, the navigation software and the voice pipeline were added by the g
 |---|---|---|
 | Server | GPU | NVIDIA GeForce RTX 3070 Laptop, 8 GB VRAM, CUDA 12.1 |
 | Server | CPU / RAM | Intel Core i7 x86-64 / 32 GB |
-| Server | Language model | Qwen2.5 14B Instruct (`q6_K`), served by Ollama, pinned in VRAM |
+| Server | Language model | Qwen2.5 14B Instruct at `q6_K`, served by Ollama, pinned in VRAM |
 | Robot | Compute | NVIDIA Jetson Orin Nano, 8 GB unified memory, CUDA 12.6 |
 | Robot | LiDAR | RPLiDAR A2M8, 360° 2D laser scanner, 8 Hz |
 | Robot | Depth camera | Intel RealSense D435, RGB-D, 30 Hz |

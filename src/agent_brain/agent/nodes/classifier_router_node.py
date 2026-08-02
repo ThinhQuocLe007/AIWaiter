@@ -1,6 +1,7 @@
 """classifier_router_node — trained MLP intent classifier replacing the centroid router.
 
-Uses the 4-class MLP trained in ``src/training_semantic_router/`` (97.4% accuracy).
+Uses the text-only 4-class MLP trained in ``src/training_semantic_router/`` on corpus_v2
+(94.0% on 149 eval utterances, none of which appear in its training data).
 Replaces ``semantic_router_node`` + ``keyword_detector``; the rewriter stays for
 multi-intent decomposition on low-confidence or multi-clause utterances.
 
@@ -16,7 +17,6 @@ Architecture:
 from __future__ import annotations
 
 import logging
-import re
 import time
 from typing import Any
 
@@ -26,6 +26,7 @@ from src.agent_brain.agent.nodes.rewriter_node import rewriter_node
 from src.agent_brain.agent.state import AgentState
 from src.agent_brain.services.retriever.indices.embeddings import encode_queries
 from src.agent_brain.utils import trace_latency
+from src.agent_brain.utils.boundary_utils import has_boundary_markers
 from src.agent_brain.utils.state_helpers import last_user_text
 
 logger = logging.getLogger(__name__)
@@ -35,40 +36,16 @@ _CLASSIFY_IMPORT_FAILED = False
 
 CLASSIFIER_THRESHOLD = 0.7
 
-_MULTI_CLAUSE_RE = re.compile(r"\b(rồi thì|với lại|rồi|và|thì|xong)\b|à mà|,\s*mà\b")
-
-
-def _has_boundary_markers(utterance: str) -> bool:
-    """A boundary marker only splits a clause when it sits BETWEEN two clauses.
-    ``rồi`` at the end of an utterance is an aspect particle ("hết nhiêu tiền rồi em ơi"),
-    not a clause boundary, and treating it as one costs a ~1 s rewriter call on roughly
-    one single-intent utterance in nine."""
-    low = utterance.lower()
-    for m in _MULTI_CLAUSE_RE.finditer(low):
-        before = low[:m.start()].split()
-        after = low[m.end():].split()
-        if len(before) >= 2 and len(after) >= 2:
-            return True
-    return False
-
-
-def _build_classifier_state(state: AgentState) -> dict[str, Any]:
-    active_cart = state.get("active_cart")
-    cart_items = active_cart.items if active_cart else []
-    search_ctx = state.get("search_context") or []
-
-    return {
-        "order_stage": state.get("order_stage", "IDLE"),
-        "has_cart": bool(cart_items),
-        "cart_size": len(cart_items),
-        "has_search_context": bool(search_ctx),
-        "search_context_size": len(search_ctx),
-    }
+# SEARCH gets a higher bar: dish-name tokens bias the MLP toward SEARCH even when the
+# utterance carries ORDER markers ("cho mình 1 Mực Cháy Tỏi" → SEARCH 0.740). Raising
+# the SEARCH threshold sends borderline SEARCH classifications through the rewriter
+# where fragments are decomposed and reclassified independently — a single-intent ORDER
+# utterance with dish names produces one fragment that reclassifies correctly.
+SEARCH_THRESHOLD = 0.85
 
 
 def _classify_one(
     utterance: str,
-    classifier_state: dict[str, Any],
     embedding_cache: dict[str, np.ndarray],
 ) -> dict[str, Any]:
     global _classify_fn, _CLASSIFY_IMPORT_FAILED
@@ -92,16 +69,15 @@ def _classify_one(
     if emb is None:
         emb = encode_queries([utterance])[0]
         embedding_cache[utterance] = emb
-    return _classify_fn(utterance, state=classifier_state, embedding=emb)
+    return _classify_fn(utterance, embedding=emb)
 
 
 def _safe_classify(
     utterance: str,
-    classifier_state: dict[str, Any],
     embedding_cache: dict[str, np.ndarray],
 ) -> dict[str, Any]:
     try:
-        return _classify_one(utterance, classifier_state, embedding_cache)
+        return _classify_one(utterance, embedding_cache)
     except Exception:
         logger.exception("Classifier inference failed for '%s' — falling back to CHAT", utterance)
         return {"intent": "CHAT", "confidence": 0.0, "all_probs": {}}
@@ -111,10 +87,9 @@ def _safe_classify(
 def classifier_router_node(state: AgentState) -> dict[str, Any]:
     start_time = time.time()
     user_text = last_user_text(state)
-    classifier_state = _build_classifier_state(state)
 
     embedding_cache: dict[str, np.ndarray] = {}
-    result = _safe_classify(user_text, classifier_state, embedding_cache)
+    result = _safe_classify(user_text, embedding_cache)
 
     confidence = result["confidence"]
     intent = result["intent"]
@@ -122,15 +97,18 @@ def classifier_router_node(state: AgentState) -> dict[str, Any]:
     current_intents: list[str] = ["CHAT"]
     intent_queries: dict[str, str] | None = None
 
-    if confidence >= CLASSIFIER_THRESHOLD and not _has_boundary_markers(user_text):
+    threshold = SEARCH_THRESHOLD if intent == "SEARCH" else CLASSIFIER_THRESHOLD
+    if confidence >= threshold and not has_boundary_markers(user_text):
         current_intents = [intent]
         logger.info(
-            "[Classifier Router] Fast path. Intent: %s (confidence=%.4f)",
-            intent, confidence,
+            "[Classifier Router] Fast path. Intent: %s (confidence=%.4f, threshold=%.2f)",
+            intent, confidence, threshold,
         )
     else:
-        if _has_boundary_markers(user_text):
+        if has_boundary_markers(user_text):
             reason = f"boundary_markers (conf={confidence:.4f})"
+        elif intent == "SEARCH" and confidence < SEARCH_THRESHOLD:
+            reason = f"search_threshold (conf={confidence:.4f} < {SEARCH_THRESHOLD})"
         else:
             reason = f"low_confidence (conf={confidence:.4f})"
         logger.info("[Classifier Router] Rewriter triggered. Reason: %s", reason)
@@ -147,9 +125,7 @@ def classifier_router_node(state: AgentState) -> dict[str, Any]:
             intent_queries = {}
 
             for fragment in fragments:
-                frag_result = _safe_classify(
-                    fragment, classifier_state, embedding_cache,
-                )
+                frag_result = _safe_classify(fragment, embedding_cache)
                 frag_intent = frag_result["intent"]
                 frag_conf = frag_result["confidence"]
                 logger.info(

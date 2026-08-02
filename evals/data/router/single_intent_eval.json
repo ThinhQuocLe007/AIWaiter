@@ -2,7 +2,7 @@
   "dataset": "single_intent_eval",
   "version": "1.0",
   "description": "Single-intent accuracy benchmark. MLP classifies each utterance into ORDER/SEARCH/PAYMENT/CHAT. Context features are not used.",
-  "total_cases": 150,
+  "total_cases": 149,
   "cases": [
     {
       "utterance": "Cho tôi 2 phần Ốc Hương Xốt Trứng Muối",

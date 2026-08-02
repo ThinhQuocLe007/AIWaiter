@@ -10,52 +10,50 @@ they need refreshing after a re-run just as much as the figures do.
 
 Do not hand-edit this file. Re-run the script instead.
 
-### Tables 5.7 and 5.8 — single-intent accuracy
+### Table 5.3 — single-intent accuracy
 
-Source: `mlp_router_eval_20260727_182324.json`.
+Source: `mlp_router_eval_20260731_173448.json`.
 
-Accuracy 140/149 = 94.0 %, Wilson 88.9–96.8 %. p50 6.94 ms, p95 8.38 ms, mean confidence 0.961.
+Accuracy 142/149 = 95.3 %, Wilson 90.6–97.7 %. p50 7.22 ms, p95 8.86 ms, mean confidence 0.9693.
 
 | True \ Predicted | ORDER | SEARCH | PAYMENT | CHAT | Total |
 |---|:---:|:---:|:---:|:---:|:---:|
-| **ORDER** | **37** | 0 | 0 | 1 | 38 |
-| **SEARCH** | 2 | **34** | 0 | 1 | 37 |
+| **ORDER** | **38** | 0 | 0 | 0 | 38 |
+| **SEARCH** | 0 | **37** | 0 | 0 | 37 |
 | **PAYMENT** | 0 | 0 | **37** | 0 | 37 |
-| **CHAT** | 4 | 1 | 0 | **32** | 37 |
+| **CHAT** | 2 | 5 | 0 | **30** | 37 |
 
 | Class | Precision | Recall | F1 |
 |---|---:|---:|---:|
-| ORDER | 0.861 | 0.974 | 0.914 |
-| SEARCH | 0.971 | 0.919 | 0.944 |
+| ORDER | 0.950 | 1.000 | 0.974 |
+| SEARCH | 0.881 | 1.000 | 0.937 |
 | PAYMENT | 1.000 | 1.000 | 1.000 |
-| CHAT | 0.941 | 0.865 | 0.901 |
+| CHAT | 1.000 | 0.811 | 0.895 |
 
-Multi-intent detection, same run: 23/27 detected (85.2 %), 21 by boundary marker, 5 by low confidence; 2 false alarms on 3 controls.
+Multi-intent detection, same run: 24/27 detected (88.9 %), 22 by boundary marker, 4 by low confidence; 2 false alarms on 3 controls.
 
 ### Figure 5.1 — router ablation
 
-Source: `router_arms_20260727_192028.json`, n = 360 paired cases.
+Source: `router_arms_20260731_172148.json`, n = 225 paired cases.
 
 | Arm | System | Accuracy | 95 % Wilson CI | p50 (ms) | p95 (ms) |
 |-----|--------|----------|---------------:|---------:|---------:|
-| A | Centroid, semantic only | 251/360, 69.7 % | 64.8–74.2 % | 9 | 11 |
-| B | SLM only, qwen2.5:3b | 270/360, 75.0 % | 70.3–79.2 % | 186 | 199 |
-| C | Hybrid semantic to SLM | 246/360, 68.3 % | 63.4–72.9 % | 10 | 669 |
-| D | MLP, context ablated | 274/360, 76.1 % | 71.5–80.2 % | 8 | 9 |
-| **E** | **MLP + context (proposed)** | **290/360, 80.6 %** | **76.1–84.3 %** | **8** | **9** |
-| F | LLM zero-shot, qwen2.5:7b | 272/360, 75.6 % | 70.9–79.7 % | 195 | 213 |
+| A | Centroid, semantic only | 181/225, 80.4 % | 74.8–85.1 % | 9.4 | 11.1 |
+| B | SLM only, qwen2.5:3b | 205/225, 91.1 % | 86.7–94.2 % | 189.0 | 210.5 |
+| C | Hybrid semantic to SLM | 177/225, 78.7 % | 72.9–83.5 % | 10.3 | 730.7 |
+| **D** | **MLP, text-only (proposed)** | **209/225, 92.9 %** | **88.8–95.6 %** | **9.0** | **10.0** |
+| F | LLM zero-shot, qwen2.5:7b | 207/225, 92.0 % | 87.7–94.9 % | 217.1 | 234.4 |
 
 McNemar against the proposed arm:
 
 | Comparison | b/c | p |
 |---|:---:|---:|
-| mlp_context vs hybrid | 66/22 | 2.9 × 10^-6 |
-| mlp_context vs mlp_nocontext | 18/2 | 4.0 × 10^-4 |
-| mlp_context vs llm | 35/17 | 0.018 |
-| mlp_context vs centroid | 61/22 | 2.2 × 10^-5 |
-| mlp_context vs slm | 37/17 | 0.009 |
+| mlp vs hybrid | 40/8 | 3.3 × 10^-6 |
+| mlp vs llm | 9/7 | 0.804 |
+| mlp vs centroid | 36/8 | 2.5 × 10^-5 |
+| mlp vs slm | 13/9 | 0.523 |
 
-### Table 5.14 — validator ablation
+### Table 5.7 — validator ablation
 
 Sources: `validator_ablation_validator_on_20260727_192238.json`, `validator_ablation_validator_off_20260727_192947.json`.
 
@@ -66,50 +64,50 @@ Sources: `validator_ablation_validator_on_20260727_192238.json`, `validator_abla
 
 ### Figure 5.2 — retrieval by difficulty
 
-Source: `retrieval_full_20260728_200548.json`.
+Source: `retrieval_full_retrieval_eval_v2_20260730_172436.json`.
 
 | Mode | P@5 | R@5 | MRR | Hit rate |
 |------|:----:|:----:|:----:|:--------:|
-| BM25 only | 0.408 | 0.757 | 0.722 | 0.958 |
-| FAISS only | 0.300 | 0.595 | 0.586 | 0.792 |
-| **RRF fusion** | **0.375** | **0.681** | **0.692** | **0.958** |
+| BM25 only | 0.459 | 0.597 | 0.707 | 0.840 |
+| FAISS only | 0.308 | 0.475 | 0.588 | 0.700 |
+| **RRF fusion** | **0.408** | **0.551** | **0.691** | **0.840** |
 
 | Difficulty | n | P@5 | R@5 | MRR | Hit rate |
 |------------|:--:|:----:|:----:|:----:|:--------:|
-| Easy | 8 | 0.425 | 0.865 | 1.000 | 1.000 |
-| Medium | 9 | 0.356 | 0.759 | 0.537 | 1.000 |
-| Hard | 7 | 0.343 | 0.371 | 0.540 | 0.857 |
+| Easy | 18 | 0.411 | 0.774 | 0.889 | 0.889 |
+| Medium | 19 | 0.505 | 0.546 | 0.702 | 0.895 |
+| Hard | 13 | 0.262 | 0.249 | 0.403 | 0.692 |
 
-Gatekeeper: both lanes 20, lexical only 4, semantic only 0, rejected 0, admitted 24/24.
+Gatekeeper: both lanes 40, lexical only 3, semantic only 5, rejected 2, admitted 48/50.
 
 ### Figure 5.3 — turn latency by intent
 
-Source: `latency_20260727_213626.json`, 5 runs per utterance.
+Source: `latency_20260730_170944.json`, 5 runs per utterance.
 
 | Intent | p50 | p95 | Measurements |
 |--------|:-----:|:-----:|:--:|
-| ORDER | 1.10 s | 1.80 s | 10 |
-| ORDER_CONFIRM | 4.39 s | 20.00 s | 5 |
-| SEARCH | 1.71 s | 2.31 s | 15 |
-| PAYMENT | 0.65 s | 3.39 s | 10 |
-| CHAT | 0.89 s | 2.65 s | 10 |
-| MULTI | 1.82 s | 2.04 s | 10 |
-| **All turns** | **1.74 s** | **3.62 s** | **60** |
+| ORDER | 0.96 s | 1.01 s | 10 |
+| ORDER_CONFIRM | 1.45 s | 1.46 s | 5 |
+| SEARCH | 2.72 s | 3.17 s | 15 |
+| PAYMENT | 0.32 s | 1.07 s | 10 |
+| CHAT | 1.21 s | 3.16 s | 10 |
+| MULTI | 2.69 s | 5.23 s | 10 |
+| **All turns** | **1.61 s** | **4.13 s** | **60** |
 
 ### Figure 5.4 — turn budget by graph node
 
-Source: `latency_20260727_213626.json`.
+Source: `latency_20260730_170944.json`.
 
 | Node | Share of turn | p50 | p95 | n |
 |------|:---:|:---:|:---:|:--:|
-| `order_worker` | 55.6 % | 0.984 s | 6.387 s | 30 |
-| `response_node` | 22.5 % | 0.010 s | 1.330 s | 60 |
-| `classifier_router` | 10.6 % | 0.020 s | 0.889 s | 60 |
-| `search_worker` | 10.4 % | 0.668 s | 1.193 s | 15 |
-| `tools` | 0.7 % | 0.021 s | 0.042 s | 41 |
-| `validator` | 0.1 % | 0.001 s | 0.005 s | 45 |
+| `response_node` | 41.0 % | 0.009 s | 2.315 s | 60 |
+| `order_worker` | 27.0 % | 0.939 s | 1.409 s | 30 |
+| `search_worker` | 23.1 % | 0.711 s | 1.466 s | 25 |
+| `classifier_router` | 7.9 % | 0.013 s | 0.814 s | 60 |
+| `tools` | 0.8 % | 0.022 s | 0.038 s | 44 |
 | `chat_worker` | 0.0 % | 0.001 s | 0.001 s | 10 |
 | `payment_dispatch` | 0.0 % | 0.001 s | 0.001 s | 10 |
 | `state_outcome` | 0.0 % | 0.001 s | 0.001 s | 60 |
-| `state_updater` | 0.0 % | 0.001 s | 0.001 s | 46 |
+| `state_updater` | 0.0 % | 0.001 s | 0.002 s | 50 |
+| `validator` | 0.0 % | 0.001 s | 0.002 s | 49 |
 

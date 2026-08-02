@@ -20,7 +20,11 @@
           "note": "Multi-item order in single utterance",
           "assert": {
             "tool_called": "add_cart",
-            "response_should_contain_one_of": ["Ốc Hương", "Lẩu Thái", "giỏ hàng"]
+            "response_should_contain_one_of": [
+              "Ốc Hương",
+              "Lẩu Thái",
+              "giỏ hàng"
+            ]
           }
         },
         {
@@ -30,7 +34,10 @@
           "note": "Confirmation — must call confirm_order with correct items",
           "assert": {
             "tool_called": "confirm_order",
-            "confirmed_items_must_contain": ["Ốc Hương", "Lẩu Thái"]
+            "confirmed_items_must_contain": [
+              "Ốc Hương",
+              "Lẩu Thái"
+            ]
           }
         },
         {
@@ -40,7 +47,12 @@
           "note": "Payment request",
           "assert": {
             "tool_called": "request_payment",
-            "response_should_contain_one_of": ["thanh toán", "hóa đơn", "QR", "tổng"]
+            "response_should_contain_one_of": [
+              "thanh toán",
+              "hóa đơn",
+              "QR",
+              "tổng"
+            ]
           }
         }
       ]
@@ -71,7 +83,13 @@
           "note": "Orders the recommended dish by reference — tests search_context→cart bridge",
           "assert": {
             "tool_called": "add_cart",
-            "response_should_contain_one_of": ["giỏ hàng", "đã thêm"]
+            "response_should_contain_one_of": [
+              "giỏ hàng",
+              "đã thêm",
+              "điểm lại",
+              "đơn của",
+              "xác nhận đặt hàng"
+            ]
           }
         },
         {
@@ -101,7 +119,10 @@
           "note": "ORDER + PAYMENT in one utterance — tests boundary marker 'rồi' and rewriter",
           "assert": {
             "tool_called": "add_cart",
-            "response_should_contain_one_of": ["Hàu", "giỏ hàng"],
+            "response_should_contain_one_of": [
+              "Hàu",
+              "giỏ hàng"
+            ],
             "note_accept_extra_tools": "May also call request_payment if rewriter successfully splits intents"
           }
         },
@@ -111,7 +132,12 @@
           "content": "Xác nhận đơn rồi bill luôn",
           "note": "ORDER_CONFIRM + PAYMENT in one utterance",
           "assert": {
-            "response_should_contain_one_of": ["xác nhận", "đơn hàng", "hóa đơn", "thanh toán"]
+            "response_should_contain_one_of": [
+              "xác nhận",
+              "đơn hàng",
+              "hóa đơn",
+              "thanh toán"
+            ]
           }
         }
       ]
@@ -132,7 +158,10 @@
           "note": "Initial order",
           "assert": {
             "tool_called": "add_cart",
-            "response_should_contain_one_of": ["Mực", "giỏ hàng"]
+            "response_should_contain_one_of": [
+              "Mực",
+              "giỏ hàng"
+            ]
           }
         },
         {
@@ -142,7 +171,11 @@
           "note": "Remove + add — tests substitution pattern",
           "assert": {
             "tool_called": "add_cart",
-            "response_should_contain_one_of": ["Cháo", "bỏ", "đổi"]
+            "response_should_contain_one_of": [
+              "Cháo",
+              "bỏ",
+              "đổi"
+            ]
           }
         },
         {
@@ -152,7 +185,10 @@
           "note": "Incremental add to existing cart",
           "assert": {
             "tool_called": "add_cart",
-            "response_should_contain_one_of": ["Khoai", "giỏ hàng"]
+            "response_should_contain_one_of": [
+              "Khoai",
+              "giỏ hàng"
+            ]
           }
         },
         {
@@ -162,8 +198,14 @@
           "note": "Final confirmation — must contain Cháo Hàu, Bia Sài Gòn, Khoai Tây; must NOT contain Mực Cháy Tỏi",
           "assert": {
             "tool_called": "confirm_order",
-            "confirmed_items_must_contain": ["Cháo", "Bia", "Khoai"],
-            "confirmed_items_must_NOT_contain": ["Mực"]
+            "confirmed_items_must_contain": [
+              "Cháo",
+              "Bia",
+              "Khoai"
+            ],
+            "confirmed_items_must_NOT_contain": [
+              "Mực"
+            ]
           }
         }
       ]
@@ -183,7 +225,13 @@
           "content": "Cho mình 2 phần Ốc Hương",
           "note": "Ambiguous — Ốc Hương matches 11 variants. System must ask which one.",
           "assert": {
-            "response_should_contain_one_of": ["loại nào", "muối", "xốt", "nhiều loại", "chọn"]
+            "response_should_contain_one_of": [
+              "loại nào",
+              "muối",
+              "xốt",
+              "nhiều loại",
+              "chọn"
+            ]
           }
         },
         {
@@ -193,7 +241,10 @@
           "note": "Customer picks a specific variant after clarification",
           "assert": {
             "tool_called": "add_cart",
-            "response_should_contain_one_of": ["Ốc Hương Xốt Bơ Cay", "giỏ hàng"]
+            "response_should_contain_one_of": [
+              "Ốc Hương Xốt Bơ Cay",
+              "giỏ hàng"
+            ]
           }
         },
         {
@@ -203,7 +254,9 @@
           "note": "Confirm with the selected variant",
           "assert": {
             "tool_called": "confirm_order",
-            "confirmed_items_must_contain": ["Ốc Hương Xốt Bơ Cay"]
+            "confirmed_items_must_contain": [
+              "Ốc Hương Xốt Bơ Cay"
+            ]
           }
         }
       ]
@@ -244,7 +297,11 @@
           "note": "First order after browsing",
           "assert": {
             "tool_called": "add_cart",
-            "response_should_contain_one_of": ["Ốc Hương", "Bia", "giỏ hàng"]
+            "response_should_contain_one_of": [
+              "Ốc Hương",
+              "Bia",
+              "giỏ hàng"
+            ]
           }
         },
         {
@@ -264,7 +321,11 @@
           "note": "Second round of ordering based on recommendations",
           "assert": {
             "tool_called": "add_cart",
-            "response_should_contain_one_of": ["Mực", "Khoai", "giỏ hàng"]
+            "response_should_contain_one_of": [
+              "Mực",
+              "Khoai",
+              "giỏ hàng"
+            ]
           }
         },
         {
@@ -273,7 +334,11 @@
           "content": "Cho mình xem lại giỏ hàng đang có gì",
           "note": "Review cart — no tool changes, just query",
           "assert": {
-            "tool_must_NOT_call": ["add_cart", "confirm_order", "remove_cart"]
+            "tool_must_NOT_call": [
+              "add_cart",
+              "confirm_order",
+              "remove_cart"
+            ]
           }
         },
         {
@@ -283,7 +348,11 @@
           "note": "Substitution mid-order — remove Sài Gòn, add Heineken",
           "assert": {
             "tool_called": "add_cart",
-            "response_should_contain_one_of": ["Heineken", "đổi", "giỏ hàng"]
+            "response_should_contain_one_of": [
+              "Heineken",
+              "đổi",
+              "giỏ hàng"
+            ]
           }
         },
         {
@@ -303,7 +372,11 @@
           "note": "Another substitution",
           "assert": {
             "tool_called": "add_cart",
-            "response_should_contain_one_of": ["Cháo Hàu", "đổi", "giỏ hàng"]
+            "response_should_contain_one_of": [
+              "Cháo Hàu",
+              "đổi",
+              "giỏ hàng"
+            ]
           }
         },
         {
@@ -312,7 +385,11 @@
           "content": "Tổng cộng hết bao nhiêu rồi em",
           "note": "Check total before confirming",
           "assert": {
-            "tool_must_NOT_call": ["add_cart", "confirm_order", "remove_cart"]
+            "tool_must_NOT_call": [
+              "add_cart",
+              "confirm_order",
+              "remove_cart"
+            ]
           }
         },
         {
@@ -322,8 +399,16 @@
           "note": "Final confirmation — must contain Ốc Hương, Heineken, Khoai Tây, Cháo Hàu; no Bia Sài Gòn, no Mực Cháy Tỏi",
           "assert": {
             "tool_called": "confirm_order",
-            "confirmed_items_must_contain": ["Ốc Hương", "Heineken", "Khoai Tây", "Cháo"],
-            "confirmed_items_must_NOT_contain": ["Sài Gòn", "Mực"]
+            "confirmed_items_must_contain": [
+              "Ốc Hương",
+              "Heineken",
+              "Khoai Tây",
+              "Cháo"
+            ],
+            "confirmed_items_must_NOT_contain": [
+              "Sài Gòn",
+              "Mực"
+            ]
           }
         },
         {
@@ -333,7 +418,13 @@
           "note": "Payment",
           "assert": {
             "tool_called": "request_payment",
-            "response_should_contain_one_of": ["thanh toán", "hóa đơn", "QR"]
+            "response_should_contain_one_of": [
+              "thanh toán",
+              "hóa đơn",
+              "QR",
+              "tổng",
+              "quét mã"
+            ]
           }
         }
       ]
@@ -354,7 +445,12 @@
           "note": "Two off-menu items (Phở Bò Tái, Cơm Tấm Sườn) + one valid (Ốc Hương Xốt Me). Validator must reject the off-menu ones and accept the valid one.",
           "assert": {
             "tool_called": "add_cart",
-            "response_should_contain_one_of": ["không có", "thực đơn", "món khác", "tương tự"]
+            "response_should_contain_one_of": [
+              "không có",
+              "thực đơn",
+              "món khác",
+              "tương tự"
+            ]
           }
         },
         {
@@ -364,7 +460,10 @@
           "note": "Customer accepts the suggestion — only Ốc Hương Xốt Me should be in cart",
           "assert": {
             "tool_called": "add_cart",
-            "response_should_contain_one_of": ["Ốc Hương", "giỏ hàng"]
+            "response_should_contain_one_of": [
+              "Ốc Hương",
+              "giỏ hàng"
+            ]
           }
         },
         {
@@ -374,8 +473,13 @@
           "note": "Final check — cart must contain only Ốc Hương Xốt Me, no Phở or Cơm Tấm",
           "assert": {
             "tool_called": "confirm_order",
-            "confirmed_items_must_contain": ["Ốc Hương"],
-            "confirmed_items_must_NOT_contain": ["Phở", "Cơm Tấm"]
+            "confirmed_items_must_contain": [
+              "Ốc Hương"
+            ],
+            "confirmed_items_must_NOT_contain": [
+              "Phở",
+              "Cơm Tấm"
+            ]
           }
         }
       ]

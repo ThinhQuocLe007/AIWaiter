@@ -285,15 +285,47 @@ def main():
 
     pass_agg = RunAggregate("pass_rate", per_run_pass_rate)
 
+    # Which scenarios failed, and in which runs. The full transcripts are kept for the last run
+    # only because they are large, but the aggregate rate alone cannot say whether six failures
+    # were one flaky scenario six times or six different ones once, and §5.4.5 makes a claim about
+    # exactly that. This matrix is what supports or refutes it.
+    per_scenario: dict[str, dict] = {}
+    for run_idx, scenarios_out in enumerate(all_scenario_results):
+        for sc in scenarios_out:
+            row = per_scenario.setdefault(
+                sc["id"], {"name": sc.get("name", ""), "passed_in_run": [], "failed_runs": []})
+            row["passed_in_run"].append(bool(sc["overall_pass"]))
+            if not sc["overall_pass"]:
+                row["failed_runs"].append(run_idx + 1)
+    for sid, row in per_scenario.items():
+        row["pass_count"] = sum(row["passed_in_run"])
+        row["runs"] = len(row["passed_in_run"])
+
+    varying = sorted(s for s, r in per_scenario.items() if 0 < r["pass_count"] < r["runs"])
+    always_failed = sorted(s for s, r in per_scenario.items() if r["pass_count"] == 0)
+    total_passed = sum(r["pass_count"] for r in per_scenario.values())
+    total_runs = sum(r["runs"] for r in per_scenario.values())
+
     print(f"\n{SEP}")
     print(f"  QUALITATIVE E2E — {args.runs} runs")
     print(f"  Scenarios passed: {pass_agg}")
-    print(f"{SEP}")
+    print(f"  Scenario runs passed: {total_passed}/{total_runs}")
+    print(f"{SEP}\n")
+    print("  Per-scenario outcome across runs:")
+    for sid, row in sorted(per_scenario.items()):
+        marks = "".join("." if ok else "X" for ok in row["passed_in_run"])
+        print(f"    {sid}  {row['pass_count']}/{row['runs']}  [{marks}]  {row['name']}")
+    print(f"\n  Varying across runs: {', '.join(varying) or 'none'}")
+    if always_failed:
+        print(f"  Failed in every run: {', '.join(always_failed)}")
 
     report = {
         "summary": {"timestamp": datetime.now().isoformat(), "runs": args.runs,
-                     "pass_rate": pass_agg.as_dict()},
+                     "pass_rate": pass_agg.as_dict(),
+                     "scenario_runs_passed": total_passed, "scenario_runs_total": total_runs,
+                     "varying_scenarios": varying, "always_failing_scenarios": always_failed},
         "per_run_passed": [round(r, 4) for r in per_run_pass_rate],
+        "per_scenario": per_scenario,
         "results": all_scenario_results[-1] if all_scenario_results else [],  # last run's details
     }
     with open(REPORT_PATH, "w", encoding="utf-8") as f:

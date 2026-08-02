@@ -11,7 +11,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from src.training_semantic_router.classifier.features import extract_context_features
 from src.training_semantic_router.classifier.model import (
     EMBEDDING_DIM,
     IntentClassifier,
@@ -22,14 +21,12 @@ from src.training_semantic_router.classifier.model import (
 logger = logging.getLogger(__name__)
 
 _MODULE_DIR = Path(__file__).resolve().parent
-_DEFAULT_MODEL_PATH = _MODULE_DIR / "saved" / "model.pt"
-_DEFAULT_LABEL_PATH = _MODULE_DIR / "saved" / "label_encoder.json"
-_DEFAULT_SCALER_PATH = _MODULE_DIR / "saved" / "scaler.npz"
+_DEFAULT_MODEL_PATH = _MODULE_DIR / "saved_v2" / "model.pt"
+_DEFAULT_LABEL_PATH = _MODULE_DIR / "saved_v2" / "label_encoder.json"
 
 _model: IntentClassifier | None = None
 _label_encoder: dict[str, int] | None = None
-_scaler_mean: np.ndarray | None = None
-_scaler_scale: np.ndarray | None = None
+_loaded_from: tuple[Path, Path] | None = None
 _embed_fn: Any = None
 
 
@@ -70,29 +67,28 @@ def _encode(utterance: str) -> np.ndarray:
     return embedding[0].astype(np.float32)
 
 
-def _load_artifacts(
-    model_path: Path | None = None,
-    label_path: Path | None = None,
-    scaler_path: Path | None = None,
-) -> None:
-    global _model, _label_encoder, _scaler_mean, _scaler_scale
+def _load_artifacts(model_path: Path | None = None, label_path: Path | None = None) -> None:
+    """Cache one model, but reload when asked for a different checkpoint.
+
+    The previous version cached into globals and then ignored the path arguments on every
+    later call, so an ablation script comparing two checkpoints silently scored the first
+    one twice.
+    """
+    global _model, _label_encoder, _loaded_from
 
     mp = Path(model_path) if model_path else _DEFAULT_MODEL_PATH
     lp = Path(label_path) if label_path else _DEFAULT_LABEL_PATH
-    sp = Path(scaler_path) if scaler_path else _DEFAULT_SCALER_PATH
 
-    if _label_encoder is None and lp.exists():
+    if _loaded_from == (mp, lp) and _model is not None:
+        return
+
+    if lp.exists():
         _label_encoder = load_label_encoder(lp)
-
-    if _model is None and mp.exists():
+    if mp.exists():
         _model = IntentClassifier()
         _model.load(mp)
         _model.eval()
-
-    if _scaler_mean is None and sp.exists():
-        data = np.load(sp)
-        _scaler_mean = data["mean"]
-        _scaler_scale = data["scale"]
+        _loaded_from = (mp, lp)
 
 
 def classify(
@@ -104,7 +100,13 @@ def classify(
     label_path: Path | None = None,
     scaler_path: Path | None = None,
 ) -> dict[str, Any]:
-    _load_artifacts(model_path, label_path, scaler_path)
+    """Classify an utterance into ORDER / SEARCH / PAYMENT / CHAT.
+
+    ``state`` and ``scaler_path`` are accepted and ignored. The router is text-only since
+    the context ablation; the parameters stay so existing callers keep working, and so the
+    signature still reads as the place context WOULD enter if it ever comes back.
+    """
+    _load_artifacts(model_path, label_path)
 
     if _model is None:
         raise FileNotFoundError(f"Model not found at {model_path or _DEFAULT_MODEL_PATH}")
@@ -126,22 +128,20 @@ def classify(
             f"not trained on -- retrain before switching encoders."
         )
 
-    context_features = extract_context_features(state, utterance)
-
-    if _scaler_mean is not None and _scaler_scale is not None:
-        context_features = (context_features - _scaler_mean) / np.maximum(_scaler_scale, 1e-8)
-
-    combined = np.concatenate([emb, context_features]).astype(np.float32)
-    tensor = torch.from_numpy(combined).unsqueeze(0)
-
+    tensor = torch.from_numpy(emb).unsqueeze(0)
     probs = _model.predict_proba(tensor)[0]
     predicted_idx = int(np.argmax(probs))
     confidence = float(probs[predicted_idx])
 
-    label_map = _label_encoder or {i: l for i, l in enumerate(INTENT_LABELS)}
-    idx_to_label = {v: k for k, v in label_map.items()}
-    intent = idx_to_label.get(predicted_idx, INTENT_LABELS[predicted_idx])
+    # _label_encoder maps label -> index, so it has to be inverted to read a prediction.
+    # The old fallback built an index -> label dict and then inverted THAT, which pointed
+    # the wrong way; it went unnoticed only because the .get() default masked it.
+    if _label_encoder:
+        idx_to_label = {v: k for k, v in _label_encoder.items()}
+    else:
+        idx_to_label = dict(enumerate(INTENT_LABELS))
 
+    intent = idx_to_label.get(predicted_idx, INTENT_LABELS[predicted_idx])
     all_probs = {
         idx_to_label.get(i, INTENT_LABELS[i]): float(probs[i])
         for i in range(len(probs))

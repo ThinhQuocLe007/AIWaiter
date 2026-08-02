@@ -4,7 +4,7 @@
 
 All evaluation data was written by hand against the menu of a single reference restaurant, *Ốc Quậy*, a
 Vietnamese seafood establishment. Every dish name in every dataset resolves against
-`assets/data/menu.json`, so the same 219-entry menu is ground truth for retrieval, name resolution and
+`assets/data/menu.json`, so the same 234-entry menu is ground truth for retrieval, name resolution and
 out-of-menu rejection alike. Evaluating against one menu tests the architecture; evaluating against
 several would test the menu-authoring process.
 
@@ -12,8 +12,8 @@ several would test the menu-authoring process.
 
 | Dataset | Size | Purpose |
 |---|---|---|
-| Router: single-intent, context-dependent, multi-intent | 149 + 70 + 30 cases | Classification from text alone, context ablation at two order stages, decomposition trigger |
-| Retrieval | 24 queries, graded judgements | Menu search relevance across three difficulty levels |
+| Router: single-intent, context-dependent, multi-intent | 149 + 123 + 30 cases | Classification from text alone, accuracy on stage-dependent utterances, decomposition trigger |
+| Retrieval | 50 queries, graded judgements | Menu search relevance across three difficulty levels, including requests the menu cannot answer |
 | Safety pool (E2E + out-of-menu) | 41 scenarios | Paired set both validator ablation arms run on |
 | Out-of-menu robustness | 30 scenarios, 7 categories | Off-menu rejection, with a negative control |
 | Multi-intent completeness | 25 turns | Intents executed against intents verbalised |

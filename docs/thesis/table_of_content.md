@@ -91,9 +91,9 @@
   - 4.5.6 Stage V — Response Generation
 - 4.6 Knowledge Retrieval Pipeline
   - 4.6.1 Query Rewriting
-  - 4.6.2 Hybrid Retrieval
-  - 4.6.3 Result Rephrasing
-  - 4.6.4 Multi-Turn Search Context
+  - 4.6.2 Hybrid Retrieval and Fusion
+  - 4.6.3 Relevance Gatekeeper
+  - 4.6.4 Result Handoff and Follow-up Context
 - 4.7 Backend Orchestrator
   - 4.7.1 REST API
   - 4.7.2 WebSocket Hub

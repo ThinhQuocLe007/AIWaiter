@@ -254,37 +254,46 @@ def _mentioned_dishes(text: str, names: list[str]) -> list[str]:
     return found
 
 
-def _retrieved_dishes(ctx: SearchResponseContext) -> list[tuple[str, float]]:
+def _retrieved_dishes(ctx: SearchResponseContext) -> list[dict[str, Any]]:
     out = []
     for r in ctx.results:
         meta = r.document.metadata
         name = (meta.get("name") or "").strip()
         if meta.get("type") == "menu" and (meta.get("price", 0) or 0) > 0 and name:
-            out.append((name, meta.get("price", 0)))
+            out.append({
+                "name": name,
+                "price": meta.get("price", 0),
+                "taste_profile": (meta.get("taste_profile") or "").strip(),
+            })
     return out
 
 
-def _deterministic_listing(dishes: list[tuple[str, float]]) -> str:
-    # Price only when we actually have one — curated_memory carries names without prices, and
-    # "Lẩu Thái (0₫)" would be worse than saying nothing about the price.
-    listing = ", ".join(f"{n} ({_vnd(p)})" if p else n for n, p in dishes[:3])
-    return f"Dạ, anh/chị tham khảo {listing} ạ. Anh/chị muốn em thêm món nào vào đơn không ạ?"
+def _deterministic_listing(dishes: list[dict[str, Any]]) -> str:
+    parts: list[str] = []
+    for d in dishes[:3]:
+        price_str = f" ({_vnd(d['price'])})" if d.get("price") else ""
+        taste = (d.get("taste_profile") or "").strip()
+        taste_bit = f" {taste}" if taste else ""
+        parts.append(f"{d['name']}{price_str}{taste_bit}")
+    listing = ", ".join(parts)
+    return f"Dạ, quán mình có {listing} ạ. Anh/chị muốn em bưng món nào trước ạ?"
 
 
-def _ground_reply(reply: str, dishes: list[tuple[str, float]], where: str) -> str:
+def _ground_reply(reply: str, dishes: list[dict[str, Any]], where: str) -> str:
     """Replace `reply` with a real listing if it names none of the dishes it was given.
 
     No dishes to check against means nothing to verify — a general question ("mấy giờ mở
     cửa") legitimately names none, and there is no way to tell that apart from an invented
     name without the retrain. Those turns pass through untouched.
     """
-    if not dishes:
+    names = [d["name"] for d in dishes]
+    if not names:
         return reply
-    if _mentioned_dishes(reply, [n for n, _ in dishes]):
+    if _mentioned_dishes(reply, names):
         return reply
     logger.warning(
         "[response] ungrounded %s — named none of %s; replacing. Was: %.90s",
-        where, [n for n, _ in dishes], reply,
+        where, names, reply,
     )
     return _deterministic_listing(dishes)
 
@@ -297,18 +306,41 @@ def _emit_sentences(text: str, stream: _StreamContext) -> None:
 
 # ── Context formatters (text passed to the LLM as CONTEXT) ──────────────────
 def _format_search_for_llm(ctx: SearchResponseContext) -> str:
-    lines = [
-        f"- {r.document.metadata.get('name', 'Unknown')}"
-        f" — {_vnd(r.document.metadata.get('price', 0))}"
-        for r in ctx.results
-        if r.document.metadata.get("type") == "menu"
-        and r.document.metadata.get("price", 0) > 0
-        and r.document.metadata.get("name", "").strip()
-    ]
-    blocks = [f"Khách tìm: \"{ctx.query}\"\nKết quả ({len(ctx.results)} món):\n" + "\n".join(lines)]
-    if ctx.shown_dishes:
+    lines = []
+    for r in ctx.results:
+        meta = r.document.metadata
+        if meta.get("type") != "menu":
+            continue
+        price = meta.get("price", 0)
+        name = (meta.get("name") or "").strip()
+        if not name or price <= 0:
+            continue
+        parts = [f"{name} — {_vnd(price)}"]
+        taste = (meta.get("taste_profile") or "").strip()
+        if taste:
+            parts.append(f"  Hương vị: {taste}")
+        tags = (meta.get("tags") or "").strip()
+        if tags:
+            parts.append(f"  Tags: {tags}")
+        cat = (meta.get("category") or "").strip()
+        if cat:
+            parts.append(f"  Nhóm: {cat}")
+        lines.append("".join(f"\n{p}" for p in parts).lstrip())
+    query_lower = _norm(ctx.query)
+    stale = [d for d in (ctx.shown_dishes or [])
+             if _norm(d) not in query_lower]
+    actively_asked = [d for d in (ctx.shown_dishes or [])
+                     if _norm(d) in query_lower]
+
+    blocks = [f"Khách tìm: \"{ctx.query}\"\nKết quả ({len(lines)} món):\n" + "\n".join(lines)]
+    if actively_asked:
         blocks.append(
-            f"Món đã giới thiệu ở các lượt trước: {', '.join(ctx.shown_dishes)}. "
+            f"Món khách ĐANG hỏi trực tiếp: {', '.join(actively_asked)}. "
+            "ĐƯỢC PHÉP giới thiệu lại — ưu tiên trả lời về (những) món này trước."
+        )
+    if stale:
+        blocks.append(
+            f"Món đã giới thiệu ở các lượt trước: {', '.join(stale)}. "
             "Nếu món nằm trong danh sách này, hãy ưu tiên giới thiệu món KHÁC thay vì lặp lại."
         )
     return "\n\n".join(blocks)
@@ -464,6 +496,17 @@ def _rewrite_chat(ctx: ChatResponseContext, stream: _StreamContext) -> str:
         reply = "Dạ em chưa rõ ý anh/chị lắm, anh/chị có thể nói lại được không ạ?"
         stream.emit(reply)
         return reply
+    if reason and ("xác nhận" in reason or "chốt đơn" in reason or "hủy" in reason):
+        cart = ctx.active_cart
+        if cart and cart.items:
+            reply = _format_cart_echo(OrderResponseContext(
+                tool="add_cart", status="success", cart=cart.items,
+                total_vnd=_vnd(cart.total_price), stage=ctx.order_stage,
+            ))
+        else:
+            reply = "Dạ, giỏ hàng của anh/chị đang trống ạ. Anh/chị muốn gọi món gì không ạ?"
+        stream.emit(reply)
+        return reply
     msg = _normalize(ctx.user_message)
     if _is_greeting(msg):
         reply = _format_greeting()
@@ -477,7 +520,10 @@ def _rewrite_chat(ctx: ChatResponseContext, stream: _StreamContext) -> str:
     # grounding check as _rewrite_search — generated whole so it can be judged before it is
     # spoken. With no dishes to check against, keep streaming: nothing to verify, and general
     # chat is where time-to-first-word matters most.
-    curated = [(d.name, 0.0) for d in (ctx.curated_memory or []) if getattr(d, "name", "")]
+    curated = [
+        {"name": d.name, "price": d.price or 0, "taste_profile": d.taste_profile or ""}
+        for d in (ctx.curated_memory or []) if getattr(d, "name", "")
+    ]
     if curated:
         raw = _llm_invoke(_CHAT_PROMPT, _format_chat_for_llm(ctx), _FALLBACK_REPLY)
         reply = _ground_reply(raw, curated, "chat recommendation")
