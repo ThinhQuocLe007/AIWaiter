@@ -12,22 +12,22 @@ ekf_filter_node:
     base_link_frame: base_footprint
     world_frame: odom
 
-    # Use wheel-odometry twist only (vx, vy, wz).
-    # Avoid fusing pose+twist from the same source to reduce correlation issues.
+    # Wheel odometry: linear twist only (vx, vy).
+    # Do NOT fuse wheel wz — track-width / slip errors corrupt yaw and cause map ghosting.
+    # Yaw rate comes from IMU gyro Z only (see imu0 below).
     odom0: odom
     odom0_config: [false, false, false,
                    false, false, false,
                    true, true, false,
-                   false, false, true,
+                   false, false, false,
                    false, false, false]
     odom0_differential: false
     odom0_relative: false
     odom0_queue_size: 20
     odom0_nodelay: false
 
-    # Use IMU angular velocity Z only.
-    # Do NOT fuse IMU yaw orientation here because this platform has no magnetometer
-    # correction in the published orientation, so yaw drifts during long rotations.
+    # IMU: angular velocity Z only (yaw rate).
+    # Do NOT fuse IMU yaw orientation — no magnetometer, so published orientation drifts.
     imu0: imu
     imu0_config: [false, false, false,    # X, Y, Z position
                   false, false, false,    # Roll, Pitch, yaw
@@ -42,7 +42,8 @@ ekf_filter_node:
 
     # Reject abnormal spikes during vibration or power noise events.
     odom0_twist_rejection_threshold: 2.5
-    imu0_angular_velocity_rejection_threshold: 1.2
+    # Slightly tighter than before: IMU is now the sole yaw-rate source.
+    imu0_angular_velocity_rejection_threshold: 0.8
 
     # Conservative process noise for indoor differential drive.
     process_noise_covariance: [0.02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,

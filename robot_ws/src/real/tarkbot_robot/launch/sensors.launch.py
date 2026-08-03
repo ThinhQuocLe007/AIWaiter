@@ -68,9 +68,10 @@ def generate_launch_description():
             'align_depth.enable': 'true',
             'enable_sync': 'true',
 
-            'rgb_camera.color_profile': '640x480x15',
+            # 848x480 balances ArUco / visual features vs Jetson load (was 640x480x15).
+            'rgb_camera.color_profile': '848x480x15',
             'rgb_camera.color_format': 'BGR8',
-            'depth_module.depth_profile': '640x480x15',
+            'depth_module.depth_profile': '848x480x15',
         }.items()
     )
 

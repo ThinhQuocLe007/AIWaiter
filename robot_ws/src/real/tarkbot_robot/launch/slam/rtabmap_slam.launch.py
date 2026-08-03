@@ -25,14 +25,15 @@ def generate_launch_description():
     )
 
     # RTAB-Map parameters
+    # Tuned for EKF where yaw rate is IMU-only (wheels supply vx/vy only).
+    # Neighbor ICP corrects residual odom drift between nodes; loop closures stay
+    # strict enough to avoid warping the graph into ghost walls.
     parameters = [{
         'frame_id': 'base_footprint',
         'subscribe_depth': True,
         'subscribe_scan': True,
         'approx_sync': True,
-        'sync_queue_size': 50,
-        'topic_queue_size': 50,
-
+        
         # ArUco marker detection: markers are added to the graph as landmarks
         # so they get baked into the saved map (~/.ros/rtabmap.db) during mapping.
         # Re-detecting them in localization corrects drift. Marker IDs must be
@@ -41,39 +42,42 @@ def generate_launch_description():
         'Marker/Dictionary': '0',        # 0 = DICT_4X4_50 (same as sim)
         'Marker/Length': '0.15',         # marker side length in meters (measure real marker)
 
-        # Optimize for 2D mapping using Lidar for occupancy grid
+        # Occupancy from LiDAR only; clip range to cut far-scan smear
         'Grid/Sensor': '0',
-        'Grid/RangeMax': '10.0',          # limit noisy far returns (room ~9.5 m) -> less ghosting
-        'Grid/RangeMin': '0.15',          # drop very-close returns off the robot body
+        'Grid/RangeMax': '8.0',
+        'Grid/RangeMin': '0.20',
         'Grid/RayTracing': 'true',
+        'Grid/NoiseFilteringRadius': '0.05',
+        'Grid/NoiseFilteringMinNeighbors': '2',
         'RGBD/ProximityBySpace': 'true',
         'RGBD/OptimizeFromGraphEnd': 'false',
 
-        # More frequent graph nodes -> smaller motion between scans -> less drift/ghosting
-        'Rtabmap/DetectionRate': '2.0',   # was 0.5
+        # Dense nodes while teleoping slowly (0.1 m/s / 0.32 rad/s)
+        'Rtabmap/DetectionRate': '1.0',
         'RGBD/LinearUpdate': '0.05',
-        'RGBD/AngularUpdate': '0.05',
+        'RGBD/AngularUpdate': '0.03',
 
         # Reject wrong loop closures that WARP the graph (a major ghosting source)
         'RGBD/OptimizeMaxError': '3.0',
 
-        # Use ICP (Lidar) for registration refinement
+        # ICP (LiDAR) registration: refine neighbor links hard; keep loops stricter
         'Reg/Strategy': '1',
         'Reg/Force3DoF': 'true',
         'RGBD/NeighborLinkRefining': 'true',
         'Icp/VoxelSize': '0.05',
-        # Loops were REJECTED with corrRatio ~0.066 < 0.1 ("Cannot compute transform"):
-        # the odom guess at loop time drifts > old 0.1 m window, so ICP found too few
-        # correspondences. Widen the search so loop closures can actually be accepted.
-        'Icp/MaxCorrespondenceDistance': '0.3',  # was 0.1 -> allow matching despite drift
+        # IMU-only yaw should keep the odom guess closer than wheel-wz fusion,
+        # so the correspondence window can be tighter than the old 0.3 m rescue.
+        'Icp/MaxCorrespondenceDistance': '0.20',
         'Icp/PointToPlane': 'true',
         'Icp/PointToPlaneK': '20',
-        'Icp/Iterations': '30',           # more iterations -> converge over the wider window
+        'Icp/Iterations': '40',
         'Icp/Epsilon': '0.001',
-        'Icp/CorrespondenceRatio': '0.1', # accept loops with >=10% overlap (was too strict at 0.3)
+        'Icp/CorrespondenceRatio': '0.15',
         'RGBD/ProximityPathMaxNeighbors': '10',
-
-        'map_always_update': False,
+        'RGBD/LocalRadius': '5.0',
+        'Mem/STMSize': '30',
+        
+        'Vis/MinInliers': '15',
     }]
 
     # RTAB-Map node
