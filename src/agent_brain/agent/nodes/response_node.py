@@ -1,14 +1,15 @@
 """response_node — typed rewriter.
-
+ 
 Reads ``state["response_context"]``, produces a Vietnamese AIMessage reply.
 Dispatches by context type to templates (imported from ``response_template``)
 or LLM paraphrasing (for search results, off-menu suggestions, free-form chat).
 
-Streaming: the per-request ``Queue`` is carried through ``AgentState.stream_queue``,
-set by server.py on /chat/stream and read by response_node. LLM-based rewriters
+Streaming: the per-request ``Queue`` is stored in a thread-local
+(``stream_context.set_stream_queue`` / ``get_stream_queue``) by the caller
+before graph invocation, then read by response_node. LLM-based rewriters
 stream sentences through the queue; template-based rewriters push their full text
-as a single sentence. Per-request isolation is guaranteed because a fresh
-``_StreamContext`` is built from ``state["stream_queue"]`` at the top of every
+as a single sentence. Per-request isolation is guaranteed because the
+``_StreamContext`` wrapper reads the thread-local queue at the top of every
 ``response_node`` invocation.
 """
 
@@ -40,6 +41,7 @@ from src.agent_brain.agent.nodes.response_template import (
     _vnd,
 )
 from src.agent_brain.agent.state import AgentState
+from src.agent_brain.agent.stream_context import get_stream_queue
 from src.agent_brain.config import settings
 from src.agent_brain.schemas import (
     ChatResponseContext,
@@ -107,12 +109,14 @@ def _sanitize_reply(text: str) -> str:
 
 
 class _StreamContext:
-    """Per-invocation stream helper wrapping the request's Queue from ``AgentState``.
+    """Per-invocation stream helper wrapping the thread-local request Queue.
 
-    ``response_node`` builds one from ``state["stream_queue"]`` at the top of every call.
-    /chat/stream sends a real ``Queue`` through the graph; plain /chat passes ``None``
-    so ``emit()`` silently no-ops. This stays per-invocation — two concurrent requests
-    never share a context, each graph invocation creates its own from its own state.
+    ``response_node`` reads the queue from thread-local storage at the top of
+    every call. /chat/stream sets a real ``Queue`` via ``set_stream_queue``
+    before invoking the graph; plain /chat leaves it ``None`` so ``emit()``
+    silently no-ops. This stays per-invocation — two concurrent requests
+    never share a context because each graph invocation runs on its own thread
+    with its own thread-local queue.
     """
 
     def __init__(self):
@@ -276,7 +280,7 @@ def _deterministic_listing(dishes: list[dict[str, Any]]) -> str:
         taste_bit = f" {taste}" if taste else ""
         parts.append(f"{d['name']}{price_str}{taste_bit}")
     listing = ", ".join(parts)
-    return f"Dạ, quán mình có {listing} ạ. Anh/chị muốn em bưng món nào trước ạ?"
+    return f"Dạ anh/chị, quán mình có {listing} ạ. Anh/chị muốn em bưng món nào trước ạ?"
 
 
 def _ground_reply(reply: str, dishes: list[dict[str, Any]], where: str) -> str:
@@ -431,13 +435,13 @@ def _rewrite_order(ctx: OrderResponseContext, stream: _StreamContext) -> str:
 
 def _rewrite_search(ctx: SearchResponseContext, stream: _StreamContext) -> str:
     if ctx.status == "error":
-        reply = "Dạ, em chưa tìm thấy món phù hợp ạ. Anh/chị thử từ khóa khác nhé ạ."
+        reply = "Dạ anh/chị, em chưa tìm thấy món phù hợp ạ. Anh/chị thử từ khóa khác nhé ạ."
         stream.emit(reply)
         return reply
     if not ctx.results:
         query_text = f"'{ctx.query}'" if ctx.query else "món này"
         reply = (
-            f"Dạ, {query_text} không có trong thực đơn của quán mình ạ."
+            f"Dạ anh/chị, {query_text} không có trong thực đơn của quán mình ạ."
             f" Anh/chị muốn em gợi ý món khác không ạ?"
         )
         stream.emit(reply)
@@ -454,24 +458,24 @@ def _rewrite_search(ctx: SearchResponseContext, stream: _StreamContext) -> str:
 def _rewrite_payment(ctx: PaymentResponseContext, stream: _StreamContext) -> str:
     if ctx.tool == "request_payment":
         if ctx.status == "error" or not ctx.amount_vnd:
-            reply = "Dạ, hiện chưa có đơn hàng nào trong phiên này ạ."
+            reply = "Dạ anh/chị, hiện chưa có đơn hàng nào trong phiên này ạ."
             stream.emit(reply)
             return reply
         reply = (
-            f"Dạ, tổng hóa đơn của anh/chị là {ctx.amount_vnd}₫ ạ."
+            f"Dạ anh/chị, tổng hóa đơn của anh/chị là {ctx.amount_vnd}₫ ạ."
             f" Anh/chị vui lòng quét mã QR để thanh toán nhé."
         )
         stream.emit(reply)
         return reply
     if ctx.status == "success":
         reply = (
-            "Dạ, em đã xác nhận thanh toán thành công."
+            "Dạ anh/chị, em đã xác nhận thanh toán thành công."
             " Cảm ơn anh/chị đã dùng bữa tại Ốc Quậy ạ!"
         )
         stream.emit(reply)
         return reply
     reply = (
-        f"Dạ, chưa xác nhận được thanh toán."
+        f"Dạ anh/chị, chưa xác nhận được thanh toán."
         f" {ctx.error_message or 'Anh/chị thử lại giúp em nhé ạ.'}"
     )
     stream.emit(reply)
@@ -489,11 +493,11 @@ def _rewrite_chat(ctx: ChatResponseContext, stream: _StreamContext) -> str:
             ))
             stream.emit(reply)
             return reply
-        reply = "Dạ, hiện tại giỏ hàng của anh/chị đang trống ạ."
+        reply = "Dạ anh/chị, hiện tại giỏ hàng của anh/chị đang trống ạ."
         stream.emit(reply)
         return reply
     if reason and "không rõ" in reason:
-        reply = "Dạ em chưa rõ ý anh/chị lắm, anh/chị có thể nói lại được không ạ?"
+        reply = "Dạ anh/chị, em chưa rõ ý anh/chị lắm, anh/chị có thể nói lại được không ạ?"
         stream.emit(reply)
         return reply
     if reason and ("xác nhận" in reason or "chốt đơn" in reason or "hủy" in reason):
@@ -504,7 +508,7 @@ def _rewrite_chat(ctx: ChatResponseContext, stream: _StreamContext) -> str:
                 total_vnd=_vnd(cart.total_price), stage=ctx.order_stage,
             ))
         else:
-            reply = "Dạ, giỏ hàng của anh/chị đang trống ạ. Anh/chị muốn gọi món gì không ạ?"
+            reply = "Dạ anh/chị, giỏ hàng của anh/chị đang trống ạ. Anh/chị muốn gọi món gì không ạ?"
         stream.emit(reply)
         return reply
     msg = _normalize(ctx.user_message)
@@ -533,7 +537,7 @@ def _rewrite_chat(ctx: ChatResponseContext, stream: _StreamContext) -> str:
 
 
 def _rewrite_retry(ctx: RetryResponseContext, stream: _StreamContext) -> str:
-    reply = f"Dạ, em xin lỗi anh/chị, {ctx.feedback} Anh/chị kiểm tra lại giúp em nhé ạ."
+    reply = f"Dạ anh/chị, em xin lỗi anh/chị, {ctx.feedback} Anh/chị kiểm tra lại giúp em nhé ạ."
     stream.emit(reply)
     return reply
 
@@ -557,7 +561,7 @@ def _rewrite(ctx: ResponseContext, stream: _StreamContext) -> str:
 @trace_latency("Response Node", run_type="chain")
 def response_node(state: AgentState) -> dict[str, Any]:
     stream = _StreamContext()
-    stream.set_queue(state.get("stream_queue"))
+    stream.set_queue(get_stream_queue())
     ctx = state.get("response_context")
     if ctx is None:
         if not stream.was_streamed:

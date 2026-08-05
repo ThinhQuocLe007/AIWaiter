@@ -12,7 +12,7 @@ import hashlib
 
 from src.agent_brain.schemas import OrderResponseContext
 
-_FALLBACK_REPLY = "Xin lỗi, em chưa rõ, anh/chị nói lại giúp em nhé ạ."
+_FALLBACK_REPLY = "Dạ anh/chị, em chưa rõ, anh/chị nói lại giúp em nhé ạ."
 
 
 def _pick(variants: list[str], seed: str = "") -> str:
@@ -70,15 +70,14 @@ def _format_ambiguity(ctx: OrderResponseContext) -> str:
     if ctx.cart:
         lines = _format_cart_lines(ctx.cart)
         # total_vnd already carries the ₫ (state_outcome_node builds it with _vnd()).
-        parts.append(f"Dạ, giỏ hàng của anh/chị hiện có:\n{lines}\nTổng tạm tính {ctx.total_vnd}.")
+        parts.append(f"Dạ anh/chị, giỏ hàng của anh/chị hiện có:\n{lines}\nTổng tạm tính {ctx.total_vnd}.")
     if ctx.off_menu:
         names = ", ".join(o.name for o in ctx.off_menu if o.name)
         parts.append(f"Món {names} hiện không có trong thực đơn ạ.")
     for a in ctx.ambiguous:
         cands = "\n".join(f"  - {c}" for c in a.candidates)
         parts.append(
-            # No markdown: this text is spoken by TTS, which reads ** out loud.
-            f"Dạ, món {a.name} bên em có nhiều loại ạ, "
+            f"Dạ anh/chị, món {a.name} bên em có nhiều loại ạ, "
             f"anh/chị muốn chọn loại nào ạ?\n{cands}"
         )
     return "\n\n".join(parts)
@@ -87,7 +86,7 @@ def _format_ambiguity(ctx: OrderResponseContext) -> str:
 def _format_off_menu(ctx: OrderResponseContext) -> str:
     """Off-menu items WITHOUT a suggestion — pure template apology."""
     names = ", ".join(o.name for o in ctx.off_menu if o.name)
-    return f"Dạ, món {names} hiện không có trong thực đơn ạ. Anh/chị muốn chọn món khác không ạ?"
+    return f"Dạ anh/chị, món {names} hiện không có trong thực đơn ạ. Anh/chị muốn chọn món khác không ạ?"
 
 
 def _format_off_menu_with_suggestions(ctx: OrderResponseContext) -> str:
@@ -104,7 +103,7 @@ def _format_off_menu_with_suggestions(ctx: OrderResponseContext) -> str:
 
     if no_suggest:
         names = ", ".join(no_suggest)
-        parts.append(f"Dạ, món {names} hiện không có trong thực đơn ạ.")
+        parts.append(f"Dạ anh/chị, món {names} hiện không có trong thực đơn ạ.")
 
     if suggest_lines:
         parts.append("Anh/chị có thể tham khảo các món tương tự:\n" + "\n".join(suggest_lines))
@@ -115,19 +114,19 @@ def _format_off_menu_with_suggestions(ctx: OrderResponseContext) -> str:
 
 def _format_order_error(ctx: OrderResponseContext) -> str:
     msg = ctx.error_message or "Anh/chị thử lại giúp em nhé ạ."
-    return f"Dạ, xin lỗi anh/chị, có lỗi khi xử lý đơn. {msg}"
+    return f"Dạ anh/chị, xin lỗi anh/chị, có lỗi khi xử lý đơn. {msg}"
 
 
 def _format_cart_echo(ctx: OrderResponseContext) -> str:
     """Echo the cart + ask for confirmation (add_cart / remove_cart success)."""
     if not ctx.cart:
-        return "Dạ, giỏ hàng hiện đang trống ạ. Anh/chị muốn gọi món gì không ạ?"
+        return "Dạ anh/chị, giỏ hàng hiện đang trống ạ. Anh/chị muốn gọi món gì không ạ?"
     cart = _format_cart_lines(ctx.cart)
     seed = _cart_seed(ctx.cart)
     prefix = _pick([
-        f"Dạ, giỏ hàng của anh/chị hiện có:\n{cart}",
-        f"Dạ, em điểm lại món anh/chị gọi nè:\n{cart}",
-        f"Dạ, đơn của mình đang có:\n{cart}",
+        f"Dạ anh/chị, giỏ hàng của anh/chị hiện có:\n{cart}",
+        f"Dạ anh/chị, em điểm lại món anh/chị gọi nè:\n{cart}",
+        f"Dạ anh/chị, đơn của mình đang có:\n{cart}",
     ], seed)
     suffix = "\nAnh/chị xác nhận đặt hàng chưa ạ?" if ctx.cart else ""
     return f"{prefix}\nTổng tạm tính {ctx.total_vnd}{'.' + suffix if suffix else '.'}"
@@ -136,34 +135,34 @@ def _format_cart_echo(ctx: OrderResponseContext) -> str:
 def _format_confirm_reply(order_id: int) -> str:
     seed = str(order_id)
     return _pick([
-        f"Dạ, em đã xác nhận đơn hàng #{order_id} ạ. Món đang được chuẩn bị. Anh/chị có muốn gọi thêm món gì nữa không ạ?",
-        f"Dạ, đơn #{order_id} đã được gửi bếp rồi nha. Anh/chị muốn gọi thêm gì không ạ?",
-        f"Dạ, em gửi đơn #{order_id} xuống bếp rồi ạ. Anh/chị chờ một xíu nha, có cần gọi thêm món gì không ạ?",
+        f"Dạ anh/chị, em đã xác nhận đơn hàng #{order_id} rồi ạ. Món đang được chuẩn bị. Anh/chị có muốn gọi thêm món gì nữa không ạ?",
+        f"Dạ anh/chị, đơn #{order_id} đã được gửi bếp rồi nha. Anh/chị muốn gọi thêm gì không ạ?",
+        f"Dạ anh/chị, em gửi đơn #{order_id} xuống bếp rồi ạ. Anh/chị chờ một xíu nha, có cần gọi thêm món gì không ạ?",
     ], seed)
 
 
 def _format_remove_reply(ctx: OrderResponseContext) -> str:
-    return f"Dạ, em đã bỏ món khỏi giỏ hàng ạ.\n{_format_cart_echo(ctx)}"
+    return f"Dạ anh/chị, em đã bỏ món khỏi giỏ hàng ạ.\n{_format_cart_echo(ctx)}"
 
 
 def _format_clear_reply() -> str:
     return _pick([
-        "Dạ, em đã hủy toàn bộ đơn hàng ạ. Anh/chị muốn gọi món khác không ạ?",
-        "Dạ, em xóa hết giỏ hàng rồi nha. Anh/chị muốn đặt lại món gì không ạ?",
+        "Dạ anh/chị, em đã hủy toàn bộ đơn hàng ạ. Anh/chị muốn gọi món khác không ạ?",
+        "Dạ anh/chị, em xóa hết giỏ hàng rồi nha. Anh/chị muốn đặt lại món gì không ạ?",
     ], "clear")
 
 
 # ── Greeting / thanks ───────────────────────────────────────────────────────
 def _format_greeting() -> str:
     return _pick([
-        "Dạ, em chào anh/chị ạ. Em có thể giúp gì cho anh/chị ạ?",
-        "Dạ anh/chị ơi, em chào anh/chị. Anh/chị muốn gọi món gì hôm nay ạ?",
-        "Dạ, chào anh/chị! Quán mình hôm nay có nhiều món ngon lắm, anh/chị muốn em giới thiệu không ạ?",
+        "Dạ anh/chị, em chào anh/chị ạ. Em có thể giúp gì cho anh/chị ạ?",
+        "Dạ anh/chị, em chào anh/chị. Anh/chị muốn gọi món gì hôm nay ạ?",
+        "Dạ anh/chị, chào anh/chị! Quán mình hôm nay có nhiều món ngon lắm, anh/chị muốn em giới thiệu không ạ?",
     ], "greet")
 
 
 def _format_thanks() -> str:
     return _pick([
-        "Dạ, không có gì ạ. Anh/chị cần em hỗ trợ gì thêm không ạ?",
-        "Dạ không có chi ạ. Anh/chị muốn gọi thêm món gì nữa không ạ?",
+        "Dạ anh/chị, không có gì ạ. Anh/chị cần em hỗ trợ gì thêm không ạ?",
+        "Dạ anh/chị không có chi ạ. Anh/chị muốn gọi thêm món gì nữa không ạ?",
     ], "thanks")

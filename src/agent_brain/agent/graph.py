@@ -19,6 +19,7 @@ from src.agent_brain.agent.nodes.search_worker_node import search_worker_node
 from src.agent_brain.agent.nodes.state_outcome_node import state_outcome_node
 from src.agent_brain.agent.nodes.update_state_node import recalc_cart, update_state_node
 from src.agent_brain.agent.state import AgentState
+from src.agent_brain.agent.stream_context import set_stream_queue
 from src.agent_brain.agent.tools import (
     add_cart,
     clear_cart,
@@ -367,6 +368,11 @@ class AIWaiterGraph:
 
     def chat(self, query: str, table_id: str = "T1", session_id: str = None,
              stream_queue: Queue | None = None) -> dict[str, Any]:
+        # Store stream_queue in thread-local so response_node can access it without
+        # it ever being part of LangGraph state (which would fail checkpoint
+        # serialisation because Queue is not msgpack-serializable).
+        set_stream_queue(stream_queue)
+
         # Resolve the table's CURRENT backend session so the LangGraph thread tracks it. Callers
         # should pass session_id=None every turn: within a visit this returns the same id (memory
         # persists); after payment closes the session it returns None until the next seating opens
@@ -398,7 +404,6 @@ class AIWaiterGraph:
             "ui_action": None,  # reset each turn so a command never leaks to the next
             "order_confirmed": False,  # per-turn flag, same lifecycle as ui_action
             "cart_touched": False,  # per-turn flag, same lifecycle as ui_action
-            "stream_queue": stream_queue,
         }
         result = self.app.invoke(inputs, config)
 

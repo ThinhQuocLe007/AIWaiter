@@ -121,7 +121,8 @@ class AgentState(TypedDict):
     # Cleared on clear_cart / session reset.
     shown_dishes: list[str] | None
 
-    # Per-request Queue for SSE sentence streaming. Set by server.py on /chat/stream
-    # requests, None (the default) on plain /chat. Never checkpointed — this field is
-    # purely an in-memory tunnel from the request thread to the graph worker thread.
+    # Per-request Queue for SSE sentence streaming. Set by graph.chat() via thread-local
+    # (stream_context.set_stream_queue) before each invocation, never included in LangGraph
+    # inputs to avoid checkpoint serialisation failures (Queue is not msgpack-serializable).
+    # None by default; response_node reads the live queue from stream_context.get_stream_queue().
     stream_queue: Any | None
