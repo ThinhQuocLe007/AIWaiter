@@ -1,0 +1,32 @@
+{
+  "test": "map_summary",
+  "thesis_table": "5.2",
+  "run_dir": "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/src/real/tarkbot_robot/evaluate/logs/20260804_231518_map_summary",
+  "duration_min": 12.0,
+  "resolution_m": null,
+  "loop_closures_geom": 102,
+  "loop_closures_aruco": 0,
+  "loop_closures_detail": {
+    "geom": 102,
+    "aruco": 0,
+    "by_type": {
+      "0": 584,
+      "1": 84,
+      "2": 18,
+      "8": 71,
+      "9": 300
+    },
+    "db": "/home/phongjetson/.ros/rtabmap.db"
+  },
+  "consistency": "lane walls continuous; dock revisit closed",
+  "map_yaml": "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/install/tarkbot_robot/../src/real/tarkbot_robot/maps/restaurant.yaml",
+  "map_pgm": "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/src/real/tarkbot_robot/maps/restaurant.pgm",
+  "pgm_stats": {
+    "width": 122,
+    "height": 99,
+    "maxval": 255,
+    "free_pct": 39.48501407517801,
+    "occupied_pct": 5.853618148700116,
+    "unknown_pct": 54.66136777612187
+  }
+}

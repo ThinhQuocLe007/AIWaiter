@@ -1,0 +1,66 @@
+Traceback (most recent call last):
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/unique_identifier_msgs/msg/_uuid.py", line 77, in __init__
+    self.uuid = numpy.zeros(16, dtype=numpy.uint8)
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/unique_identifier_msgs/msg/_uuid.py", line 124, in uuid
+    @uuid.setter
+KeyboardInterrupt
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/build/tarkbot_robot/tarkbot_robot/visual_delivery.py", line 652, in _go
+    reached = _run_nav_goal(nav, tracker, position, yaw_deg, label)
+  File "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/build/tarkbot_robot/tarkbot_robot/visual_delivery.py", line 442, in _run_nav_goal
+    while not nav.isTaskComplete():
+  File "/opt/ros/humble/lib/python3.10/site-packages/nav2_simple_commander/robot_navigator.py", line 283, in isTaskComplete
+    rclpy.spin_until_future_complete(self, self.result_future, timeout_sec=0.10)
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/__init__.py", line 256, in spin_until_future_complete
+    executor.spin_until_future_complete(future, timeout_sec)
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 349, in spin_until_future_complete
+    self.spin_once_until_future_complete(future, timeout_left)
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 815, in spin_once_until_future_complete
+    self._spin_once_impl(timeout_sec)
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 805, in _spin_once_impl
+    raise handler.exception()
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/task.py", line 272, in _execute_coroutine_step
+    result = coro.send(None)
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 478, in handler
+    arg = take_from_wait_list(entity)
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 702, in <lambda>
+    wt, node, lambda e: e.take_data(), self._execute_waitable)
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/action/client.py", line 278, in take_data
+    taken_data = self._client_handle.take_status(
+TypeError: Unable to convert function return value to a Python type! The signature was
+	(self: rclpy._rclpy_pybind11.ActionClient, arg0: object) -> object
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/build/tarkbot_robot/evaluate/map_path_test.py", line 107, in main
+    ok_table = deliver_to(
+  File "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/build/tarkbot_robot/tarkbot_robot/visual_delivery.py", line 669, in deliver_to
+    return _go(nav, tracker, cmd_pub, DESTINATIONS[name], name)
+  File "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/build/tarkbot_robot/tarkbot_robot/visual_delivery.py", line 664, in _go
+    _stop(cmd_pub)
+  File "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/build/tarkbot_robot/tarkbot_robot/visual_delivery.py", line 338, in _stop
+    cmd_pub.publish(Twist())
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/publisher.py", line 70, in publish
+    self.__publisher.publish(msg)
+rclpy._rclpy_pybind11.RCLError: Failed to publish: publisher's context is invalid, at ./src/rcl/publisher.c:389
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/install/tarkbot_robot/lib/tarkbot_robot/eval_map_path", line 33, in <module>
+    sys.exit(load_entry_point('tarkbot-robot', 'console_scripts', 'eval_map_path')())
+  File "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/build/tarkbot_robot/evaluate/map_path_test.py", line 198, in main
+    session.shutdown()
+  File "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/build/tarkbot_robot/evaluate/common.py", line 414, in shutdown
+    self.tracker.destroy_node()
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/node.py", line 1691, in destroy_node
+    self.destroy_service(self._services[0])
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/node.py", line 1615, in destroy_service
+    service.destroy()
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/service.py", line 93, in destroy
+    self.__service.destroy_when_not_in_use()
+KeyboardInterrupt

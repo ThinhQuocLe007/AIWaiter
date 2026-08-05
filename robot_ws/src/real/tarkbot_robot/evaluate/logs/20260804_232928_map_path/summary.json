@@ -1,0 +1,40 @@
+{
+  "test": "map_path",
+  "n_trials": 5,
+  "n_ok": 5,
+  "table_id": 1,
+  "frame_id": "map",
+  "run_dir": "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/src/real/tarkbot_robot/evaluate/logs/20260804_232928_map_path",
+  "trajectories_dir": "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/src/real/tarkbot_robot/evaluate/logs/20260804_232928_map_path/trajectories",
+  "trajectory_files": [
+    "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/src/real/tarkbot_robot/evaluate/logs/20260804_232928_map_path/trajectories/trial_01.csv",
+    "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/src/real/tarkbot_robot/evaluate/logs/20260804_232928_map_path/trajectories/trial_02.csv",
+    "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/src/real/tarkbot_robot/evaluate/logs/20260804_232928_map_path/trajectories/trial_03.csv",
+    "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/src/real/tarkbot_robot/evaluate/logs/20260804_232928_map_path/trajectories/trial_04.csv",
+    "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/src/real/tarkbot_robot/evaluate/logs/20260804_232928_map_path/trajectories/trial_05.csv"
+  ],
+  "map_yaml": "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/src/real/tarkbot_robot/maps/restaurant.yaml",
+  "map_pgm": "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/src/real/tarkbot_robot/maps/restaurant.pgm",
+  "floorplan": "/home/phongjetson/ptd_workspace/AIWaiter/robot_ws/install/tarkbot_robot/share/tarkbot_robot/config/floorplan.json",
+  "nav_success_rate_pct": 100.0,
+  "trip_time_s_mean_std": "68.58 ± 4.84",
+  "table_pos_err_cm_mean_std": "22.89 ± 0.59",
+  "table_yaw_err_deg_mean_std": "11.23 ± 3.30",
+  "dock_pos_err_cm_mean_std": "23.49 ± 0.29",
+  "dock_yaw_err_deg_mean_std": "17.03 ± 1.06",
+  "table_pos_err_cm_values": [
+    23.275566398762983,
+    21.93511010307413,
+    22.787991288196203,
+    23.44648660402085,
+    23.01329521647213
+  ],
+  "dock_pos_err_cm_values": [
+    23.305797207068583,
+    23.101642064815632,
+    23.591971351902227,
+    23.84988565336107,
+    23.618478254809038
+  ],
+  "thesis_figure": "map_path_overlay"
+}

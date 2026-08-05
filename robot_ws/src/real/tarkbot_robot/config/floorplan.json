@@ -39,26 +39,24 @@
     "Đậu robot ở đâu cũng được miễn thấy rõ mã, chờ [SURVEY 15] với spread < 2 cm, copy dòng [PASTE …]."
   ],
   "_note_dock": [
-    "Đo 2026-07-22 bằng pose_survey (standoff 0.8 m): spread 0.0 cm, view_yaw +0.02 rad, range 0.51 m,",
-    "3 lần đọc liên tiếp lệch nhau ~1 mm. Số cũ (approach == marker == (-2.251, -2.348), yaw -66.0) là pose",
-    "robot chép tay — lệch vị trí thật ~32 cm, chính là nguyên nhân robot về dock đứng xéo."
+    "Đo 2026-08-04 bằng pose_survey (standoff 0.8 m, map rtabmap_030826_(1)): SURVEY 15,",
+    "spread 0.0 cm, view_yaw +0.04 rad, range 0.71 m. Lấy dòng [PASTE dock] cuối cùng."
   ],
   "dock": {
     "marker_id": 6,
-    "approach": { "x": -2.417, "y": -2.069, "yaw_deg": -65.2 },
-    "marker": { "x": -2.081, "y": -2.795 }
+    "approach": { "x": -2.480, "y": -2.202, "yaw_deg": -91.0 },
+    "marker": { "x": -2.494, "y": -3.002 }
   },
   "_note_tables": [
-    "Table 1 đo 2026-07-22 bằng pose_survey (standoff 0.8 m): spread 0.2 cm, view_yaw +0.02 rad,",
-    "range 0.49 m, 5 lần đọc liên tiếp lệch nhau ~1 mm. Số cũ (approach == marker == (0.394, 1.919),",
-    "yaw -57.9) là pose robot chép tay — lệch vị trí thật ~0.42 m."
+    "Table 1 đo 2026-08-04 bằng pose_survey (standoff 0.8 m, map rtabmap_030826_(1)): SURVEY 15,",
+    "spread ~1.5 cm, view_yaw -0.07 rad, range 0.67 m. Lấy dòng [PASTE table] cuối cùng."
   ],
   "tables": [
     {
       "id": 1,
       "marker_id": 1,
-      "approach": { "x": 0.243, "y": 2.276, "yaw_deg": -58.6 },
-      "marker": { "x": 0.660, "y": 1.593 }
+      "approach": { "x": 1.622, "y": 0.314, "yaw_deg": -87.1 },
+      "marker": { "x": 1.662, "y": -0.485 }
     }
   ]
 }
