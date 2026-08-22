@@ -1,0 +1,1299 @@
+{
+  "dataset": "retrieval_eval",
+  "version": "5.0",
+  "description": "Đánh giá chất lượng RAG + Query Rewriter phiên bản 60 case, phân tầng theo rewrite_stratum. Mỗi case được gán nhãn pass-through / category-expand / vibe-sensation / implicit-persona / complex-constraint / info / negative để đánh giá đóng góp thực sự của rewriter trên từng loại truy vấn.",
+  "changelog": "+10 cases (SR-051 to SR-060) targeting vibe/persona/complex queries. Added rewrite_stratum field to all 60 cases. Fixed by_tag() in build script (tags are comma-separated strings).",
+  "metrics": [
+    "Recall@5",
+    "Precision@5",
+    "MRR"
+  ],
+  "k": 5,
+  "total_cases": 60,
+  "difficulty_distribution": {
+    "easy": 18,
+    "medium": 19,
+    "hard": 23
+  },
+  "rewrite_stratum_distribution": {
+    "pass-through": 15,
+    "complex-constraint": 7,
+    "category-expand": 10,
+    "implicit-persona": 9,
+    "vibe-sensation": 12,
+    "info": 4,
+    "negative": 3
+  },
+  "cases": [
+    {
+      "id": "SR-001",
+      "query": "phần ốc hương bao nhiêu",
+      "expected_relevant": [
+        "Ốc Hương Cháy Tỏi",
+        "Ốc Hương Hấp Sả",
+        "Ốc Hương Rang Muối",
+        "Ốc Hương Xốt Bơ Cay",
+        "Ốc Hương Xốt Bơ Tỏi Cay",
+        "Ốc Hương Xốt Me",
+        "Ốc Hương Xốt Muối Tắc",
+        "Ốc Hương Xốt Phô Mai",
+        "Ốc Hương Xốt Sa Tế",
+        "Ốc Hương Xốt Thái Siêu Cay",
+        "Ốc Hương Xốt Trứng Muối"
+      ],
+      "expected_irrelevant": [
+        "Ốc Cà Na",
+        "Lẩu Thái"
+      ],
+      "category": "shellfish",
+      "difficulty": "easy",
+      "note": "Keyword trực tiếp + ý hỏi giá, phải ra đúng món ốc hương",
+      "rewrite_stratum": "pass-through"
+    },
+    {
+      "id": "SR-002",
+      "query": "cho xem lẩu thái",
+      "expected_relevant": [
+        "Lẩu Thái"
+      ],
+      "expected_irrelevant": [
+        "Lẩu Cá Tầm Măng Chua",
+        "Cháo Hàu"
+      ],
+      "category": "hotpot",
+      "difficulty": "easy",
+      "note": "Tên món đầy đủ, phải match đúng",
+      "rewrite_stratum": "pass-through"
+    },
+    {
+      "id": "SR-003",
+      "query": "khoai tây lắc phô mai",
+      "expected_relevant": [
+        "Khoai Tây Lắc Phô Mai"
+      ],
+      "expected_irrelevant": [
+        "Bắp Xào",
+        "Bánh Mì Bơ Tỏi"
+      ],
+      "category": "snack",
+      "difficulty": "easy",
+      "note": "Tên món vặt đầy đủ",
+      "rewrite_stratum": "pass-through"
+    },
+    {
+      "id": "SR-004",
+      "query": "có bia heineken không",
+      "expected_relevant": [
+        "Bia Heineken",
+        "Bia Heineken Nhỏ"
+      ],
+      "expected_irrelevant": [
+        "Bia Tiger Bạc",
+        "Nước Ngọt"
+      ],
+      "category": "drink",
+      "difficulty": "easy",
+      "note": "Tên thương hiệu đồ uống, cả lon thường và nhỏ đều liên quan",
+      "rewrite_stratum": "pass-through"
+    },
+    {
+      "id": "SR-005",
+      "query": "cháo hàu",
+      "expected_relevant": [
+        "Cháo Hàu"
+      ],
+      "expected_irrelevant": [
+        "Cháo Hến",
+        "Cháo Hải Sản"
+      ],
+      "category": "porridge",
+      "difficulty": "easy",
+      "note": "Keyword ngắn, phải phân biệt với các loại cháo khác",
+      "rewrite_stratum": "pass-through"
+    },
+    {
+      "id": "SR-006",
+      "query": "tôm càng xanh nướng",
+      "expected_relevant": [
+        "Tôm Càng Xanh Cháy Tỏi",
+        "Tôm Càng Xanh Nướng Mỡ Hành",
+        "Tôm Càng Xanh Nướng Phô Mai",
+        "Tôm Càng Xanh Xốt Bơ Tỏi Cay",
+        "Tôm Càng Xanh Xốt Me",
+        "Tôm Càng Xanh Xốt Muối Tắc",
+        "Tôm Càng Xanh Xốt Phô Mai",
+        "Tôm Càng Xanh Xốt Sa Tế",
+        "Tôm Càng Xanh Xốt Trứng Muối"
+      ],
+      "expected_irrelevant": [
+        "Tôm Thẻ Nướng Muối Ớt",
+        "Tôm Chiên Xù"
+      ],
+      "category": "grilled",
+      "difficulty": "easy",
+      "note": "Tên món nướng cụ thể",
+      "rewrite_stratum": "pass-through"
+    },
+    {
+      "id": "SR-007",
+      "query": "gỏi hải sản",
+      "expected_relevant": [
+        "Gỏi Hải Sản"
+      ],
+      "expected_irrelevant": [
+        "Gỏi Xoài Bạch Tuộc",
+        "Chả Giò Hải Sản"
+      ],
+      "category": "salad",
+      "difficulty": "easy",
+      "note": "Tên món gỏi, phân biệt với các loại gỏi khác",
+      "rewrite_stratum": "pass-through"
+    },
+    {
+      "id": "SR-008",
+      "query": "mực chiên xù",
+      "expected_relevant": [
+        "Mực Chiên Xù"
+      ],
+      "expected_irrelevant": [
+        "Tôm Chiên Xù",
+        "Mực Hấp Sả Gừng"
+      ],
+      "category": "fried",
+      "difficulty": "easy",
+      "note": "Tên món chiên cụ thể",
+      "rewrite_stratum": "pass-through"
+    },
+    {
+      "id": "SR-009",
+      "query": "món chay ăn vặt giòn giòn",
+      "expected_relevant": [
+        "Khoai Tây Lắc Phô Mai"
+      ],
+      "expected_irrelevant": [
+        "Đậu Hũ Mắm Tôm",
+        "Bắp Xào"
+      ],
+      "category": "veg_snack",
+      "difficulty": "medium",
+      "note": "Lọc theo diet_type=chay + tính chất giòn, ăn vặt",
+      "rewrite_stratum": "complex-constraint"
+    },
+    {
+      "id": "SR-010",
+      "query": "có món lẩu nào không",
+      "expected_relevant": [
+        "Lẩu Cá Tầm Măng Chua",
+        "Lẩu Khổ Qua Cá Thác Lác",
+        "Lẩu Thái"
+      ],
+      "expected_irrelevant": [
+        "Cháo Hải Sản",
+        "Mì Xào Hải Sản"
+      ],
+      "category": "hotpot",
+      "difficulty": "medium",
+      "note": "Hỏi theo danh mục, phải ra cả 3 món lẩu",
+      "rewrite_stratum": "category-expand"
+    },
+    {
+      "id": "SR-011",
+      "query": "cơm chiên có mấy loại",
+      "expected_relevant": [
+        "Cơm Chiên Dương Châu",
+        "Cơm Chiên Hải Sản",
+        "Cơm Chiên Tỏi"
+      ],
+      "expected_irrelevant": [
+        "Cháo Hàu",
+        "Mì Xào Rau"
+      ],
+      "category": "rice",
+      "difficulty": "medium",
+      "note": "Hỏi liệt kê biến thể cùng nhóm cơm chiên",
+      "rewrite_stratum": "category-expand"
+    },
+    {
+      "id": "SR-012",
+      "query": "ốc hấp sả",
+      "expected_relevant": [
+        "Ốc Bulot Hấp Sả",
+        "Ốc Bươu Hấp Sả",
+        "Ốc Hương Hấp Sả"
+      ],
+      "expected_irrelevant": [
+        "Ốc Hương",
+        "Mực Hấp Sả Gừng"
+      ],
+      "category": "steamed",
+      "difficulty": "medium",
+      "note": "Kiểu chế biến hấp sả, nhiều món ốc liên quan",
+      "rewrite_stratum": "pass-through"
+    },
+    {
+      "id": "SR-013",
+      "query": "món nướng sa tế cay",
+      "expected_relevant": [
+        "Cá Chim Nướng Sa Tế",
+        "Cá Tầm Nướng Sa Tế"
+      ],
+      "expected_irrelevant": [
+        "Hàu Nướng",
+        "Lẩu Thái"
+      ],
+      "category": "grilled",
+      "difficulty": "medium",
+      "note": "Khớp xốt sa tế + vị cay trong taste_profile/tags",
+      "rewrite_stratum": "category-expand"
+    },
+    {
+      "id": "SR-014",
+      "query": "đậu hũ",
+      "expected_relevant": [
+        "Đậu Hũ Mắm Hành",
+        "Đậu Hũ Mắm Tôm",
+        "Đậu Hũ Non Trứng Bắc Thảo"
+      ],
+      "expected_irrelevant": [
+        "Trứng Cút Lộn",
+        "Khô Bò Lá Bông"
+      ],
+      "category": "snack",
+      "difficulty": "medium",
+      "note": "Keyword ngắn, ra cả 3 biến thể đậu hũ",
+      "rewrite_stratum": "pass-through"
+    },
+    {
+      "id": "SR-015",
+      "query": "món mì xào",
+      "expected_relevant": [
+        "Mì Xào Bò",
+        "Mì Xào Hải Sản",
+        "Mì Xào Sò"
+      ],
+      "expected_irrelevant": [
+        "Cơm Chiên Tỏi",
+        "Cháo Hến"
+      ],
+      "category": "noodles",
+      "difficulty": "medium",
+      "note": "Nhóm mì xào, nhiều biến thể",
+      "rewrite_stratum": "category-expand"
+    },
+    {
+      "id": "SR-016",
+      "query": "gỏi xoài",
+      "expected_relevant": [
+        "Gỏi Xoài Bạch Tuộc",
+        "Gỏi Xoài Ốc Giác"
+      ],
+      "expected_irrelevant": [
+        "Gỏi Hải Sản",
+        "Tré Trộn Thái"
+      ],
+      "category": "salad",
+      "difficulty": "medium",
+      "note": "Phân biệt 2 loại gỏi xoài với gỏi khác",
+      "rewrite_stratum": "pass-through"
+    },
+    {
+      "id": "SR-017",
+      "query": "khô mực nhậu",
+      "expected_relevant": [
+        "Khô Mực Khoai Môn Chiên Nước Mắm",
+        "Khô Mực Nướng"
+      ],
+      "expected_irrelevant": [
+        "Khô Bò Lá Bông",
+        "Bia 333"
+      ],
+      "category": "dried",
+      "difficulty": "medium",
+      "note": "Khớp khô mực + ngữ cảnh nhậu (tag)",
+      "rewrite_stratum": "category-expand"
+    },
+    {
+      "id": "SR-018",
+      "query": "đồ nhắm lai rai với bia",
+      "expected_relevant": [
+        "Khô Bò Lá Bông",
+        "Khô Mực Nướng"
+      ],
+      "expected_irrelevant": [
+        "Cháo Hàu",
+        "Cơm Chiên Tỏi"
+      ],
+      "category": "beer_snack",
+      "difficulty": "hard",
+      "note": "Ý ngầm: món khô lai rai theo tag 'nhậu', không gọi tên cụ thể",
+      "rewrite_stratum": "implicit-persona"
+    },
+    {
+      "id": "SR-019",
+      "query": "muốn ăn gì đó nóng hổi no bụng",
+      "expected_relevant": [
+        "Cháo Hàu",
+        "Cháo Hải Sản",
+        "Cháo Hến",
+        "Cháo Sò Huyết"
+      ],
+      "expected_irrelevant": [
+        "Bia Heineken",
+        "Gỏi Hải Sản"
+      ],
+      "category": "filling",
+      "difficulty": "hard",
+      "note": "Persona ngầm: muốn món nóng, no bụng → nhóm cháo (tag 'no bụng')",
+      "rewrite_stratum": "vibe-sensation"
+    },
+    {
+      "id": "SR-020",
+      "query": "món nào bán chạy được yêu thích nhất",
+      "expected_relevant": [
+        "Cá Chim Nướng Sa Tế",
+        "Gỏi Bò Khoai Môn",
+        "Hàu Nướng Phô Mai",
+        "Răng Mực Cháy Tỏi",
+        "Sò Mai Nướng Mỡ Hành Trứng Cút",
+        "Sò Điệp Nướng Phô Mai",
+        "Tôm Càng Xanh Nướng Phô Mai",
+        "Ốc Bươu Nhồi Thịt",
+        "Ốc Hương Xốt Trứng Muối",
+        "Ốc Len Xào Dừa"
+      ],
+      "expected_irrelevant": [
+        "Nước Suối",
+        "Bắp Xào"
+      ],
+      "category": "best_seller",
+      "difficulty": "hard",
+      "note": "Khớp dữ liệu best_seller.json ('Món bán chạy'). Test khả năng kéo doc best-seller thay vì menu thường",
+      "rewrite_stratum": "implicit-persona"
+    },
+    {
+      "id": "SR-021",
+      "query": "có gì cho nhóm đông người chia sẻ",
+      "expected_relevant": [
+        "Gỏi Hải Sản",
+        "Lẩu Cá Tầm Măng Chua",
+        "Lẩu Thái"
+      ],
+      "expected_irrelevant": [
+        "Nước Suối",
+        "Trứng Cút Lộn"
+      ],
+      "category": "sharing",
+      "difficulty": "hard",
+      "note": "Persona ngầm: nhóm đông → món chia sẻ (tag 'chia sẻ')",
+      "rewrite_stratum": "implicit-persona"
+    },
+    {
+      "id": "SR-022",
+      "query": "món chua cay đậm đà",
+      "expected_relevant": [
+        "Lẩu Cá Tầm Măng Chua",
+        "Lẩu Thái"
+      ],
+      "expected_irrelevant": [
+        "Cháo Hàu",
+        "Bánh Mì Bơ Tỏi"
+      ],
+      "category": "spicy_sour",
+      "difficulty": "hard",
+      "note": "Khớp taste_profile chua cay, không gọi tên món",
+      "rewrite_stratum": "vibe-sensation"
+    },
+    {
+      "id": "SR-023",
+      "query": "đồ uống không cồn cho trẻ em",
+      "expected_relevant": [
+        "Bò Húc",
+        "Nước Ngọt",
+        "Nước Suối",
+        "Trà Tắc"
+      ],
+      "expected_irrelevant": [
+        "Bia Sài Gòn",
+        "Bia 333"
+      ],
+      "category": "soft_drink",
+      "difficulty": "hard",
+      "note": "Ý ngầm: loại trừ bia, chỉ đồ uống không cồn",
+      "rewrite_stratum": "complex-constraint"
+    },
+    {
+      "id": "SR-024",
+      "query": "hàu chế biến kiểu gì",
+      "expected_relevant": [
+        "Cháo Hàu",
+        "Hàu Chiên Trứng",
+        "Hàu Nướng Mỡ Hành",
+        "Hàu Nướng Phô Mai",
+        "Hàu Nướng Tiêu Xanh",
+        "Hàu Sữa Hấp Sả"
+      ],
+      "expected_irrelevant": [
+        "Sò Điệp",
+        "Nghêu"
+      ],
+      "category": "oyster",
+      "difficulty": "hard",
+      "note": "Một nguyên liệu (hàu) nhiều cách chế biến nằm rải nhiều danh mục",
+      "rewrite_stratum": "pass-through"
+    },
+    {
+      "id": "SR-025",
+      "query": "hotline liên hệ quán",
+      "expected_relevant": [
+        "2. Hotline & Liên hệ"
+      ],
+      "expected_irrelevant": [],
+      "category": "info",
+      "difficulty": "easy",
+      "note": "Info doc: hotline contact. Tests type=info retrieval path.",
+      "rewrite_stratum": "info"
+    },
+    {
+      "id": "SR-026",
+      "query": "quán có mấy chi nhánh ở đâu",
+      "expected_relevant": [
+        "3. Hệ thống chi nhánh"
+      ],
+      "expected_irrelevant": [],
+      "category": "info",
+      "difficulty": "easy",
+      "note": "Info doc: branch locations. FAISS semantic match.",
+      "rewrite_stratum": "info"
+    },
+    {
+      "id": "SR-027",
+      "query": "giờ mở cửa đóng cửa",
+      "expected_relevant": [
+        "4. Thời gian hoạt động (Giờ mở cửa)"
+      ],
+      "expected_irrelevant": [],
+      "category": "info",
+      "difficulty": "easy",
+      "note": "Info doc: opening hours.",
+      "rewrite_stratum": "info"
+    },
+    {
+      "id": "SR-028",
+      "query": "wifi gửi xe thanh toán quán có gì",
+      "expected_relevant": [
+        "5. Tiện ích & Dịch vụ (Amenities)"
+      ],
+      "expected_irrelevant": [],
+      "category": "info",
+      "difficulty": "medium",
+      "note": "Info doc: amenities. Lexical terms may be spread across lanes.",
+      "rewrite_stratum": "info"
+    },
+    {
+      "id": "SR-029",
+      "query": "cho xem món pizza",
+      "expected_relevant": [],
+      "expected_irrelevant": [
+        "Bánh Mì Bơ Tỏi"
+      ],
+      "category": "negative",
+      "difficulty": "easy",
+      "note": "Out-of-corpus: pizza not on menu. Gatekeeper should reject.",
+      "rewrite_stratum": "negative"
+    },
+    {
+      "id": "SR-030",
+      "query": "có sushi sashimi không",
+      "expected_relevant": [],
+      "expected_irrelevant": [
+        "Gỏi Cuốn Tôm Thịt",
+        "Bò Bía"
+      ],
+      "category": "negative",
+      "difficulty": "easy",
+      "note": "Out-of-corpus: sushi not on menu. Tests false-positive rejection.",
+      "rewrite_stratum": "negative"
+    },
+    {
+      "id": "SR-031",
+      "query": "giá xe máy SH bao nhiêu",
+      "expected_relevant": [],
+      "expected_irrelevant": [],
+      "category": "negative",
+      "difficulty": "medium",
+      "note": "Out-of-corpus: non-food query. Gatekeeper must block completely.",
+      "rewrite_stratum": "negative"
+    },
+    {
+      "id": "SR-032",
+      "query": "món canh súp nóng",
+      "expected_relevant": [
+        "Canh Chua Cá Lóc",
+        "Canh Chua Hải Sản",
+        "Canh Rong Biển Đậu Hũ",
+        "Canh Cải Thịt Bằm",
+        "Canh Bí Đao Tôm Khô",
+        "Soup Tomyum Thố Lớn",
+        "Soup Tomyum Thố Nhỏ"
+      ],
+      "expected_irrelevant": [
+        "Cháo Hàu",
+        "Lẩu Thái"
+      ],
+      "category": "soup",
+      "difficulty": "easy",
+      "note": "Category: canh + soup. Rau & Canh category had zero coverage.",
+      "rewrite_stratum": "category-expand"
+    },
+    {
+      "id": "SR-033",
+      "query": "tráng miệng có món gì",
+      "expected_relevant": [
+        "Chè Khúc Bạch",
+        "Chè Thái Sầu Riêng",
+        "Rau Câu Dừa",
+        "Kem Dừa",
+        "Kem Xôi Chiên",
+        "Trái Cây Theo Mùa",
+        "Bánh Flan Cà Phê",
+        "Sữa Chua Nếp Cẩm"
+      ],
+      "expected_irrelevant": [
+        "Khoai Tây Lắc Phô Mai",
+        "Bắp Xào"
+      ],
+      "category": "dessert",
+      "difficulty": "easy",
+      "note": "Category: Tráng Miệng (8 items). Previously untested.",
+      "rewrite_stratum": "category-expand"
+    },
+    {
+      "id": "SR-034",
+      "query": "tôm thẻ chế biến kiểu gì",
+      "expected_relevant": [
+        "Tôm Thẻ Xốt Trứng Muối",
+        "Tôm Thẻ Xốt Me",
+        "Tôm Thẻ Xốt Bơ Tỏi Cay",
+        "Tôm Thẻ Rang Muối",
+        "Tôm Thẻ Cháy Tỏi",
+        "Tôm Thẻ Nướng Muối Ớt"
+      ],
+      "expected_irrelevant": [
+        "Tôm Chiên Xù",
+        "Tôm Càng Xanh"
+      ],
+      "category": "shrimp",
+      "difficulty": "easy",
+      "note": "Category: Tôm. Tôm Thẻ variants (6 items).",
+      "rewrite_stratum": "pass-through"
+    },
+    {
+      "id": "SR-035",
+      "query": "lẩu chay",
+      "expected_relevant": [
+        "Lẩu Nấm Chay"
+      ],
+      "expected_irrelevant": [
+        "Lẩu Thái",
+        "Lẩu Gà Lá É"
+      ],
+      "category": "hotpot_veg",
+      "difficulty": "easy",
+      "note": "Diet + category intersection: chay lẩu. Single item.",
+      "rewrite_stratum": "complex-constraint"
+    },
+    {
+      "id": "SR-036",
+      "query": "món rau xào chay",
+      "expected_relevant": [
+        "Rau Muống Xào Tỏi",
+        "Rau Muống Xào Chao",
+        "Cải Thìa Xào Nấm Đông Cô",
+        "Bông Bí Xào Tỏi",
+        "Đọt Su Su Xào Tỏi",
+        "Nấm Kim Châm Xào Bơ Tỏi"
+      ],
+      "expected_irrelevant": [
+        "Mì Xào Hải Sản",
+        "Cơm Chiên Hải Sản"
+      ],
+      "category": "veg_stir_fry",
+      "difficulty": "medium",
+      "note": "Tag overlap: rau xào + chay. Both BM25 and FAISS must contribute.",
+      "rewrite_stratum": "complex-constraint"
+    },
+    {
+      "id": "SR-037",
+      "query": "món thanh đạm ít dầu mỡ",
+      "expected_relevant": [
+        "Đậu Hũ Sốt Nấm",
+        "Rau Muống Xào Tỏi",
+        "Trái Cây Theo Mùa",
+        "Rau Muống Xào Chao",
+        "Cải Thìa Xào Nấm Đông Cô",
+        "Bông Bí Xào Tỏi",
+        "Đọt Su Su Xào Tỏi",
+        "Canh Rong Biển Đậu Hũ",
+        "Nấm Kim Châm Xào Bơ Tỏi",
+        "Gỏi Cuốn Tôm Thịt",
+        "Gỏi Ngó Sen Chay",
+        "Mì Xào Chay Thập Cẩm",
+        "Cơm Chiên Chay",
+        "Lẩu Nấm Chay"
+      ],
+      "expected_irrelevant": [
+        "Ốc Hương Xốt Trứng Muối",
+        "Lẩu Thái"
+      ],
+      "category": "light",
+      "difficulty": "medium",
+      "note": "Tag: thanh đạm (14 items). Tests tag-based semantic matching.",
+      "rewrite_stratum": "vibe-sensation"
+    },
+    {
+      "id": "SR-038",
+      "query": "món khai vị ăn trước",
+      "expected_relevant": [
+        "Tré Trộn Thái",
+        "Gỏi Xoài Ốc Giác",
+        "Gỏi Xoài Bạch Tuộc",
+        "Gỏi Hải Sản",
+        "Gỏi Bò Khoai Môn",
+        "Chả Giò Hải Sản",
+        "Chả Giò Ốc Quậy",
+        "Chả Cá Thác Lác Chiên Giòn",
+        "Nem Chua Rán",
+        "Tôm Chiên Xù",
+        "Mực Chiên Xù",
+        "Khổ Qua Chà Bông",
+        "Chả Giò Chay",
+        "Gỏi Cuốn Tôm Thịt",
+        "Bò Bía"
+      ],
+      "expected_irrelevant": [
+        "Cháo Hàu",
+        "Bia Heineken"
+      ],
+      "category": "appetizer",
+      "difficulty": "medium",
+      "note": "Tag: khai vị (15 items, 6 categories). Cross-category tag recall.",
+      "rewrite_stratum": "category-expand"
+    },
+    {
+      "id": "SR-039",
+      "query": "món cao cấp sang trọng đặc biệt",
+      "expected_relevant": [
+        "Bào Ngư Nướng Mỡ Hành",
+        "Bào Ngư Nướng Tiêu Xanh",
+        "Bào Ngư Nướng Bơ Tỏi",
+        "Tôm Càng Xanh Xốt Trứng Muối",
+        "Tôm Càng Xanh Xốt Phô Mai",
+        "Tôm Càng Xanh Nướng Mỡ Hành",
+        "Tôm Càng Xanh Xốt Muối Tắc",
+        "Tôm Càng Xanh Xốt Me",
+        "Tôm Càng Xanh Xốt Bơ Tỏi Cay",
+        "Tôm Càng Xanh Xốt Sa Tế",
+        "Tôm Càng Xanh Cháy Tỏi",
+        "Tôm Càng Xanh Nướng Phô Mai"
+      ],
+      "expected_irrelevant": [
+        "Trứng Cút Lộn",
+        "Bắp Xào"
+      ],
+      "category": "premium",
+      "difficulty": "medium",
+      "note": "Tag: cao cấp (12 items: Bào Ngư + Tôm Càng Xanh). Premium-tier items.",
+      "rewrite_stratum": "vibe-sensation"
+    },
+    {
+      "id": "SR-040",
+      "query": "quán có món chay gì không",
+      "expected_relevant": [
+        "Khoai Tây Lắc Phô Mai",
+        "Bánh Mì Bơ Tỏi",
+        "Mì Xào Rau",
+        "Đậu Hũ Sốt Nấm",
+        "Rau Muống Xào Tỏi",
+        "Chè Khúc Bạch",
+        "Chè Thái Sầu Riêng",
+        "Rau Câu Dừa",
+        "Kem Dừa",
+        "Kem Xôi Chiên",
+        "Trái Cây Theo Mùa",
+        "Bánh Flan Cà Phê",
+        "Sữa Chua Nếp Cẩm",
+        "Rau Muống Xào Chao",
+        "Cải Thìa Xào Nấm Đông Cô",
+        "Bông Bí Xào Tỏi",
+        "Đọt Su Su Xào Tỏi",
+        "Canh Rong Biển Đậu Hũ",
+        "Nấm Đùi Gà Nướng Sa Tế",
+        "Đậu Hũ Chiên Sả Ớt",
+        "Nấm Kim Châm Xào Bơ Tỏi",
+        "Chả Giò Chay",
+        "Gỏi Ngó Sen Chay",
+        "Mì Xào Chay Thập Cẩm",
+        "Cơm Chiên Chay",
+        "Lẩu Nấm Chay"
+      ],
+      "expected_irrelevant": [
+        "Ốc Hương",
+        "Lẩu Thái"
+      ],
+      "category": "vegetarian",
+      "difficulty": "medium",
+      "note": "Diet: chay (26 items across 8 categories). Largest expected set.",
+      "rewrite_stratum": "category-expand"
+    },
+    {
+      "id": "SR-041",
+      "query": "đồ uống giải khát có những gì",
+      "expected_relevant": [
+        "Nước Suối",
+        "Trà Tắc",
+        "Trà Ổi",
+        "Nước Ngọt",
+        "Bò Húc",
+        "Bia Sài Gòn",
+        "Bia 333",
+        "Bia Tiger Nâu",
+        "Bia Tiger Bạc",
+        "Bia Tiger Bạc Nhỏ",
+        "Bia Heineken",
+        "Bia Heineken Nhỏ",
+        "Nước Ép Cam",
+        "Nước Ép Dưa Hấu",
+        "Nước Ép Thơm",
+        "Sinh Tố Bơ",
+        "Sinh Tố Xoài",
+        "Soda Chanh",
+        "Soda Việt Quất",
+        "Trà Đào Cam Sả",
+        "Cà Phê Sữa Đá",
+        "Dừa Tươi"
+      ],
+      "expected_irrelevant": [
+        "Cháo Hàu",
+        "Gỏi Hải Sản"
+      ],
+      "category": "beverage",
+      "difficulty": "medium",
+      "note": "Category: Giải Khát (22 items). Largest single-category set.",
+      "rewrite_stratum": "category-expand"
+    },
+    {
+      "id": "SR-042",
+      "query": "ăn gì buổi sáng nhẹ bụng thôi",
+      "expected_relevant": [
+        "Cháo Hàu",
+        "Cháo Hến",
+        "Cháo Sò Huyết",
+        "Cháo Hải Sản",
+        "Cháo Gà Lá Chanh",
+        "Bò Bía",
+        "Gỏi Cuốn Tôm Thịt",
+        "Trứng Cút Lộn"
+      ],
+      "expected_irrelevant": [
+        "Lẩu Thái",
+        "Cơm Chiên Hải Sản"
+      ],
+      "category": "breakfast",
+      "difficulty": "hard",
+      "note": "Persona: breakfast, light. Should return cháo + light rolls.",
+      "rewrite_stratum": "implicit-persona"
+    },
+    {
+      "id": "SR-043",
+      "query": "món hải sản lạ miệng độc đáo quán",
+      "expected_relevant": [
+        "Bào Ngư Nướng Mỡ Hành",
+        "Bào Ngư Nướng Tiêu Xanh",
+        "Bào Ngư Nướng Bơ Tỏi",
+        "Vẹm New Zealand Hấp Sả",
+        "Vẹm New Zealand Nướng Mỡ Hành",
+        "Vẹm New Zealand Nướng Phô Mai",
+        "Hàu Sữa Hấp Sả",
+        "Sò Mai Nướng Mỡ Hành Trứng Cút",
+        "Ốc Len Xào Dừa",
+        "Cá Tầm Nướng Sa Tế",
+        "Khổ Qua Chà Bông"
+      ],
+      "expected_irrelevant": [
+        "Khoai Tây Lắc Phô Mai",
+        "Nước Suối"
+      ],
+      "category": "exotic",
+      "difficulty": "hard",
+      "note": "Persona: exotic/unique seafood. Purely semantic — no exact keyword match.",
+      "rewrite_stratum": "vibe-sensation"
+    },
+    {
+      "id": "SR-044",
+      "query": "trời nóng, muốn ăn gì đó mát ngọt",
+      "expected_relevant": [
+        "Chè Khúc Bạch",
+        "Chè Thái Sầu Riêng",
+        "Rau Câu Dừa",
+        "Kem Dừa",
+        "Kem Xôi Chiên",
+        "Trái Cây Theo Mùa",
+        "Bánh Flan Cà Phê",
+        "Sữa Chua Nếp Cẩm",
+        "Sinh Tố Bơ",
+        "Sinh Tố Xoài",
+        "Trà Tắc",
+        "Trà Ổi",
+        "Dừa Tươi",
+        "Nước Ép Cam",
+        "Nước Ép Dưa Hấu",
+        "Nước Ép Thơm"
+      ],
+      "expected_irrelevant": [
+        "Lẩu Thái",
+        "Ốc Hương Xốt Trứng Muối"
+      ],
+      "category": "cold_sweet",
+      "difficulty": "hard",
+      "note": "Persona: hot weather → cold desserts + cold drinks. Multi-category.",
+      "rewrite_stratum": "vibe-sensation"
+    },
+    {
+      "id": "SR-045",
+      "query": "nước ép trái cây",
+      "expected_relevant": [
+        "Nước Ép Cam",
+        "Nước Ép Dưa Hấu",
+        "Nước Ép Thơm",
+        "Dừa Tươi"
+      ],
+      "expected_irrelevant": [
+        "Nước Suối",
+        "Nước Ngọt"
+      ],
+      "category": "juice",
+      "difficulty": "medium",
+      "note": "BM25-strong prefix match on 'Nước Ép'. FAISS adds Dừa Tươi (semantic).",
+      "rewrite_stratum": "pass-through"
+    },
+    {
+      "id": "SR-046",
+      "query": "món đẹp chụp hình instagram sống ảo",
+      "expected_relevant": [
+        "Bánh Flan Cà Phê",
+        "Chè Khúc Bạch",
+        "Chè Thái Sầu Riêng",
+        "Hàu Nướng Phô Mai",
+        "Sò Mai Nướng Mỡ Hành Trứng Cút",
+        "Sò Điệp Nướng Phô Mai",
+        "Trứng Lòng Đào Me Cay",
+        "Tôm Càng Xanh Nướng Phô Mai"
+      ],
+      "expected_irrelevant": [
+        "Nước Suối",
+        "Rau Muống Xào Tỏi"
+      ],
+      "category": "instagram",
+      "difficulty": "hard",
+      "note": "Purely semantic: instagram/visual appeal. Zero lexical overlap — FAISS must carry.",
+      "rewrite_stratum": "vibe-sensation"
+    },
+    {
+      "id": "SR-047",
+      "query": "nhậu lai rai tối nay ăn gì",
+      "expected_relevant": [
+        "Chân Gà Nướng",
+        "Chân Gà Xốt Thái",
+        "Khô Bò Lá Bông",
+        "Khô Cá Chỉ Vàng Nướng",
+        "Khô Mực Khoai Môn Chiên Nước Mắm",
+        "Khô Mực Nướng",
+        "Răng Mực Cháy Tỏi",
+        "Ốc Hương Cháy Tỏi",
+        "Ốc Hương Rang Muối"
+      ],
+      "expected_irrelevant": [
+        "Cháo Hàu",
+        "Nước Suối"
+      ],
+      "category": "beer_snack",
+      "difficulty": "hard",
+      "note": "Persona: nhậu/night out. Must surface ốc + khô + mồi nhậu from tag 'nhậu'.",
+      "rewrite_stratum": "implicit-persona"
+    },
+    {
+      "id": "SR-048",
+      "query": "có món gì từ càng ghẹ không",
+      "expected_relevant": [
+        "Càng Ghẹ Cháy Tỏi",
+        "Càng Ghẹ Rang Me",
+        "Càng Ghẹ Xốt Sa Tế"
+      ],
+      "expected_irrelevant": [
+        "Tôm Càng Xanh",
+        "Cá Chim"
+      ],
+      "category": "crab_claw",
+      "difficulty": "easy",
+      "note": "Direct ingredient query: Càng Ghẹ (3 items). Món Chính category.",
+      "rewrite_stratum": "pass-through"
+    },
+    {
+      "id": "SR-049",
+      "query": "món nướng phô mai béo ngậy",
+      "expected_relevant": [
+        "Hàu Nướng Phô Mai",
+        "Sò Điệp Nướng Phô Mai",
+        "Tôm Càng Xanh Nướng Phô Mai",
+        "Tôm Càng Xanh Xốt Phô Mai",
+        "Vẹm New Zealand Nướng Phô Mai",
+        "Ốc Hương Xốt Phô Mai"
+      ],
+      "expected_irrelevant": [
+        "Rau Muống Xào Tỏi",
+        "Cơm Chiên Tỏi"
+      ],
+      "category": "cheesy_grilled",
+      "difficulty": "medium",
+      "note": "Taste profile: phô mai + béo. BM25 for 'phô mai', FAISS for 'béo ngậy'.",
+      "rewrite_stratum": "vibe-sensation"
+    },
+    {
+      "id": "SR-050",
+      "query": "gia đình có trẻ em nên gọi món gì",
+      "expected_relevant": [
+        "Tôm Chiên Xù",
+        "Khoai Tây Lắc Phô Mai",
+        "Bánh Mì Bơ Tỏi",
+        "Cơm Chiên Hải Sản",
+        "Cơm Chiên Dương Châu",
+        "Mì Xào Bò",
+        "Mì Xào Hải Sản",
+        "Chả Giò Hải Sản",
+        "Chả Giò Ốc Quậy",
+        "Trứng Cút Lộn Chiên Giòn",
+        "Chim Cút Chiên Bơ",
+        "Cánh Gà Chiên Nước Mắm"
+      ],
+      "expected_irrelevant": [
+        "Ốc Hương Xốt Thái Siêu Cay",
+        "Bia Heineken"
+      ],
+      "category": "family_kids",
+      "difficulty": "hard",
+      "note": "Persona: family with kids. Kid-friendly fried/rice/noodle items.",
+      "rewrite_stratum": "implicit-persona"
+    },
+    {
+      "id": "SR-051",
+      "query": "món gì the the mát mát giải nhiệt mùa hè",
+      "expected_relevant": [
+        "Bánh Flan Cà Phê",
+        "Chè Khúc Bạch",
+        "Chè Thái Sầu Riêng",
+        "Dừa Tươi",
+        "Kem Dừa",
+        "Kem Xôi Chiên",
+        "Nước Suối",
+        "Nước Ép Cam",
+        "Nước Ép Dưa Hấu",
+        "Nước Ép Thơm",
+        "Rau Câu Dừa",
+        "Sinh Tố Bơ",
+        "Sinh Tố Xoài",
+        "Soda Chanh",
+        "Soda Việt Quất",
+        "Sữa Chua Nếp Cẩm",
+        "Trà Tắc",
+        "Trà Ổi",
+        "Trái Cây Theo Mùa"
+      ],
+      "expected_irrelevant": [
+        "Lẩu Thái",
+        "Ốc Hương Xốt Trứng Muối"
+      ],
+      "category": "cold_refresh",
+      "difficulty": "hard",
+      "rewrite_stratum": "vibe-sensation",
+      "note": "Vibe: summer heat → cold desserts + cold drinks. Zero dish-name overlap."
+    },
+    {
+      "id": "SR-052",
+      "query": "cay xé lưỡi luôn ấy, món nào cay nhất quán",
+      "expected_relevant": [
+        "Ba Chỉ Bò Mỹ Nướng Sa Tế",
+        "Bạch Tuộc Nướng Sa Tế",
+        "Bạch Tuộc Xốt Thái Siêu Cay",
+        "Càng Ghẹ Xốt Sa Tế",
+        "Cá Chim Nướng Sa Tế",
+        "Cá Tầm Nướng Sa Tế",
+        "Gà Nướng Muối Ớt",
+        "Lòng Heo Nướng Sa Tế",
+        "Lẩu Thái",
+        "Mực Xốt Muối Ớt",
+        "Nấm Đùi Gà Nướng Sa Tế",
+        "Răng Mực Xốt Thái Siêu Cay",
+        "Sò Huyết Xốt Sa Tế",
+        "Sò Điệp Xốt Sa Tế",
+        "Tré Trộn Thái",
+        "Trứng Lòng Đào Me Cay",
+        "Tôm Càng Xanh Xốt Bơ Tỏi Cay",
+        "Tôm Càng Xanh Xốt Sa Tế",
+        "Tôm Thẻ Nướng Muối Ớt",
+        "Tôm Thẻ Xốt Bơ Tỏi Cay",
+        "Đậu Hũ Chiên Sả Ớt",
+        "Ốc Bulot Xốt Bơ Tỏi Cay",
+        "Ốc Bulot Xốt Thái Siêu Cay",
+        "Ốc Cà Na Xốt Bơ Tỏi Cay",
+        "Ốc Hương Xốt Bơ Cay",
+        "Ốc Hương Xốt Bơ Tỏi Cay",
+        "Ốc Hương Xốt Sa Tế",
+        "Ốc Hương Xốt Thái Siêu Cay",
+        "Ốc Mỡ Xốt Sa Tế"
+      ],
+      "expected_irrelevant": [
+        "Rau Muống Xào Tỏi",
+        "Nước Suối"
+      ],
+      "category": "spicy",
+      "difficulty": "hard",
+      "rewrite_stratum": "vibe-sensation",
+      "note": "Vibe: maximum spiciness. Curated: cay in name/tags, sa tế, siêu cay, muối ớt."
+    },
+    {
+      "id": "SR-059",
+      "query": "ăn gì ấm bụng buổi tối mưa ở Sài Gòn",
+      "expected_relevant": [
+        "Bông Bí Xào Tỏi",
+        "Canh Bí Đao Tôm Khô",
+        "Canh Chua Cá Lóc",
+        "Canh Chua Hải Sản",
+        "Canh Cải Thịt Bằm",
+        "Canh Rong Biển Đậu Hũ",
+        "Cháo Gà Lá Chanh",
+        "Cháo Hàu",
+        "Cháo Hải Sản",
+        "Cháo Hến",
+        "Cháo Sò Huyết",
+        "Cải Thìa Xào Nấm Đông Cô",
+        "Lẩu Cá Tầm Măng Chua",
+        "Lẩu Gà Lá É",
+        "Lẩu Khổ Qua Cá Thác Lác",
+        "Lẩu Nấm Chay",
+        "Lẩu Thái",
+        "Rau Lang Luộc Chấm Kho Quẹt",
+        "Rau Muống Xào Chao",
+        "Rau Muống Xào Tỏi",
+        "Soup Tomyum Thố Lớn",
+        "Soup Tomyum Thố Nhỏ",
+        "Đọt Su Su Xào Tỏi"
+      ],
+      "expected_irrelevant": [
+        "Bia Heineken",
+        "Kem Dừa"
+      ],
+      "category": "comfort_food",
+      "difficulty": "hard",
+      "rewrite_stratum": "vibe-sensation",
+      "note": "Vibe: rainy evening → cháo, lẩu, canh súp nóng. 23 items."
+    },
+    {
+      "id": "SR-060",
+      "query": "món gì bùi bùi béo béo ăn vặt lai rai",
+      "expected_relevant": [
+        "Bánh Mì Bơ Tỏi",
+        "Bắp Xào",
+        "Hến Xúc Bánh Tráng",
+        "Khoai Tây Lắc Phô Mai",
+        "Khô Bò Lá Bông",
+        "Khô Cá Chỉ Vàng Nướng",
+        "Khô Cá Đuối Nướng",
+        "Khô Gà Lá Chanh",
+        "Khô Mực Khoai Môn Chiên Nước Mắm",
+        "Khô Mực Nướng",
+        "Khô Nai Xé Sợi",
+        "Khô Trâu Gác Bếp",
+        "Khổ Qua Chà Bông",
+        "Trứng Cút Lộn",
+        "Trứng Lòng Đào Me Cay",
+        "Đậu Hũ Mắm Hành",
+        "Đậu Hũ Mắm Tôm",
+        "Đậu Hũ Non Trứng Bắc Thảo"
+      ],
+      "expected_irrelevant": [
+        "Cháo Hàu",
+        "Nước Suối"
+      ],
+      "category": "snack_rich",
+      "difficulty": "hard",
+      "rewrite_stratum": "vibe-sensation",
+      "note": "Vibe: rich snack. Lặt Vặt Ăn Chơi + Khô Lai Rai categories + 'béo' tag."
+    },
+    {
+      "id": "SR-053",
+      "query": "ăn gì healthy ít calo mà vẫn ngon",
+      "expected_relevant": [
+        "Bông Bí Xào Tỏi",
+        "Canh Rong Biển Đậu Hũ",
+        "Cơm Chiên Chay",
+        "Cải Thìa Xào Nấm Đông Cô",
+        "Gỏi Cuốn Tôm Thịt",
+        "Gỏi Ngó Sen Chay",
+        "Lẩu Nấm Chay",
+        "Mì Xào Chay Thập Cẩm",
+        "Nấm Kim Châm Xào Bơ Tỏi",
+        "Rau Muống Xào Chao",
+        "Rau Muống Xào Tỏi",
+        "Trái Cây Theo Mùa",
+        "Đậu Hũ Sốt Nấm",
+        "Đọt Su Su Xào Tỏi"
+      ],
+      "expected_irrelevant": [
+        "Ốc Hương Xốt Trứng Muối",
+        "Cánh Gà Chiên Nước Mắm"
+      ],
+      "category": "healthy",
+      "difficulty": "hard",
+      "rewrite_stratum": "implicit-persona",
+      "note": "Persona: health-conscious. Maps to 'thanh đạm' + 'chay' tags."
+    },
+    {
+      "id": "SR-054",
+      "query": "tụ tập cuối tuần 8 đứa share được món gì",
+      "expected_relevant": [
+        "Bào Ngư Nướng Bơ Tỏi",
+        "Bào Ngư Nướng Mỡ Hành",
+        "Bào Ngư Nướng Tiêu Xanh",
+        "Bạch Tuộc Mắm Nhĩ + Cải Xanh",
+        "Cá Chim Nướng Sa Tế",
+        "Cá Tầm Nướng Sa Tế",
+        "Cánh Gà Nướng Mật Ong",
+        "Dê Nướng Ngũ Vị",
+        "Gà Nướng Muối Ớt",
+        "Gỏi Bò Khoai Môn",
+        "Gỏi Gà Bắp Cải",
+        "Gỏi Hải Sản",
+        "Gỏi Ngó Sen Chay",
+        "Gỏi Xoài Bạch Tuộc",
+        "Gỏi Xoài Ốc Giác",
+        "Lẩu Cá Tầm Măng Chua",
+        "Lẩu Gà Lá É",
+        "Lẩu Khổ Qua Cá Thác Lác",
+        "Lẩu Nấm Chay",
+        "Lẩu Thái",
+        "Soup Tomyum Thố Lớn",
+        "Soup Tomyum Thố Nhỏ",
+        "Sứa Mắm Nhĩ + Cải Xanh",
+        "Tré Trộn Thái",
+        "Tôm Càng Xanh Cháy Tỏi",
+        "Tôm Càng Xanh Nướng Mỡ Hành",
+        "Tôm Càng Xanh Nướng Phô Mai",
+        "Tôm Càng Xanh Xốt Bơ Tỏi Cay",
+        "Tôm Càng Xanh Xốt Me",
+        "Tôm Càng Xanh Xốt Muối Tắc",
+        "Tôm Càng Xanh Xốt Phô Mai",
+        "Tôm Càng Xanh Xốt Sa Tế",
+        "Tôm Càng Xanh Xốt Trứng Muối",
+        "Tôm Mắm Nhĩ + Cải Xanh",
+        "Tôm Xốt Thái Mù Tạt"
+      ],
+      "expected_irrelevant": [
+        "Trứng Cút Lộn",
+        "Nước Suối"
+      ],
+      "category": "group_dining",
+      "difficulty": "hard",
+      "rewrite_stratum": "implicit-persona",
+      "note": "Persona: large group. Lẩu + Gỏi + shareable Nướng (cá, gà, dê, bào ngư, tôm càng). 35 items."
+    },
+    {
+      "id": "SR-055",
+      "query": "hẹn hò lần đầu nên gọi món gì cho sang",
+      "expected_relevant": [
+        "Bào Ngư Nướng Bơ Tỏi",
+        "Bào Ngư Nướng Mỡ Hành",
+        "Bào Ngư Nướng Tiêu Xanh",
+        "Tôm Càng Xanh Cháy Tỏi",
+        "Tôm Càng Xanh Nướng Mỡ Hành",
+        "Tôm Càng Xanh Nướng Phô Mai",
+        "Tôm Càng Xanh Xốt Bơ Tỏi Cay",
+        "Tôm Càng Xanh Xốt Me",
+        "Tôm Càng Xanh Xốt Muối Tắc",
+        "Tôm Càng Xanh Xốt Phô Mai",
+        "Tôm Càng Xanh Xốt Sa Tế",
+        "Tôm Càng Xanh Xốt Trứng Muối"
+      ],
+      "expected_irrelevant": [
+        "Bắp Xào",
+        "Trứng Cút Lộn"
+      ],
+      "category": "date_premium",
+      "difficulty": "hard",
+      "rewrite_stratum": "implicit-persona",
+      "note": "Persona: first date → premium/impressive dishes. Maps to 'cao cấp' tag."
+    },
+    {
+      "id": "SR-056",
+      "query": "món chay nào giòn giòn dưới 80k",
+      "expected_relevant": [
+        "Bánh Mì Bơ Tỏi",
+        "Chả Giò Chay",
+        "Gỏi Ngó Sen Chay",
+        "Kem Xôi Chiên",
+        "Khoai Tây Lắc Phô Mai",
+        "Rau Câu Dừa",
+        "Rau Muống Xào Chao",
+        "Rau Muống Xào Tỏi",
+        "Đậu Hũ Chiên Sả Ớt",
+        "Đọt Su Su Xào Tỏi"
+      ],
+      "expected_irrelevant": [
+        "Đậu Hũ Mắm Tôm",
+        "Lẩu Nấm Chay"
+      ],
+      "category": "veg_crispy_budget",
+      "difficulty": "hard",
+      "rewrite_stratum": "complex-constraint",
+      "note": "Complex: chay + giòn + price < 80k. Tests diet + taste + price intersection."
+    },
+    {
+      "id": "SR-057",
+      "query": "hải sản sốt bơ tỏi trên 150k có món gì",
+      "expected_relevant": [],
+      "expected_irrelevant": [
+        "Ốc Hương Xốt Bơ Tỏi Cay",
+        "Tôm Càng Xanh Xốt Bơ Tỏi Cay"
+      ],
+      "category": "price_ceiling",
+      "difficulty": "hard",
+      "rewrite_stratum": "complex-constraint",
+      "note": "Complex: seafood + butter garlic + above 150k. Max menu price is 99k → empty set. Tests price-filter aware rewriting + correct empty-result handling."
+    },
+    {
+      "id": "SR-058",
+      "query": "món nướng không cay cho trẻ em dưới 100k",
+      "expected_relevant": [
+        "Cánh Gà Nướng Mật Ong",
+        "Hàu Nướng Mỡ Hành",
+        "Hàu Nướng Phô Mai",
+        "Hàu Nướng Tiêu Xanh",
+        "Sò Mai Nướng Mỡ Hành Trứng Cút",
+        "Sò Điệp Nướng Mỡ Hành",
+        "Sò Điệp Nướng Phô Mai",
+        "Sò Điệp Xốt Sa Tế",
+        "Sò Điệp Xốt Trứng Muối",
+        "Vẹm New Zealand Hấp Sả",
+        "Vẹm New Zealand Nướng Mỡ Hành",
+        "Vẹm New Zealand Nướng Phô Mai"
+      ],
+      "expected_irrelevant": [
+        "Ốc Hương Xốt Thái Siêu Cay",
+        "Cá Chim Nướng Sa Tế"
+      ],
+      "category": "grilled_kids",
+      "difficulty": "hard",
+      "rewrite_stratum": "complex-constraint",
+      "note": "Complex: grilled + not spicy + price < 100k. Tests multi-filter rewriting."
+    }
+  ]
+}

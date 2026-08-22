@@ -2,15 +2,15 @@
   "accuracy": 0.9744,
   "per_class": {
     "ORDER": {
-      "precision": 0.9412,
-      "recall": 1.0,
-      "f1": 0.9697,
+      "precision": 1.0,
+      "recall": 0.9375,
+      "f1": 0.9677,
       "support": 16
     },
     "SEARCH": {
       "precision": 1.0,
-      "recall": 0.9,
-      "f1": 0.9474,
+      "recall": 1.0,
+      "f1": 1.0,
       "support": 10
     },
     "PAYMENT": {
@@ -20,22 +20,22 @@
       "support": 8
     },
     "CHAT": {
-      "precision": 1.0,
+      "precision": 0.8333,
       "recall": 1.0,
-      "f1": 1.0,
+      "f1": 0.9091,
       "support": 5
     }
   },
   "confusion_matrix": {
     "ORDER": {
-      "ORDER": 16,
+      "ORDER": 15,
       "SEARCH": 0,
       "PAYMENT": 0,
-      "CHAT": 0
+      "CHAT": 1
     },
     "SEARCH": {
-      "ORDER": 1,
-      "SEARCH": 9,
+      "ORDER": 0,
+      "SEARCH": 10,
       "PAYMENT": 0,
       "CHAT": 0
     },
@@ -52,8 +52,8 @@
       "CHAT": 5
     }
   },
-  "mean_confidence": 0.9677,
-  "mode": "context-aware",
+  "mean_confidence": 0.9803,
+  "mode": "no-context",
   "total_cases": 39,
   "correct": 38,
   "details": [
@@ -76,12 +76,12 @@
       "utterance": "Lấy 1 Lẩu Thái với 3 chai bia Tiger",
       "expected": "ORDER",
       "predicted": "ORDER",
-      "confidence": 0.9998,
+      "confidence": 1.0,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.9998,
-        "SEARCH": 0.0001,
-        "PAYMENT": 0.0001,
+        "ORDER": 1.0,
+        "SEARCH": 0.0,
+        "PAYMENT": 0.0,
         "CHAT": 0.0
       }
     },
@@ -90,13 +90,13 @@
       "utterance": "Mình muốn gọi thêm 5 con Hàu Nướng",
       "expected": "ORDER",
       "predicted": "ORDER",
-      "confidence": 0.9217,
+      "confidence": 0.9999,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.9217,
-        "SEARCH": 0.0041,
-        "PAYMENT": 0.0741,
-        "CHAT": 0.0001
+        "ORDER": 0.9999,
+        "SEARCH": 0.0,
+        "PAYMENT": 0.0001,
+        "CHAT": 0.0
       }
     },
     {
@@ -104,12 +104,12 @@
       "utterance": "Cho 2 dĩa Khoai Tây Lắc Phô Mai nha",
       "expected": "ORDER",
       "predicted": "ORDER",
-      "confidence": 0.9998,
+      "confidence": 1.0,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.9998,
-        "SEARCH": 0.0001,
-        "PAYMENT": 0.0001,
+        "ORDER": 1.0,
+        "SEARCH": 0.0,
+        "PAYMENT": 0.0,
         "CHAT": 0.0
       }
     },
@@ -132,10 +132,10 @@
       "utterance": "thêm dĩa ốc bulot nữa đi",
       "expected": "ORDER",
       "predicted": "ORDER",
-      "confidence": 1.0,
+      "confidence": 0.9999,
       "correct": true,
       "all_probs": {
-        "ORDER": 1.0,
+        "ORDER": 0.9999,
         "SEARCH": 0.0,
         "PAYMENT": 0.0,
         "CHAT": 0.0
@@ -160,13 +160,13 @@
       "utterance": "đổi 2 bia Sài Gòn thành 2 bia 333",
       "expected": "ORDER",
       "predicted": "ORDER",
-      "confidence": 0.9921,
+      "confidence": 0.9999,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.9921,
-        "SEARCH": 0.0023,
-        "PAYMENT": 0.0053,
-        "CHAT": 0.0003
+        "ORDER": 0.9999,
+        "SEARCH": 0.0,
+        "PAYMENT": 0.0001,
+        "CHAT": 0.0
       }
     },
     {
@@ -174,12 +174,12 @@
       "utterance": "cho mình 3 phần sò huyết hấp sả",
       "expected": "ORDER",
       "predicted": "ORDER",
-      "confidence": 0.9998,
+      "confidence": 1.0,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.9998,
-        "SEARCH": 0.0001,
-        "PAYMENT": 0.0001,
+        "ORDER": 1.0,
+        "SEARCH": 0.0,
+        "PAYMENT": 0.0,
         "CHAT": 0.0
       }
     },
@@ -188,13 +188,13 @@
       "utterance": "1 lẩu cá tầm măng chua nhe bạn",
       "expected": "ORDER",
       "predicted": "ORDER",
-      "confidence": 0.9998,
+      "confidence": 0.567,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.9998,
-        "SEARCH": 0.0001,
+        "ORDER": 0.567,
+        "SEARCH": 0.4329,
         "PAYMENT": 0.0,
-        "CHAT": 0.0
+        "CHAT": 0.0001
       }
     },
     {
@@ -202,13 +202,13 @@
       "utterance": "Đúng rồi, xác nhận đặt luôn",
       "expected": "ORDER",
       "predicted": "ORDER",
-      "confidence": 0.9999,
+      "confidence": 0.9997,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.9999,
+        "ORDER": 0.9997,
         "SEARCH": 0.0,
-        "PAYMENT": 0.0,
-        "CHAT": 0.0
+        "PAYMENT": 0.0001,
+        "CHAT": 0.0002
       }
     },
     {
@@ -216,13 +216,13 @@
       "utterance": "Ok chốt đơn đi em",
       "expected": "ORDER",
       "predicted": "ORDER",
-      "confidence": 0.9997,
+      "confidence": 0.9987,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.9997,
+        "ORDER": 0.9987,
         "SEARCH": 0.0,
-        "PAYMENT": 0.0002,
-        "CHAT": 0.0001
+        "PAYMENT": 0.0,
+        "CHAT": 0.0013
       }
     },
     {
@@ -230,13 +230,13 @@
       "utterance": "Ừ đặt nha",
       "expected": "ORDER",
       "predicted": "ORDER",
-      "confidence": 0.9976,
+      "confidence": 0.9996,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.9976,
-        "SEARCH": 0.0002,
+        "ORDER": 0.9996,
+        "SEARCH": 0.0,
         "PAYMENT": 0.0001,
-        "CHAT": 0.0022
+        "CHAT": 0.0003
       }
     },
     {
@@ -244,12 +244,12 @@
       "utterance": "chuẩn rồi, lên đơn giúp anh",
       "expected": "ORDER",
       "predicted": "ORDER",
-      "confidence": 0.9996,
+      "confidence": 0.9999,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.9996,
+        "ORDER": 0.9999,
         "SEARCH": 0.0,
-        "PAYMENT": 0.0004,
+        "PAYMENT": 0.0001,
         "CHAT": 0.0
       }
     },
@@ -258,27 +258,27 @@
       "utterance": "Uh đúng rồi đó",
       "expected": "ORDER",
       "predicted": "ORDER",
-      "confidence": 0.9427,
+      "confidence": 0.9969,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.9427,
-        "SEARCH": 0.0029,
-        "PAYMENT": 0.0011,
-        "CHAT": 0.0533
+        "ORDER": 0.9969,
+        "SEARCH": 0.0,
+        "PAYMENT": 0.0002,
+        "CHAT": 0.0029
       }
     },
     {
       "id": "HO-016",
       "utterance": "ok em",
       "expected": "ORDER",
-      "predicted": "ORDER",
-      "confidence": 0.9964,
-      "correct": true,
+      "predicted": "CHAT",
+      "confidence": 0.9368,
+      "correct": false,
       "all_probs": {
-        "ORDER": 0.9964,
-        "SEARCH": 0.0002,
-        "PAYMENT": 0.0001,
-        "CHAT": 0.0033
+        "ORDER": 0.0607,
+        "SEARCH": 0.0001,
+        "PAYMENT": 0.0025,
+        "CHAT": 0.9368
       }
     },
     {
@@ -286,13 +286,13 @@
       "utterance": "Ốc Hương giá bao nhiêu vậy?",
       "expected": "SEARCH",
       "predicted": "SEARCH",
-      "confidence": 0.9843,
+      "confidence": 0.9993,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.0094,
-        "SEARCH": 0.9843,
-        "PAYMENT": 0.0005,
-        "CHAT": 0.0058
+        "ORDER": 0.0,
+        "SEARCH": 0.9993,
+        "PAYMENT": 0.0006,
+        "CHAT": 0.0001
       }
     },
     {
@@ -300,13 +300,13 @@
       "utterance": "Quán mình có món chay không?",
       "expected": "SEARCH",
       "predicted": "SEARCH",
-      "confidence": 0.9991,
+      "confidence": 0.9998,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.0007,
-        "SEARCH": 0.9991,
-        "PAYMENT": 0.0,
-        "CHAT": 0.0003
+        "ORDER": 0.0001,
+        "SEARCH": 0.9998,
+        "PAYMENT": 0.0001,
+        "CHAT": 0.0
       }
     },
     {
@@ -314,13 +314,13 @@
       "utterance": "Lẩu Thái cay không em?",
       "expected": "SEARCH",
       "predicted": "SEARCH",
-      "confidence": 0.9637,
+      "confidence": 0.9895,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.0182,
-        "SEARCH": 0.9637,
-        "PAYMENT": 0.0005,
-        "CHAT": 0.0176
+        "ORDER": 0.0004,
+        "SEARCH": 0.9895,
+        "PAYMENT": 0.0006,
+        "CHAT": 0.0095
       }
     },
     {
@@ -328,27 +328,27 @@
       "utterance": "Hàu nướng có những kiểu chế biến nào?",
       "expected": "SEARCH",
       "predicted": "SEARCH",
-      "confidence": 0.8238,
+      "confidence": 0.9988,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.0336,
-        "SEARCH": 0.8238,
-        "PAYMENT": 0.0799,
-        "CHAT": 0.0627
+        "ORDER": 0.0001,
+        "SEARCH": 0.9988,
+        "PAYMENT": 0.0011,
+        "CHAT": 0.0001
       }
     },
     {
       "id": "HO-021",
       "utterance": "có món gì hợp cho nhóm 4 người nhậu không",
       "expected": "SEARCH",
-      "predicted": "ORDER",
-      "confidence": 0.6427,
-      "correct": false,
+      "predicted": "SEARCH",
+      "confidence": 0.9998,
+      "correct": true,
       "all_probs": {
-        "ORDER": 0.6427,
-        "SEARCH": 0.2966,
-        "PAYMENT": 0.0303,
-        "CHAT": 0.0304
+        "ORDER": 0.0001,
+        "SEARCH": 0.9998,
+        "PAYMENT": 0.0001,
+        "CHAT": 0.0
       }
     },
     {
@@ -356,13 +356,13 @@
       "utterance": "quán mở cửa tới mấy giờ vậy",
       "expected": "SEARCH",
       "predicted": "SEARCH",
-      "confidence": 0.9591,
+      "confidence": 0.9959,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.001,
-        "SEARCH": 0.9591,
-        "PAYMENT": 0.001,
-        "CHAT": 0.0389
+        "ORDER": 0.0001,
+        "SEARCH": 0.9959,
+        "PAYMENT": 0.0025,
+        "CHAT": 0.0015
       }
     },
     {
@@ -370,13 +370,13 @@
       "utterance": "món nào bán chạy nhất ở đây",
       "expected": "SEARCH",
       "predicted": "SEARCH",
-      "confidence": 0.9988,
+      "confidence": 0.9995,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.0011,
-        "SEARCH": 0.9988,
-        "PAYMENT": 0.0,
-        "CHAT": 0.0001
+        "ORDER": 0.0001,
+        "SEARCH": 0.9995,
+        "PAYMENT": 0.0004,
+        "CHAT": 0.0
       }
     },
     {
@@ -384,13 +384,13 @@
       "utterance": "ốc bulot làm từ nguyên liệu gì thế",
       "expected": "SEARCH",
       "predicted": "SEARCH",
-      "confidence": 0.8339,
+      "confidence": 0.9975,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.0935,
-        "SEARCH": 0.8339,
-        "PAYMENT": 0.0669,
-        "CHAT": 0.0057
+        "ORDER": 0.001,
+        "SEARCH": 0.9975,
+        "PAYMENT": 0.0012,
+        "CHAT": 0.0003
       }
     },
     {
@@ -398,13 +398,13 @@
       "utterance": "có giao hàng về quận 7 không em",
       "expected": "SEARCH",
       "predicted": "SEARCH",
-      "confidence": 0.9312,
+      "confidence": 0.9997,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.0663,
-        "SEARCH": 0.9312,
-        "PAYMENT": 0.0025,
-        "CHAT": 0.0001
+        "ORDER": 0.0,
+        "SEARCH": 0.9997,
+        "PAYMENT": 0.0003,
+        "CHAT": 0.0
       }
     },
     {
@@ -412,13 +412,13 @@
       "utterance": "bia heineken bao nhiêu một lon vậy em",
       "expected": "SEARCH",
       "predicted": "SEARCH",
-      "confidence": 0.8156,
+      "confidence": 0.8126,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.1493,
-        "SEARCH": 0.8156,
-        "PAYMENT": 0.005,
-        "CHAT": 0.0301
+        "ORDER": 0.1859,
+        "SEARCH": 0.8126,
+        "PAYMENT": 0.0005,
+        "CHAT": 0.001
       }
     },
     {
@@ -426,13 +426,13 @@
       "utterance": "Tính tiền giùm anh",
       "expected": "PAYMENT",
       "predicted": "PAYMENT",
-      "confidence": 0.9999,
+      "confidence": 0.9998,
       "correct": true,
       "all_probs": {
         "ORDER": 0.0,
         "SEARCH": 0.0,
-        "PAYMENT": 0.9999,
-        "CHAT": 0.0001
+        "PAYMENT": 0.9998,
+        "CHAT": 0.0002
       }
     },
     {
@@ -440,13 +440,13 @@
       "utterance": "Cho xin hóa đơn",
       "expected": "PAYMENT",
       "predicted": "PAYMENT",
-      "confidence": 0.9981,
+      "confidence": 0.9995,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.001,
-        "SEARCH": 0.0002,
-        "PAYMENT": 0.9981,
-        "CHAT": 0.0007
+        "ORDER": 0.0003,
+        "SEARCH": 0.0001,
+        "PAYMENT": 0.9995,
+        "CHAT": 0.0001
       }
     },
     {
@@ -454,13 +454,13 @@
       "utterance": "Thanh toán chuyển khoản được không?",
       "expected": "PAYMENT",
       "predicted": "PAYMENT",
-      "confidence": 0.9984,
+      "confidence": 0.9998,
       "correct": true,
       "all_probs": {
         "ORDER": 0.0001,
-        "SEARCH": 0.0013,
-        "PAYMENT": 0.9984,
-        "CHAT": 0.0001
+        "SEARCH": 0.0,
+        "PAYMENT": 0.9998,
+        "CHAT": 0.0
       }
     },
     {
@@ -468,13 +468,13 @@
       "utterance": "Quẹt thẻ được hông em",
       "expected": "PAYMENT",
       "predicted": "PAYMENT",
-      "confidence": 0.9977,
+      "confidence": 0.9978,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.0005,
-        "SEARCH": 0.0001,
-        "PAYMENT": 0.9977,
-        "CHAT": 0.0017
+        "ORDER": 0.0009,
+        "SEARCH": 0.0009,
+        "PAYMENT": 0.9978,
+        "CHAT": 0.0004
       }
     },
     {
@@ -482,12 +482,12 @@
       "utterance": "chuyển khoản cho mình xin cái mã QR với",
       "expected": "PAYMENT",
       "predicted": "PAYMENT",
-      "confidence": 0.9998,
+      "confidence": 0.9666,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.0001,
-        "SEARCH": 0.0001,
-        "PAYMENT": 0.9998,
+        "ORDER": 0.0332,
+        "SEARCH": 0.0002,
+        "PAYMENT": 0.9666,
         "CHAT": 0.0
       }
     },
@@ -496,13 +496,13 @@
       "utterance": "hết nhiêu tiền rồi em ơi",
       "expected": "PAYMENT",
       "predicted": "PAYMENT",
-      "confidence": 0.9939,
+      "confidence": 1.0,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.0002,
-        "SEARCH": 0.0051,
-        "PAYMENT": 0.9939,
-        "CHAT": 0.0008
+        "ORDER": 0.0,
+        "SEARCH": 0.0,
+        "PAYMENT": 1.0,
+        "CHAT": 0.0
       }
     },
     {
@@ -510,12 +510,12 @@
       "utterance": "cho xin mã qr thanh toán",
       "expected": "PAYMENT",
       "predicted": "PAYMENT",
-      "confidence": 0.9999,
+      "confidence": 0.9998,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.0,
+        "ORDER": 0.0002,
         "SEARCH": 0.0,
-        "PAYMENT": 0.9999,
+        "PAYMENT": 0.9998,
         "CHAT": 0.0
       }
     },
@@ -524,13 +524,13 @@
       "utterance": "bill đi em",
       "expected": "PAYMENT",
       "predicted": "PAYMENT",
-      "confidence": 0.9545,
+      "confidence": 0.9887,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.0452,
-        "SEARCH": 0.0001,
-        "PAYMENT": 0.9545,
-        "CHAT": 0.0002
+        "ORDER": 0.009,
+        "SEARCH": 0.0,
+        "PAYMENT": 0.9887,
+        "CHAT": 0.0022
       }
     },
     {
@@ -538,13 +538,13 @@
       "utterance": "Xin chào shop",
       "expected": "CHAT",
       "predicted": "CHAT",
-      "confidence": 0.9992,
+      "confidence": 0.9999,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.0003,
-        "SEARCH": 0.0002,
-        "PAYMENT": 0.0003,
-        "CHAT": 0.9992
+        "ORDER": 0.0,
+        "SEARCH": 0.0,
+        "PAYMENT": 0.0001,
+        "CHAT": 0.9999
       }
     },
     {
@@ -557,7 +557,7 @@
       "all_probs": {
         "ORDER": 0.0,
         "SEARCH": 0.0,
-        "PAYMENT": 0.0001,
+        "PAYMENT": 0.0,
         "CHAT": 0.9999
       }
     },
@@ -566,13 +566,13 @@
       "utterance": "Đồ ăn ở đây ngon quá trời",
       "expected": "CHAT",
       "predicted": "CHAT",
-      "confidence": 0.9999,
+      "confidence": 0.9965,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.0,
-        "SEARCH": 0.0001,
-        "PAYMENT": 0.0,
-        "CHAT": 0.9999
+        "ORDER": 0.0021,
+        "SEARCH": 0.0003,
+        "PAYMENT": 0.001,
+        "CHAT": 0.9965
       }
     },
     {
@@ -580,13 +580,13 @@
       "utterance": "ê quán đông ghê ha",
       "expected": "CHAT",
       "predicted": "CHAT",
-      "confidence": 0.9998,
+      "confidence": 0.9948,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.0,
-        "SEARCH": 0.0002,
-        "PAYMENT": 0.0,
-        "CHAT": 0.9998
+        "ORDER": 0.0008,
+        "SEARCH": 0.0042,
+        "PAYMENT": 0.0001,
+        "CHAT": 0.9948
       }
     },
     {
@@ -594,13 +594,13 @@
       "utterance": "trời hôm nay mưa to thật",
       "expected": "CHAT",
       "predicted": "CHAT",
-      "confidence": 0.9972,
+      "confidence": 0.9976,
       "correct": true,
       "all_probs": {
-        "ORDER": 0.0001,
+        "ORDER": 0.0015,
         "SEARCH": 0.0,
-        "PAYMENT": 0.0027,
-        "CHAT": 0.9972
+        "PAYMENT": 0.001,
+        "CHAT": 0.9976
       }
     }
   ]

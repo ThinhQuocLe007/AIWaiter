@@ -56,10 +56,17 @@ def _build_search_dynamic_context(state: AgentState) -> str:
         blocks.append("### ĐÃ BIẾT: (chưa có gì — phải search)")
 
     if state.get("feedback"):
+        # Same wording fix as order_worker: the old closing line told the model to keep
+        # the tool and change its arguments, which blocks the one recovery that matters
+        # when no tool fits the request.
         blocks.append("")
         blocks.append("### SYSTEM FEEDBACK (MANDATORY FIX):")
         blocks.append(state["feedback"])
-        blocks.append("Fix the tool call arguments and retry immediately.")
+        blocks.append(
+            "Hãy làm theo đúng feedback ở trên. Bạn ĐƯỢC PHÉP đổi sang tool khác — "
+            "nếu feedback bảo gọi tool nào thì gọi đúng tool đó. "
+            "Nếu yêu cầu của khách không thuộc phạm vi tìm kiếm, hãy gọi delegate."
+        )
 
     return "\n".join(blocks)
 

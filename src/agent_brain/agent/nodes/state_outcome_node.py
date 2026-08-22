@@ -3,6 +3,10 @@
 Runs once per turn at the end of every path (tool, retry, chat). Pure function:
 no LLM call, no side effects. Returns a dict for LangGraph state update including
 per-turn resets so fields don't leak to the next turn.
+
+As of 2026-07-29, ``_finalize`` is the SINGLE writer of ``order_stage``. No other
+node touches it — ``update_state_node`` and ``graph.set_cart`` are downstream of this
+and consume the stage ``_finalize`` wrote on the previous turn.
 """
 
 from typing import Any
@@ -201,11 +205,116 @@ def _build_retry_context(state: AgentState) -> RetryResponseContext:
     )
 
 
+# ── order_stage computation ──────────────────────────────────────────────────
+def _compute_order_stage(ctx: ResponseContext, state: AgentState) -> str:
+    """Compute the new ``order_stage`` from the turn's outcome.
+
+    This is the single writer — ``update_state_node`` and ``graph.set_cart`` do NOT
+    touch ``order_stage``. They only mutate the cart; the stage is derived here.
+
+    Rule table (priority order)::
+
+        confirm_order succeeded                   → CONFIRMED
+        clear_cart succeeded                      → IDLE
+        cart items ∧ question was asked this turn → AWAITING_CONFIRMATION
+        cart empty ∧ prev_stage == CONFIRMED      → CONFIRMED (preserved)
+        cart empty                                → IDLE
+        cart items ∧ no question                  → DRAFTING
+
+    "Question was asked this turn" covers two paths:
+        1. Direct: OrderResponseContext with add_cart/remove_cart success + cart non-empty.
+        2. Delegate: ChatResponseContext whose ``delegate_reason`` (set by the validator
+           for state rejections routed to ``chat_worker``) asks a confirmation question.
+    """
+    prev_stage = state.get("order_stage", "IDLE")
+    cart = state.get("active_cart")
+    has_cart = bool(cart and cart.items)
+
+    if isinstance(ctx, OrderResponseContext):
+        if ctx.tool == "confirm_order" and ctx.status == "success":
+            return "CONFIRMED"
+
+        if ctx.tool == "clear_cart" and ctx.status == "success":
+            return "IDLE"
+
+        if ctx.tool in ("add_cart", "remove_cart") and ctx.status == "success":
+            return "AWAITING_CONFIRMATION" if has_cart else "IDLE"
+
+        # Error status or unknown tool — fall through to cart-based rules.
+        if prev_stage == "CONFIRMED" and not has_cart:
+            return "CONFIRMED"
+        return "IDLE" if not has_cart else "DRAFTING"
+
+    if isinstance(ctx, ChatResponseContext):
+        question_asked = (
+            has_cart
+            and ctx.delegate_reason is not None
+            and "hỏi khách" in ctx.delegate_reason
+        )
+        if question_asked:
+            return "AWAITING_CONFIRMATION"
+
+        if prev_stage == "CONFIRMED" and not has_cart:
+            return "CONFIRMED"
+        return "IDLE" if not has_cart else "DRAFTING"
+
+    # SEARCH, PAYMENT, RETRY — never ask a confirmation question.
+    # BUT: if the cart has items and the customer just ordered (AWAITING_CONFIRMATION),
+    # preserve that stage — a search or payment question between the order and the
+    # confirmation should not reset the state. Otherwise the validator rejects a
+    # legitimate confirm_order as "chưa hỏi khách".
+    if prev_stage == "CONFIRMED" and not has_cart:
+        return "CONFIRMED"
+    if prev_stage == "AWAITING_CONFIRMATION" and has_cart:
+        return "AWAITING_CONFIRMATION"
+    return "IDLE" if not has_cart else "DRAFTING"
+
+
+def _compute_multi_context_stage(contexts: list, state: AgentState) -> str:
+    """Same rule table, applied across every context in the turn.
+
+    Multi-context turns are rare (ORDER + SEARCH in one utterance). The
+    ORDER context drives the stage; search/payment are passengers.
+    """
+    cart = state.get("active_cart")
+    prev_stage = state.get("order_stage", "IDLE")
+    has_cart = bool(cart and cart.items)
+
+    if any(
+        isinstance(c, OrderResponseContext)
+        and c.tool == "confirm_order"
+        and c.status == "success"
+        for c in contexts
+    ):
+        return "CONFIRMED"
+
+    if any(
+        isinstance(c, OrderResponseContext)
+        and c.tool == "clear_cart"
+        and c.status == "success"
+        for c in contexts
+    ):
+        return "IDLE"
+
+    if any(
+        isinstance(c, OrderResponseContext)
+        and c.tool in ("add_cart", "remove_cart")
+        and c.status == "success"
+        for c in contexts
+    ):
+        return "AWAITING_CONFIRMATION" if has_cart else "IDLE"
+
+    if prev_stage == "CONFIRMED" and not has_cart:
+        return "CONFIRMED"
+    return "IDLE" if not has_cart else "DRAFTING"
+
+
 # ── Finalize + public entry point ───────────────────────────────────────────
-def _finalize(ctx: ResponseContext) -> dict[str, Any]:
-    """Attach the new context + reset per-turn state to prevent context leakage."""
-    updates = {
+def _finalize(ctx: ResponseContext, state: AgentState) -> dict[str, Any]:
+    """Attach the new context, compute ``order_stage``, and reset per-turn state."""
+    updates: dict[str, Any] = {
         "response_context": ctx,
+        "order_stage": _compute_order_stage(ctx, state),
         "unavailable_items": None,
         "ambiguous_items": None,
         "feedback": None,
@@ -221,10 +330,10 @@ def _finalize(ctx: ResponseContext) -> dict[str, Any]:
 def state_outcome_node(state: AgentState) -> dict[str, Any]:
     existing = state.get("response_context")
     if existing is not None:
-        return _finalize(existing)
+        return _finalize(existing, state)
 
     if _is_retry_state(state):
-        return _finalize(_build_retry_context(state))
+        return _finalize(_build_retry_context(state), state)
 
     tool_msgs = _pick_tool_messages(state)
     if tool_msgs:
@@ -234,14 +343,15 @@ def state_outcome_node(state: AgentState) -> dict[str, Any]:
             if ctx is not None:
                 contexts.append(ctx)
         if len(contexts) == 1:
-            return _finalize(contexts[0])
+            return _finalize(contexts[0], state)
         if contexts:
             return {
                 **{k: None for k in ("unavailable_items", "ambiguous_items", "feedback",
                                       "last_tool", "delegate_reason", "intent_queries")},
                 "response_context": contexts,
+                "order_stage": _compute_multi_context_stage(contexts, state),
             }
-        return _finalize(_build_retry_context(state))
+        return _finalize(_build_retry_context(state), state)
 
     return _finalize(ChatResponseContext(
         intent="CHAT", user_message=last_user_text(state),
@@ -250,4 +360,4 @@ def state_outcome_node(state: AgentState) -> dict[str, Any]:
         chat_history=list(state.get("messages") or []),
         curated_memory=_to_curated_memory(state.get("search_context")),
         delegate_reason=state.get("delegate_reason"),
-    ))
+    ), state)

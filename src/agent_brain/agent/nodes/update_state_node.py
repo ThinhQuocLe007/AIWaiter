@@ -56,9 +56,10 @@ def _handle_add_cart_result(state: AgentState, tool_result) -> dict[str, Any]:
                 cart.items.append(new_item)
         cart = recalc_cart(cart)
 
+    # order_stage is the single-writer domain of state_outcome_node._finalize.
+    # This node only mutates the cart; the stage is derived from the turn outcome.
     return {
         "active_cart": cart,
-        "order_stage": "AWAITING_CONFIRMATION" if cart.items else "IDLE",
     }
 
 
@@ -72,7 +73,7 @@ def _handle_remove_cart_result(state: AgentState, tool_result) -> dict[str, Any]
     """
     existing = state.get("active_cart")
     if existing is None:
-        return {"active_cart": Cart(), "order_stage": "IDLE"}
+        return {"active_cart": Cart()}
 
     removed_name = tool_result.removed
     remove_qty = getattr(tool_result, "quantity", None)
@@ -85,16 +86,14 @@ def _handle_remove_cart_result(state: AgentState, tool_result) -> dict[str, Any]
         if remove_qty is not None and remove_qty < item.quantity:
             items.append(item.model_copy(update={"quantity": item.quantity - remove_qty}))
 
-    prev_stage = state.get("order_stage", "IDLE")
     cart = recalc_cart(Cart(items=items, total_price=existing.total_price))
     return {
         "active_cart": cart,
-        "order_stage": "AWAITING_CONFIRMATION" if (cart.items and prev_stage != "CONFIRMED") else ("IDLE" if not cart.items else prev_stage),
     }
 
 
 def _handle_clear_cart_result(state: AgentState, tool_result) -> dict[str, Any]:
-    return {"active_cart": Cart(), "order_stage": "IDLE", "shown_dishes": None}
+    return {"active_cart": Cart(), "shown_dishes": None}
 
 
 def _handle_confirm_order_result(state: AgentState, tool_result) -> dict[str, Any]:
@@ -102,7 +101,11 @@ def _handle_confirm_order_result(state: AgentState, tool_result) -> dict[str, An
     # it moves the tablet's draft into "đã gửi bếp" and arms the dock-release countdown. It was
     # declared and read in three places but never once set, so both stayed dead — the cart card
     # kept showing a draft the kitchen already had, and the robot never went home on its own.
-    return {"order_stage": "CONFIRMED", "active_cart": Cart(), "order_confirmed": True}
+    #
+    # ``order_stage`` is deliberately NOT set here: state_outcome_node._finalize is the single
+    # writer of that field and always runs downstream (tools → state_updater → … → state_outcome),
+    # so anything written here would be recomputed and overwritten.
+    return {"active_cart": Cart(), "shown_dishes": None, "order_confirmed": True}
 
 
 def _handle_search_result(state: AgentState, tool_result) -> dict[str, Any]:
@@ -112,9 +115,10 @@ def _handle_search_result(state: AgentState, tool_result) -> dict[str, Any]:
         for r in tool_result.results
         if r.document.metadata.get("name")
     ]
+    merged = list(dict.fromkeys(existing + new_names))
     return {
         "search_context": tool_result.results,
-        "shown_dishes": list(dict.fromkeys(existing + new_names)),
+        "shown_dishes": merged[-10:] if len(merged) > 10 else merged,
     }
 
 

@@ -10,6 +10,14 @@ no hint at the real cause.
 To make that failure loud and obvious we stamp the active model name next to each
 artifact at build time (`write_fingerprint`) and check it at load time
 (`verify_fingerprint`).
+
+LIMIT, and it has already bitten once: the fingerprint records the model NAME only. It
+does not cover the preprocessing applied around the model, so changing prefixes, word
+segmentation or normalization leaves the fingerprint matching while the stored vectors
+stop being comparable to query vectors. That failure is silent and looks like poor
+retrieval quality rather than a mismatch. If you change anything in
+`embeddings._preprocess` or in a profile, rebuild the index by hand; nothing here will
+tell you to.
 """
 from pathlib import Path
 

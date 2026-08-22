@@ -1,15 +1,17 @@
 """response_node — typed rewriter.
-
+ 
 Reads ``state["response_context"]``, produces a Vietnamese AIMessage reply.
 Dispatches by context type to templates (imported from ``response_template``)
 or LLM paraphrasing (for search results, off-menu suggestions, free-form chat).
 
-Streaming: the per-request ``Queue`` is carried through ``AgentState.stream_queue``,
-set by server.py on /chat/stream and read by response_node. LLM-based rewriters
-stream sentences through the queue; template-based rewriters push their full text
-as a single sentence. Per-request isolation is guaranteed because a fresh
-``_StreamContext`` is built from ``state["stream_queue"]`` at the top of every
-``response_node`` invocation.
+Streaming: the per-request ``Queue`` rides in the ``RunnableConfig`` the caller
+builds (``create_thread_config`` puts it under ``configurable.stream_queue``) and
+is handed to this node by LangGraph on every invocation. It is deliberately kept
+out of ``AgentState``: state is checkpointed to SQLite and a live ``Queue`` is not
+msgpack-serialisable. LLM-based rewriters stream sentences through the queue;
+template-based rewriters push their full text as a single sentence. Per-request
+isolation is guaranteed because the ``_StreamContext`` wrapper re-reads the queue
+from the config at the top of every ``response_node`` invocation.
 """
 
 import logging
@@ -108,12 +110,15 @@ def _sanitize_reply(text: str) -> str:
 
 
 class _StreamContext:
-    """Per-invocation stream helper wrapping the request's Queue from ``AgentState``.
+    """Per-invocation stream helper wrapping the request Queue.
 
-    ``response_node`` builds one from ``state["stream_queue"]`` at the top of every call.
-    /chat/stream sends a real ``Queue`` through the graph; plain /chat passes ``None``
-    so ``emit()`` silently no-ops. This stays per-invocation — two concurrent requests
-    never share a context, each graph invocation creates its own from its own state.
+    ``response_node`` reads the queue out of the ``RunnableConfig`` it is handed
+    at the top of every call. /chat/stream puts a real ``Queue`` there via
+    ``create_thread_config``; plain /chat leaves it ``None`` so ``emit()``
+    silently no-ops. This stays per-invocation — the instance is constructed
+    inside ``response_node``, and the queue it wraps came in on that one
+    invocation's config, so two concurrent requests never share a context
+    regardless of which thread LangGraph runs the node on.
     """
 
     def __init__(self):
@@ -255,37 +260,46 @@ def _mentioned_dishes(text: str, names: list[str]) -> list[str]:
     return found
 
 
-def _retrieved_dishes(ctx: SearchResponseContext) -> list[tuple[str, float]]:
+def _retrieved_dishes(ctx: SearchResponseContext) -> list[dict[str, Any]]:
     out = []
     for r in ctx.results:
         meta = r.document.metadata
         name = (meta.get("name") or "").strip()
         if meta.get("type") == "menu" and (meta.get("price", 0) or 0) > 0 and name:
-            out.append((name, meta.get("price", 0)))
+            out.append({
+                "name": name,
+                "price": meta.get("price", 0),
+                "taste_profile": (meta.get("taste_profile") or "").strip(),
+            })
     return out
 
 
-def _deterministic_listing(dishes: list[tuple[str, float]]) -> str:
-    # Price only when we actually have one — curated_memory carries names without prices, and
-    # "Lẩu Thái (0₫)" would be worse than saying nothing about the price.
-    listing = ", ".join(f"{n} ({_vnd(p)})" if p else n for n, p in dishes[:3])
-    return f"Dạ, anh/chị tham khảo {listing} ạ. Anh/chị muốn em thêm món nào vào đơn không ạ?"
+def _deterministic_listing(dishes: list[dict[str, Any]]) -> str:
+    parts: list[str] = []
+    for d in dishes[:3]:
+        price_str = f" ({_vnd(d['price'])})" if d.get("price") else ""
+        taste = (d.get("taste_profile") or "").strip()
+        taste_bit = f" {taste}" if taste else ""
+        parts.append(f"{d['name']}{price_str}{taste_bit}")
+    listing = ", ".join(parts)
+    return f"Dạ anh/chị, quán mình có {listing} ạ. Anh/chị muốn em bưng món nào trước ạ?"
 
 
-def _ground_reply(reply: str, dishes: list[tuple[str, float]], where: str) -> str:
+def _ground_reply(reply: str, dishes: list[dict[str, Any]], where: str) -> str:
     """Replace `reply` with a real listing if it names none of the dishes it was given.
 
     No dishes to check against means nothing to verify — a general question ("mấy giờ mở
     cửa") legitimately names none, and there is no way to tell that apart from an invented
     name without the retrain. Those turns pass through untouched.
     """
-    if not dishes:
+    names = [d["name"] for d in dishes]
+    if not names:
         return reply
-    if _mentioned_dishes(reply, [n for n, _ in dishes]):
+    if _mentioned_dishes(reply, names):
         return reply
     logger.warning(
         "[response] ungrounded %s — named none of %s; replacing. Was: %.90s",
-        where, [n for n, _ in dishes], reply,
+        where, names, reply,
     )
     return _deterministic_listing(dishes)
 
@@ -298,18 +312,41 @@ def _emit_sentences(text: str, stream: _StreamContext) -> None:
 
 # ── Context formatters (text passed to the LLM as CONTEXT) ──────────────────
 def _format_search_for_llm(ctx: SearchResponseContext) -> str:
-    lines = [
-        f"- {r.document.metadata.get('name', 'Unknown')}"
-        f" — {_vnd(r.document.metadata.get('price', 0))}"
-        for r in ctx.results
-        if r.document.metadata.get("type") == "menu"
-        and r.document.metadata.get("price", 0) > 0
-        and r.document.metadata.get("name", "").strip()
-    ]
-    blocks = [f"Khách tìm: \"{ctx.query}\"\nKết quả ({len(ctx.results)} món):\n" + "\n".join(lines)]
-    if ctx.shown_dishes:
+    lines = []
+    for r in ctx.results:
+        meta = r.document.metadata
+        if meta.get("type") != "menu":
+            continue
+        price = meta.get("price", 0)
+        name = (meta.get("name") or "").strip()
+        if not name or price <= 0:
+            continue
+        parts = [f"{name} — {_vnd(price)}"]
+        taste = (meta.get("taste_profile") or "").strip()
+        if taste:
+            parts.append(f"  Hương vị: {taste}")
+        tags = (meta.get("tags") or "").strip()
+        if tags:
+            parts.append(f"  Tags: {tags}")
+        cat = (meta.get("category") or "").strip()
+        if cat:
+            parts.append(f"  Nhóm: {cat}")
+        lines.append("".join(f"\n{p}" for p in parts).lstrip())
+    query_lower = _norm(ctx.query)
+    stale = [d for d in (ctx.shown_dishes or [])
+             if _norm(d) not in query_lower]
+    actively_asked = [d for d in (ctx.shown_dishes or [])
+                     if _norm(d) in query_lower]
+
+    blocks = [f"Khách tìm: \"{ctx.query}\"\nKết quả ({len(lines)} món):\n" + "\n".join(lines)]
+    if actively_asked:
         blocks.append(
-            f"Món đã giới thiệu ở các lượt trước: {', '.join(ctx.shown_dishes)}. "
+            f"Món khách ĐANG hỏi trực tiếp: {', '.join(actively_asked)}. "
+            "ĐƯỢC PHÉP giới thiệu lại — ưu tiên trả lời về (những) món này trước."
+        )
+    if stale:
+        blocks.append(
+            f"Món đã giới thiệu ở các lượt trước: {', '.join(stale)}. "
             "Nếu món nằm trong danh sách này, hãy ưu tiên giới thiệu món KHÁC thay vì lặp lại."
         )
     return "\n\n".join(blocks)
@@ -400,13 +437,13 @@ def _rewrite_order(ctx: OrderResponseContext, stream: _StreamContext) -> str:
 
 def _rewrite_search(ctx: SearchResponseContext, stream: _StreamContext) -> str:
     if ctx.status == "error":
-        reply = "Dạ, em chưa tìm thấy món phù hợp ạ. Anh/chị thử từ khóa khác nhé ạ."
+        reply = "Dạ anh/chị, em chưa tìm thấy món phù hợp ạ. Anh/chị thử từ khóa khác nhé ạ."
         stream.emit(reply)
         return reply
     if not ctx.results:
         query_text = f"'{ctx.query}'" if ctx.query else "món này"
         reply = (
-            f"Dạ, {query_text} không có trong thực đơn của quán mình ạ."
+            f"Dạ anh/chị, {query_text} không có trong thực đơn của quán mình ạ."
             f" Anh/chị muốn em gợi ý món khác không ạ?"
         )
         stream.emit(reply)
@@ -423,7 +460,7 @@ def _rewrite_search(ctx: SearchResponseContext, stream: _StreamContext) -> str:
 def _rewrite_payment(ctx: PaymentResponseContext, stream: _StreamContext) -> str:
     if ctx.tool == "request_payment":
         if ctx.status == "error" or not ctx.amount_vnd:
-            reply = "Dạ, hiện chưa có đơn hàng nào trong phiên này ạ."
+            reply = "Dạ anh/chị, hiện chưa có đơn hàng nào trong phiên này ạ."
             stream.emit(reply)
             return reply
         reply = (
@@ -434,13 +471,13 @@ def _rewrite_payment(ctx: PaymentResponseContext, stream: _StreamContext) -> str
         return reply
     if ctx.status == "success":
         reply = (
-            "Dạ, em đã xác nhận thanh toán thành công."
+            "Dạ anh/chị, em đã xác nhận thanh toán thành công."
             " Cảm ơn anh/chị đã dùng bữa tại Ốc Quậy ạ!"
         )
         stream.emit(reply)
         return reply
     reply = (
-        f"Dạ, chưa xác nhận được thanh toán."
+        f"Dạ anh/chị, chưa xác nhận được thanh toán."
         f" {ctx.error_message or 'Anh/chị thử lại giúp em nhé ạ.'}"
     )
     stream.emit(reply)
@@ -458,11 +495,22 @@ def _rewrite_chat(ctx: ChatResponseContext, stream: _StreamContext) -> str:
             ))
             stream.emit(reply)
             return reply
-        reply = "Dạ, hiện tại giỏ hàng của anh/chị đang trống ạ."
+        reply = "Dạ anh/chị, hiện tại giỏ hàng của anh/chị đang trống ạ."
         stream.emit(reply)
         return reply
     if reason and "không rõ" in reason:
-        reply = "Dạ em chưa rõ ý anh/chị lắm, anh/chị có thể nói lại được không ạ?"
+        reply = "Dạ anh/chị, em chưa rõ ý anh/chị lắm, anh/chị có thể nói lại được không ạ?"
+        stream.emit(reply)
+        return reply
+    if reason and ("xác nhận" in reason or "chốt đơn" in reason or "hủy" in reason):
+        cart = ctx.active_cart
+        if cart and cart.items:
+            reply = _format_cart_echo(OrderResponseContext(
+                tool="add_cart", status="success", cart=cart.items,
+                total_vnd=_vnd(cart.total_price), stage=ctx.order_stage,
+            ))
+        else:
+            reply = "Dạ anh/chị, giỏ hàng của anh/chị đang trống ạ. Anh/chị muốn gọi món gì không ạ?"
         stream.emit(reply)
         return reply
     msg = _normalize(ctx.user_message)
@@ -478,7 +526,10 @@ def _rewrite_chat(ctx: ChatResponseContext, stream: _StreamContext) -> str:
     # grounding check as _rewrite_search — generated whole so it can be judged before it is
     # spoken. With no dishes to check against, keep streaming: nothing to verify, and general
     # chat is where time-to-first-word matters most.
-    curated = [(d.name, 0.0) for d in (ctx.curated_memory or []) if getattr(d, "name", "")]
+    curated = [
+        {"name": d.name, "price": d.price or 0, "taste_profile": d.taste_profile or ""}
+        for d in (ctx.curated_memory or []) if getattr(d, "name", "")
+    ]
     if curated:
         raw = _llm_invoke(_CHAT_PROMPT, _format_chat_for_llm(ctx), _FALLBACK_REPLY)
         reply = _ground_reply(raw, curated, "chat recommendation")
@@ -488,7 +539,7 @@ def _rewrite_chat(ctx: ChatResponseContext, stream: _StreamContext) -> str:
 
 
 def _rewrite_retry(ctx: RetryResponseContext, stream: _StreamContext) -> str:
-    reply = f"Dạ, em xin lỗi anh/chị, {ctx.feedback} Anh/chị kiểm tra lại giúp em nhé ạ."
+    reply = f"Dạ anh/chị, em xin lỗi anh/chị, {ctx.feedback} Anh/chị kiểm tra lại giúp em nhé ạ."
     stream.emit(reply)
     return reply
 

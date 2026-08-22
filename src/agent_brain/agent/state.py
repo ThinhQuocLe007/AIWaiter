@@ -27,6 +27,17 @@ class AgentState(TypedDict):
     active_cart: Cart | None
     order_stage: OrderStage
 
+    # Guest-utterance index of the turn on which the validator refused a clear_cart
+    # because the cart was NOT empty, i.e. "we have just asked whether they really mean
+    # to cancel". The next clear_cart is allowed only on the turn immediately after.
+    #
+    # A turn index rather than a boolean, and read as `== turn - 1` rather than reset by
+    # anyone, so the permission expires by itself after exactly one turn. order_stage is
+    # the cautionary tale here: it is written in four places, cleared in none, and stays
+    # AWAITING_CONFIRMATION through unrelated turns. A flag with no reset path cannot
+    # develop that problem.
+    clear_confirm_at: int | None
+
     search_context: list[SearchResult] | None
 
     # Determistic Validator state

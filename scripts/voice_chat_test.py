@@ -60,14 +60,17 @@ def main():
                 print("\n[TIMEOUT] Không nghe thấy gì.")
                 continue
 
+            t_speech_captured = time.perf_counter()
             transcript = get_transcript(timeout=12.0)
             if transcript is None or not transcript.text.strip():
                 print("\n[EMPTY] Không nhận ra lời nói.")
                 continue
 
+            t_stt_done = time.perf_counter()
             print(f"\n[HEARD] {transcript.text}")
 
             player.reset()
+            t_first_sentence = None
             try:
                 with client.stream(
                     "POST", "/chat/stream",
@@ -86,10 +89,17 @@ def main():
                             sentence = data["text"]
                             print(f"[WAITER] {sentence}")
                             if sentence and not player.is_stopped():
+                                if t_first_sentence is None:
+                                    t_first_sentence = time.perf_counter()
                                 speak_sentence(sentence, player)
                         elif ev == "done":
                             print(f"[DONE] stage={data.get('stage')}")
                             break
+                t_tts_start = t_first_sentence or time.perf_counter()
+                vad_stt = t_stt_done - t_speech_captured
+                agent_tts = t_tts_start - t_stt_done
+                total = t_tts_start - t_speech_captured
+                print(f"[TIMING] VAD-silence+STT={vad_stt:.2f}s  agent={agent_tts:.2f}s  total->firstWord={total:.2f}s")
             except httpx.HTTPError as e:
                 print(f"[ERROR] Agent unreachable: {e}")
     except KeyboardInterrupt:

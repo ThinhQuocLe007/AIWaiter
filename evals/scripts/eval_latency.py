@@ -34,18 +34,19 @@ TS = datetime.now().strftime("%Y%m%d_%H%M%S")
 REPORT_PATH = RESULTS_DIR / f"latency_{TS}.json"
 
 TEST_UTTERANCES = [
-    ("ORDER", "Cho mình 2 phần Ốc Hương Xốt Trứng Muối"),
-    ("ORDER", "Lấy 1 Lẩu Thái với 3 chai bia Tiger"),
-    ("ORDER_CONFIRM", "Đúng rồi, xác nhận đặt luôn"),
-    ("SEARCH", "Quán có món gì ngon nhất?"),
-    ("SEARCH", "Có món nào cay cay không em?"),
-    ("SEARCH", "Món nào dành cho người ăn chay?"),
-    ("PAYMENT", "Tính tiền đi em"),
-    ("PAYMENT", "Cho anh check out nhé"),
-    ("CHAT", "Chào em"),
-    ("CHAT", "Nhà hàng mở cửa đến mấy giờ?"),
-    ("MULTI", "Cho 2 Ốc Hương Xốt Trứng Muối rồi tính tiền luôn"),
-    ("MULTI", "Có món gì ngon nhất? Cho anh 1 phần"),
+    ("ORDER", "Cho mình 2 phần Ốc Hương Xốt Trứng Muối", None),
+    ("ORDER", "Lấy 1 Lẩu Thái với 3 chai bia Tiger", None),
+    ("ORDER_CONFIRM", "Đúng rồi, xác nhận đặt luôn",
+     ["Cho mình 2 phần Ốc Hương Xốt Trứng Muối"]),
+    ("SEARCH", "Quán có món gì ngon nhất?", None),
+    ("SEARCH", "Có món nào cay cay không em?", None),
+    ("SEARCH", "Món nào dành cho người ăn chay?", None),
+    ("PAYMENT", "Tính tiền đi em", None),
+    ("PAYMENT", "Cho anh check out nhé", None),
+    ("CHAT", "Chào em", None),
+    ("CHAT", "Nhà hàng mở cửa đến mấy giờ?", None),
+    ("MULTI", "Cho 2 Ốc Hương Xốt Trứng Muối rồi tính tiền luôn", None),
+    ("MULTI", "Có món gì ngon nhất? Cho anh 1 phần", None),
 ]
 
 
@@ -118,14 +119,24 @@ def main():
     per_intent_latencies = defaultdict(list)  # list of tuples (intent, all_run_vals)
     per_node_latencies = defaultdict(list)    # per-node latency samples across all runs
 
-    for intent, utterance in TEST_UTTERANCES:
-        thread_id = f"lat_{uuid.uuid4().hex[:8]}"
-        config = {"configurable": {"thread_id": thread_id}}
-
+    for intent, utterance, preamble in TEST_UTTERANCES:
         run_latencies = []
         print(f"\n  [{intent}] '{utterance[:60]}'")
 
         for run_i in range(args.n_runs):
+            thread_id = f"lat_{uuid.uuid4().hex[:8]}"
+            config = {"configurable": {"thread_id": thread_id}}
+
+            # Run preamble turns (e.g. add to cart before confirm) — not measured
+            if preamble:
+                for pre_utt in preamble:
+                    pre_state = {
+                        "messages": [HumanMessage(content=pre_utt)],
+                        "table_id": "T_lat_3",
+                    }
+                    for _ in app.stream(pre_state, config=config, stream_mode="updates"):
+                        pass
+
             state = {
                 "messages": [HumanMessage(content=utterance)],
                 "table_id": "T_lat_3",

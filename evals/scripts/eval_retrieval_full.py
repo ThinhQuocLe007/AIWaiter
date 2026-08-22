@@ -3,6 +3,7 @@ modes, RRF fusion, and dual-lane gatekeeper analysis.
 
 Usage:
     PYTHONPATH=. uv run python evals/scripts/eval_retrieval_full.py
+    PYTHONPATH=. uv run python evals/scripts/eval_retrieval_full.py --dataset retrieval_eval_v2.json
     PYTHONPATH=. uv run python evals/scripts/eval_retrieval_full.py --only gatekeeper
 """
 
@@ -24,19 +25,29 @@ load_dotenv()
 from src.agent_brain.services.retriever.builder import IndexBuilder
 from src.agent_brain.services.retriever.hybrid_retriever import RetrieverManager
 from src.agent_brain.services.retriever.indices.embeddings import get_profile
+from src.agent_brain.services.retriever.fusion.rrf import gate_decision
+from src.agent_brain.services.retriever.filters import by_menu_metadata
 from src.agent_brain.config import settings
 from evals.lib.stats import percentile
 
-EVAL_DATA_PATH = settings.PROJECT_ROOT / "evals" / "data" / "retrieval" / "retrieval_eval.json"
 RESULTS_DIR = settings.PROJECT_ROOT / "evals" / "results"
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
+_dataset_arg = None
+_args = sys.argv[1:]
+for i, a in enumerate(_args):
+    if a == "--dataset" and i + 1 < len(_args):
+        _dataset_arg = _args[i + 1]
+
+EVAL_DATA_PATH = settings.PROJECT_ROOT / "evals" / "data" / "retrieval" / (_dataset_arg or "retrieval_eval.json")
+
 TS = datetime.now().strftime("%Y%m%d_%H%M%S")
-LOG_PATH = RESULTS_DIR / f"retrieval_full_{TS}.log"
-REPORT_PATH = RESULTS_DIR / f"retrieval_full_{TS}.json"
+_tag = Path(EVAL_DATA_PATH).stem
+LOG_PATH = RESULTS_DIR / f"retrieval_full_{_tag}_{TS}.log"
+REPORT_PATH = RESULTS_DIR / f"retrieval_full_{_tag}_{TS}.json"
 
 GATEKEEPER_SEMANTIC_THRESHOLD = 0.35
-MODES = ["bm25", "faiss", "rrf"]
+MODES = ["bm25", "faiss", "rrf", "linear"]
 
 
 def log(msg: str):
@@ -90,41 +101,36 @@ def run_standalone_search(engine, query: str, k: int) -> tuple:
     return results, elapsed
 
 
-def gatekeeper_check(vector_engine, query: str) -> dict:
-    """Dual-lane gatekeeper: query the vector engine directly for its raw top-1 score
-    (before any fusion), then check lexical match against the top document.
+def gatekeeper_check(bm25_engine, vector_engine, query: str) -> dict:
+    """Run the deployed gatekeeper against one query.
 
-    This is the same logic as the production gatekeeper in rrf.py: semantic pass when
-    the raw FAISS score (converted to cosine via the active model's profile) reaches
-    the threshold, lexical pass when a query keyword appears in the top-ranked
-    document's content."""
-    raw_results, _ = run_standalone_search(vector_engine, query, k=1)
-    raw_top = raw_results[0][1] if raw_results else 0.0
-    cos_sim = _raw_score_to_cosine(raw_top)
-    semantic_pass = cos_sim >= GATEKEEPER_SEMANTIC_THRESHOLD
+    This calls `gate_decision` from the production fusion module rather than
+    reimplementing it. An earlier version of this function did reimplement it and had
+    drifted: it checked query terms against the dense lane's top document only, while
+    the deployed gate checks both lanes' top documents. That harness reported
+    rejections the deployed system would never make, so the gatekeeper figures it
+    produced described a gate that did not exist.
+    """
+    bm25_results, _ = run_standalone_search(bm25_engine, query, k=15)
+    vector_results, _ = run_standalone_search(vector_engine, query, k=15)
 
-    query_lower = query.lower().replace("?", "").replace(".", "")
-    keywords = [kw.strip() for kw in query_lower.split(",") if kw.strip()]
-    if len(keywords) == 1 and " " in keywords[0]:
-        keywords = [w.strip() for w in keywords[0].split() if w.strip()]
+    # The deployed gate runs inside RRFFusion.fuse, which RetrieverManager calls with
+    # metadata-filtered lists. Filter here too, or the gate sees documents the deployed
+    # one never gets to see.
+    bm25_results = by_menu_metadata(bm25_results)
+    vector_results = by_menu_metadata(vector_results)
 
-    lexical_pass = False
-    if keywords:
-        top_docs_text = ""
-        if raw_results:
-            top_docs_text += raw_results[0][0].page_content.lower()
-        if any(kw in top_docs_text for kw in keywords):
-            lexical_pass = True
-
-    passed = semantic_pass or lexical_pass
+    gate = gate_decision(bm25_results, vector_results, query)
 
     return {
-        "semantic_pass": bool(semantic_pass),
-        "lexical_pass": bool(lexical_pass),
-        "passed": bool(passed),
-        "raw_top": round(float(raw_top), 4),
-        "cos_sim": round(float(cos_sim), 4),
-        "top_doc_name": str(raw_results[0][0].metadata.get("name", "?")) if raw_results else "?",
+        "semantic_pass": gate["semantic_pass"],
+        "lexical_pass": gate["lexical_pass"],
+        "passed": gate["passed"],
+        "raw_top": round(gate["raw_top"], 4),
+        "cos_sim": round(gate["cos_sim"], 4),
+        "matched_terms": gate["matched_terms"],
+        "bm25_top_doc_name": str(bm25_results[0][0].metadata.get("name", "?")) if bm25_results else "?",
+        "vector_top_doc_name": str(vector_results[0][0].metadata.get("name", "?")) if vector_results else "?",
     }
 
 
@@ -170,7 +176,8 @@ def main():
     # because it inherited an already-loaded model.
     log("Warming embedding model and indices ...")
     for _m in MODES:
-        retriever.search("warmup", k=5, mode="rrf") if _m == "rrf" else None
+        if _m in ("rrf", "linear"):
+            retriever.search("warmup", k=5, mode=_m)
     run_standalone_search(builder.vector_engine, "warmup", k=5)
     run_standalone_search(builder.bm25_engine, "warmup", k=5)
     log("Warm-up complete.")
@@ -194,9 +201,9 @@ def main():
         case_result = {"id": case_id, "query": query, "difficulty": difficulty, "modes": {}}
 
         for mode in MODES:
-            if mode == "rrf":
+            if mode in ("rrf", "linear"):
                 start = time.time()
-                results = retriever.search(query, k=5, mode="rrf")
+                results = retriever.search(query, k=5, mode=mode)
                 elapsed = time.time() - start
                 retrieved_names = [
                     r.document.metadata.get("name") or r.document.metadata.get("title") or "Unknown"
@@ -205,8 +212,14 @@ def main():
                 latency_ms = round(elapsed * 1000, 1)
                 top_faiss = 0.0  # RRF results carry fusion scores, not raw FAISS
             else:
+                # Fetch the same candidate depth the fused mode uses and apply the same
+                # metadata filter, then cut to k. Without this the single-lane baselines
+                # are scored on raw engine output while RRF is scored on filtered output,
+                # so the three modes are not compared over the same document population:
+                # a customer record could occupy a baseline's top-5 but never RRF's.
                 engine = builder.bm25_engine if mode == "bm25" else builder.vector_engine
-                raw, elapsed = run_standalone_search(engine, query, k=5)
+                raw, elapsed = run_standalone_search(engine, query, k=15)
+                raw = by_menu_metadata(raw)[:5]
                 retrieved_names = _extract_names(raw)
                 latency_ms = round(elapsed * 1000, 1)
                 top_faiss = raw[0][1] if raw else 0.0
@@ -239,11 +252,12 @@ def main():
                 f"-> {retrieved_names}")
 
         # Gatekeeper — uses the raw vector engine scores, independent of fusion
-        gk = gatekeeper_check(builder.vector_engine, query)
+        gk = gatekeeper_check(builder.bm25_engine, builder.vector_engine, query)
         gatekeeper_results.append(gk)
         log(f"    [Gatekeeper] raw_top={gk['raw_top']:.4f} cos={gk['cos_sim']:.4f} "
             f"semantic={gk['semantic_pass']} lexical={gk['lexical_pass']} "
-            f"passed={gk['passed']} (top_doc={gk['top_doc_name']})")
+            f"passed={gk['passed']} matched={gk['matched_terms']} "
+            f"(bm25_top={gk['bm25_top_doc_name']}, faiss_top={gk['vector_top_doc_name']})")
 
         detailed.append(case_result)
 

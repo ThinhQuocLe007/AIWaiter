@@ -8,8 +8,12 @@ from src.agent_brain.utils import trace_latency
 @trace_latency("Clear Cart Tool", run_type="tool")
 def clear_cart() -> CartClearResponse:
     """
-    Empty the entire cart. Use when the customer says "hủy đơn",
-    "không đặt nữa", "thôi bỏ hết đi", "cho đặt lại từ đầu".
+    Empty the ENTIRE cart. Only for an explicit, unambiguous cancellation:
+    "hủy đơn", "không đặt nữa", "cho đặt lại từ đầu", "xóa hết đơn đi".
+
+    Do NOT use for a bare hesitation particle. "thôi", "à mà thôi", "khoan đã",
+    "từ từ", "để tính sau" mean the guest is pausing, not cancelling — call
+    delegate for those. Clearing a cart the guest still wants is not recoverable.
     """
     result = CartClearResponse(
         status="success",

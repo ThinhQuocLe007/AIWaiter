@@ -1,29 +1,32 @@
 #!/usr/bin/env python3
-"""Six-arm ablation of the intent routing layer (thesis §5.3.1).
+"""Five-arm ablation of the intent routing layer (thesis §5.4.1).
 
 Every arm is scored on the *same* items in a single pass, so the comparisons are paired and
 McNemar's exact test applies. Running the arms in separate passes would force the much weaker
 comparison of two independent accuracy figures, which cannot resolve a five-point difference
 at the sample sizes available here.
 
-    Arm  Name              What it isolates
-    ---  ----------------  ------------------------------------------------------------
-    A    centroid          Unsupervised semantic baseline (cosine to intent centroids)
-    B    slm               Prompted classification by a small model, no semantic prefilter
-    C    hybrid            Semantic -> rewriter -> SLM: the system this thesis replaces
-    D    mlp_nocontext     Trained MLP with the context vector zeroed
-    E    mlp_context       Trained MLP + 10-d conversation context  (PROPOSED)
-    F    llm               Prompted classification by the 7B deployment model
+    Arm  Name       What it isolates
+    ---  ---------  -----------------------------------------------------------------
+    A    centroid   Unsupervised semantic baseline (cosine to intent centroids)
+    B    slm        Prompted classification by a small model, no semantic prefilter
+    C    hybrid     Semantic -> rewriter -> SLM: the system this thesis replaces
+    D    mlp        Trained text-only MLP  (PROPOSED)
+    F    llm        Prompted classification by the 14B deployment model
 
-D vs E is the arm that earns the contribution: A/B/C vs E only shows that a supervised model
-beats an unsupervised one, which is not a claim worth defending. D vs E isolates the design
-decision actually made here, namely that conversation state belongs inside the feature vector.
-E vs F sets the accuracy ceiling and, read together with the latency column, states the real
-claim: comparable accuracy at a small fraction of the cost.
+D vs C is the arm that earns the contribution: it compares the proposed router against the
+system it replaces, on identical items. D vs A shows the supervised model beating the
+unsupervised baseline. D vs F sets the accuracy ceiling and, read with the latency column,
+states the real claim: comparable accuracy at a small fraction of the cost.
+
+There is no with/without-context pair. The v2 classifier is text-only and predict.classify()
+ignores the `state` argument, so such a pair would run identical code and return identical
+labels by construction. Removing the v1 context block is a design decision, not a measured
+ablation, and the thesis reports it as one.
 
 Usage:
     PYTHONPATH=. uv run python evals/scripts/eval_router_arms.py
-    PYTHONPATH=. uv run python evals/scripts/eval_router_arms.py --arms E F --runs 5
+    PYTHONPATH=. uv run python evals/scripts/eval_router_arms.py --arms D F --runs 5
     PYTHONPATH=. uv run python evals/scripts/eval_router_arms.py --dataset holdout
     PYTHONPATH=. uv run python evals/scripts/eval_router_arms.py --dataset all --json out.json
 """
@@ -61,20 +64,30 @@ logger = logging.getLogger("router_arms")
 
 DATA_DIR = PROJECT_ROOT / "evals" / "data" / "router"
 RESULTS_DIR = PROJECT_ROOT / "evals" / "results"
-SAVED_DIR = PROJECT_ROOT / "src" / "training_semantic_router" / "classifier" / "saved"
+SAVED_DIR = PROJECT_ROOT / "src" / "training_semantic_router" / "classifier" / "saved_v2"
 HOLDOUT_PATH = PROJECT_ROOT / "src" / "training_semantic_router" / "data" / "test_holdout.json"
 
+# Only the single-intent sets are pooled. Three files were retired on 2026-07-31 and are kept on
+# disk rather than deleted:
+#   router_eval.json          v1 hybrid-router set, 5 labels. 32 of its 39 single-intent cases are
+#                             already in single_intent_eval and 29 in semantic_eval, so it added 2
+#                             utterances the other two did not have.
+#   router_context_eval.json  superseded prototype of context_dependent_eval, 21 cases over 14
+#                             unique utterances, and the only source of conflicting labels.
+#   context_dependent_eval.json
+#                             61 pairs of one utterance at two order stages with different labels.
+#                             A text-only router cannot exceed 62/123 on it by construction, so
+#                             pooling it capped every arm at ~50 % on a third of the set. The router
+#                             is text-only by design and order stage is enforced downstream by the
+#                             validator, so the property is out of scope here.
 DATASETS = {
-    "router": DATA_DIR / "router_eval.json",
     "single": DATA_DIR / "single_intent_eval.json",
     "semantic": DATA_DIR / "semantic_eval.json",
-    "context": DATA_DIR / "router_context_eval.json",
-    "context_dep": DATA_DIR / "context_dependent_eval.json",
     "holdout": HOLDOUT_PATH,
 }
 
 # The trained classifier predicts four classes; ORDER_CONFIRM is a sub-case of ORDER and is
-# merged before scoring so that all six arms are graded against the same label set.
+# merged before scoring so that all five arms are graded against the same label set.
 LABELS = ["ORDER", "SEARCH", "PAYMENT", "CHAT"]
 MERGE = {"ORDER_CONFIRM": "ORDER"}
 
@@ -84,7 +97,9 @@ MERGE = {"ORDER_CONFIRM": "ORDER"}
 # Overridable so that the same prompt and the same item pool can be replayed against a
 # different model: comparing an arm-F figure to one from an earlier pass confounds the model
 # with whatever the pool contained at the time, and the only way to separate them is to run
-# both models over identical items.
+# both models over identical items. It also covers dev machines that cannot hold the 14B —
+# set ARM_LLM_MODEL=qwen2.5:7b-instruct there and re-take the figure on the server, where the
+# 7B number stands as a lower bound on the deployment model.
 SLM_MODEL = os.environ.get("ARM_SLM_MODEL", "qwen2.5:3b")
 LLM_MODEL = os.environ.get("ARM_LLM_MODEL", "qwen2.5:14b-instruct-q6_K")
 
@@ -113,7 +128,7 @@ def load_cases(names: list[str]) -> list[dict[str, Any]]:
 
     The four files disagree on field names (`input`/`expected_route` vs `utterance`/`intent`)
     because they were written at different points in the project; normalising here keeps that
-    history out of the scoring code. Multi-intent cases are dropped: four of the six arms emit
+    history out of the scoring code. Multi-intent cases are dropped: three of the five arms emit
     a single label by construction, so including them would score arms on different tasks.
     """
     cases: list[dict[str, Any]] = []
@@ -149,7 +164,7 @@ def load_cases(names: list[str]) -> list[dict[str, Any]]:
 
 
 # --------------------------------------------------------------------------------------
-# The six arms
+# The five arms
 # --------------------------------------------------------------------------------------
 
 
@@ -200,31 +215,23 @@ def arm_hybrid(case: dict) -> str:
     return canon(intents[0])
 
 
-def _mlp(case: dict, *, with_context: bool) -> str:
+def arm_mlp(case: dict) -> str:
+    """D -- the trained text-only MLP, which is the proposed router.
+
+    There is deliberately no with/without-context pair here. The v2 classifier takes a
+    768-d sentence embedding and nothing else; predict.classify() accepts a `state` argument
+    and ignores it. Two arms differing only in that argument would run the same code and
+    return identical labels by construction, which measures nothing. Removing the v1 context
+    block is reported as a design decision, not as an ablation result.
+    """
     from src.training_semantic_router.classifier.predict import classify
 
-    # extract_context_features() returns an all-zero vector for state=None, so passing None is
-    # exactly the "context vector ablated" condition -- no separate code path is needed, and
-    # arm D therefore differs from arm E only in the ten input dimensions under test.
-    state = case.get("context") if with_context else None
     result = classify(
         case["utterance"],
-        state=state,
         model_path=SAVED_DIR / "model.pt",
         label_path=SAVED_DIR / "label_encoder.json",
-        scaler_path=SAVED_DIR / "scaler.npz",
     )
     return canon(result["intent"])
-
-
-def arm_mlp_nocontext(case: dict) -> str:
-    """D — trained MLP, context vector zeroed."""
-    return _mlp(case, with_context=False)
-
-
-def arm_mlp_context(case: dict) -> str:
-    """E — trained MLP with the 10-d conversation context vector (proposed)."""
-    return _mlp(case, with_context=True)
 
 
 _prompted_cache: dict[str, Any] = {}
@@ -262,14 +269,13 @@ ARMS: dict[str, dict[str, Any]] = {
     "A": {"name": "centroid", "label": "Centroid (semantic only)", "fn": lambda c, s: arm_centroid(c), "stochastic": False},
     "B": {"name": "slm", "label": f"SLM only ({SLM_MODEL})", "fn": lambda c, s: _prompted(c, SLM_MODEL, s), "stochastic": True},
     "C": {"name": "hybrid", "label": "Hybrid semantic->SLM (previous)", "fn": lambda c, s: arm_hybrid(c), "stochastic": True},
-    "D": {"name": "mlp_nocontext", "label": "MLP, no context features", "fn": lambda c, s: arm_mlp_nocontext(c), "stochastic": False},
-    "E": {"name": "mlp_context", "label": "MLP + context (PROPOSED)", "fn": lambda c, s: arm_mlp_context(c), "stochastic": False},
+    "D": {"name": "mlp", "label": "MLP, text-only (PROPOSED)", "fn": lambda c, s: arm_mlp(c), "stochastic": False},
     "F": {"name": "llm", "label": f"LLM zero-shot ({LLM_MODEL})", "fn": lambda c, s: _prompted(c, LLM_MODEL, s), "stochastic": True},
 }
 
 # Comparisons that carry an argument in the thesis. Every other pair is reported in the
 # accuracy table but not tested, to avoid multiplying hypotheses that nothing depends on.
-KEY_PAIRS = [("E", "C"), ("E", "D"), ("E", "F"), ("E", "A"), ("E", "B")]
+KEY_PAIRS = [("D", "C"), ("D", "F"), ("D", "A"), ("D", "B")]
 
 
 # --------------------------------------------------------------------------------------
@@ -370,10 +376,10 @@ def per_class(cases: list[dict], predictions: list[str]) -> dict[str, dict[str, 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--dataset", nargs="+", default=["router", "single", "semantic", "context", "context_dep"],
-                    choices=[*DATASETS, "all"], help="datasets to pool (default: router semantic context)")
+    ap.add_argument("--dataset", nargs="+", default=["single", "semantic"],
+                    choices=[*DATASETS, "all"], help="datasets to pool (default: single semantic)")
     ap.add_argument("--arms", nargs="+", default=list(ARMS), choices=list(ARMS),
-                    help="which arms to run (default: all six)")
+                    help="which arms to run (default: all five)")
     ap.add_argument("--runs", type=int, default=1,
                     help="repetitions for stochastic arms; §5.1.3 requires 5 for reported results")
     ap.add_argument("--json", metavar="PATH", help="write the full report here (default: timestamped)")
@@ -389,7 +395,7 @@ def main() -> int:
         dist[c["expected"]] += 1
 
     print(f"\n{'=' * 78}")
-    print("  Router ablation — six arms, paired on identical items")
+    print("  Router ablation — five arms, paired on identical items")
     print(f"  {len(cases)} cases from: {', '.join(names)}")
     print(f"  class distribution: {dict(sorted(dist.items()))}")
     print(f"  runs: {args.runs} (stochastic arms only)")
@@ -460,24 +466,24 @@ def main() -> int:
         print(f"  {cmp}")
 
     # ---- per-class breakdown for the proposed arm -----------------------------------
-    if "E" in arm_results:
+    if "D" in arm_results:
         print(f"\n{'=' * 78}")
-        print("  PER-CLASS — arm E (proposed)")
+        print("  PER-CLASS — arm D (proposed)")
         print(f"{'=' * 78}\n")
-        pc = per_class(cases, arm_results["E"][0]["predictions"])
+        pc = per_class(cases, arm_results["D"][0]["predictions"])
         print(markdown_table(
             ["Intent", "Precision", "Recall", "F1", "Support"],
             [[k, f"{v['precision']:.3f}", f"{v['recall']:.3f}", f"{v['f1']:.3f}", v["support"]]
              for k, v in pc.items()]))
 
     # ---- disagreements worth reading ------------------------------------------------
-    if "E" in arm_results and "F" in arm_results:
-        print("\n  Cases where the 7B LLM (F) is right and the MLP (E) is wrong:")
+    if "D" in arm_results and "F" in arm_results:
+        print("\n  Cases where the prompted LLM (F) is right and the MLP (D) is wrong:")
         shown = 0
         for i, case in enumerate(cases):
-            if arm_results["F"][0]["correct"][i] and not arm_results["E"][0]["correct"][i]:
+            if arm_results["F"][0]["correct"][i] and not arm_results["D"][0]["correct"][i]:
                 print(f"    [{case['id']}] \"{case['utterance'][:56]}\" "
-                      f"gold={case['expected']} mlp={arm_results['E'][0]['predictions'][i]}")
+                      f"gold={case['expected']} mlp={arm_results['D'][0]['predictions'][i]}")
                 shown += 1
         if not shown:
             print("    (none)")

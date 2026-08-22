@@ -30,11 +30,17 @@ _llm = ChatOllama(
 
 
 def _build_dynamic_context_block(state: AgentState, order_stage: str) -> str:
-    """Assembles the current order stage, cart summary, and validation feedback.
+    """Assembles the current order stage, cart summary, validation feedback,
+    and recently recommended dishes from prior searches.
 
     The full menu list is intentionally NOT included — the validator resolves
     names independently, so the LLM only needs to see cart state and feedback.
     This keeps the context ~200 tokens (down from ~3000 with the menu).
+
+    search_context is included so the LLM can resolve references like "món đó"
+    to the canonical menu name the search returned, not the conversational
+    name the response LLM invented (e.g. "Tôm Thẻ Rang Muối" vs "tôm thẻ rang
+    muối cay").
     """
     blocks = [f"Trạng thái đơn hàng (Current Stage): {order_stage}"]
 
@@ -46,12 +52,42 @@ def _build_dynamic_context_block(state: AgentState, order_stage: str) -> str:
         blocks.append("### CURRENT ACTIVE CART:")
         blocks.append("(trống)")
 
+    search_context = state.get("search_context")
+    if search_context:
+        names = []
+        for r in search_context:
+            name = getattr(r.document, "metadata", {}).get("name")
+            if name and name not in names:
+                names.append(name)
+        if names:
+            blocks.append("")
+            blocks.append("### RECENTLY RECOMMENDED DISHES (from prior search):")
+            if len(names) == 1:
+                blocks.append(f"The customer was just shown: {names[0]}. "
+                              "If they refer to \"món đó\", it is this dish — use its exact name.")
+            else:
+                blocks.append("The customer was just shown these dishes. If they refer to ")
+                blocks.append("\"món đó\" or \"món này\", pick the dish that best matches ")
+                blocks.append("the vibe/description in the conversation above:")
+                for n in names[:3]:
+                    blocks.append(f"  - {n}")
+                if len(names) > 3:
+                    blocks.append(f"  (and {len(names) - 3} more — use the top-3 to resolve)")
+
     if state.get("feedback"):
+        # The closing line used to read "Fix the tool call arguments and retry
+        # immediately." That contradicted every piece of feedback that asks for a
+        # DIFFERENT tool, and being the last, most imperative line it won: a refused
+        # clear_cart was re-issued 4 times out of 4, and a refused confirm_order
+        # converged on delegate only 1 time in 7. Some tools take no arguments at all,
+        # so "fix the arguments" literally means "call it again unchanged".
         blocks.extend([
             "",
             "### SYSTEM FEEDBACK (MANDATORY FIX):",
             state["feedback"],
-            "Fix the tool call arguments and retry immediately.",
+            "Hãy làm theo đúng feedback ở trên. Bạn ĐƯỢC PHÉP đổi sang tool khác — "
+            "nếu feedback bảo gọi tool nào thì gọi đúng tool đó, đừng gọi lại tool vừa bị chặn. "
+            "Nếu yêu cầu của khách không khớp tool nào, hãy gọi delegate.",
         ])
 
     return "\n".join(blocks)
