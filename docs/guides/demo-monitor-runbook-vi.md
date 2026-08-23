@@ -8,19 +8,20 @@ Ai chạy cái gì:
 ```
    PC (server)                          JETSON (thiết bị voice)
    ┌──────────────────────────┐         ┌──────────────────────────┐
-   │ make backend   :8000     │◀──WS────│ mic → VAD → Whisper      │
+   │ make backend   :8000     │◀──WS────│ mic → VAD → STT          │
    │   hub + web /monitor     │         │ loa ← TTS                │
-   │ make agent     :8100     │◀──HTTP──│ (make jetson STACK=0)    │
+   │ make agent     :8100     │◀──HTTP──│ (make jetson)            │
    │   LangGraph + LLM        │         └───────────┬──────────────┘
    └──────────────────────────┘                     │ HDMI
               ▲                                     ▼
               │ trình duyệt                 ┌──────────────────┐
-              └─────────────────────────────│ MÀN RỜI          │
+              └─────────────────────────────│ MÀN RỜI 7"       │
                 cùng một trang /monitor     │ /monitor kiosk   │
                                             └──────────────────┘
 ```
 
-Màn rời của Jetson **chỉ hiển thị**. Nút bấm nên để trên máy PC — xem [mục 3](#3-màn-rời-và-ai-bấm-nút).
+Hai màn mở **cùng một trang** và cùng nhận realtime — xem [mục 3](#3-màn-rời-và-ai-bấm-nút) để
+biết nên bấm ở đâu.
 
 ---
 
@@ -114,8 +115,12 @@ curl -s http://localhost:8100/health            # agent còn sống
 
 `devices` đang rỗng là **đúng** — Jetson chưa bật.
 
-Mở trình duyệt trên PC: `http://localhost:8000/monitor`. Góc phải phải hiện **Hub realtime**
-màu mint. Nếu hiện "Mất kết nối hub" thì `make backend` chưa lên.
+Mở trình duyệt trên PC: `http://localhost:8000/monitor`. Góc phải phải hiện **Hub realtime** với
+chấm xanh teal. Còn ghi *"Đang kết nối…"* màu xám thì `make backend` chưa lên.
+
+> Trang cố ý **không bao giờ báo lỗi đỏ** cho những chuyện bình thường (rớt WS, không ai nói,
+> khách bấm dừng) — khách VIP đứng xem cùng phòng. Nên đừng chờ chữ đỏ để biết có vấn đề: nhìn
+> chấm ở góc phải và ô chọn thiết bị. Chi tiết ở [`voice-monitor-vi.md`](voice-monitor-vi.md).
 
 ---
 
@@ -145,18 +150,21 @@ chi tiết ở [`jetson-demo-runbook-vi.md`](jetson-demo-runbook-vi.md) mục 3.
 ### 2.2 Một lệnh chạy cả buổi
 
 ```bash
-make jetson STACK=0 URL=http://100.66.165.221:8000/monitor
+make jetson
 ```
 
-Lệnh này làm 2 việc:
+Không tham số, không cờ. Server `100.66.165.221:8000`, `robo-1`, **không bật ROS**, màn rời mở
+thẳng `/monitor` — tất cả đã là mặc định của target này, vì đó chính là cấu hình buổi demo.
 
 | Phần | Nội dung |
 |------|----------|
-| `voice` | mic → VAD → Whisper → gọi agent → TTS ra loa |
+| `voice` | mic → VAD → STT → gọi agent → TTS ra loa |
 | `web` | chờ backend trả lời rồi mở trình duyệt **kiosk toàn màn hình** trên màn rời, vào thẳng `/monitor` |
 
-`STACK=0` bỏ qua ROS (RTAB-Map + Nav2). Buổi này robot đứng yên, mà stack đó nặng — và nếu nó
-chết thì kéo luôn voice chết theo.
+Không có ROS (RTAB-Map + Nav2) trong lệnh này là **cố ý**: buổi này robot đứng yên, mà stack đó
+nặng — và nếu nó chết thì kéo luôn voice chết theo. Buổi nào cần robot chạy thật mới thêm
+`STACK=1`, khi đó màn rời tự đổi sang `customer_ui` thay vì `/monitor`
+(xem [`real-robot-demo-runbook-vi.md`](real-robot-demo-runbook-vi.md)).
 
 Đợi tới khi thấy:
 
@@ -168,7 +176,8 @@ chết thì kéo luôn voice chết theo.
 ```
 
 Robot nói "Xin chào" ra loa = TTS sống. Lúc này trên `/monitor` ở PC, ô chọn thiết bị chuyển từ
-"chưa có mic nào" thành `robo-1`, các nút sáng lên.
+*"chưa có mic"* thành `robo-1`, các nút sáng lên, và hai thanh **LOA/MIC** hiện đúng mức thật
+đang đặt trên Jetson.
 
 Ctrl-C **một lần** trong terminal này là tắt sạch cả voice lẫn trình duyệt.
 
@@ -177,21 +186,32 @@ Ctrl-C **một lần** trong terminal này là tắt sạch cả voice lẫn tr�
 ## 3. Màn rời và ai bấm nút
 
 Cả hai màn hình mở **cùng một trang** và cùng nhận realtime từ hub — mở bao nhiêu bản cũng được.
-Chia vai như sau:
 
-- **Màn rời của Jetson**: kiosk toàn màn hình, để thầy nhìn. Không cần chuột.
-- **Màn PC**: bạn bấm **Bắt đầu nghe** từ đây, rồi nói vào mic của Jetson.
+Bố cục trang chia làm hai nửa, và đó cũng là cách chia vai:
 
-Làm vậy vì trong chế độ kiosk không có thanh địa chỉ và thường không có chuột cắm ở Jetson.
-Nếu Jetson có chuột/màn cảm ứng thì bấm ngay trên đó cũng được, không khác gì.
+| Nửa màn | Có gì | Ai dùng |
+|---|---|---|
+| **Trái** | Rack 5 chặng `MIC → VAD → STT → AGENT → TTS` + ô **DIỄN BIẾN** (khách nói gì, robot trả lời gì, và các frame thô của từng lượt) | người xem đọc |
+| **Phải — cột điều khiển** | 4 nút lớn cỡ chạm, hai thanh trượt **LOA/MIC**, khúc **SỔ ĐO** ở đáy | bạn bấm |
 
-Muốn màn rời hiển thị trang khác thì đổi `URL=`, ví dụ `URL=http://100.66.165.221:8000/panel`.
+Nút đã được làm cỡ ngón tay (cao ≥50px, nút chính *Bắt đầu nghe* chiếm nguyên hàng) đúng để bấm
+trên màn 7". Nên:
+
+- **Jetson có màn cảm ứng / có chuột** → bấm ngay trên màn rời, tiện nhất.
+- **Không có** → bấm từ trình duyệt trên PC, nói vào mic của Jetson. Y hệt nhau, vì cả hai trang
+  đều điều khiển cùng một con robot qua hub.
+
+Muốn màn rời hiển thị trang khác thì đổi `URL=`, ví dụ
+`make jetson URL=http://100.66.165.221:8000/panel`.
 
 ### Màn 7" 1024×600
 
-Trang `/monitor` có bố cục riêng cho màn này: cả rack vừa trong 600px, **không cuộn trang**, chỉ
-ô *Hội thoại* và *Nhật ký sự kiện* cuộn bên trong. Điều kiện kích hoạt là chiều cao khung hiển
-thị **≤ 700px**, nên hai thứ này phải đúng, nếu không nó rơi về bố cục desktop và tràn khỏi màn:
+Trang `/monitor` có bố cục riêng cho màn này: mọi thứ vừa trong 600px, **cả trang không cuộn**,
+chỉ ô *Diễn biến* và khúc *Sổ đo* cuộn bên trong. Chữ trong hai ô đó nhỏ lại, nhưng **nút và
+thanh trượt giữ nguyên cỡ chạm** — chúng là thứ duy nhất phải bấm, mà màn 7" chính là màn được bấm.
+
+Điều kiện kích hoạt bố cục này là chiều cao khung hiển thị **≤ 700px**, nên hai thứ sau phải
+đúng, nếu không nó rơi về bố cục desktop và tràn khỏi màn:
 
 - **Zoom trình duyệt phải là 100%** (`Ctrl+0`). Zoom 125% biến 600px vật lý thành 480px CSS thì
   vẫn gọn, nhưng zoom 80% thành 750px CSS là mất bố cục gọn.
@@ -205,40 +225,48 @@ cục desktop** — bố cục 7" giấu dòng đó đi.
 
 ## 4. Kịch bản nói thử (60 giây)
 
-Trước khi mời ai xem: bấm **Bắt đầu nghe**, nói thử một câu, rồi chỉnh **Loa** và **Mic** bằng hai
-thanh trượt cho vừa với độ ồn của phòng. Không cần SSH, không cần gõ `pactl`.
+Trước khi mời ai xem: bấm **Bắt đầu nghe**, nói thử một câu, rồi chỉnh **LOA** và **MIC** bằng hai
+thanh trượt cho vừa với độ ồn của phòng. Không cần SSH, không cần gõ `pactl` — hai thanh này điều
+khiển thẳng mixer của Jetson.
 
-1. Bấm **Bắt đầu nghe** → ô `MIC` sáng hổ phách, ghi "đang thu".
+1. Bấm **Bắt đầu nghe** → ô `MIC` sáng hổ phách, ghi *"đang thu"*.
 2. Nói: *"cho tôi một tô phở bò tái nạm"*.
 3. Nhìn theo tín hiệu chạy: `VAD` chốt độ dài câu → `STT` hiện số ms chép lời và câu chép được
-   → `AGENT` sáng "đang nghĩ" → từng câu trả lời hiện dần ở khung Hội thoại → `TTS` đọc ra loa.
+   → `AGENT` sáng *"đang nghĩ"* → từng câu trả lời hiện dần trong ô **Diễn biến** → `TTS` đọc ra loa.
 4. Bấm lần nữa, nói *"thêm một trà đá"* — lượt thứ hai ngắn hơn, **Sổ đo** giờ có 2 thanh để
    so sánh: nhìn là thấy thời gian nằm ở chặng nào.
 5. Muốn cho thấy nó chạy thật tới cùng: nói *"chốt đơn cho tôi"* → đơn hiện thật trên
    `http://100.66.165.221:8000/panel` (bảng bếp). Nhớ `make reset` sau buổi demo.
 
-Giải thích ngắn nếu thầy hỏi số liệu ở đâu ra: Jetson đo phần của nó (khách nói bao lâu, Whisper
+Giải thích ngắn nếu thầy hỏi số liệu ở đâu ra: Jetson đo phần của nó (khách nói bao lâu, chép lời
 bao lâu), server đo phần của nó (bao lâu tới câu đầu, tổng LLM); đồng hồ của agent bắt đầu **sau**
-khi STT xong nên hai số cộng lại chứ không chồng nhau. Chi tiết:
+khi STT xong nên hai số cộng lại chứ không chồng nhau. Từng frame đo được nằm ngay dưới mỗi lượt
+trong ô *Diễn biến* — đó là phần chứng minh số không phải bịa. Chi tiết:
 [`voice-monitor-vi.md`](voice-monitor-vi.md).
+
+> Trang **không nêu tên model nào** (STT ghi *"chép lời thành chữ"*, không ghi tên model). Cố ý,
+> để người ngoài xem demo không đọc được bên trong chạy gì. Nếu thầy hỏi thẳng thì trả lời miệng.
 
 ---
 
 ## 5. Gỡ rối tại chỗ
 
+Nhớ là trang cố tình nói năng nhẹ nhàng, nên **triệu chứng phần lớn là màu xám, không phải đỏ**.
+
 | Triệu chứng | Nguyên nhân thường gặp | Xử lý |
 |---|---|---|
-| Trang ghi "Mất kết nối hub" | `make backend` chưa chạy / sai IP | Bật lại T1, kiểm tra mở `:8000` |
-| Ô thiết bị mãi là "chưa có mic nào" | Jetson chưa nối được hub | Trên Jetson: `curl http://100.66.165.221:8000/voice/devices`. Treo = mạng Netbird; ra JSON = `make jetson` chưa chạy |
-| Bấm nghe, hiện "Mic không nhận lệnh" | Jetson vừa rớt kết nối | Danh sách tự làm mới mỗi 5 giây — đợi rồi chọn lại thiết bị |
-| `MIC` đỏ "không nghe thấy" | Sai default source, hoặc nói quá nhỏ/xa | Chạy lại health check, xem 2 dòng mic/loa |
-| Nghe được nhưng không có tiếng trả lời | Loa mute hoặc sai default sink | `pactl set-sink-mute @DEFAULT_SINK@ 0` và `pactl set-sink-volume @DEFAULT_SINK@ 45%` |
-| `STT` xám "không nghe rõ" | Whisper ra rỗng, **hoặc** bộ lọc chặn câu bịa | Bình thường khi có tiếng động lạ. Xem log `[voice] STT bỏ qua…` (màn hình cố ý không nêu tên model) |
-| `AGENT` sáng mãi | LLM chưa xong hoặc agent chết | Xem terminal `make agent` |
+| Góc phải ghi *"Đang kết nối…"* mãi không xanh | `make backend` chưa chạy / sai IP | Bật lại T1, kiểm tra mở `:8000`. Rê chuột lên chấm đó để xem chi tiết |
+| Ô thiết bị mãi là *"chưa có mic"* | Jetson chưa nối được hub | Trên Jetson: `curl http://100.66.165.221:8000/voice/devices`. Treo = mạng Netbird; ra JSON = `make jetson` chưa chạy |
+| Bấm nghe, hiện *"Robot chưa sẵn sàng."* | Jetson vừa rớt kết nối | Danh sách tự làm mới mỗi 5 giây — đợi rồi chọn lại thiết bị |
+| `MIC` xám *"không có ai nói"* | Nói quá nhỏ/xa, mic quá nhạy thấp, hoặc sai default source | Kéo thanh **MIC** lên 120–150% rồi nói lại. Vẫn vậy thì chạy lại health check, xem 2 dòng mic/loa |
+| `STT` xám *"không nghe rõ"* | Bộ STT trả về rỗng, **hoặc** bộ lọc chặn một câu bịa | Bình thường khi có tiếng động lạ. Xem log Jetson `[voice] STT bỏ qua…` |
+| `AGENT` sáng mãi không tắt | LLM chưa xong hoặc agent chết | Xem terminal `make agent` |
+| `AGENT` **đỏ** *"chưa trả lời được"* | Lỗi thật khi gọi agent — chỗ duy nhất còn màu đỏ | Chi tiết nằm ở console trình duyệt (F12) và terminal `make agent`, không hiện lên màn |
+| Nghe được nhưng không có tiếng trả lời | Loa đang tắt hoặc âm lượng 0 | Xem nút có đang là **Bật loa** không (nghĩa là đang tắt). Rồi kéo thanh **LOA** lên |
+| Người xem kêu không nghe rõ robot | Loa Jetson đang nhỏ | Kéo thanh **LOA** lên. Trần là 100% — quá đó chỉ rè thêm |
 | Rack đứng im, chỉ `AGENT` sáng | Jetson chạy code cũ, chưa có telemetry | Làm lại [mục 0.3](#03-jetson--đồng-bộ-code-voice-mới) |
-| Hai thanh Loa/Mic mờ, hiện `—` | Jetson chạy code cũ, hoặc không có `pactl` | Làm lại [mục 0.3](#03-jetson--đồng-bộ-code-voice-mới) |
-| Nói mà `MIC` xám *"không có ai nói"* | Mic quá nhỏ so với tiếng ồn hội chợ | Kéo thanh **Mic** lên 120–150%, nói lại |
-| Người xem kêu không nghe rõ robot | Loa Jetson đang nhỏ | Kéo thanh **Loa** lên. Trần là 100% — quá đó chỉ rè thêm |
+| Hai thanh LOA/MIC mờ, hiện `—` | Jetson chạy code cũ, hoặc máy đó không có `pactl` | Làm lại [mục 0.3](#03-jetson--đồng-bộ-code-voice-mới) |
+| Màn rời tràn ra ngoài / phải cuộn trang | Zoom khác 100%, hoặc không toàn màn hình | `Ctrl+0` rồi `F11` — xem [mục 3](#màn-7-1024600) |
 | Màn rời không mở trình duyệt | Chưa đăng nhập desktop nên chưa có phiên `:0` | Đăng nhập trên màn rời rồi chạy lại; hoặc mở tay Firefox vào URL đó rồi F11 |
 
 ---
@@ -262,7 +290,8 @@ PC:      make backend        (T1)
          mở localhost:8000/monitor
 
 JETSON:  bash scripts/jetson_healthcheck.sh      → phải 0 LỖI
-         make jetson STACK=0 URL=http://100.66.165.221:8000/monitor
+         make jetson
 
-NÓI:     bấm "Bắt đầu nghe" trên PC → nói vào mic Jetson
+CHỈNH:   kéo LOA / MIC ở cột phải cho vừa phòng
+NÓI:     bấm "Bắt đầu nghe" → nói vào mic Jetson
 ```

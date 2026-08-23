@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
-# Jetson - chạy CẢ BA thứ của một buổi demo trong MỘT terminal:
-#   1) hwstack : RTAB-Map localization + Nav2 + ArUco + dispatcher bridge (ROS 2)
-#   2) voice   : vòng lặp mic -> VAD/STT -> agent -> TTS (src/edge_voice/main.py)
-#   3) web     : trình duyệt kiosk trên màn robot (customer_ui)
+# Jetson - cả một buổi demo trong MỘT terminal, MỘT lệnh:  make jetson
 #
-# Gọi qua Makefile:  make jetson          (SERVER_HOST + ID đã cố định sẵn trong Makefile)
-# Tắt bớt phần nào:  make jetson VOICE=0    /    make jetson WEB=0    /    make jetson STACK=0
+#   1) voice   : vòng lặp mic -> VAD/STT -> agent -> TTS (src/edge_voice/main.py)   [mặc định BẬT]
+#   2) web     : trình duyệt kiosk trên màn rời, mở thẳng màn giám sát /monitor     [mặc định BẬT]
+#   3) hwstack : RTAB-Map localization + Nav2 + ArUco + dispatcher bridge (ROS 2)   [mặc định TẮT]
 #
-# STACK=0 là cấu hình cho buổi demo CHỈ có voice: robot không cần di chuyển, nên không phải
-# bật RTAB-Map/Nav2 (nặng, và stack chết là kéo cả voice chết theo). Kèm URL trỏ thẳng vào
-# màn giám sát thì màn rời của Jetson thành màn chiếu cho người xem:
-#   make jetson STACK=0 URL=http://<SERVER_IP>:8000/monitor
+# Mặc định là cấu hình buổi demo hội chợ, vì đó là thứ chạy hằng ngày: robot đứng yên nên
+# không bật ROS (nặng, và stack chết là kéo cả voice chết theo), màn rời chiếu /monitor cho
+# người xem. Không cần truyền tham số nào.
+#
+# Cần robot chạy thật (nhà hàng, có Nav2):   make jetson STACK=1     (màn rời tự đổi sang customer_ui)
+# Đổi server / robot id:                     make jetson SERVER_HOST=192.168.1.9:8000 ID=robo-2
+# Chiếu trang khác lên màn rời:              make jetson URL=http://<SERVER_IP>:8000/panel
+# Bỏ bớt phần nào:                           make jetson VOICE=0   /   make jetson WEB=0
 #
 # Log mỗi tiến trình được gắn tiền tố [stack] / [voice] / [web] nên vẫn đọc được
 # đúng trình tự khởi động trong runbook. Ctrl-C một lần là tắt sạch cả ba.
@@ -24,8 +26,16 @@ SERVER_HOST="${SERVER_HOST:-100.66.165.221:8000}"
 ID="${ID:-robo-1}"
 VOICE="${VOICE:-1}"
 WEB="${WEB:-1}"
-STACK="${STACK:-1}"
-URL="${URL:-http://$SERVER_HOST/}"
+STACK="${STACK:-0}"
+# Trang mặc định trên màn rời đi theo STACK, vì màn đó đóng hai vai khác hẳn nhau:
+#   STACK=0 (demo hội chợ) -> /monitor : màn CHIẾU CHO NGƯỜI XEM, robot đứng yên, không có bàn nào
+#   STACK=1 (nhà hàng)     -> /        : customer_ui, màn của KHÁCH ngồi tại bàn robot phục vụ
+# Truyền URL= để ghi đè cả hai.
+if [ "$STACK" = "1" ]; then
+	URL="${URL:-http://$SERVER_HOST/}"
+else
+	URL="${URL:-http://$SERVER_HOST/monitor}"
+fi
 ROS_SETUP="${ROS_SETUP:-/opt/ros/humble/setup.sh}"
 
 if [ ! -x .venv/bin/python ]; then

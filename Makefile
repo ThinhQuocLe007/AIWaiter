@@ -40,7 +40,7 @@ help:
 	@echo "  make mockrobot  - Start a mock robot WS client (ID=robo-1 ARGS=...) to test the dispatcher"
 	@echo "  make simbridge  - Gazebo robot bridge (sim demo); make backend SIM=1 for the sim map"
 	@echo "  make hwstack    - REAL robot, all-in-one on the Jetson: localization + Nav2 + bridge"
-	@echo "  make jetson     - MỘT lệnh cho cả buổi demo trên Jetson: hwstack + voice + trình duyệt kiosk"
+	@echo "  make jetson     - MỘT lệnh cho cả buổi demo trên Jetson: voice + màn rời kiosk /monitor (thêm STACK=1 nếu cần ROS)"
 	@echo "  make hwbridge   - REAL robot bridge only (localization + Nav2 already running)"
 	@echo "  make map        - Re-export the minimap floor from the RTAB-Map database"
 	@echo "  make reindex    - Clean rebuild of FAISS + BM25 + centroid artifacts"
@@ -202,16 +202,22 @@ hwstack:
 	ros2 launch ai_hw_bridge ai_waiter.launch.py \
 		server_host:=$(SERVER_HOST) robot_id:=$(ID)
 
-# MỘT lệnh, MỘT terminal cho cả buổi demo trên Jetson: `hwstack` + `voice` + trình duyệt kiosk
-# trên màn robot. Script tự `source .venv/bin/activate` trước (khỏi phải nhớ), log mỗi phần gắn
-# tiền tố [stack]/[voice]/[web], Ctrl-C một lần tắt sạch cả ba. Chỉ cần gõ:  make jetson
-# Server là IP Netbird cố định của ducduy-pc — đổi khi cần: make jetson SERVER_HOST=192.168.1.x:8000
-# Bỏ bớt phần nào:  make jetson VOICE=0    (chỉ nav)      make jetson WEB=0   (gõ qua SSH, không mở web)
-# Buổi demo CHỈ voice (robot đứng yên, không cần ROS) + màn rời chiếu màn giám sát:
-#   make jetson STACK=0 URL=http://<SERVER_IP>:8000/monitor
+# MỘT lệnh, MỘT terminal cho cả buổi demo trên Jetson. Không tham số:
+#
+#   make jetson
+#
+# Mặc định = cấu hình buổi demo hội chợ: `voice` + màn rời kiosk mở thẳng `/monitor` trên
+# server, KHÔNG bật ROS (robot đứng yên; stack nặng, mà stack chết là kéo cả voice chết theo).
+# Script tự `source .venv/bin/activate` (khỏi phải nhớ), log gắn tiền tố [stack]/[voice]/[web],
+# Ctrl-C một lần tắt sạch.
+#
+#   make jetson STACK=1                                   # thêm RTAB-Map/Nav2; màn rời tự đổi sang customer_ui
+#   make jetson SERVER_HOST=192.168.1.9:8000 ID=robo-2     # server / robot id khác
+#   make jetson URL=http://100.66.165.221:8000/panel       # chiếu trang khác lên màn rời
+#   make jetson VOICE=0   |   make jetson WEB=0            # bỏ bớt phần nào
 VOICE ?= 1
 WEB ?= 1
-STACK ?= 1
+STACK ?= 0
 jetson: SERVER_HOST := 100.66.165.221:8000
 jetson: ID := robo-1
 jetson: $(VENV_PY)
