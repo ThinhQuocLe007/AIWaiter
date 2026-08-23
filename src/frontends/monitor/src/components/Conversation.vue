@@ -90,7 +90,7 @@ h2 {
   font-weight: 700;
   letter-spacing: 0.04em;
   margin: 0;
-  color: var(--paper);
+  color: var(--type);
 }
 
 .hint,
@@ -100,7 +100,7 @@ h2 {
   margin: 0;
 }
 .empty { line-height: 1.6; }
-.empty b { color: var(--paper); font-weight: 500; }
+.empty b { color: var(--type); font-weight: 600; }
 
 .scroll {
   overflow-y: auto;
@@ -117,7 +117,7 @@ h2 {
 }
 
 .turn.live {
-  border-left-color: var(--lamp);
+  border-left-color: var(--lamp-lit);
 }
 
 .turn.cancelled,
@@ -155,8 +155,8 @@ h2 {
 /* Two voices, told apart by weight and colour rather than by chat bubbles — the panel is a
    transcript for reading at a distance, not a messaging app. */
 .guest {
-  color: var(--paper);
-  font-weight: 500;
+  color: var(--type);
+  font-weight: 600;
 }
 
 .guest::before {
@@ -171,7 +171,7 @@ h2 {
 
 .robot {
   color: var(--lamp);
-  font-weight: 300;
+  font-weight: 400;
 }
 
 .robot::before {
@@ -185,7 +185,7 @@ h2 {
 }
 
 .waiting {
-  opacity: 0.55;
+  opacity: 0.6;
   font-style: italic;
 }
 
@@ -195,5 +195,24 @@ h2 {
   font-size: 0.7rem;
   color: var(--dim);
   font-variant-numeric: tabular-nums;
+}
+
+/* The 7" panel. This is the one column people actually read from across a table, so the spoken
+   text keeps most of its size — the padding and the gaps between turns give up the room instead. */
+@media (max-height: 700px) {
+  .convo { padding: 0.6rem 0.7rem; border-radius: 2px; }
+  .head { margin-bottom: 0.5rem; }
+  h2 { font-size: 0.62rem; }
+  .hint { display: none; }
+  .empty { font-size: 0.72rem; }
+
+  .scroll { gap: 0.6rem; }
+  .turn { padding-left: 0.6rem; }
+  .meta { font-size: 0.62rem; gap: 0.45rem; margin-bottom: 0.25rem; }
+  .stage { font-size: 0.52rem; }
+  .said { font-size: 0.88rem; line-height: 1.45; margin-bottom: 0.25rem; }
+  .guest::before,
+  .robot::before { font-size: 0.5rem; margin-right: 0.3rem; }
+  .timing { font-size: 0.62rem; margin-top: 0.3rem; }
 }
 </style>

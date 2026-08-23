@@ -52,7 +52,7 @@ h2 {
   font-weight: 700;
   letter-spacing: 0.04em;
   margin: 0;
-  color: var(--paper);
+  color: var(--type);
 }
 
 .hint,
@@ -78,7 +78,7 @@ h2 {
   grid-template-columns: 4.6rem 4.4rem 1fr;
   gap: 0.5rem;
   padding: 0.22rem 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--rule) 45%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--rule) 60%, transparent);
   color: var(--dim);
 }
 
@@ -94,7 +94,25 @@ h2 {
 .device .src { color: var(--read); }
 .agent .src { color: var(--lamp); }
 
-.msg { color: var(--paper); opacity: 0.75; overflow-wrap: anywhere; }
-.signal .msg { opacity: 1; }
+.msg { color: var(--dim); overflow-wrap: anywhere; }
+.signal .msg { color: var(--type); }
 .fault .msg { color: var(--clay); }
+
+/* The 7" panel. The two fixed columns shrink to exactly what they hold — "23:04:11" and
+   "THIẾT BỊ" — so the message keeps as much of a ~340px-wide column as it can. */
+@media (max-height: 700px) {
+  .log { padding: 0.6rem 0.7rem; border-radius: 2px; }
+  .head { margin-bottom: 0.4rem; }
+  h2 { font-size: 0.62rem; }
+  .hint { display: none; }
+  .empty { font-size: 0.72rem; }
+
+  .lines { font-size: 0.65rem; line-height: 1.45; }
+  .lines li {
+    grid-template-columns: 3.6rem 3.4rem 1fr;
+    gap: 0.35rem;
+    padding: 0.15rem 0;
+  }
+  .src { font-size: 0.48rem; }
+}
 </style>

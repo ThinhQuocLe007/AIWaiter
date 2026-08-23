@@ -181,6 +181,20 @@ Nếu Jetson có chuột/màn cảm ứng thì bấm ngay trên đó cũng đư�
 
 Muốn màn rời hiển thị trang khác thì đổi `URL=`, ví dụ `URL=http://100.66.165.221:8000/panel`.
 
+### Màn 7" 1024×600
+
+Trang `/monitor` có bố cục riêng cho màn này: cả rack vừa trong 600px, **không cuộn trang**, chỉ
+ô *Hội thoại* và *Nhật ký sự kiện* cuộn bên trong. Điều kiện kích hoạt là chiều cao khung hiển
+thị **≤ 700px**, nên hai thứ này phải đúng, nếu không nó rơi về bố cục desktop và tràn khỏi màn:
+
+- **Zoom trình duyệt phải là 100%** (`Ctrl+0`). Zoom 125% biến 600px vật lý thành 480px CSS thì
+  vẫn gọn, nhưng zoom 80% thành 750px CSS là mất bố cục gọn.
+- **Phải toàn màn hình** (kiosk hoặc `F11`). Thanh tiêu đề + tab của cửa sổ thường ăn mất khoảng
+  100px chiều cao, làm nội dung bị cắt ở đáy.
+
+Kiểm tra nhanh: nhìn thấy dòng phụ *"Tiếng nói vào ở đầu này…"* dưới tiêu đề nghĩa là **đang ở bố
+cục desktop** — bố cục 7" giấu dòng đó đi.
+
 ---
 
 ## 4. Kịch bản nói thử (60 giây)

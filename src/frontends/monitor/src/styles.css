@@ -1,17 +1,35 @@
 /* Voice-pipeline monitor — the instrument rack.
-   The design reads the pipeline as an audio signal chain: a warm graphite rack face, one amber
-   lamp colour for "the signal is here right now", and a muted instrument-LCD mint reserved
-   strictly for measured numbers. Nothing else is allowed to be bright. */
+   The design reads the pipeline as an audio signal chain on a paper-white bench: warm off-white
+   rack face, one amber lamp colour for "the signal is here right now", and a teal readout
+   reserved strictly for measured numbers. Nothing else is allowed to carry colour.
+
+   Two amber tokens, and the difference matters: --lamp is INK (dark enough to read as type on
+   paper) and --lamp-lit is a LIT LED (bright, only ever used as a fill or a halo, never as text).
+   Same for --read / --read-lit. Swapping them makes text unreadable on this screen.
+
+   Sizing targets two displays: a desktop browser, and the Jetson's 7" 1024×600 LCD. The 1024×600
+   case is the demo one — see the `max-height: 700px` blocks, which compact every module so the
+   whole rack fits on screen with nothing but the two log panels scrolling. */
 
 :root {
-  --ink: #14120f; /* rack face — warm near-black, deliberately brown-shifted, not blue */
-  --panel: #1f1b16; /* module face */
-  --rule: #3a322a; /* engraved hairline */
-  --lamp: #ffb020; /* signal amber: active stage, travelling pulse, the robot's voice */
-  --read: #7fd4c1; /* readout mint: measured values only */
-  --clay: #d4573a; /* fault: dropped, cancelled, nothing heard */
-  --paper: #ede4d6; /* warm off-white type */
-  --dim: #9a8f80; /* secondary type */
+  color-scheme: light;
+
+  --bg: #f2efe8; /* rack face — warm paper, deliberately brown-shifted, not blue */
+  --panel: #fcfaf6; /* module face, a shade lighter than the rack */
+  --rule: #dcd4c5; /* engraved hairline */
+
+  --lamp: #a55708; /* signal amber AS TYPE — 5:1 on the rack face */
+  --lamp-lit: #f59e0b; /* signal amber AS LIGHT — lamps, bars, halos only */
+  --on-lamp: #fffaf0; /* type sitting on top of a lamp-lit fill */
+
+  --read: #0b6152; /* readout teal, measured values only */
+  --read-lit: #14a08a; /* the same, as a bar fill */
+
+  --clay: #9e3117; /* fault: dropped, cancelled, nothing heard */
+  --speech: #8c8172; /* neutral: how long the guest spoke */
+
+  --type: #1a1712; /* body type */
+  --dim: #6f665a; /* secondary type */
 
   --font-body: 'Be Vietnam Pro', system-ui, sans-serif; /* built for Vietnamese diacritics */
   --font-label: 'Martian Mono', ui-monospace, monospace; /* module tags, used sparingly */
@@ -27,10 +45,10 @@ body {
 }
 
 body {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--bg);
+  color: var(--type);
   font-family: var(--font-body);
-  font-weight: 300;
+  font-weight: 400;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -96,12 +114,13 @@ body {
 
 .link.on { color: var(--read); }
 
+/* A halo ring rather than a blur: on paper a glow just smudges, but a ring still reads as lit. */
 .pip {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: currentColor;
-  box-shadow: 0 0 8px currentColor;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent);
 }
 
 .pick {
@@ -119,7 +138,7 @@ body {
   font-family: var(--font-data);
   font-size: 0.85rem;
   background: var(--panel);
-  color: var(--paper);
+  color: var(--type);
   border: 1px solid var(--rule);
   border-radius: 2px;
   padding: 0.35rem 0.5rem;
@@ -139,7 +158,7 @@ body {
   font-family: var(--font-body);
   font-size: 0.88rem;
   font-weight: 500;
-  color: var(--paper);
+  color: var(--type);
   background: var(--panel);
   border: 1px solid var(--rule);
   border-radius: 2px;
@@ -151,28 +170,28 @@ body {
 .act:hover:not(:disabled) { border-color: var(--dim); }
 
 .act:disabled {
-  opacity: 0.4;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
 .act.primary {
   background: var(--lamp);
   border-color: var(--lamp);
-  color: var(--ink);
+  color: var(--on-lamp);
   font-weight: 600;
 }
 
 .act.primary:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--lamp) 85%, var(--paper));
+  background: color-mix(in srgb, var(--lamp) 85%, black);
 }
 
-/* A disabled primary drops the amber entirely. Dimming it was not enough: amber at 40% on this
+/* A disabled primary drops the amber entirely. Dimming it was not enough: amber at 45% on this
    background still reads as THE thing to press, so the first thing anyone did with no mic
    connected was click a dead button and conclude the page was broken. */
 .act.primary:disabled {
   background: var(--panel);
   border-color: var(--rule);
-  color: var(--paper);
+  color: var(--type);
 }
 
 .hookup {
@@ -185,8 +204,8 @@ body {
 
 .hookup code {
   font-family: var(--font-data);
-  color: var(--paper);
-  background: var(--panel);
+  color: var(--type);
+  background: color-mix(in srgb, var(--rule) 35%, var(--panel));
   border: 1px solid var(--rule);
   border-radius: 2px;
   padding: 0.05rem 0.35rem;
@@ -220,7 +239,7 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-.live.on { color: var(--lamp); }
+.live.on { color: var(--lamp); font-weight: 500; }
 
 /* --- floor ---------------------------------------------------------------------------- */
 .floor {
@@ -237,7 +256,10 @@ body {
   min-height: 0;
 }
 
-@media (max-width: 1100px) {
+/* Stack only on a screen that is narrow AND tall — a tablet held upright. The 7" panel is also
+   under 1100px wide but only 600px tall, and stacking there would push the event log off the
+   bottom of a screen that cannot scroll comfortably. It gets the compact block below instead. */
+@media (max-width: 1100px) and (min-height: 701px) {
   .rack { height: auto; grid-template-rows: none; }
   .floor { grid-template-columns: 1fr; }
   .right { grid-template-rows: none; }
@@ -245,10 +267,48 @@ body {
   .log .lines { max-height: 26rem; }
 }
 
-/* Scrollbars, kept in the rack's own palette rather than the browser's. */
-::-webkit-scrollbar { width: 8px; }
+/* --- the Jetson's 7" 1024×600 panel ---------------------------------------------------- */
+/* Everything shrinks; nothing is dropped except the strapline. The rack still has to fit in
+   600px with the two log panels doing all the scrolling, so every vertical rhythm here is
+   budgeted: masthead ~50px, controls ~32px, signal chain ~76px, floor takes the rest. */
+@media (max-height: 700px) {
+  .rack {
+    gap: 0.5rem;
+    padding: 0.55rem 0.75rem 0.6rem;
+  }
+
+  .masthead {
+    align-items: center;
+    gap: 0.9rem;
+    padding-bottom: 0.45rem;
+  }
+
+  .eyebrow { font-size: 0.5rem; letter-spacing: 0.1em; }
+  .masthead h1 { font-size: 1.2rem; margin: 0.1rem 0 0; }
+  .sub { display: none; }
+
+  .console { gap: 0.75rem; }
+  .link { font-size: 0.72rem; gap: 0.35rem; }
+  .pick { gap: 0.3rem; font-size: 0.5rem; }
+  .pick select,
+  .pick input { font-size: 0.72rem; padding: 0.2rem 0.3rem; }
+  .pick input { width: 2.8rem; }
+
+  .controls { gap: 0.35rem; }
+  .act { font-size: 0.76rem; padding: 0.3rem 0.6rem; }
+  .note,
+  .live { font-size: 0.7rem; }
+  .hookup { font-size: 0.72rem; line-height: 1.4; }
+
+  .floor,
+  .right { gap: 0.5rem; }
+}
+
+/* Scrollbars, kept in the rack's own palette rather than the browser's. Narrow, because on the
+   7" panel a default-width bar eats a noticeable slice of a 340px-wide column. */
+::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: var(--rule);
-  border-radius: 4px;
+  background: color-mix(in srgb, var(--dim) 45%, transparent);
+  border-radius: 3px;
 }

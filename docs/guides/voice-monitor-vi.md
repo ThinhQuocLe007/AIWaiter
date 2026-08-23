@@ -16,13 +16,29 @@ URL: `http://<SERVER_IP>:8000/monitor` (production) hoặc `http://localhost:517
 
 | Khu vực | Đọc cái gì ở đó |
 |---------|-----------------|
-| **Rack tín hiệu** (hàng trên) | 5 module `MIC → VAD → STT → AGENT → TTS`. Module đang chạy sáng hổ phách, dây nối vào nó có xung sáng chạy. Module đã xong đổi sang màu mint kèm số đo. Module lỗi chuyển đỏ đất. |
+| **Rack tín hiệu** (hàng trên) | 5 module `MIC → VAD → STT → AGENT → TTS`. Module đang chạy sáng hổ phách, dây nối vào nó có xung sáng chạy. Module đã xong đổi sang xanh teal kèm số đo. Module lỗi chuyển đỏ đất. |
 | **Hội thoại** | Đúng những gì robot **nghe** và **nói**. Lượt đang chạy nằm trên cùng và điền dần: nghe được trước, rồi từng câu trả lời hiện ra đúng lúc agent sinh ra nó. |
 | **Sổ đo** | Mỗi lượt một thanh, chia đoạn theo chặng: *khách nói · Whisper · LLM tới câu đầu · robot nói*. Tất cả các thanh vẽ theo cùng một thang, nên nhìn là biết thời gian đi đâu và lượt nào chậm bất thường. |
 | **Nhật ký sự kiện** | Từng frame một, ghi rõ do **THIẾT BỊ** (Jetson) hay **AGENT** (server) gửi. Đây là phần chứng minh số liệu có nguồn gốc. |
 
 Nút điều khiển: **Bắt đầu nghe** · **Dừng** · **Hội thoại mới** (xoá trí nhớ hội thoại của bàn) ·
 **Tắt loa** (robot vẫn trả lời, chỉ không phát tiếng).
+
+Giao diện là **nền sáng** (giấy ấm), cố ý — hội chợ có đèn chiếu mạnh, nền tối bị loá và nhìn
+từ xa không rõ chữ.
+
+### Kích thước màn hình
+
+Trang tự co theo màn:
+
+| Màn | Cách bố trí |
+|-----|-------------|
+| **Màn rời 7" của Jetson (1024×600)** | Bố cục gọn: bỏ dòng phụ dưới tiêu đề và các dòng chú thích nhỏ, module rack thấp lại, chữ nhỏ hơn một nấc. Toàn bộ rack vừa trong 600px — **cả trang không cuộn**, chỉ ô *Hội thoại* và *Nhật ký* cuộn bên trong. |
+| **Màn desktop** | Bố cục đầy đủ, 2 cột. |
+| **Màn hẹp mà cao** (tablet dựng đứng, < 1100px rộng) | Xếp chồng 1 cột; rack tự xuống 2 hàng khi dưới 900px. |
+
+Điều kiện chuyển sang bố cục gọn là **chiều cao ≤ 700px**, không phải chiều rộng — đúng cái ràng
+buộc thật của màn 7" (600px cao mới là chỗ chật, 1024px ngang thì đủ cho 5 module).
 
 ---
 

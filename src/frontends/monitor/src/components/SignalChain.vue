@@ -40,15 +40,19 @@ function isLive(index: number): boolean {
 <style scoped>
 /* Flex, not grid: the wires are real children sitting BETWEEN the modules, so a 5-column grid
    would have to hold nine items and would wrap the rack onto a second row. Modules share the
-   leftover width equally (flex: 1 1 0) and each wire takes a fixed span. */
+   leftover width equally (flex: 1 1 0) and each wire takes a fixed span.
+
+   --wire-len is the wire's own width, declared once here so the travelling-pulse keyframe and
+   the flex-basis can never drift apart when the compact layout shortens the wires. */
 .chain {
+  --wire-len: 26px;
   display: flex;
   align-items: stretch;
 }
 
 .chain > .wire {
   position: relative;
-  flex: 0 0 26px;
+  flex: 0 0 var(--wire-len);
   z-index: 2;
 }
 
@@ -64,7 +68,7 @@ function isLive(index: number): boolean {
 }
 
 .wire.live::before {
-  background: color-mix(in srgb, var(--lamp) 55%, transparent);
+  background: color-mix(in srgb, var(--lamp-lit) 70%, transparent);
 }
 
 .pulse {
@@ -75,20 +79,20 @@ function isLive(index: number): boolean {
   height: 6px;
   margin-top: -3px;
   border-radius: 50%;
-  background: var(--lamp);
+  background: var(--lamp-lit);
   opacity: 0;
 }
 
 .wire.live .pulse {
   animation: travel 900ms linear infinite;
-  box-shadow: 0 0 10px var(--lamp);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--lamp-lit) 30%, transparent);
 }
 
 @keyframes travel {
   0% { transform: translateX(0); opacity: 0; }
   20% { opacity: 1; }
   80% { opacity: 1; }
-  100% { transform: translateX(26px); opacity: 0; }
+  100% { transform: translateX(var(--wire-len)); opacity: 0; }
 }
 
 .mod {
@@ -116,14 +120,14 @@ function isLive(index: number): boolean {
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.04em;
-  color: var(--paper);
+  color: var(--type);
 }
 
 .lamp {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
-  background: var(--rule);
+  background: color-mix(in srgb, var(--rule) 80%, var(--dim));
   transition: background 180ms ease, box-shadow 180ms ease;
 }
 
@@ -157,33 +161,63 @@ function isLive(index: number): boolean {
 
 /* --- states ------------------------------------------------------------------------- */
 .mod.active {
-  border-color: color-mix(in srgb, var(--lamp) 60%, transparent);
-  background: color-mix(in srgb, var(--lamp) 7%, var(--panel));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lamp) 18%, transparent);
+  border-color: color-mix(in srgb, var(--lamp) 55%, transparent);
+  background: color-mix(in srgb, var(--lamp-lit) 12%, var(--panel));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lamp) 22%, transparent);
 }
 .mod.active .lamp {
-  background: var(--lamp);
-  box-shadow: 0 0 12px var(--lamp);
+  background: var(--lamp-lit);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--lamp-lit) 28%, transparent);
   animation: breathe 1.4s ease-in-out infinite;
 }
 .mod.active .readout { color: var(--lamp); }
 
-.mod.done { border-color: color-mix(in srgb, var(--read) 30%, var(--rule)); }
-.mod.done .lamp { background: var(--read); }
+.mod.done { border-color: color-mix(in srgb, var(--read) 35%, var(--rule)); }
+.mod.done .lamp { background: var(--read-lit); }
 .mod.done .readout { color: var(--read); }
 
-.mod.fault { border-color: color-mix(in srgb, var(--clay) 55%, transparent); }
+.mod.fault { border-color: color-mix(in srgb, var(--clay) 50%, transparent); }
 .mod.fault .lamp { background: var(--clay); }
 .mod.fault .readout { color: var(--clay); font-size: 1.05rem; }
 
 @keyframes breathe {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.45; }
+  50% { opacity: 0.4; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .wire.live .pulse { animation: none; opacity: 1; transform: translateX(10px); }
   .mod.active .lamp { animation: none; }
+}
+
+/* The 7" panel. Five modules across 1024px is ~185px each, which is enough for the tag, the
+   readout and ONE line of detail — the second line is the first thing to go. */
+@media (max-height: 700px) {
+  .chain { --wire-len: 14px; }
+
+  .mod {
+    min-height: 0;
+    gap: 0.1rem;
+    padding: 0.45rem 0.55rem 0.55rem;
+    border-radius: 2px;
+  }
+
+  .tag { font-size: 0.6rem; }
+  .lamp { width: 8px; height: 8px; }
+  .caption { font-size: 0.65rem; }
+
+  .readout {
+    font-size: 1.05rem;
+    margin-top: 0.15rem;
+  }
+
+  .mod.fault .readout { font-size: 0.8rem; }
+
+  .detail {
+    font-size: 0.65rem;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+  }
 }
 
 @media (max-width: 900px) {
