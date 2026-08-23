@@ -32,6 +32,11 @@ class ConnectionManager:
         # speaking). The dispatcher holds a robot's `task.release` while this is set, so it can't
         # drive away mid-sentence — see dispatcher._release_robot.
         self._voice_busy: set[str] = set()
+        # Last speaker/mic levels each device reported, e.g. {"speaker": 45, "mic": 100,
+        # "can_set": True}. Cached only so a monitor page opened AFTER the device connected can
+        # start its sliders at the real values — the device pushes a fresh frame on every change,
+        # so nothing here is ever the authority on what the hardware is actually set to.
+        self._voice_levels: dict[str, dict] = {}
 
     async def connect(
         self,
@@ -62,6 +67,7 @@ class ConnectionManager:
             # The mic is gone, so no turn can still be running on it. Clearing this here means a
             # crashed device can't leave a robot parked waiting for speech that will never end.
             self._voice_busy.discard(robot_id)
+            self._voice_levels.pop(robot_id, None)
             # Don't unbind the table here: the table↔robot binding tracks the robot's *physical*
             # presence (its role=robot lifecycle), not the mic socket. A mic restart shouldn't force
             # a re-arrival — and while the mic is down send_to_voice_device already returns no_device.
@@ -150,6 +156,14 @@ class ConnectionManager:
     def voice_busy(self, robot_id: str) -> bool:
         """Is this robot still listening / thinking / speaking? False if it has no mic device."""
         return robot_id in self._voice_busy
+
+    def set_voice_levels(self, robot_id: str, levels: dict) -> None:
+        """Remember the speaker/mic levels a device just reported."""
+        self._voice_levels[robot_id] = levels
+
+    def voice_levels(self, robot_id: str) -> dict:
+        """Last known levels for this mic; empty until it has reported any."""
+        return self._voice_levels.get(robot_id, {})
 
     def connected_robot_ids(self) -> set[str]:
         return set(self._robots)

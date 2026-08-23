@@ -104,12 +104,15 @@ body {
   flex-wrap: wrap;
 }
 
+/* Grey, not clay, when it is down. The WS client reconnects on its own within seconds, so a red
+   alarm here is nearly always wrong by the time anyone has finished reading it — and in front of
+   an audience it is read as "the demo crashed". The real diagnosis is in the title attribute. */
 .link {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   font-size: 0.8rem;
-  color: var(--clay);
+  color: var(--dim);
 }
 
 .link.on { color: var(--read); }
@@ -156,13 +159,13 @@ body {
 
 .act {
   font-family: var(--font-body);
-  font-size: 0.98rem;
+  font-size: 1.05rem;
   font-weight: 500;
   color: var(--type);
   background: var(--panel);
   border: 1px solid var(--rule);
   border-radius: 2px;
-  padding: 0.65rem 1.2rem;
+  padding: 0.7rem 1.3rem;
   cursor: pointer;
   transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
 }
@@ -194,23 +197,6 @@ body {
   color: var(--type);
 }
 
-.hookup {
-  width: 100%;
-  margin: 0;
-  font-size: 0.82rem;
-  color: var(--clay);
-  line-height: 1.55;
-}
-
-.hookup code {
-  font-family: var(--font-data);
-  color: var(--type);
-  background: color-mix(in srgb, var(--rule) 35%, var(--panel));
-  border: 1px solid var(--rule);
-  border-radius: 2px;
-  padding: 0.05rem 0.35rem;
-}
-
 .act.armed {
   border-color: var(--clay);
   color: var(--clay);
@@ -223,12 +209,12 @@ body {
   outline-offset: 2px;
 }
 
+/* Never clay. A command that didn't land is almost always a Jetson that blinked and will be
+   back; the operator needs to see it, the audience must not read it as a failure. */
 .note {
-  font-size: 0.8rem;
-  color: var(--read);
+  font-size: 0.82rem;
+  color: var(--dim);
 }
-
-.note.bad { color: var(--clay); }
 
 .spacer { flex: 1; }
 
@@ -241,17 +227,96 @@ body {
 
 .live.on { color: var(--lamp); font-weight: 500; }
 
-/* --- floor ---------------------------------------------------------------------------- */
-.floor {
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-  gap: 1.1rem;
-  min-height: 0;
+/* --- speaker / mic dials ---------------------------------------------------------------- */
+/* These move pactl on the Jetson, so they are grouped with the buttons rather than with the
+   readouts: they are controls that change the world, not measurements of it. */
+.dial {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.2rem 0 0.7rem;
+  border-left: 1px solid var(--rule);
 }
 
-.right {
+.dial .cap {
+  font-family: var(--font-label);
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  color: var(--dim);
+}
+
+.dial .val {
+  font-family: var(--font-data);
+  font-size: 0.82rem;
+  color: var(--read);
+  font-variant-numeric: tabular-nums;
+  min-width: 2.6rem;
+  text-align: right;
+}
+
+.dial.off .val { color: var(--dim); }
+
+.dial input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 8rem;
+  height: 22px; /* the touch target, not the track — the track is drawn below */
+  background: transparent;
+  cursor: pointer;
+  margin: 0;
+}
+
+.dial input[type='range']:disabled { cursor: not-allowed; opacity: 0.5; }
+
+.dial input[type='range']::-webkit-slider-runnable-track {
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--rule) 85%, var(--dim));
+}
+
+.dial input[type='range']::-moz-range-track {
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--rule) 85%, var(--dim));
+}
+
+/* Deliberately a big grabbable knob: on the Jetson's 7" panel this is dragged with a fingertip. */
+.dial input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -6.5px;
+  border-radius: 50%;
+  background: var(--panel);
+  border: 2px solid var(--lamp);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.15);
+}
+
+.dial input[type='range']::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--panel);
+  border: 2px solid var(--lamp);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.15);
+}
+
+.dial.off input[type='range']::-webkit-slider-thumb { border-color: var(--dim); }
+.dial.off input[type='range']::-moz-range-thumb { border-color: var(--dim); }
+
+.dial input[type='range']:focus-visible {
+  outline: 2px solid var(--read);
+  outline-offset: 2px;
+}
+
+/* --- floor ---------------------------------------------------------------------------- */
+/* Two panels, not three. The conversation and the event log used to sit in separate boxes, which
+   meant reading one turn took two glances and a mental join on the timestamp; they are one feed
+   now, and the ledger gets the whole right column instead of being stacked above a log. */
+.floor {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
   gap: 1.1rem;
   min-height: 0;
 }
@@ -262,9 +327,7 @@ body {
 @media (max-width: 1100px) and (min-height: 701px) {
   .rack { height: auto; grid-template-rows: none; }
   .floor { grid-template-columns: 1fr; }
-  .right { grid-template-rows: none; }
-  .convo .scroll,
-  .log .lines { max-height: 26rem; }
+  .feed .scroll { max-height: 30rem; }
 }
 
 /* --- the Jetson's 7" 1024×600 panel ---------------------------------------------------- */
@@ -297,14 +360,19 @@ body {
   /* Full size, not shrunk: these four are the only things anyone touches during the demo, and
      the 7" panel is the screen they get touched ON. The height they cost comes back out of the
      two text panels below, which are read, not operated. */
-  .controls { gap: 0.45rem; }
-  .act { font-size: 0.95rem; padding: 0.5rem 0.95rem; }
+  .controls { gap: 0.4rem; }
+  .act { font-size: 1rem; padding: 0.55rem 1rem; }
   .note,
-  .live { font-size: 0.78rem; }
-  .hookup { font-size: 0.74rem; line-height: 1.4; }
+  .live { font-size: 0.74rem; }
 
-  .floor,
-  .right { gap: 0.45rem; }
+  /* Only the track gives up width — the knob stays 18px because it is dragged with a finger,
+     and the row has to hold four buttons plus both dials without wrapping at 1024px. */
+  .dial { gap: 0.4rem; padding-left: 0.5rem; }
+  .dial .cap { font-size: 0.66rem; }
+  .dial .val { font-size: 0.82rem; min-width: 2.5rem; }
+  .dial input[type='range'] { width: 5.2rem; }
+
+  .floor { gap: 0.45rem; }
 }
 
 /* Scrollbars, kept in the rack's own palette rather than the browser's. Narrow, because on the

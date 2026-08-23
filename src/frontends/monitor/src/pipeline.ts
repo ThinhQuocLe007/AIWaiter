@@ -12,8 +12,14 @@
 
 export type StageId = 'mic' | 'vad' | 'stt' | 'agent' | 'tts'
 
-/** What a rack module is doing right now. `fault` covers every way a turn can end badly. */
-export type StageState = 'idle' | 'active' | 'done' | 'fault'
+/** What a rack module is doing right now.
+ *
+ * `quiet` and `fault` are deliberately separate, and the split is a presentation decision as much
+ * as a technical one. Nobody speaking, a guest pressing Dừng, Whisper returning nothing usable —
+ * those are the pipeline working correctly on an empty input, and painting them alarm-red in
+ * front of an audience reads as "the thing is broken" when it isn't. `fault` is reserved for the
+ * one case that really is a failure: the agent call itself blew up. */
+export type StageState = 'idle' | 'active' | 'done' | 'quiet' | 'fault'
 
 export interface StageView {
   id: StageId
@@ -44,6 +50,9 @@ export interface TurnRecord {
   sentences: number
   outcome: 'ok' | 'cancelled' | 'timeout' | 'empty' | 'error'
   note?: string
+  /** The raw frames that produced this turn, oldest first — the evidence panel folds them in
+   *  under the turn they belong to instead of running a separate log beside it. */
+  log: LogLine[]
 }
 
 export interface LogLine {
@@ -52,6 +61,12 @@ export interface LogLine {
   source: 'device' | 'agent'
   text: string
   tone: 'plain' | 'signal' | 'fault'
+}
+
+/** Format a wall clock for the feed. Seconds included: the whole point is proving these are
+ *  separate moments, and hh:mm on four frames of one turn would read as one timestamp. */
+export function clock(d: Date): string {
+  return d.toLocaleTimeString('vi-VN', { hour12: false })
 }
 
 export const STAGE_ORDER: StageId[] = ['mic', 'vad', 'stt', 'agent', 'tts']

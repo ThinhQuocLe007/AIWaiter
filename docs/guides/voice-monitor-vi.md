@@ -16,16 +16,52 @@ URL: `http://<SERVER_IP>:8000/monitor` (production) hoặc `http://localhost:517
 
 | Khu vực | Đọc cái gì ở đó |
 |---------|-----------------|
-| **Rack tín hiệu** (hàng trên) | 5 module `MIC → VAD → STT → AGENT → TTS`. Module đang chạy sáng hổ phách, dây nối vào nó có xung sáng chạy. Module đã xong đổi sang xanh teal kèm số đo. Module lỗi chuyển đỏ đất. |
-| **Hội thoại** | Đúng những gì robot **nghe** và **nói**. Lượt đang chạy nằm trên cùng và điền dần: nghe được trước, rồi từng câu trả lời hiện ra đúng lúc agent sinh ra nó. |
-| **Sổ đo** | Mỗi lượt một thanh, chia đoạn theo chặng: *khách nói · Whisper · LLM tới câu đầu · robot nói*. Tất cả các thanh vẽ theo cùng một thang, nên nhìn là biết thời gian đi đâu và lượt nào chậm bất thường. |
-| **Nhật ký sự kiện** | Từng frame một, ghi rõ do **THIẾT BỊ** (Jetson) hay **AGENT** (server) gửi. Đây là phần chứng minh số liệu có nguồn gốc. |
+| **Rack tín hiệu** (hàng trên) | 5 module `MIC → VAD → STT → AGENT → TTS`. Module đang chạy sáng hổ phách, dây nối vào nó có xung sáng chạy. Module đã xong đổi sang xanh teal kèm số đo. |
+| **Diễn biến** (cột trái) | Một dòng chảy duy nhất, lượt mới nhất trên cùng. Mỗi lượt gồm: khách nói gì, robot trả lời gì, số đo của lượt, và **ngay bên dưới là các frame thô** sinh ra lượt đó — ghi rõ do **THIẾT BỊ** (Jetson) hay **AGENT** (server) gửi. |
+| **Sổ đo** (cột phải) | Mỗi lượt một thanh, chia đoạn theo chặng: *khách nói · Whisper · LLM tới câu đầu · robot nói*. Tất cả các thanh vẽ theo cùng một thang, nên nhìn là biết thời gian đi đâu và lượt nào chậm bất thường. |
+
+*Diễn biến* trước đây là hai ô riêng (*Hội thoại* và *Nhật ký sự kiện*) nằm cạnh nhau. Gộp lại vì
+đọc một lượt phải liếc hai chỗ rồi tự ghép theo dấu thời gian; giờ mỗi lượt tự mang bằng chứng
+của nó. Chữ lời thoại ~1rem, frame ~0.7rem — chênh lệch cỡ chữ là thứ giữ cho đống frame không
+nuốt mất hai câu mà người ta thật sự đến để đọc.
 
 Nút điều khiển: **Bắt đầu nghe** · **Dừng** · **Hội thoại mới** (xoá trí nhớ hội thoại của bàn) ·
 **Tắt loa** (robot vẫn trả lời, chỉ không phát tiếng).
 
+### Hai thanh trượt Loa / Mic
+
+Kéo trực tiếp âm lượng loa và độ nhạy mic **của Jetson** ngay trên trang, không phải SSH vào gõ
+`pactl`. Đây là điều khiển thật: nó chạy `pactl set-sink-volume` / `set-source-volume` trên máy
+đó, nên `pactl` và thanh trượt luôn nói cùng một con số.
+
+| | Khoảng | Vì sao |
+|---|---|---|
+| **Loa** | 0–100% | Quá 100% PulseAudio khuếch đại số — hội trường nghe ra tiếng rè, không phải to hơn |
+| **Mic** | 0–150% | Mic USB rẻ trong hội chợ ồn thật sự cần phần dư này; mic quá nhạy cùng lắm mất một chữ |
+
+Thanh trượt **mờ và không kéo được** khi Jetson chưa báo mức thật lên (chưa kết nối, hoặc máy đó
+không có `pactl`). Giá trị hiển thị luôn là mức **đọc ngược lại từ pactl** sau khi đặt, không phải
+con số vừa kéo — pactl có thể tự kẹp lại, và một thanh trượt khăng khăng giữ giá trị phần cứng đã
+từ chối thì tệ hơn là để nó bật về.
+
 Giao diện là **nền sáng** (giấy ấm), cố ý — hội chợ có đèn chiếu mạnh, nền tối bị loá và nhìn
 từ xa không rõ chữ.
+
+### Trang không được la làng
+
+Khách VIP đứng xem cùng phòng, nên trang này **không bao giờ hiện lỗi đỏ cho những chuyện bình
+thường**:
+
+- Rớt WS → góc phải ghi *"Đang kết nối…"* màu xám, không phải *"Mất kết nối hub"* màu đỏ. Client
+  tự nối lại trong vài giây, nên báo động đỏ gần như luôn sai vào lúc người ta đọc xong nó.
+- Không ai nói, khách bấm Dừng, Whisper không nghe rõ → module chuyển **xám** kèm chữ bình thản
+  (*"không có ai nói"*, *"đã dừng"*, *"không nghe rõ"*). Đây là pipeline chạy đúng trên đầu vào
+  rỗng, không phải hỏng.
+- Chỉ **một** trường hợp còn màu đỏ: agent thật sự lỗi. Ngay cả khi đó trang chỉ ghi *"chưa trả
+  lời được"* — traceback đi vào console của trình duyệt, không lên màn hình.
+
+Chi tiết kỹ thuật vẫn còn, nằm trong **tooltip**: rê chuột lên đèn kết nối hoặc ô chọn thiết bị.
+Khách không rê chuột; người vận hành thì có.
 
 ### Kích thước màn hình
 
@@ -109,13 +145,15 @@ vẫn hiện trên `panel` của bếp.
 
 | Hiện tượng trên màn hình | Nghĩa là gì | Làm gì |
 |---|---|---|
-| Ô chọn thiết bị ghi *"chưa có mic nào"*, các nút mờ đi | Jetson chưa nối vào hub | Trên Jetson chạy `make voice`; kiểm tra `ORCHESTRATOR_URL` trong `.env` của Jetson trỏ đúng IP server |
-| Góc phải ghi *"Mất kết nối hub"* | Trang không nối được WS | `make backend` đã chạy chưa; mở đúng cổng 8000 chưa |
-| Bấm nghe, hiện *"Mic không nhận lệnh"* | Hub thấy trang nhưng không thấy mic đó | Jetson vừa rớt mạng — danh sách thiết bị tự làm mới mỗi 5 giây, đợi rồi chọn lại |
-| MIC đỏ, *"không nghe thấy"* | Hết 15 giây chờ mà VAD không thấy tiếng nói | Kiểm tra đường âm thanh PulseAudio trên Jetson — xem [`jetson-demo-runbook-vi.md`](jetson-demo-runbook-vi.md) |
-| STT đỏ, *"không dùng được"* | Whisper trả về rỗng, **hoặc** bộ lọc đã chặn một câu bịa | Bình thường khi có tiếng động lạ. Xem log Jetson để biết câu bị chặn là gì (`STT bỏ qua…`) |
+| Ô chọn thiết bị ghi *"chưa có mic"*, các nút mờ đi | Jetson chưa nối vào hub | Trên Jetson chạy `make voice`; kiểm tra `ORCHESTRATOR_URL` trong `.env` của Jetson trỏ đúng IP server |
+| Góc phải ghi *"Đang kết nối…"* mãi không xanh | Trang không nối được WS | `make backend` đã chạy chưa; mở đúng cổng 8000 chưa |
+| Bấm nghe, hiện *"Robot chưa sẵn sàng."* | Hub thấy trang nhưng không thấy mic đó | Jetson vừa rớt mạng — danh sách thiết bị tự làm mới mỗi 5 giây, đợi rồi chọn lại |
+| MIC xám, *"không có ai nói"* | Hết 15 giây chờ mà VAD không thấy tiếng nói | Nếu lặp lại: kiểm tra đường âm thanh PulseAudio trên Jetson — xem [`jetson-demo-runbook-vi.md`](jetson-demo-runbook-vi.md). Thử kéo thanh **Mic** lên |
+| STT xám, *"không nghe rõ"* | Whisper trả về rỗng, **hoặc** bộ lọc đã chặn một câu bịa | Bình thường khi có tiếng động lạ. Xem log Jetson để biết câu bị chặn là gì (`STT bỏ qua…`) |
 | AGENT sáng mãi không tắt | LLM chưa trả lời xong hoặc agent chết | Xem terminal `make agent` |
+| AGENT đỏ, *"chưa trả lời được"* | Gọi agent thất bại | Lỗi thật nằm ở console trình duyệt (F12) và ở terminal `make agent` |
 | Nghe và chép được, nhưng AGENT không nhúc nhích | Jetson không gọi được server | Kiểm tra `AGENT_URL` trong `.env` của Jetson |
+| Hai thanh Loa/Mic mờ, hiện `—` | Jetson chưa báo mức lên, hoặc máy đó không có `pactl` | Trên Jetson: `which pactl`. Nếu có mà vẫn mờ thì code `src/edge_voice/` trên Jetson là bản cũ — đồng bộ lại |
 
 ---
 
@@ -125,7 +163,9 @@ vẫn hiện trên `panel` của bếp.
 |------|---------|
 | [`src/frontends/monitor/`](../../src/frontends/monitor/) | Trang web (Vue 3 + Vite, cổng dev 5176) |
 | [`src/frontends/monitor/src/pipeline.ts`](../../src/frontends/monitor/src/pipeline.ts) | Mô hình một lượt: các chặng, bản ghi lượt, định dạng số |
-| [`src/edge_voice/main.py`](../../src/edge_voice/main.py) | Lớp `Telemetry` + các mốc báo cáo trong một lượt |
-| [`src/server_orchestrator/routers/voice.py`](../../src/server_orchestrator/routers/voice.py) | `/voice/listen|cancel|mute|new-chat` theo `robot_id`, `/voice/devices`, fan-out sang `role=monitor` |
+| [`src/frontends/monitor/src/components/Timeline.vue`](../../src/frontends/monitor/src/components/Timeline.vue) | Ô *Diễn biến* — lời thoại và frame của cùng một lượt gộp làm một |
+| [`src/edge_voice/main.py`](../../src/edge_voice/main.py) | Lớp `Telemetry` + các mốc báo cáo trong một lượt, và lệnh `set_audio_level` |
+| [`src/edge_voice/audio_levels.py`](../../src/edge_voice/audio_levels.py) | Đọc/đặt mức loa + mic qua `pactl` (đường tương thích cả pactl 13 lẫn 15) |
+| [`src/server_orchestrator/routers/voice.py`](../../src/server_orchestrator/routers/voice.py) | `/voice/listen|cancel|mute|new-chat|audio-level` theo `robot_id`, `/voice/devices`, fan-out sang `role=monitor` |
 | [`src/server_orchestrator/realtime/ws.py`](../../src/server_orchestrator/realtime/ws.py) | Nhận frame `telemetry` từ mic, phát lại thành `voice.device` |
 | [`src/agent_brain/server.py`](../../src/agent_brain/server.py) | Bắn `voice.sentence` từng câu + số đo độ trễ trong `/chat/stream` |

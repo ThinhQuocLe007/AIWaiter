@@ -47,14 +47,20 @@ make build          # build cả 4 web: customer_ui, kiosk, panel, monitor
 
 ### 0.3 Jetson — đồng bộ code voice mới
 
-Máy Jetson phải có bản [`src/edge_voice/main.py`](../../src/edge_voice/main.py) mới nhất (lớp
-`Telemetry`). Thiếu nó thì rack trên màn hình đứng im, chỉ mỗi ô AGENT sáng.
+Máy Jetson phải có bản [`src/edge_voice/`](../../src/edge_voice/) mới nhất. Hai thứ phụ thuộc
+vào nó, và thiếu bản mới thì hỏng **âm thầm** chứ không báo lỗi:
+
+- lớp `Telemetry` trong `main.py` — thiếu thì rack trên màn hình đứng im, chỉ mỗi ô AGENT sáng;
+- `audio_levels.py` + nhánh lệnh `set_audio_level` — thiếu thì hai thanh trượt Loa/Mic mờ vĩnh viễn.
 
 ```bash
 # trên Jetson
 cd /home/orin/AI_voice/AIWaiter
 git pull            # KHÔNG chạy `uv sync` trần — xem jetson-boot-runbook-vi.md mục 0a
-grep -c "class Telemetry" src/edge_voice/main.py    # phải ra 1
+grep -c "class Telemetry" src/edge_voice/main.py     # phải ra 1
+grep -c "set_audio_level" src/edge_voice/main.py     # phải ra 1 trở lên
+ls src/edge_voice/audio_levels.py                    # phải có
+which pactl                                          # phải có, nếu không thanh trượt sẽ mờ
 ```
 
 ### 0.4 Kiểm tra IP hai máy nhìn thấy nhau
@@ -199,6 +205,9 @@ cục desktop** — bố cục 7" giấu dòng đó đi.
 
 ## 4. Kịch bản nói thử (60 giây)
 
+Trước khi mời ai xem: bấm **Bắt đầu nghe**, nói thử một câu, rồi chỉnh **Loa** và **Mic** bằng hai
+thanh trượt cho vừa với độ ồn của phòng. Không cần SSH, không cần gõ `pactl`.
+
 1. Bấm **Bắt đầu nghe** → ô `MIC` sáng hổ phách, ghi "đang thu".
 2. Nói: *"cho tôi một tô phở bò tái nạm"*.
 3. Nhìn theo tín hiệu chạy: `VAD` chốt độ dài câu → `STT` hiện số ms của Whisper và câu chép được
@@ -227,6 +236,9 @@ khi STT xong nên hai số cộng lại chứ không chồng nhau. Chi tiết:
 | `STT` đỏ "không dùng được" | Whisper ra rỗng, **hoặc** bộ lọc chặn câu bịa | Bình thường khi có tiếng động lạ. Xem log `[voice] STT bỏ qua…` |
 | `AGENT` sáng mãi | LLM chưa xong hoặc agent chết | Xem terminal `make agent` |
 | Rack đứng im, chỉ `AGENT` sáng | Jetson chạy code cũ, chưa có telemetry | Làm lại [mục 0.3](#03-jetson--đồng-bộ-code-voice-mới) |
+| Hai thanh Loa/Mic mờ, hiện `—` | Jetson chạy code cũ, hoặc không có `pactl` | Làm lại [mục 0.3](#03-jetson--đồng-bộ-code-voice-mới) |
+| Nói mà `MIC` xám *"không có ai nói"* | Mic quá nhỏ so với tiếng ồn hội chợ | Kéo thanh **Mic** lên 120–150%, nói lại |
+| Người xem kêu không nghe rõ robot | Loa Jetson đang nhỏ | Kéo thanh **Loa** lên. Trần là 100% — quá đó chỉ rè thêm |
 | Màn rời không mở trình duyệt | Chưa đăng nhập desktop nên chưa có phiên `:0` | Đăng nhập trên màn rời rồi chạy lại; hoặc mở tay Firefox vào URL đó rồi F11 |
 
 ---

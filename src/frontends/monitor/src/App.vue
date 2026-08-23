@@ -8,14 +8,17 @@
       </div>
 
       <div class="console">
-        <div class="link" :class="{ on: connected }">
-          <span class="pip"></span>{{ connected ? 'Hub realtime' : 'Mất kết nối hub' }}
+        <!-- Calm on purpose. This used to go alarm-red the moment the socket blinked, which an
+             audience reads as a crash — the client reconnects on its own within seconds. The
+             technical wording lives in the tooltip, for whoever is actually operating it. -->
+        <div class="link" :class="{ on: connected }" :title="linkDetail">
+          <span class="pip"></span>{{ connected ? 'Hub realtime' : 'Đang kết nối…' }}
         </div>
 
         <label class="pick">
           <span>Thiết bị</span>
-          <select v-model="robotId" :disabled="!devices.length">
-            <option v-if="!devices.length" value="">chưa có mic nào</option>
+          <select v-model="robotId" :disabled="!devices.length" :title="deviceHint">
+            <option v-if="!devices.length" value="">chưa có mic</option>
             <option v-for="d in devices" :key="d.robot_id" :value="d.robot_id">
               {{ d.robot_id }}
             </option>
@@ -38,44 +41,63 @@
       <button class="act" :disabled="!robotId" :class="{ armed: muted }" @click="onToggleMute">
         {{ muted ? 'Bật loa' : 'Tắt loa' }}
       </button>
-      <span v-if="commandNote" class="note" :class="{ bad: commandBad }">{{ commandNote }}</span>
+
+      <!-- The two sliders drive pactl on the Jetson, not a gain in this page. `levelsKnown` is
+           false until the device has reported real values; a slider that looks live but moves
+           nothing is worse than one that is visibly out of service. -->
+      <label class="dial" :class="{ off: !levelsKnown }">
+        <span class="cap">Loa</span>
+        <input
+          type="range" min="0" max="100" step="5"
+          :disabled="!levelsKnown"
+          :value="speaker"
+          @input="onLevel('speaker', $event)"
+        />
+        <span class="val">{{ levelsKnown ? `${speaker}%` : '—' }}</span>
+      </label>
+
+      <label class="dial" :class="{ off: !levelsKnown }">
+        <span class="cap">Mic</span>
+        <input
+          type="range" min="0" max="150" step="5"
+          :disabled="!levelsKnown"
+          :value="micLevel"
+          @input="onLevel('mic', $event)"
+        />
+        <span class="val">{{ levelsKnown ? `${micLevel}%` : '—' }}</span>
+      </label>
+
       <span class="spacer"></span>
+      <span v-if="commandNote" class="note">{{ commandNote }}</span>
       <span class="live" :class="{ on: turnRunning }">
         <template v-if="turnRunning">Lượt đang chạy · {{ fmtMs(elapsed) }}</template>
         <template v-else>Chờ lệnh</template>
       </span>
-
-      <p v-if="!devices.length" class="hookup">
-        Chưa thấy mic nào. Trên Jetson chạy <code>make voice</code>, và kiểm tra
-        <code>ORCHESTRATOR_URL</code> trong <code>.env</code> của Jetson trỏ về máy chủ này.
-      </p>
     </div>
 
     <SignalChain :stages="stages" :active="activeStage" />
 
     <div class="floor">
-      <Conversation :turns="turns" :live="liveTurn" :ready="devices.length > 0" />
-      <div class="right">
-        <TurnLedger :turns="turns" />
-        <EventLog :lines="log" />
-      </div>
+      <Timeline :turns="turns" :live="liveTurn" :live-log="liveLog" :ready="devices.length > 0" />
+      <TurnLedger :turns="turns" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { connectEvents, type WsHandle } from '@shared/ws'
-import Conversation from './components/Conversation.vue'
-import EventLog from './components/EventLog.vue'
 import SignalChain from './components/SignalChain.vue'
+import Timeline from './components/Timeline.vue'
 import TurnLedger from './components/TurnLedger.vue'
 import {
   cancelTurn,
   fetchDevices,
   newConversation,
+  setAudioLevel,
   setMuted,
   startListening,
+  type AudioTarget,
   type VoiceDevice,
 } from './api'
 import {
@@ -93,18 +115,36 @@ const robotId = ref('')
 const tableId = ref(1)
 const muted = ref(false)
 const commandNote = ref('')
-const commandBad = ref(false)
+
+// Speaker / mic levels as pactl on the Jetson reports them. `levelsKnown` gates the sliders:
+// until a device has actually told us where they sit, there is nothing honest to render.
+const speaker = ref(0)
+const micLevel = ref(0)
+const levelsKnown = ref(false)
 
 const stages = reactive(blankStages())
 const activeStage = ref<StageId | null>(null)
 const turns = ref<TurnRecord[]>([])
-const log = ref<LogLine[]>([])
+// Frames of the turn in flight. They move into that turn's record when it closes, so the feed
+// can show each turn's own evidence under it instead of a separate log running alongside.
+const liveLog = ref<LogLine[]>([])
 
 // The turn being assembled right now. Null between turns — which is also what tells the UI
 // whether "Dừng" can do anything.
 const liveTurn = ref<Partial<TurnRecord> & { replyParts: string[] } | null>(null)
 const turnRunning = computed(() => liveTurn.value !== null)
 const elapsed = ref(0)
+
+const linkDetail = computed(() =>
+  connected.value
+    ? 'Đã nối tới hub realtime của server.'
+    : 'Chưa nối được hub. Kiểm tra make backend trên server và mạng Netbird — trang tự thử lại.',
+)
+const deviceHint = computed(() =>
+  devices.value.length
+    ? 'Mic đang kết nối tới hub.'
+    : 'Chưa mic nào kết nối. Trên Jetson chạy make voice, và kiểm tra ORCHESTRATOR_URL trong .env của Jetson.',
+)
 
 let logSeq = 0
 let turnSeq = 0
@@ -113,10 +153,10 @@ let ticker: ReturnType<typeof setInterval> | undefined
 let ws: WsHandle | null = null
 
 function addLog(source: LogLine['source'], text: string, tone: LogLine['tone'] = 'plain') {
-  log.value.unshift({ id: ++logSeq, at: new Date(), source, text, tone })
-  // The log is evidence, not history: keep it short enough that the newest line is always the
-  // top one on screen, and let the ledger carry what actually needs to persist.
-  if (log.value.length > 60) log.value.length = 60
+  liveLog.value.push({ id: ++logSeq, at: new Date(), source, text, tone })
+  // A turn's own frame list, not a running log: it is bounded by the turn, and a runaway stream
+  // of frames between turns must not be able to grow without limit.
+  if (liveLog.value.length > 40) liveLog.value.splice(0, liveLog.value.length - 40)
 }
 
 function setStage(id: StageId, state: StageState, readout?: string, detail?: string) {
@@ -135,6 +175,7 @@ function resetStages() {
 function beginTurn() {
   resetStages()
   liveTurn.value = { replyParts: [], sentences: 0 }
+  liveLog.value = []
   turnStartedAt = Date.now()
   elapsed.value = 0
   clearInterval(ticker)
@@ -146,12 +187,14 @@ function beginTurn() {
 function endTurn(outcome: TurnRecord['outcome'], note?: string) {
   clearInterval(ticker)
   const t = liveTurn.value
+  const frames = liveLog.value
   liveTurn.value = null
+  liveLog.value = []
   activeStage.value = null
   if (!t) return
   // A turn that never got as far as a transcript has nothing to compare against the others, so
-  // it is logged but kept out of the ledger — an empty bar there would read as a fast turn.
-  if (!t.heard && outcome !== 'ok') return
+  // it is kept out of the ledger's bars — but it still earns a feed entry now that the feed is
+  // the only place the frames live. Dropping it would silently swallow "nobody spoke".
   turns.value.unshift({
     n: ++turnSeq,
     at: new Date(),
@@ -166,14 +209,22 @@ function endTurn(outcome: TurnRecord['outcome'], note?: string) {
     sentences: t.sentences ?? 0,
     outcome,
     note,
+    log: frames,
   })
-  if (turns.value.length > 40) turns.value.length = 40
+  if (turns.value.length > 30) turns.value.length = 30
 }
 
 /** Device telemetry — the half of the turn only the Jetson can see. */
 function onDeviceFrame(ev: Record<string, any>) {
   const stage = String(ev.stage ?? '')
   switch (stage) {
+    case 'levels':
+      // State, not an event: where this mic's mixer actually sits. Only adopt it for the device
+      // the operator is driving, or a second Jetson would yank the sliders under their finger.
+      if (ev.robot_id && robotId.value && ev.robot_id !== robotId.value) break
+      adoptLevels(ev)
+      break
+
     case 'listening':
       beginTurn()
       setStage('mic', 'active', 'đang thu', 'mic mở')
@@ -199,17 +250,27 @@ function onDeviceFrame(ev: Record<string, any>) {
       addLog('device', `chép được: “${ev.text}” (${fmtMs(ev.stt_ms)})`, 'signal')
       break
 
+    // The next three are the pipeline working correctly on an empty input, not failures — they
+    // land on `quiet`, which is grey. Only the agent error below is allowed to go red.
     case 'empty':
-      setStage('stt', 'fault', 'không dùng được', 'im lặng, hoặc câu bịa đã bị lọc')
-      addLog('device', 'Whisper không trả về câu nào dùng được', 'fault')
+      setStage('stt', 'quiet', 'không nghe rõ', 'im lặng, hoặc câu bịa đã bị lọc')
+      addLog('device', 'Whisper không trả về câu nào dùng được')
       endTurn('empty')
       break
 
     case 'timeout':
-      setStage('mic', 'fault', 'không nghe thấy', `chờ ${fmtMs(ev.waited_ms)}`)
+      setStage('mic', 'quiet', 'không có ai nói', `chờ ${fmtMs(ev.waited_ms)}`)
       setStage('vad', 'idle')
-      addLog('device', 'hết giờ chờ — không có ai nói', 'fault')
+      addLog('device', 'hết giờ chờ — không có ai nói')
       endTurn('timeout')
+      break
+
+    case 'cancelled':
+      addLog('device', 'đã dừng lượt theo lệnh')
+      for (const id of Object.keys(stages) as StageId[]) {
+        if (stages[id].state === 'active') setStage(id, 'quiet', 'đã dừng')
+      }
+      endTurn('cancelled')
       break
 
     case 'thinking':
@@ -234,22 +295,17 @@ function onDeviceFrame(ev: Record<string, any>) {
       endTurn('ok')
       break
 
-    case 'cancelled':
-      addLog('device', `khách bấm dừng (${ev.at ?? '?'})`, 'fault')
-      for (const id of Object.keys(stages) as StageId[]) {
-        if (stages[id].state === 'active') setStage(id, 'fault', 'đã dừng')
-      }
-      endTurn('cancelled')
-      break
-
     case 'muted':
       muted.value = Boolean(ev.muted)
       addLog('device', ev.muted ? 'tắt loa' : 'bật loa')
       break
 
     case 'error':
-      setStage('agent', 'fault', 'lỗi', String(ev.detail ?? ''))
-      addLog('device', `lỗi gọi agent: ${ev.detail}`, 'fault')
+      // The one real failure. Even here the exception text stays out of the readout and goes in
+      // the tooltip + the console — an audience should not be reading a Python traceback.
+      setStage('agent', 'fault', 'chưa trả lời được', 'thử lại lượt này')
+      console.error('[monitor] agent error:', ev.detail)
+      addLog('agent', 'agent không trả lời được lượt này', 'fault')
       endTurn('error', String(ev.detail ?? ''))
       break
 
@@ -307,21 +363,43 @@ function onAgentEvent(ev: Record<string, any>) {
   }
 }
 
+// Switching to another mic invalidates the sliders: they were showing the previous Jetson's
+// levels, and silently leaving them there would have the operator drag a number that belongs to
+// a machine they are no longer driving. Dropping the flag makes the next poll re-adopt.
+watch(robotId, () => (levelsKnown.value = false))
+
+/** Take mixer levels from a device frame or a /devices row. */
+function adoptLevels(src: { speaker?: number | null; mic?: number | null; can_set?: boolean }) {
+  if (src.can_set === false || src.speaker == null || src.mic == null) {
+    levelsKnown.value = false
+    return
+  }
+  speaker.value = src.speaker
+  micLevel.value = src.mic
+  levelsKnown.value = true
+}
+
 async function refreshDevices() {
   try {
     const res = await fetchDevices()
     devices.value = res.devices
     if (!robotId.value && res.devices.length) robotId.value = res.devices[0].robot_id
     if (!tableId.value) tableId.value = res.default_table_id
+    // Only until the first real value lands. After that the device's own `levels` frames are the
+    // authority — this poll runs every 5 s and would otherwise fight a slider mid-drag.
+    if (!levelsKnown.value) {
+      const d = res.devices.find((x) => x.robot_id === robotId.value)
+      if (d) adoptLevels(d)
+    }
   } catch {
     devices.value = []
   }
 }
 
 function ack(res: { status: string }, okText: string) {
-  commandBad.value = res.status !== 'ok'
-  commandNote.value =
-    res.status === 'ok' ? okText : 'Mic không nhận lệnh — Jetson chưa kết nối hub.'
+  // Deliberately understated, and never red: a command that didn't land is nearly always a
+  // Jetson that blinked, and it resolves itself. The operator sees it; the audience doesn't read it.
+  commandNote.value = res.status === 'ok' ? okText : 'Robot chưa sẵn sàng.'
   setTimeout(() => (commandNote.value = ''), 4000)
 }
 
@@ -334,7 +412,7 @@ async function onCancel() {
 async function onNewChat() {
   const res = await newConversation(robotId.value, tableId.value)
   turns.value = []
-  log.value = []
+  liveLog.value = []
   resetStages()
   ack(res, 'Đã xoá trí nhớ hội thoại của bàn này.')
 }
@@ -343,6 +421,16 @@ async function onToggleMute() {
   const res = await setMuted(robotId.value, tableId.value, next)
   if (res.status === 'ok') muted.value = next
   ack(res, next ? 'Đã tắt loa robot.' : 'Đã bật loa robot.')
+}
+
+// Slider moves are optimistic locally so the handle tracks the finger, then corrected by the
+// `levels` frame the device sends back after pactl has actually clamped and applied it.
+function onLevel(target: AudioTarget, e: Event) {
+  const pct = Number((e.target as HTMLInputElement).value)
+  if (target === 'speaker') speaker.value = pct
+  else micLevel.value = pct
+  if (!robotId.value) return
+  setAudioLevel(robotId.value, target, pct).catch(() => {})
 }
 
 onMounted(() => {

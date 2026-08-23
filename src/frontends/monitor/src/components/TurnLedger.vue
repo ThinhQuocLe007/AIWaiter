@@ -5,10 +5,10 @@
       <span class="hint">mỗi lượt một dòng · thời gian chia theo chặng</span>
     </header>
 
-    <p v-if="!turns.length" class="empty">Chưa đo lượt nào.</p>
+    <p v-if="!measured.length" class="empty">Chưa đo lượt nào.</p>
 
     <ol v-else class="rows">
-      <li v-for="t in turns" :key="t.n" class="row">
+      <li v-for="t in measured" :key="t.n" class="row">
         <span class="n">#{{ t.n }}</span>
 
         <div class="bar" :title="barTitle(t)">
@@ -35,13 +35,20 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import { fmtMs, type TurnRecord } from '../pipeline'
 
 const props = defineProps<{ turns: TurnRecord[] }>()
 
+/** Only turns that actually took measurable time. A turn where nobody spoke belongs in the feed
+ *  — it is a real thing that happened — but it has no phases to draw, and an empty bar sitting
+ *  next to real ones reads as a turn that finished instantly rather than one that never ran. */
+const measured = computed(() => props.turns.filter((t) => total(t) > 0))
+
 /** Longest turn on screen — every bar is drawn against it so the rows compare honestly. */
 function scale(): number {
-  return Math.max(1, ...props.turns.map(total))
+  return Math.max(1, ...measured.value.map(total))
 }
 
 function total(t: TurnRecord): number {
@@ -92,6 +99,9 @@ function label(k: Seg['key']): string {
   border: 1px solid var(--rule);
   border-radius: 3px;
   padding: 1.1rem 1.2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .head {
@@ -118,8 +128,13 @@ h2 {
   margin: 0;
 }
 
-/* Capped and scrolled. The ledger sits in an `auto` grid row above the event log, so without a
-   ceiling forty accumulated turns would grow the row and push the log off the bottom. */
+/* Holds the column open so the legend stays pinned to the bottom whether or not there are bars
+   — otherwise the key jumps up under the empty message and reads as part of it. */
+.empty { flex: 1 1 auto; }
+
+/* Fills the column and scrolls inside it. The ledger no longer shares its column with the event
+   log, so the bars get all the height that is going — but the legend below must stay pinned, or
+   the one thing that explains the colours scrolls away exactly when the bars pile up. */
 .rows {
   list-style: none;
   margin: 0 0 0.9rem;
@@ -127,7 +142,8 @@ h2 {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  max-height: 14rem;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
 }
 
@@ -165,6 +181,7 @@ h2 {
 .key {
   list-style: none;
   margin: 0;
+  flex: 0 0 auto;
   padding: 0.7rem 0 0;
   border-top: 1px solid var(--rule);
   display: flex;
@@ -182,8 +199,7 @@ h2 {
 .sw.llm { background: var(--lamp-lit); }
 .sw.talk { background: color-mix(in srgb, var(--lamp-lit) 45%, var(--rule)); }
 
-/* The 7" panel. Roughly four rows of ledger before it scrolls, which leaves the event log
-   underneath enough height to be worth looking at. */
+/* The 7" panel. */
 @media (max-height: 700px) {
   .ledger { padding: 0.45rem 0.55rem 0.45rem; border-radius: 2px; }
   .head { margin-bottom: 0.35rem; }
@@ -191,7 +207,7 @@ h2 {
   .hint { display: none; }
   .empty { font-size: 0.72rem; }
 
-  .rows { max-height: 6.2rem; gap: 0.25rem; margin-bottom: 0.5rem; }
+  .rows { gap: 0.25rem; margin-bottom: 0.5rem; }
   .row { grid-template-columns: 1.7rem 1fr 2.7rem; gap: 0.4rem; }
   .n,
   .total { font-size: 0.66rem; }

@@ -113,6 +113,14 @@ async def _handle_voice_device_message(dispatcher, robot_id: str, raw: str) -> N
     if mtype == "voice_turn":
         await dispatcher.on_voice_turn(robot_id, bool(msg.get("active")))
     elif mtype == "telemetry":
+        # One stage is also worth remembering, not just relaying: `levels` is state (where the
+        # speaker/mic sliders sit), while every other stage is an event that only means anything
+        # at the instant it arrives. Cache it so a monitor opened later starts with real values.
+        if msg.get("stage") == "levels":
+            manager.set_voice_levels(
+                robot_id,
+                {k: msg.get(k) for k in ("speaker", "mic", "can_set")},
+            )
         # Stamp the sender server-side: the monitor must not have to trust (or the device bother
         # sending) an id that the socket already establishes.
         await manager.broadcast("monitor", {**msg, "type": "voice.device", "robot_id": robot_id})

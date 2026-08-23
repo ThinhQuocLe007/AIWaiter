@@ -13,8 +13,10 @@ import), keeping the standalone-orchestrator boundary intact — the bridge is p
 
 import asyncio
 import httpx
+from typing import Literal
+
 from fastapi import APIRouter
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from ..config import settings
 from ..realtime.connection_manager import manager
@@ -150,7 +152,7 @@ async def voice_event(ev: VoiceEvent) -> dict:
 MONITOR_TABLE_ID = 1
 
 
-async def _send_to_device(req: "ListenRequest | MuteRequest", message: dict) -> bool:
+async def _send_to_device(req: "ListenRequest | MuteRequest | AudioLevelRequest", message: dict) -> bool:
     """Deliver one command to the mic `req` addresses — by robot id if it gave one, else by table."""
     if req.robot_id:
         return await manager.send_to_voice_device_by_id(req.robot_id, message)
@@ -232,6 +234,31 @@ async def voice_mute(req: MuteRequest) -> dict:
     return {"status": "ok" if ok else "no_device"}
 
 
+class AudioLevelRequest(BaseModel):
+    """The monitor's two sliders: how loud the robot speaks, and how hot its microphone runs.
+
+    Distinct from /mute, which is a latch on our own TTS playback. This moves the *machine's*
+    PulseAudio levels on the Jetson, which is what actually decides whether a hall of people can
+    hear the robot and whether Whisper gets a usable signal. The device is the only thing that
+    knows the real value: it clamps, reads back from pactl and pushes a `levels` telemetry frame,
+    so the answer here is only "the command was delivered", never "the level is now N".
+    """
+
+    table_id: int | None = None
+    robot_id: str | None = None
+    target: Literal["speaker", "mic"]
+    percent: int = Field(ge=0, le=150)
+
+
+@router.post("/audio-level")
+async def voice_audio_level(req: AudioLevelRequest) -> dict:
+    """Forward one slider move to the robot's Jetson."""
+    ok = await _send_to_device(
+        req, {"type": "set_audio_level", "target": req.target, "percent": req.percent}
+    )
+    return {"status": "ok" if ok else "no_device"}
+
+
 class CartSyncItem(BaseModel):
     name: str
     quantity: int
@@ -304,6 +331,16 @@ async def voice_devices() -> dict:
     """
     ids = manager.voice_device_ids()
     return {
-        "devices": [{"robot_id": rid, "busy": manager.voice_busy(rid)} for rid in ids],
+        "devices": [
+            {
+                "robot_id": rid,
+                "busy": manager.voice_busy(rid),
+                # Last levels this mic reported. The device pushes these on connect and after
+                # every change; repeating them here is purely so a monitor page opened later
+                # doesn't have to wait for the next change to learn where the sliders sit.
+                **manager.voice_levels(rid),
+            }
+            for rid in ids
+        ],
         "default_table_id": MONITOR_TABLE_ID,
     }

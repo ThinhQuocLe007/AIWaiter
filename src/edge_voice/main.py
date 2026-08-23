@@ -38,6 +38,7 @@ from dotenv import load_dotenv
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from src.agent_brain.config import settings
+from src.edge_voice import audio_levels
 from src.edge_voice.log import log_struct, logger
 from src.edge_voice.output.tts_engine import StreamingPlayer, speak_sentence, speak_streaming, warmup as tts_warmup
 from src.edge_voice.perception import PhoWhisperSTT, SileroVAD
@@ -236,6 +237,20 @@ async def voice_device_loop(vad: SileroVAD, agent_client: httpx.Client, player: 
         except Exception:  # link dropped — the server clears the flag on disconnect anyway
             pass
 
+    async def report_levels() -> None:
+        """Push the real mixer levels up so the monitor's sliders show the truth.
+
+        Off the loop thread: pactl is a subprocess, and this runs on the same receive loop that
+        has to stay free for a cancel arriving mid-turn. `can_set=False` (no pactl on this box)
+        is what disables the sliders in the web rather than leaving them lying about control
+        they don't have.
+        """
+        if not audio_levels.available():
+            tel.send("levels", speaker=None, mic=None, can_set=False)
+            return
+        levels = await asyncio.to_thread(audio_levels.get_levels)
+        tel.send("levels", can_set=True, **levels)
+
     # Abort flag of the CURRENT turn, handed to that turn's capture worker. A fresh Event per
     # turn, never a reused one: a cancelled worker can still be parked in a blocking call (the
     # agent stream, the STT queue wait) for seconds after we cancel it, and clearing a SHARED
@@ -252,6 +267,9 @@ async def voice_device_loop(vad: SileroVAD, agent_client: httpx.Client, player: 
                 # the old one closed, so re-assert the hold on the new one.
                 if turn_task is not None and not turn_task.done():
                     await send_turn_state(True)
+                # Levels first, before any command: a monitor that opened while we were away
+                # otherwise shows two sliders parked at zero until someone drags one.
+                await report_levels()
                 async for raw in ws:
                     try:
                         msg = json.loads(raw)
@@ -306,6 +324,17 @@ async def voice_device_loop(vad: SileroVAD, agent_client: httpx.Client, player: 
                         player.set_muted(muted)
                         print(f"[MUTE] {'tắt' if muted else 'bật'} loa trả lời.")
                         tel.send("muted", muted=muted)
+                    elif mtype == "set_audio_level":
+                        # The monitor's two sliders. This moves the machine's real PulseAudio
+                        # levels, not a gain of our own — see audio_levels for why.
+                        target = msg.get("target")
+                        percent = msg.get("percent")
+                        if target in ("speaker", "mic") and isinstance(percent, (int, float)):
+                            actual = await asyncio.to_thread(audio_levels.set_level, target, int(percent))
+                            print(f"[AUDIO] {target} → {actual}%")
+                            await report_levels()
+                        else:
+                            print(f"[WARN] set_audio_level không hợp lệ: {msg!r}")
         except (OSError, websockets.WebSocketException) as e:
             tel.set_socket(None)  # stop writing into a dead socket while we back off
             delay = min(2 ** retry, WS_RETRY_MAX)

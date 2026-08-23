@@ -15,7 +15,15 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 export interface VoiceDevice {
   robot_id: string
   busy: boolean
+  /** Last levels this mic reported, in percent. Undefined until it has reported any — the
+   *  sliders stay disabled rather than guessing a position. */
+  speaker?: number | null
+  mic?: number | null
+  /** False when the device has no `pactl` and therefore no levels to move. */
+  can_set?: boolean
 }
+
+export type AudioTarget = 'speaker' | 'mic'
 
 export async function fetchDevices(): Promise<{ devices: VoiceDevice[]; default_table_id: number }> {
   const res = await fetch(`${API_URL}/voice/devices`)
@@ -40,4 +48,10 @@ export function setMuted(robotId: string, tableId: number, muted: boolean): Prom
 
 export function newConversation(robotId: string, tableId: number): Promise<Ack> {
   return post('/voice/new-chat', { robot_id: robotId, table_id: tableId })
+}
+
+/** Move the Jetson's real PulseAudio level. The reply only says the command was delivered —
+ *  the true value comes back as a `levels` telemetry frame once the device has applied it. */
+export function setAudioLevel(robotId: string, target: AudioTarget, percent: number): Promise<Ack> {
+  return post('/voice/audio-level', { robot_id: robotId, target, percent })
 }
