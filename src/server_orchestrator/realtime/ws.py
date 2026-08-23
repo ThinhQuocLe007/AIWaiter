@@ -2,11 +2,12 @@
 
 Two kinds of clients share this hub:
 
-* **Viewers** (e.g. `role=panel`, `role=customer`): anonymous, read-only. The server
+* **Viewers** (e.g. `role=panel`, `role=customer`, `role=monitor`): anonymous, read-only. The server
   `broadcast()`s events to every socket of the role; inbound messages are ignored. The kitchen
   panel uses this to get new orders/tasks in realtime instead of polling; the customer tablet
   uses `role=customer` to mirror the voice conversation + follow the agent's UI actions (see
-  `routers/voice.py`).
+  `routers/voice.py`). `role=monitor` is the voice-pipeline monitor: it gets the same voice events
+  *plus* the device's own stage telemetry, which no other client cares about.
 * **Robots** (`role=robot&robot_id=robo-1`): identified and two-way. The dispatcher must reach
   one *specific* robot (`send_to_robot`), and the robot reports back (`task_accepted`, `arrived`,
   `task_done`, `heartbeat`) which the dispatcher acts on. So robot sockets are tracked by id and
@@ -92,16 +93,28 @@ async def _handle_robot_message(dispatcher, robot_id: str, raw: str) -> None:
 async def _handle_voice_device_message(dispatcher, robot_id: str, raw: str) -> None:
     """Parse one inbound voice-device frame.
 
-    The only thing a mic reports is `voice_turn {active}` — a turn (listen → LLM → speak) started
-    or finished. The dispatcher uses it to hold this robot's `task.release` until it has stopped
-    talking, so the guest hears the whole reply before the robot drives off.
+    Two kinds arrive:
+
+    * ``voice_turn {active}`` — a turn (listen → LLM → speak) started or finished. The dispatcher
+      uses it to hold this robot's `task.release` until it has stopped talking, so the guest hears
+      the whole reply before the robot drives off.
+    * ``telemetry {stage, ...}`` — the mic narrating its own pipeline (armed → speech → STT → TTS)
+      for the voice monitor. Nothing in the restaurant flow reads it: it is forwarded to
+      ``role=monitor`` viewers and dropped on the floor when nobody is watching. Kept on this
+      existing socket rather than a new HTTP endpoint so the device needs no second connection,
+      and so a stage lands in order with the turn it belongs to.
     """
     try:
         msg = json.loads(raw)
     except json.JSONDecodeError:
         log.warning("bad voice-device frame from %s: %r", robot_id, raw[:200])
         return
-    if msg.get("type") == "voice_turn":
+    mtype = msg.get("type")
+    if mtype == "voice_turn":
         await dispatcher.on_voice_turn(robot_id, bool(msg.get("active")))
+    elif mtype == "telemetry":
+        # Stamp the sender server-side: the monitor must not have to trust (or the device bother
+        # sending) an id that the socket already establishes.
+        await manager.broadcast("monitor", {**msg, "type": "voice.device", "robot_id": robot_id})
     else:
-        log.warning("unknown voice-device message type=%r from %s", msg.get("type"), robot_id)
+        log.warning("unknown voice-device message type=%r from %s", mtype, robot_id)

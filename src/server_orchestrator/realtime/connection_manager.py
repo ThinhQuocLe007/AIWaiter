@@ -116,6 +116,16 @@ class ConnectionManager:
         robot_id = self._table_to_robot.get(table_id)
         if robot_id is None:
             return False
+        return await self.send_to_voice_device_by_id(robot_id, message)
+
+    async def send_to_voice_device_by_id(self, robot_id: str, message: dict) -> bool:
+        """Same command, addressed to a mic by robot id instead of by table.
+
+        The restaurant always goes through the table (that binding is what makes "table 3 wants to
+        talk" meaningful). The voice monitor has no tables at all — it drives ONE device directly,
+        so it needs the id path. Kept as the primitive both callers share rather than a second copy
+        of the send, so a dead socket is reaped in exactly one place.
+        """
         ws = self._voice_devices.get(robot_id)
         if ws is None:
             return False
@@ -125,6 +135,10 @@ class ConnectionManager:
         except Exception:
             self._voice_devices.pop(robot_id, None)
             return False
+
+    def voice_device_ids(self) -> list[str]:
+        """Ids of every mic currently connected — what the monitor lists as available devices."""
+        return sorted(self._voice_devices)
 
     def set_voice_busy(self, robot_id: str, busy: bool) -> None:
         """Record whether this robot's voice device is mid-conversation-turn."""

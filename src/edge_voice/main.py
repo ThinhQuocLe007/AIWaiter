@@ -23,6 +23,7 @@ import os
 import signal
 import sys
 import threading
+import time
 
 # Make the repo root importable so `from src.agent_brain...` resolves when this file is
 # invoked as `python src/edge_voice/main.py` (uvicorn's `:` form sets sys.path automatically,
@@ -57,6 +58,46 @@ TRANSCRIPT_TIMEOUT = 12.0
 WS_RETRY_MAX = 10.0  # cap on reconnect backoff
 
 
+class Telemetry:
+    """Narrates this device's pipeline to the backend for the voice monitor web.
+
+    Everything here is best-effort and silent on failure. The monitor is an observer; a demo screen
+    failing to update must never be able to break, slow or abort a real spoken turn.
+
+    Thread-affinity is the whole reason this is a class. The WS belongs to the asyncio loop, but the
+    stages worth reporting happen inside ``_capture_and_send_streaming``, which runs in a worker
+    thread (``asyncio.to_thread``) — touching the socket from there directly is undefined behaviour.
+    So ``send()`` is callable from any thread and hops back onto the loop to do the write.
+    """
+
+    def __init__(self, loop: asyncio.AbstractEventLoop) -> None:
+        self._loop = loop
+        self._ws = None
+
+    def set_socket(self, ws) -> None:
+        """Point at the live socket (or None while reconnecting). Called from the loop thread."""
+        self._ws = ws
+
+    def send(self, stage: str, /, **fields) -> None:
+        """Report one pipeline stage. `stage` is positional-only so a payload field of the same
+        name (the agent's DIALOGUE stage — a different thing entirely) cannot collide with it."""
+        ws = self._ws
+        if ws is None:
+            return
+        frame = json.dumps({"type": "telemetry", "stage": stage, "ts": time.time(), **fields})
+
+        async def _write() -> None:
+            try:
+                await ws.send(frame)
+            except Exception:  # socket died mid-turn — the reconnect path handles it
+                pass
+
+        try:
+            asyncio.run_coroutine_threadsafe(_write(), self._loop)
+        except RuntimeError:  # loop closing during shutdown
+            pass
+
+
 def _backend_ws_url() -> str:
     """ws://<backend>/ws?role=voice-device&robot_id=<id> derived from ORCHESTRATOR_URL."""
     base = settings.ORCHESTRATOR_URL.rstrip("/").replace("https://", "wss://").replace("http://", "ws://")
@@ -64,7 +105,8 @@ def _backend_ws_url() -> str:
 
 
 def _capture_and_send_streaming(vad: SileroVAD, agent_client: httpx.Client, table_id: int,
-                                 player: StreamingPlayer, cancel: threading.Event) -> None:
+                                 player: StreamingPlayer, cancel: threading.Event,
+                                 tel: "Telemetry") -> None:
     """Streaming variant: consumes SSE from POST /chat/stream, plays sentences incrementally.
 
     `cancel` (set by the tablet's Hủy/Dừng button via a cancel_listening frame) aborts the turn
@@ -75,26 +117,51 @@ def _capture_and_send_streaming(vad: SileroVAD, agent_client: httpx.Client, tabl
     while get_transcript(timeout=0.0) is not None:
         pass
 
+    t_start = time.perf_counter()
+
+    def ms_since(t: float) -> int:
+        return int((time.perf_counter() - t) * 1000)
+
     vad.begin_listen()
     print("[LISTENING] mời anh/chị nói...")
+    tel.send("listening", table_id=table_id)
     if not vad.wait_for_utterance(UTTERANCE_TIMEOUT):
         print("[TIMEOUT] không nghe thấy gì, quay lại chờ.")
+        tel.send("timeout", table_id=table_id, waited_ms=ms_since(t_start))
         return
     if cancel.is_set():  # cancel_listen() releases the wait above immediately
         print("[CANCELLED] khách hủy khi đang nghe.")
+        tel.send("cancelled", table_id=table_id, at="listening")
         return
+
+    # Speech ended here; everything from now until the transcript arrives is Whisper's own time,
+    # which is the number worth showing separately from "how long the guest talked".
+    t_speech_end = time.perf_counter()
+    tel.send("transcribing", table_id=table_id, speech_ms=ms_since(t_start))
 
     transcript = get_transcript(timeout=TRANSCRIPT_TIMEOUT)
     if transcript is None or not transcript.text.strip():
         print("[EMPTY] không nhận ra lời nói.")
+        # An empty transcript is also what the hallucination filter produces when it drops a
+        # bogus caption line (see perception/stt_phowhisper.py), so the monitor shows this as
+        # "nghe nhưng không dùng được" rather than pretending nothing happened.
+        tel.send("empty", table_id=table_id, stt_ms=ms_since(t_speech_end))
         return
     if cancel.is_set():
         print("[CANCELLED] khách hủy — không gửi cho agent.")
+        tel.send("cancelled", table_id=table_id, at="transcribed")
         return
 
     text = transcript.text
+    stt_ms = ms_since(t_speech_end)
     print(f"[HEARD @ {transcript.timestamp:.1f}s | bàn {table_id}]: {text}")
+    tel.send(
+        "heard", table_id=table_id, text=text,
+        stt_ms=stt_ms, audio_s=round(transcript.audio_duration_s or 0.0, 2),
+    )
 
+    t_agent = time.perf_counter()
+    spoken = 0
     try:
         with agent_client.stream("POST", "/chat/stream", json={
             "table_id": f"T{table_id}", "text": text
@@ -103,6 +170,7 @@ def _capture_and_send_streaming(vad: SileroVAD, agent_client: httpx.Client, tabl
             for line in resp.iter_lines():
                 if cancel.is_set():
                     print("[CANCELLED] dừng nhận trả lời từ agent.")
+                    tel.send("cancelled", table_id=table_id, at="agent")
                     break
                 if not line or not line.startswith("data: "):
                     continue
@@ -111,16 +179,30 @@ def _capture_and_send_streaming(vad: SileroVAD, agent_client: httpx.Client, tabl
 
                 if ev == "progress":
                     print(f"[WAITER progress]: {data.get('text', '...')}")
+                    tel.send("thinking", table_id=table_id)
                 elif ev == "sentence":
                     sentence = data["text"]
                     print(f"[WAITER]: {sentence}")
                     if sentence and not cancel.is_set() and not player.is_stopped():
+                        # Report BEFORE speaking: speak_sentence blocks until the audio has played,
+                        # so reporting after it would show the caption only once the robot had
+                        # already finished saying that line.
+                        tel.send(
+                            "speaking", table_id=table_id, text=sentence, index=spoken,
+                            muted=player.is_muted(),
+                        )
                         speak_sentence(sentence, player)
+                        spoken += 1
                 elif ev == "done":
                     print(f"[WAITER done] stage={data.get('stage')}")
+                    tel.send(
+                        "done", table_id=table_id, dialog_stage=data.get("stage"),
+                        agent_ms=ms_since(t_agent), turn_ms=ms_since(t_start), sentences=spoken,
+                    )
                     break
     except httpx.HTTPError as e:
         print(f"Agent stream request failed: {e}")
+        tel.send("error", table_id=table_id, detail=str(e)[:200])
 
 
 async def voice_device_loop(vad: SileroVAD, agent_client: httpx.Client, player: StreamingPlayer) -> None:
@@ -137,6 +219,9 @@ async def voice_device_loop(vad: SileroVAD, agent_client: httpx.Client, player: 
     url = _backend_ws_url()
     retry = 0
     ws = None  # the live socket; send_turn_state() below always uses the current one
+    # Stage reporting for the voice monitor. Bound to THIS loop, and re-pointed at each new socket
+    # below so a reconnect resumes reporting instead of going quiet for the rest of the run.
+    tel = Telemetry(asyncio.get_running_loop())
     turn_task: asyncio.Task | None = None
     # Monotonic id of the turn currently owning the mic. A cancelled turn can keep unwinding for
     # seconds after a new one starts; only the current turn may report "finished", or that zombie
@@ -160,6 +245,7 @@ async def voice_device_loop(vad: SileroVAD, agent_client: httpx.Client, player: 
         try:
             async with websockets.connect(url) as ws:
                 retry = 0
+                tel.set_socket(ws)
                 logger.info("voice-device connected: %s", url)
                 print(f"[READY] đã kết nối backend ({ROBOT_ID}) — chờ điều tới bàn + web bấm 'nói chuyện'.")
                 # A turn that outlived the dropped socket: the server forgot we were talking when
@@ -191,7 +277,8 @@ async def voice_device_loop(vad: SileroVAD, agent_client: httpx.Client, player: 
                         player.reset()  # clear a leftover interrupt; mute (if on) persists
                         turn_seq += 1
                         turn_task = asyncio.create_task(asyncio.to_thread(
-                            _capture_and_send_streaming, vad, agent_client, table_id, player, turn_cancel
+                            _capture_and_send_streaming, vad, agent_client, table_id, player,
+                            turn_cancel, tel,
                         ))
                         # Hold the robot from the moment we start listening, not from the first
                         # spoken word: the agent settles the bill as a TOOL CALL, which lands
@@ -210,6 +297,7 @@ async def voice_device_loop(vad: SileroVAD, agent_client: httpx.Client, player: 
                         # Tablet's Hủy/Dừng: kill the whole in-flight turn — armed mic, agent
                         # stream consumption AND the sentence currently coming out of the speaker.
                         print("[CANCEL] khách bấm dừng — hủy lượt hiện tại.")
+                        tel.send("cancelled", at="command")
                         turn_cancel.set()
                         vad.cancel_listen()
                         player.interrupt()
@@ -217,7 +305,9 @@ async def voice_device_loop(vad: SileroVAD, agent_client: httpx.Client, player: 
                         muted = bool(msg.get("muted"))
                         player.set_muted(muted)
                         print(f"[MUTE] {'tắt' if muted else 'bật'} loa trả lời.")
+                        tel.send("muted", muted=muted)
         except (OSError, websockets.WebSocketException) as e:
+            tel.set_socket(None)  # stop writing into a dead socket while we back off
             delay = min(2 ** retry, WS_RETRY_MAX)
             retry += 1
             logger.warning("WS down (%s); reconnect in %.0fs", e, delay)

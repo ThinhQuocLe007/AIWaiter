@@ -1,6 +1,7 @@
 import threading
 import queue
 import logging
+import re
 
 import numpy as np
 from faster_whisper import WhisperModel
@@ -14,6 +15,38 @@ logger = logging.getLogger(__name__)
 # Change this to switch models (e.g. "small", "medium", "large-v3", "large-v3-turbo").
 # probe_stt.py reads this so its download progress bar always matches the real model.
 MODEL_SIZE = "medium"
+
+# Whisper hallucinates YouTube boilerplate on short/noisy segments -- a 0.4s door bang comes back
+# as "Hãy subscribe cho kênh Ghiền Mì Gõ...". Nothing downstream filters by duration, so that
+# invented sentence would go straight to the agent and the robot would answer it out loud in front
+# of a customer. These phrases come from the video captions Whisper was trained on and never occur
+# in a restaurant order, so dropping the whole utterance on a match is safe.
+#
+# Matched against the text lowercased with punctuation stripped (see _is_hallucination). Add new
+# ones here as they show up in the logs -- they are logged, not silently swallowed.
+_HALLUCINATION_PATTERNS = [
+    re.compile(p) for p in (
+        r"subscribe",
+        r"đăng ký kênh",
+        r"ghiền mì gõ",
+        r"hẹn gặp lại (ở|trong) (video|clip)",
+        r"(video|clip) (tiếp theo|sau)",
+        r"(cảm ơn|cám ơn) (các bạn |mọi người )?đã (xem|theo dõi)",
+        r"(nhấn|bấm|ấn) (like|chuông|đăng ký)",
+        r"(chúc|mời) (các bạn|quý vị) xem (video|clip)",
+        r"phụ đề (được (thực hiện|làm) bởi|bởi)",
+    )
+]
+
+# Keep letters (incl. Vietnamese diacritics) and spaces; drop punctuation Whisper sprinkles in.
+_PUNCT = re.compile(r"[^\w\s]", re.UNICODE)
+
+
+def _is_hallucination(text: str) -> bool:
+    """True if `text` is Whisper's video-caption boilerplate rather than something a diner said."""
+    norm = _PUNCT.sub(" ", text.lower())
+    norm = " ".join(norm.split())
+    return any(pat.search(norm) for pat in _HALLUCINATION_PATTERNS)
 
 
 class PhoWhisperSTT(threading.Thread):
@@ -59,6 +92,10 @@ class PhoWhisperSTT(threading.Thread):
             try:
                 chunk = speech_queue.get(timeout=0.5)
                 text = self._transcribe(chunk.samples)
+                if text and _is_hallucination(text):
+                    # Log it: a dropped turn that vanished silently looks identical to a dead mic.
+                    logger.info(f"STT bỏ qua (câu bịa của Whisper, {chunk.duration_s:.1f}s): {text}")
+                    text = ""
                 if text:
                     put_transcript(
                         Transcript(

@@ -16,6 +16,7 @@ Run (on the server, alongside the orchestrator backend) — from the repo root, 
 import asyncio
 import json
 import logging
+import time
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from queue import Empty, Queue
@@ -225,6 +226,16 @@ def chat_stream(req: ChatRequest):
         text = req.text.strip()
 
         executor = ThreadPoolExecutor(max_workers=1)
+        # Clock for the latency figures the monitor shows. Started where the agent's own work
+        # starts — the STT time before this belongs to the device and is measured there, so the two
+        # numbers add up instead of overlapping.
+        t0 = time.perf_counter()
+        sentence_index = 0
+        first_sentence_ms: int | None = None
+
+        def _elapsed_ms() -> int:
+            return int((time.perf_counter() - t0) * 1000)
+
         try:
             _orchestrator.post_voice_event(
                 {"type": "voice.heard", "table_id": table_int, "text": text}
@@ -243,6 +254,13 @@ def chat_stream(req: ChatRequest):
                     event_type, payload = msg
                     if event_type == "sentence":
                         yield f"data: {json.dumps({'event': 'sentence', 'text': payload})}\n\n"
+                        if first_sentence_ms is None:
+                            first_sentence_ms = _elapsed_ms()
+                        _orchestrator.post_voice_event_bg({
+                            "type": "voice.sentence", "table_id": table_int, "text": payload,
+                            "index": sentence_index, "timings": {"at_ms": _elapsed_ms()},
+                        })
+                        sentence_index += 1
                 except Empty:
                     if future.done():
                         while True:
@@ -253,6 +271,14 @@ def chat_stream(req: ChatRequest):
                                         {"event": "sentence", "text": msg[1]}
                                     )
                                     yield f"data: {payload}\n\n"
+                                    if first_sentence_ms is None:
+                                        first_sentence_ms = _elapsed_ms()
+                                    _orchestrator.post_voice_event_bg({
+                                        "type": "voice.sentence", "table_id": table_int,
+                                        "text": msg[1], "index": sentence_index,
+                                        "timings": {"at_ms": _elapsed_ms()},
+                                    })
+                                    sentence_index += 1
                             except Empty:
                                 break
                         break
@@ -272,6 +298,11 @@ def chat_stream(req: ChatRequest):
                 "text": response, "action": action,
                 "stage": stage, "cart": cart, "confirmed": confirmed,
                 "cart_touched": cart_touched,
+                "timings": {
+                    "first_sentence": first_sentence_ms,
+                    "llm_total": _elapsed_ms(),
+                    "sentences": sentence_index,
+                },
             })
 
             log_turn(

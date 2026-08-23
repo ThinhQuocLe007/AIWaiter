@@ -1,7 +1,7 @@
 # Makefile - Convenience commands for AI Waiter project
 # Run 'make help' to see available commands
 
-.PHONY: help setup install update frontend menu kiosk panel backend reindex agent voice probe mockrobot simbridge hwbridge hwstack jetson map build serve kill reset clean
+.PHONY: help setup install update frontend menu kiosk panel monitor backend reindex agent voice probe mockrobot simbridge hwbridge hwstack jetson map build serve kill reset clean
 
 # Role-specific Python extras for the backend env (see docs/setup-deploy.md). Each machine
 # picks ONLY its role: fastapi/uvicorn live in `--extra server`, STT/TTS in `--extra voice`,
@@ -26,10 +26,11 @@ help:
 	@echo "  make install    - Install/update deps. Backend needs UV_EXTRAS, e.g."
 	@echo "                    make install UV_EXTRAS=\"--extra server --extra voice --extra cu12\""
 	@echo "  make update     - Pull latest code and reinstall dependencies"
-	@echo "  make frontend   - Start all three UIs: menu, kiosk, panel (ports 5173-5175)"
+	@echo "  make frontend   - Start all four UIs: menu, kiosk, panel, monitor (ports 5173-5176)"
 	@echo "  make menu       - Start menu (ordering) dev server (port 5173)"
 	@echo "  make kiosk      - Start kiosk check-in dev server (port 5174)"
 	@echo "  make panel      - Start kitchen panel dev server (port 5175)"
+	@echo "  make monitor    - Start voice-pipeline monitor dev server (port 5176) — màn hình demo"
 	@echo "  make build      - Build frontend for production (outputs dist/)"
 	@echo "  make serve      - Serve production build locally (port 4173)"
 	@echo "  make backend    - Start orchestrator backend (FastAPI, port 8000)"
@@ -44,7 +45,7 @@ help:
 	@echo "  make map        - Re-export the minimap floor from the RTAB-Map database"
 	@echo "  make reindex    - Clean rebuild of FAISS + BM25 + centroid artifacts"
 	@echo "  make reset      - Wipe demo data: clear orders/seatings, free all tables (backend must be running)"
-	@echo "  make kill       - Stop all dev servers (backend 8000/8100, frontends 5173-5175, voice)"
+	@echo "  make kill       - Stop all dev servers (backend 8000/8100, frontends 5173-5176, voice)"
 	@echo "  make clean      - Remove node_modules, .venv, and Python __pycache__"
 	@echo ""
 
@@ -78,11 +79,12 @@ update:
 
 # Run all three UIs together; Ctrl-C stops the whole group (trap kills child PIDs).
 frontend:
-	@echo "Starting menu (5173), kiosk (5174), panel (5175)... Ctrl-C to stop all."
+	@echo "Starting menu (5173), kiosk (5174), panel (5175), monitor (5176)... Ctrl-C to stop all."
 	@trap 'kill 0' INT TERM EXIT; \
 		(cd src/frontends/customer_ui && npm run dev) & \
 		(cd src/frontends/kiosk && npm run dev) & \
 		(cd src/frontends/panel && npm run dev) & \
+		(cd src/frontends/monitor && npm run dev) & \
 		wait
 
 menu:
@@ -94,20 +96,29 @@ kiosk:
 panel:
 	@cd src/frontends/panel && npm run dev
 
-# Build ALL THREE web apps for production. `make backend` then serves the dist/ folders itself
+# Voice-pipeline monitor — the demo screen: mic → VAD → STT → agent → TTS with live timings.
+# Needs the orchestrator (make backend), the agent (make agent) and a voice device (make voice
+# on the Jetson) to have anything to show.
+monitor:
+	@cd src/frontends/monitor && npm run dev
+
+# Build ALL FOUR web apps for production. `make backend` then serves the dist/ folders itself
 # (src/server_orchestrator/main.py) on ONE origin — customer_ui at :8000/, kiosk at :8000/kiosk,
-# panel at :8000/panel. Clients (Jetson chromium, entrance tablet, kitchen panel) only open a URL;
-# they need neither Node nor a dev server. Run this on the SERVER after every `git pull`.
+# panel at :8000/panel, monitor at :8000/monitor. Clients (Jetson chromium, entrance tablet,
+# kitchen panel) only open a URL; they need neither Node nor a dev server. Run this on the SERVER
+# after every `git pull`.
 build:
-	@echo "Building customer_ui, kiosk, panel for production..."
+	@echo "Building customer_ui, kiosk, panel, monitor for production..."
 	@cd src/frontends/customer_ui && npm run build
 	@cd src/frontends/kiosk && npm run build
 	@cd src/frontends/panel && npm run build
+	@cd src/frontends/monitor && npm run build
 	@echo ""
 	@echo "Done. Restart 'make backend' — it serves:"
 	@echo "    http://<SERVER_IP>:8000/        customer_ui (robot / table tablet)"
 	@echo "    http://<SERVER_IP>:8000/kiosk   kiosk cổng"
 	@echo "    http://<SERVER_IP>:8000/panel   bảng điều khiển bếp"
+	@echo "    http://<SERVER_IP>:8000/monitor màn hình giám sát voice (demo)"
 
 # Local sanity-check of ONE production bundle through Vite's own preview server (its proxy sends
 # /api + /ws to :8000). Deploy does not use this — the backend serves dist/ directly, see `build`.
@@ -196,12 +207,15 @@ hwstack:
 # tiền tố [stack]/[voice]/[web], Ctrl-C một lần tắt sạch cả ba. Chỉ cần gõ:  make jetson
 # Server là IP Netbird cố định của ducduy-pc — đổi khi cần: make jetson SERVER_HOST=192.168.1.x:8000
 # Bỏ bớt phần nào:  make jetson VOICE=0    (chỉ nav)      make jetson WEB=0   (gõ qua SSH, không mở web)
+# Buổi demo CHỈ voice (robot đứng yên, không cần ROS) + màn rời chiếu màn giám sát:
+#   make jetson STACK=0 URL=http://<SERVER_IP>:8000/monitor
 VOICE ?= 1
 WEB ?= 1
+STACK ?= 1
 jetson: SERVER_HOST := 100.66.165.221:8000
 jetson: ID := robo-1
 jetson: $(VENV_PY)
-	@SERVER_HOST=$(SERVER_HOST) ID=$(ID) VOICE=$(VOICE) WEB=$(WEB) \
+	@SERVER_HOST=$(SERVER_HOST) ID=$(ID) VOICE=$(VOICE) WEB=$(WEB) STACK=$(STACK) \
 		$(if $(URL),URL=$(URL),) $(if $(KIOSK_BROWSER),KIOSK_BROWSER=$(KIOSK_BROWSER),) \
 		bash scripts/jetson_run.sh
 
@@ -235,8 +249,8 @@ reset:
 		|| echo "  backend not running on :8000 — start 'make backend', or rm storage/db/orchestrator.db"
 
 kill:
-	@echo "Stopping dev servers (ports 8000/8100/5173-5175 + voice device)..."
-	@-for p in 8000 8100 5173 5174 5175; do \
+	@echo "Stopping dev servers (ports 8000/8100/5173-5176 + voice device)..."
+	@-for p in 8000 8100 5173 5174 5175 5176; do \
 		pids=$$(ss -ltnp 2>/dev/null | grep ":$$p " | grep -oP 'pid=\K[0-9]+' | sort -u); \
 		if [ -n "$$pids" ]; then kill $$pids 2>/dev/null && echo "  killed port $$p (pid: $$pids)"; fi; \
 	done

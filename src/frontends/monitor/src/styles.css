@@ -1,0 +1,254 @@
+/* Voice-pipeline monitor — the instrument rack.
+   The design reads the pipeline as an audio signal chain: a warm graphite rack face, one amber
+   lamp colour for "the signal is here right now", and a muted instrument-LCD mint reserved
+   strictly for measured numbers. Nothing else is allowed to be bright. */
+
+:root {
+  --ink: #14120f; /* rack face — warm near-black, deliberately brown-shifted, not blue */
+  --panel: #1f1b16; /* module face */
+  --rule: #3a322a; /* engraved hairline */
+  --lamp: #ffb020; /* signal amber: active stage, travelling pulse, the robot's voice */
+  --read: #7fd4c1; /* readout mint: measured values only */
+  --clay: #d4573a; /* fault: dropped, cancelled, nothing heard */
+  --paper: #ede4d6; /* warm off-white type */
+  --dim: #9a8f80; /* secondary type */
+
+  --font-body: 'Be Vietnam Pro', system-ui, sans-serif; /* built for Vietnamese diacritics */
+  --font-label: 'Martian Mono', ui-monospace, monospace; /* module tags, used sparingly */
+  --font-data: 'JetBrains Mono', ui-monospace, monospace; /* tabular numerals that don't jitter */
+}
+
+* { box-sizing: border-box; }
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-body);
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app { height: 100%; }
+
+.rack {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  gap: 1.1rem;
+  padding: 1.4rem clamp(1rem, 3vw, 2.4rem) 1.4rem;
+  max-width: 1680px;
+  margin: 0 auto;
+}
+
+/* --- masthead ------------------------------------------------------------------------ */
+.masthead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+  flex-wrap: wrap;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.eyebrow {
+  font-family: var(--font-label);
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  color: var(--dim);
+}
+
+.masthead h1 {
+  font-size: clamp(1.7rem, 3.2vw, 2.5rem);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  margin: 0.35rem 0 0.3rem;
+  line-height: 1;
+}
+
+.sub {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--dim);
+}
+
+.console {
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+  flex-wrap: wrap;
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--clay);
+}
+
+.link.on { color: var(--read); }
+
+.pip {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.pick {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-label);
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  color: var(--dim);
+}
+
+.pick select,
+.pick input {
+  font-family: var(--font-data);
+  font-size: 0.85rem;
+  background: var(--panel);
+  color: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 0.35rem 0.5rem;
+}
+
+.pick input { width: 3.6rem; }
+
+/* --- controls ------------------------------------------------------------------------ */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.act {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--paper);
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 0.6rem 1.1rem;
+  cursor: pointer;
+  transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
+}
+
+.act:hover:not(:disabled) { border-color: var(--dim); }
+
+.act:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.act.primary {
+  background: var(--lamp);
+  border-color: var(--lamp);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.act.primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--lamp) 85%, var(--paper));
+}
+
+/* A disabled primary drops the amber entirely. Dimming it was not enough: amber at 40% on this
+   background still reads as THE thing to press, so the first thing anyone did with no mic
+   connected was click a dead button and conclude the page was broken. */
+.act.primary:disabled {
+  background: var(--panel);
+  border-color: var(--rule);
+  color: var(--paper);
+}
+
+.hookup {
+  width: 100%;
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--clay);
+  line-height: 1.55;
+}
+
+.hookup code {
+  font-family: var(--font-data);
+  color: var(--paper);
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 0.05rem 0.35rem;
+}
+
+.act.armed {
+  border-color: var(--clay);
+  color: var(--clay);
+}
+
+.act:focus-visible,
+.pick select:focus-visible,
+.pick input:focus-visible {
+  outline: 2px solid var(--read);
+  outline-offset: 2px;
+}
+
+.note {
+  font-size: 0.8rem;
+  color: var(--read);
+}
+
+.note.bad { color: var(--clay); }
+
+.spacer { flex: 1; }
+
+.live {
+  font-family: var(--font-data);
+  font-size: 0.8rem;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.live.on { color: var(--lamp); }
+
+/* --- floor ---------------------------------------------------------------------------- */
+.floor {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 1.1rem;
+  min-height: 0;
+}
+
+.right {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 1.1rem;
+  min-height: 0;
+}
+
+@media (max-width: 1100px) {
+  .rack { height: auto; grid-template-rows: none; }
+  .floor { grid-template-columns: 1fr; }
+  .right { grid-template-rows: none; }
+  .convo .scroll,
+  .log .lines { max-height: 26rem; }
+}
+
+/* Scrollbars, kept in the rack's own palette rather than the browser's. */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--rule);
+  border-radius: 4px;
+}

@@ -90,6 +90,9 @@ class VoiceEvent(BaseModel):
     * ``voice.heard`` — what the guest just said (user bubble + "thinking").
     * ``voice.reply`` — the agent's spoken reply, plus any UI action to follow.
     * ``voice.progress`` — processing status update for monitor UI (e.g. "đang xử lý...").
+    * ``voice.sentence`` — ONE sentence of the reply, mirrored the moment the agent hands it to
+      TTS. Monitor-only: the tablet keeps rendering the finished ``voice.reply`` in one piece, but
+      the monitor is there to show the reply arriving progressively, the way the robot speaks it.
     """
 
     type: str
@@ -99,16 +102,37 @@ class VoiceEvent(BaseModel):
     stage: str | None = None
     cart: list | None = None
     confirmed: bool | None = None
+    # Position of this sentence within the reply (voice.sentence only) — the mirror is fire-and-
+    # forget off a thread pool, so the monitor orders by this rather than by arrival.
+    index: int | None = None
+    # Stage latencies in ms, e.g. {"first_sentence": 820, "llm_total": 2140}. Free-form on purpose:
+    # it is display-only telemetry, and pinning a schema here would mean editing the orchestrator
+    # every time the agent learns to time one more step.
+    timings: dict | None = None
     # True only on turns where the agent actually changed the cart — the tablet mirrors `cart`
     # into its draft only then, so a draft the guest edited by hand survives unrelated turns.
     cart_touched: bool | None = None
     status: str | None = None
 
 
+# Event types the tablets have no use for. The monitor shows a reply arriving sentence by
+# sentence; the tablet renders the finished `voice.reply` in one piece, so sending it every
+# fragment would be pure noise on the guest's socket.
+_MONITOR_ONLY = {"voice.sentence"}
+
+
 @router.post("/event")
 async def voice_event(ev: VoiceEvent) -> dict:
-    """Fan a voice event out to every customer tablet; each filters by its own table_id."""
-    await manager.broadcast("customer", ev.model_dump())
+    """Fan a voice event out to every customer tablet; each filters by its own table_id.
+
+    Everything also goes to `role=monitor` (the voice monitor web). It is a second *viewer* role,
+    not a second protocol: mirroring here means the monitor sees a turn even when no tablet is
+    connected at all — the normal case when the pipeline is being demoed on its own.
+    """
+    payload = ev.model_dump()
+    if ev.type not in _MONITOR_ONLY:
+        await manager.broadcast("customer", payload)
+    await manager.broadcast("monitor", payload)
     if ev.type == "voice.reply" and ev.confirmed:
         # Order is with the kitchen — the robot's job at this table is done. Start the
         # countdown: 15 s of silence and it heads back to the dock.
@@ -120,6 +144,21 @@ async def voice_event(ev: VoiceEvent) -> dict:
     return {"status": "ok"}
 
 
+# The conversation a monitor turn is filed under when it doesn't name one. A REAL table id, not a
+# synthetic one: the demo runs the actual restaurant agent, so confirming an order has to reach the
+# kitchen like any other turn — a made-up table would 404 at the first tool call.
+MONITOR_TABLE_ID = 1
+
+
+async def _send_to_device(req: "ListenRequest | MuteRequest", message: dict) -> bool:
+    """Deliver one command to the mic `req` addresses — by robot id if it gave one, else by table."""
+    if req.robot_id:
+        return await manager.send_to_voice_device_by_id(req.robot_id, message)
+    if req.table_id is None:
+        return False
+    return await manager.send_to_voice_device(req.table_id, message)
+
+
 class ListenRequest(BaseModel):
     """The tablet's "talk to the AI" button: ask the robot serving this table to capture one utterance.
 
@@ -128,9 +167,19 @@ class ListenRequest(BaseModel):
     binding is dynamic (the dispatcher sets it when the robot arrives), so this resolves to whichever
     robot is currently at the table. The device then does mic → VAD → STT → POST /chat, and the agent
     mirrors the turn back here via /event.
+
+    ``robot_id`` is the monitor's way in. A table only resolves to a mic once the dispatcher has
+    driven that robot to the table, which is the right rule for the restaurant and an impossible
+    prerequisite for a bench demo of the voice pipeline — there is no floor, no task, no arrival.
+    Giving the id addresses the device directly and skips the binding. The two fields answer
+    different questions and the monitor sends both: ``robot_id`` is WHICH MIC to drive, ``table_id``
+    is WHICH CONVERSATION the turn belongs to (the agent keys its thread, cart and memory by table).
+    So ``robot_id`` wins for addressing when present, and ``table_id`` still labels the turn. The
+    tablet sends only ``table_id`` and behaves exactly as before.
     """
 
-    table_id: int
+    table_id: int | None = None
+    robot_id: str | None = None
 
 
 @router.post("/listen")
@@ -139,13 +188,14 @@ async def voice_listen(req: ListenRequest) -> dict:
     table_id so the (table-agnostic) device tags its /chat turn with the right table. Returns
     no_device (tablet shows the assistant offline) when no robot is at the table or its mic is down.
     """
-    ok = await manager.send_to_voice_device(
-        req.table_id, {"type": "start_listening", "table_id": req.table_id}
-    )
+    table_id = req.table_id if req.table_id is not None else MONITOR_TABLE_ID
+    ok = await _send_to_device(req, {"type": "start_listening", "table_id": table_id})
     # Guest pressed the mic — they're about to say something. Push the dock countdown back
-    # to full so the robot stays put while the conversation is still active.
-    await bump_release_timer(req.table_id)
-    return {"status": "ok" if ok else "no_device"}
+    # to full so the robot stays put while the conversation is still active. Skipped for a
+    # monitor-addressed turn: no robot was dispatched to a table, so there is nothing to hold.
+    if req.table_id is not None:
+        await bump_release_timer(req.table_id)
+    return {"status": "ok" if ok else "no_device", "table_id": table_id}
 
 
 @router.post("/cancel")
@@ -156,9 +206,7 @@ async def voice_cancel(req: ListenRequest) -> dict:
     stream, and cuts TTS playback mid-sentence. If the utterance already reached the agent, the
     LLM may still finish server-side — the tablet suppresses that reply on its side.
     """
-    ok = await manager.send_to_voice_device(
-        req.table_id, {"type": "cancel_listening", "table_id": req.table_id}
-    )
+    ok = await _send_to_device(req, {"type": "cancel_listening", "table_id": req.table_id})
     return {"status": "ok" if ok else "no_device"}
 
 
@@ -166,18 +214,20 @@ class MuteRequest(BaseModel):
     """The tablet's speaker toggle: silence (or re-enable) the robot's TTS voice for this table.
 
     Muting also cuts the sentence currently playing. The conversation itself keeps flowing —
-    the guest still sees the agent's replies as text on the tablet.
+    the guest still sees the agent's replies as text on the tablet. ``robot_id`` addresses a mic
+    directly, same as on ListenRequest.
     """
 
-    table_id: int
+    table_id: int | None = None
+    robot_id: str | None = None
     muted: bool
 
 
 @router.post("/mute")
 async def voice_mute(req: MuteRequest) -> dict:
     """Forward the mute state to the robot serving this table (its Jetson owns the speaker)."""
-    ok = await manager.send_to_voice_device(
-        req.table_id, {"type": "set_muted", "muted": req.muted, "table_id": req.table_id}
+    ok = await _send_to_device(
+        req, {"type": "set_muted", "muted": req.muted, "table_id": req.table_id}
     )
     return {"status": "ok" if ok else "no_device"}
 
@@ -227,14 +277,13 @@ async def voice_new_chat(req: ListenRequest) -> dict:
     the reset over plain HTTP (the orchestrator↔agent boundary stays import-free). Also cancel
     whatever the robot is currently saying/capturing so the old conversation stops immediately.
     """
-    device = await manager.send_to_voice_device(
-        req.table_id, {"type": "cancel_listening", "table_id": req.table_id}
-    )
+    table_id = req.table_id if req.table_id is not None else MONITOR_TABLE_ID
+    device = await _send_to_device(req, {"type": "cancel_listening", "table_id": table_id})
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.post(
                 f"{settings.agent_url.rstrip('/')}/reset",
-                json={"table_id": f"T{req.table_id}"},
+                json={"table_id": f"T{table_id}"},
             )
             resp.raise_for_status()
     except httpx.HTTPError:
@@ -243,3 +292,18 @@ async def voice_new_chat(req: ListenRequest) -> dict:
     # report the device separately. Without it the robot keeps talking through the old turn while
     # the tablet claims a fresh conversation started, which reads as "the button does nothing".
     return {"status": "ok", "device": device}
+
+
+@router.get("/devices")
+async def voice_devices() -> dict:
+    """Which mics are online right now — the monitor's device picker reads this on load.
+
+    The monitor addresses a device by id, so without this it would have to be told the id by hand
+    (and would show "no_device" with no way to tell a wrong id from an offline Jetson). Also
+    reports which of them is mid-turn, so the UI can grey out the talk button on a busy device.
+    """
+    ids = manager.voice_device_ids()
+    return {
+        "devices": [{"robot_id": rid, "busy": manager.voice_busy(rid)} for rid in ids],
+        "default_table_id": MONITOR_TABLE_ID,
+    }

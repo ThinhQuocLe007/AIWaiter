@@ -83,7 +83,7 @@ def health() -> dict:
 
 
 # ── Production web serving ───────────────────────────────────────────────────────────────────
-# One origin for everything: the server builds all three SPAs (`make build`) and serves them here,
+# One origin for everything: the server builds all four SPAs (`make build`) and serves them here,
 # so every client (Jetson kiosk browser, entrance tablet, kitchen panel) only opens a URL — no
 # Node, no build, no CORS, no dev server. Mounted only when a dist/ exists, so a machine that
 # never built the web still boots the API fine.
@@ -112,4 +112,5 @@ def _mount_spa(url_path: str, app_name: str) -> None:
 # Sub-path apps first: mounting "/" is a catch-all and would shadow anything mounted after it.
 _mount_spa("/kiosk", "kiosk")
 _mount_spa("/panel", "panel")
+_mount_spa("/monitor", "monitor")
 _mount_spa("/", "customer_ui")

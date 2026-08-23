@@ -20,6 +20,9 @@
 |------|-------------|
 | [`guides/run-guide-vi.md`](guides/run-guide-vi.md) | Setup & run instructions (Vietnamese) |
 | [`guides/run-voice-vi.md`](guides/run-voice-vi.md) | Voice pipeline setup guide (Vietnamese) |
+| [`guides/demo-monitor-runbook-vi.md`](guides/demo-monitor-runbook-vi.md) | **Runbook buổi demo voice+agent**: PC bật gì, Jetson boot ra sao, đẩy `/monitor` ra màn rời qua `make jetson STACK=0`, kịch bản nói thử, bảng gỡ rối (Vietnamese) |
+| [`guides/voice-monitor-vi.md`](guides/voice-monitor-vi.md) | **Màn hình giám sát voice** (`:8000/monitor`): rack MIC→VAD→STT→AGENT→TTS chạy realtime, sổ đo độ trễ từng chặng, gọi mic thẳng bằng `robot_id` không cần binding bàn (Vietnamese) |
+| [`guides/jetson-demo-runbook-vi.md`](guides/jetson-demo-runbook-vi.md) | **Runbook ngày demo** cho Jetson ở `/home/orin/AI_voice/AIWaiter`: chuẩn bị cache model trước 1 ngày, đường âm thanh PulseAudio (cái bẫy câm lặng), health check sau reboot, thứ tự bật, gỡ rối (Vietnamese) |
 | [`guides/jetson-boot-runbook-vi.md`](guides/jetson-boot-runbook-vi.md) | Thứ tự chạy từ lúc boot Jetson tới lúc nói được: server → mic → binding bàn → nút "nói chuyện" (Vietnamese) |
 | [`guides/setup-deploy.md`](guides/setup-deploy.md) | Deployment configuration, CUDA extras, environment setup |
 | [`guides/makefile-reference.md`](guides/makefile-reference.md) | Complete Makefile target reference |

@@ -9,6 +9,8 @@ The agent talks about tables as "T1"; the backend keys them by INT id. ``normali
 stays INT.
 """
 
+from concurrent.futures import ThreadPoolExecutor
+
 import httpx
 
 from src._shared.types import normalise_table_id
@@ -16,6 +18,12 @@ from src.agent_brain.config import settings
 from src.agent_brain.utils import logger
 
 _TIMEOUT = httpx.Timeout(10.0)
+
+# Mirror events that must not sit in the spoken path. `post_voice_event` opens an HTTP connection
+# and waits for it; doing that once per *sentence* would charge every mirror round trip to the gap
+# between two spoken sentences, i.e. make the robot audibly slower the more the monitor watches.
+# Two workers: enough to overlap, few enough that a wedged backend can't spawn threads unbounded.
+_MIRROR_POOL = ThreadPoolExecutor(max_workers=2, thread_name_prefix="voice-mirror")
 
 
 class OrchestratorClient:
@@ -85,6 +93,15 @@ class OrchestratorClient:
             self._post("/voice/event", event)
         except httpx.HTTPError as e:  # backend unreachable / no tablet — degrade silently
             logger.warning(f"voice event not delivered to tablet: {e}")
+
+    def post_voice_event_bg(self, event: dict) -> None:
+        """Fire-and-forget ``post_voice_event`` — for mirrors nobody waits on.
+
+        Used for the per-sentence stream to the monitor: a dropped or late frame there costs a
+        cosmetic UI update, while blocking on it would cost real speech latency. Ordering between
+        two sentences is not guaranteed by the pool, so the events carry their own ``index``.
+        """
+        _MIRROR_POOL.submit(self.post_voice_event, event)
 
     def post_progress_event(self, table_id: str, status_text: str) -> None:
         """POST /voice/event with type=voice.progress to update tablet status."""

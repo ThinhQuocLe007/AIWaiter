@@ -5,7 +5,12 @@
 #   3) web     : trình duyệt kiosk trên màn robot (customer_ui)
 #
 # Gọi qua Makefile:  make jetson          (SERVER_HOST + ID đã cố định sẵn trong Makefile)
-# Tắt bớt phần nào:  make jetson VOICE=0    /    make jetson WEB=0
+# Tắt bớt phần nào:  make jetson VOICE=0    /    make jetson WEB=0    /    make jetson STACK=0
+#
+# STACK=0 là cấu hình cho buổi demo CHỈ có voice: robot không cần di chuyển, nên không phải
+# bật RTAB-Map/Nav2 (nặng, và stack chết là kéo cả voice chết theo). Kèm URL trỏ thẳng vào
+# màn giám sát thì màn rời của Jetson thành màn chiếu cho người xem:
+#   make jetson STACK=0 URL=http://<SERVER_IP>:8000/monitor
 #
 # Log mỗi tiến trình được gắn tiền tố [stack] / [voice] / [web] nên vẫn đọc được
 # đúng trình tự khởi động trong runbook. Ctrl-C một lần là tắt sạch cả ba.
@@ -19,6 +24,7 @@ SERVER_HOST="${SERVER_HOST:-100.66.165.221:8000}"
 ID="${ID:-robo-1}"
 VOICE="${VOICE:-1}"
 WEB="${WEB:-1}"
+STACK="${STACK:-1}"
 URL="${URL:-http://$SERVER_HOST/}"
 ROS_SETUP="${ROS_SETUP:-/opt/ros/humble/setup.sh}"
 
@@ -49,6 +55,8 @@ cleanup() {
 trap cleanup INT TERM EXIT
 
 # ── 1) Cả stack robot (ROS 2). Chạy trong subshell đã tắt venv, giống hệt `make hwstack`.
+STACK_PID=""
+if [ "$STACK" = "1" ]; then
 (
 	deactivate 2>/dev/null || true
 	cd robot_ws
@@ -65,6 +73,9 @@ trap cleanup INT TERM EXIT
 		server_host:="$SERVER_HOST" robot_id:="$ID"
 ) 2>&1 | tag stack &
 STACK_PID=$!
+else
+	echo "[run] STACK=0 — không bật ROS (robot không di chuyển trong buổi này)."
+fi
 
 # ── 2) Voice. Dùng .venv/bin/python thẳng, KHÔNG qua `uv run` — trên Jetson uv sync sẽ
 # gỡ mất ctranslate2/faster-whisper build tay (docs/guides/jetson-ctranslate2-build.md).
@@ -110,11 +121,19 @@ fi
 
 # Chờ: stack hoặc voice chết thì kéo theo phần còn lại (trap EXIT dọn). Trình duyệt
 # đóng lại KHÔNG tính — tắt kiosk nhầm thì robot vẫn chạy tiếp.
-while :; do
-	kill -0 "$STACK_PID" 2>/dev/null || { echo "[run] hwstack đã thoát."; break; }
-	if [ -n "$VOICE_PID" ] && ! kill -0 "$VOICE_PID" 2>/dev/null; then
-		echo "[run] voice đã thoát."
-		break
-	fi
-	sleep 2
-done
+if [ -z "$STACK_PID" ] && [ -z "$VOICE_PID" ]; then
+	# Không có tiến trình nền nào để trông (STACK=0 VOICE=0): chỉ còn trình duyệt, chờ nó đóng.
+	wait
+else
+	while :; do
+		if [ -n "$STACK_PID" ] && ! kill -0 "$STACK_PID" 2>/dev/null; then
+			echo "[run] hwstack đã thoát."
+			break
+		fi
+		if [ -n "$VOICE_PID" ] && ! kill -0 "$VOICE_PID" 2>/dev/null; then
+			echo "[run] voice đã thoát."
+			break
+		fi
+		sleep 2
+	done
+fi
