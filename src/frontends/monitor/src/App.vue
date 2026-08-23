@@ -32,54 +32,62 @@
       </div>
     </header>
 
-    <div class="controls">
-      <button class="act primary" :disabled="!robotId || turnRunning" @click="onListen">
-        Bắt đầu nghe
-      </button>
-      <button class="act" :disabled="!robotId || !turnRunning" @click="onCancel">Dừng</button>
-      <button class="act" :disabled="!robotId" @click="onNewChat">Hội thoại mới</button>
-      <button class="act" :disabled="!robotId" :class="{ armed: muted }" @click="onToggleMute">
-        {{ muted ? 'Bật loa' : 'Tắt loa' }}
-      </button>
-
-      <!-- The two sliders drive pactl on the Jetson, not a gain in this page. `levelsKnown` is
-           false until the device has reported real values; a slider that looks live but moves
-           nothing is worse than one that is visibly out of service. -->
-      <label class="dial" :class="{ off: !levelsKnown }">
-        <span class="cap">Loa</span>
-        <input
-          type="range" min="0" max="100" step="5"
-          :disabled="!levelsKnown"
-          :value="speaker"
-          @input="onLevel('speaker', $event)"
-        />
-        <span class="val">{{ levelsKnown ? `${speaker}%` : '—' }}</span>
-      </label>
-
-      <label class="dial" :class="{ off: !levelsKnown }">
-        <span class="cap">Mic</span>
-        <input
-          type="range" min="0" max="150" step="5"
-          :disabled="!levelsKnown"
-          :value="micLevel"
-          @input="onLevel('mic', $event)"
-        />
-        <span class="val">{{ levelsKnown ? `${micLevel}%` : '—' }}</span>
-      </label>
-
-      <span class="spacer"></span>
-      <span v-if="commandNote" class="note">{{ commandNote }}</span>
-      <span class="live" :class="{ on: turnRunning }">
-        <template v-if="turnRunning">Lượt đang chạy · {{ fmtMs(elapsed) }}</template>
-        <template v-else>Chờ lệnh</template>
-      </span>
-    </div>
-
     <SignalChain :stages="stages" :active="activeStage" />
 
     <div class="floor">
       <Timeline :turns="turns" :live="liveTurn" :live-log="liveLog" :ready="devices.length > 0" />
-      <TurnLedger :turns="turns" />
+
+      <!-- The operator's side. Everything a finger touches during the demo lives in this rail,
+           at touch-target scale; the reading panels paid for it with their width. -->
+      <aside class="rail">
+        <div class="status">
+          <span v-if="commandNote" class="note">{{ commandNote }}</span>
+          <span v-else class="live" :class="{ on: turnRunning }">
+            <template v-if="turnRunning">Lượt đang chạy · {{ fmtMs(elapsed) }}</template>
+            <template v-else>Chờ lệnh</template>
+          </span>
+        </div>
+
+        <div class="pad">
+          <button class="act primary wide" :disabled="!robotId || turnRunning" @click="onListen">
+            Bắt đầu nghe
+          </button>
+          <button class="act" :disabled="!robotId || !turnRunning" @click="onCancel">Dừng</button>
+          <button class="act" :disabled="!robotId" :class="{ armed: muted }" @click="onToggleMute">
+            {{ muted ? 'Bật loa' : 'Tắt loa' }}
+          </button>
+          <button class="act wide" :disabled="!robotId" @click="onNewChat">Hội thoại mới</button>
+        </div>
+
+        <!-- The two sliders drive pactl on the Jetson, not a gain in this page. `levelsKnown` is
+             false until the device has reported real values; a slider that looks live but moves
+             nothing is worse than one that is visibly out of service. -->
+        <div class="dials">
+          <label class="dial" :class="{ off: !levelsKnown }">
+            <span class="cap">Loa</span>
+            <input
+              type="range" min="0" max="100" step="5"
+              :disabled="!levelsKnown"
+              :value="speaker"
+              @input="onLevel('speaker', $event)"
+            />
+            <span class="val">{{ levelsKnown ? `${speaker}%` : '—' }}</span>
+          </label>
+
+          <label class="dial" :class="{ off: !levelsKnown }">
+            <span class="cap">Mic</span>
+            <input
+              type="range" min="0" max="150" step="5"
+              :disabled="!levelsKnown"
+              :value="micLevel"
+              @input="onLevel('mic', $event)"
+            />
+            <span class="val">{{ levelsKnown ? `${micLevel}%` : '—' }}</span>
+          </label>
+        </div>
+
+        <TurnLedger :turns="turns" />
+      </aside>
     </div>
   </div>
 </template>
@@ -235,9 +243,11 @@ function onDeviceFrame(ev: Record<string, any>) {
     case 'transcribing':
       setStage('mic', 'done', 'xong')
       setStage('vad', 'done', fmtMs(ev.speech_ms), 'độ dài câu nói')
-      setStage('stt', 'active', 'đang chép', 'PhoWhisper medium')
+      // Detail deliberately blank. It used to name the speech model; the readout above already
+      // says what is happening, and the audience has no business knowing what is under it.
+      setStage('stt', 'active', 'đang chép', '')
       if (liveTurn.value) liveTurn.value.speechMs = ev.speech_ms
-      addLog('device', `hết tiếng nói sau ${fmtMs(ev.speech_ms)} — đưa sang Whisper`)
+      addLog('device', `hết tiếng nói sau ${fmtMs(ev.speech_ms)} — đưa sang bộ chép lời`)
       break
 
     case 'heard':
@@ -254,7 +264,7 @@ function onDeviceFrame(ev: Record<string, any>) {
     // land on `quiet`, which is grey. Only the agent error below is allowed to go red.
     case 'empty':
       setStage('stt', 'quiet', 'không nghe rõ', 'im lặng, hoặc câu bịa đã bị lọc')
-      addLog('device', 'Whisper không trả về câu nào dùng được')
+      addLog('device', 'không chép được câu nào dùng được')
       endTurn('empty')
       break
 

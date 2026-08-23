@@ -117,9 +117,9 @@ function isLive(index: number): boolean {
 
 .tag {
   font-family: var(--font-label);
-  font-size: 0.72rem;
+  font-size: 0.76rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   color: var(--type);
 }
 
@@ -202,7 +202,7 @@ function isLive(index: number): boolean {
     border-radius: 2px;
   }
 
-  .tag { font-size: 0.6rem; }
+  .tag { font-size: 0.66rem; }
   .lamp { width: 8px; height: 8px; }
   .caption { font-size: 0.65rem; }
 

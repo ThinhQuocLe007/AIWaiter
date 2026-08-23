@@ -43,7 +43,7 @@
         <p v-if="t.heard" class="said guest">{{ t.heard }}</p>
         <p v-if="t.reply" class="said robot">{{ t.reply }}</p>
         <p v-if="t.outcome === 'ok'" class="timing">
-          Whisper {{ fmtMs(t.sttMs) }} · câu đầu {{ fmtMs(t.firstSentenceMs) }} ·
+          Chép lời {{ fmtMs(t.sttMs) }} · câu đầu {{ fmtMs(t.firstSentenceMs) }} ·
           cả lượt {{ fmtMs(t.turnMs) }}
         </p>
         <ol v-if="t.log.length" class="frames">
@@ -105,9 +105,10 @@ function outcomeText(t: TurnRecord): string {
 
 h2 {
   font-family: var(--font-label);
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
   margin: 0;
   color: var(--type);
 }
@@ -153,8 +154,9 @@ h2 {
 
 .stage {
   font-family: var(--font-label);
-  font-size: 0.62rem;
-  letter-spacing: 0.04em;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   color: var(--read);
 }
 
@@ -176,8 +178,10 @@ h2 {
 .guest::before {
   content: 'khách ';
   font-family: var(--font-label);
-  font-size: 0.6rem;
+  font-size: 0.62rem;
+  font-weight: 700;
   letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--dim);
   margin-right: 0.45rem;
   vertical-align: 0.12em;
@@ -191,8 +195,10 @@ h2 {
 .robot::before {
   content: 'robot ';
   font-family: var(--font-label);
-  font-size: 0.6rem;
+  font-size: 0.62rem;
+  font-weight: 700;
   letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--dim);
   margin-right: 0.45rem;
   vertical-align: 0.12em;
@@ -236,7 +242,8 @@ h2 {
 
 .src {
   font-family: var(--font-label);
-  font-size: 0.54rem;
+  font-size: 0.56rem;
+  font-weight: 700;
   letter-spacing: 0.05em;
   padding-top: 0.2em;
 }
@@ -253,9 +260,9 @@ h2 {
    width of a whole column plus one panel's worth of chrome, and reading the reply from across a
    fair stand is the one thing this screen is for. The frames stay small. */
 @media (max-height: 700px) {
-  .feed { padding: 0.5rem 0.6rem; border-radius: 2px; }
+  .feed { padding: 0.5rem 0.6rem; border-radius: 5px; }
   .head { margin-bottom: 0.4rem; }
-  h2 { font-size: 0.62rem; }
+  h2 { font-size: 0.64rem; }
   .hint { display: none; }
   .empty { font-size: 0.8rem; }
 

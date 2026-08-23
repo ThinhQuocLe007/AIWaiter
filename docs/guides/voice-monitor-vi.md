@@ -18,7 +18,8 @@ URL: `http://<SERVER_IP>:8000/monitor` (production) hoặc `http://localhost:517
 |---------|-----------------|
 | **Rack tín hiệu** (hàng trên) | 5 module `MIC → VAD → STT → AGENT → TTS`. Module đang chạy sáng hổ phách, dây nối vào nó có xung sáng chạy. Module đã xong đổi sang xanh teal kèm số đo. |
 | **Diễn biến** (cột trái) | Một dòng chảy duy nhất, lượt mới nhất trên cùng. Mỗi lượt gồm: khách nói gì, robot trả lời gì, số đo của lượt, và **ngay bên dưới là các frame thô** sinh ra lượt đó — ghi rõ do **THIẾT BỊ** (Jetson) hay **AGENT** (server) gửi. |
-| **Sổ đo** (cột phải) | Mỗi lượt một thanh, chia đoạn theo chặng: *khách nói · Whisper · LLM tới câu đầu · robot nói*. Tất cả các thanh vẽ theo cùng một thang, nên nhìn là biết thời gian đi đâu và lượt nào chậm bất thường. |
+| **Cột điều khiển** (cột phải) | Mọi thứ ngón tay chạm vào khi demo: 4 nút lớn cỡ chạm (nút chính *Bắt đầu nghe* chiếm nguyên hàng), hai thanh trượt **Loa/Mic** chạy hết bề ngang cột, và khúc *Sổ đo* ở đáy. |
+| **Sổ đo** (đáy cột điều khiển) | Mỗi lượt một thanh, chia đoạn theo chặng: *khách nói · chép lời · LLM tới câu đầu · robot nói*. Cùng một thang cho mọi thanh nên nhìn là biết lượt nào chậm. Cố ý chỉ là một khúc vài thanh, cuộn khi nhiều — nó đáng một cái liếc, không đáng một cột. |
 
 *Diễn biến* trước đây là hai ô riêng (*Hội thoại* và *Nhật ký sự kiện*) nằm cạnh nhau. Gộp lại vì
 đọc một lượt phải liếc hai chỗ rồi tự ghép theo dấu thời gian; giờ mỗi lượt tự mang bằng chứng
@@ -26,7 +27,18 @@ của nó. Chữ lời thoại ~1rem, frame ~0.7rem — chênh lệch cỡ chữ
 nuốt mất hai câu mà người ta thật sự đến để đọc.
 
 Nút điều khiển: **Bắt đầu nghe** · **Dừng** · **Hội thoại mới** (xoá trí nhớ hội thoại của bàn) ·
-**Tắt loa** (robot vẫn trả lời, chỉ không phát tiếng).
+**Tắt loa** (robot vẫn trả lời, chỉ không phát tiếng). Chúng nằm dọc **cột phải** chứ không phải
+một dải ngang trên đầu — trang này được bấm bằng ngón tay trên màn cảm ứng 7", nên nút cần chiều
+cao thật (≥50px), và hai ô đọc nhường bề ngang để trả cho khoản đó.
+
+**Trang không nêu tên model nào.** Chặng STT ghi *"chép lời thành chữ"*, số đo ghi *"chép lời"* —
+không phải "Whisper"/"PhoWhisper". Người ngoài xem demo không có việc gì phải biết bên trong chạy
+model gì; đây là lựa chọn có chủ ý, đừng "sửa lại cho rõ". Tên model vẫn nằm nguyên trong code,
+trong log Jetson và trong tài liệu này.
+
+Chữ toàn trang là **Be Vietnam Pro** (nhãn in hoa có tracking) + **JetBrains Mono** cho số. Trước
+đây nhãn dùng Martian Mono — font đó **không có glyph tiếng Việt** (thiếu dải Latin Extended
+Additional), nên "Diễn biến"/"THIẾT BỊ" bị ghép dấu từ font khác và nhìn gãy. Đừng đưa nó quay lại.
 
 ### Hai thanh trượt Loa / Mic
 
@@ -69,7 +81,7 @@ Trang tự co theo màn:
 
 | Màn | Cách bố trí |
 |-----|-------------|
-| **Màn rời 7" của Jetson (1024×600)** | Bố cục gọn: bỏ dòng phụ dưới tiêu đề và các dòng chú thích nhỏ, module rack thấp lại, chữ trong ô *Hội thoại* và *Nhật ký* nhỏ đi hai nấc. Ngược lại, **4 nút điều khiển và ô chọn thiết bị giữ nguyên cỡ đầy đủ** — đó là những thứ duy nhất phải bấm, mà màn 7" chính là màn được bấm. Toàn bộ vừa trong 600px, **cả trang không cuộn**, chỉ hai ô kia cuộn bên trong. |
+| **Màn rời 7" của Jetson (1024×600)** | Bố cục gọn: bỏ dòng phụ dưới tiêu đề và các chú thích nhỏ, module rack thấp lại, chữ trong *Diễn biến* nhỏ đi. Ngược lại **nút và thanh trượt giữ cỡ chạm đầy đủ** (nút ≥50px, núm trượt 26px) — đó là những thứ duy nhất phải bấm, mà màn 7" chính là màn được bấm. *Sổ đo* còn ~3 thanh. Toàn bộ vừa trong 600px, **cả trang không cuộn**, chỉ *Diễn biến* và *Sổ đo* cuộn bên trong. |
 | **Màn desktop** | Bố cục đầy đủ, 2 cột. |
 | **Màn hẹp mà cao** (tablet dựng đứng, < 1100px rộng) | Xếp chồng 1 cột; rack tự xuống 2 hàng khi dưới 900px. |
 

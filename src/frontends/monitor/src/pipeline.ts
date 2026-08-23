@@ -74,7 +74,9 @@ export const STAGE_ORDER: StageId[] = ['mic', 'vad', 'stt', 'agent', 'tts']
 const STAGE_META: Record<StageId, { label: string; caption: string }> = {
   mic: { label: 'MIC', caption: 'micro trên robot' },
   vad: { label: 'VAD', caption: 'tách tiếng nói' },
-  stt: { label: 'STT', caption: 'Whisper chép lời' },
+  // No model names anywhere in STAGE_META, and that is a product decision, not an oversight:
+  // this screen is shown to outsiders, and which speech model is inside is not theirs to read.
+  stt: { label: 'STT', caption: 'chép lời thành chữ' },
   agent: { label: 'AGENT', caption: 'LLM trên server' },
   tts: { label: 'TTS', caption: 'robot nói ra' },
 }

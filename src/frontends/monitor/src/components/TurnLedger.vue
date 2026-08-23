@@ -27,7 +27,7 @@
 
     <ul class="key">
       <li><span class="sw speech"></span>khách nói</li>
-      <li><span class="sw stt"></span>Whisper</li>
+      <li><span class="sw stt"></span>chép lời</li>
       <li><span class="sw llm"></span>LLM tới câu đầu</li>
       <li><span class="sw talk"></span>robot nói</li>
     </ul>
@@ -89,7 +89,7 @@ function barTitle(t: TurnRecord): string {
 }
 
 function label(k: Seg['key']): string {
-  return { speech: 'khách nói', stt: 'Whisper', llm: 'LLM', talk: 'robot nói' }[k]
+  return { speech: 'khách nói', stt: 'chép lời', llm: 'LLM', talk: 'robot nói' }[k]
 }
 </script>
 
@@ -114,9 +114,10 @@ function label(k: Seg['key']): string {
 
 h2 {
   font-family: var(--font-label);
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
   margin: 0;
   color: var(--type);
 }
@@ -128,22 +129,19 @@ h2 {
   margin: 0;
 }
 
-/* Holds the column open so the legend stays pinned to the bottom whether or not there are bars
-   — otherwise the key jumps up under the empty message and reads as part of it. */
-.empty { flex: 1 1 auto; }
 
-/* Fills the column and scrolls inside it. The ledger no longer shares its column with the event
-   log, so the bars get all the height that is going — but the legend below must stay pinned, or
-   the one thing that explains the colours scrolls away exactly when the bars pile up. */
+
+/* A strip, not a column: the ledger sits at the bottom of the control rail and earns a glance,
+   so it holds about five bars and scrolls for the rest. The bars still share one scale, which is
+   the whole point — comparability survives the diet. */
 .rows {
   list-style: none;
-  margin: 0 0 0.9rem;
+  margin: 0 0 0.7rem;
   padding: 0;
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  flex: 1 1 auto;
-  min-height: 0;
+  max-height: 8rem;
   overflow-y: auto;
 }
 
@@ -182,12 +180,12 @@ h2 {
   list-style: none;
   margin: 0;
   flex: 0 0 auto;
-  padding: 0.7rem 0 0;
+  padding: 0.55rem 0 0;
   border-top: 1px solid var(--rule);
   display: flex;
   flex-wrap: wrap;
-  gap: 0.9rem;
-  font-size: 0.72rem;
+  gap: 0.7rem;
+  font-size: 0.68rem;
   color: var(--dim);
 }
 
@@ -199,21 +197,21 @@ h2 {
 .sw.llm { background: var(--lamp-lit); }
 .sw.talk { background: color-mix(in srgb, var(--lamp-lit) 45%, var(--rule)); }
 
-/* The 7" panel. */
+/* The 7" panel: about three bars before it scrolls. */
 @media (max-height: 700px) {
-  .ledger { padding: 0.45rem 0.55rem 0.45rem; border-radius: 2px; }
+  .ledger { padding: 0.45rem 0.6rem 0.45rem; border-radius: 5px; }
   .head { margin-bottom: 0.35rem; }
-  h2 { font-size: 0.56rem; }
+  h2 { font-size: 0.62rem; }
   .hint { display: none; }
   .empty { font-size: 0.72rem; }
 
-  .rows { gap: 0.25rem; margin-bottom: 0.5rem; }
+  .rows { gap: 0.25rem; margin-bottom: 0.4rem; max-height: 4.6rem; }
   .row { grid-template-columns: 1.7rem 1fr 2.7rem; gap: 0.4rem; }
   .n,
-  .total { font-size: 0.66rem; }
+  .total { font-size: 0.68rem; }
   .bar { height: 8px; }
 
-  .key { padding-top: 0.4rem; gap: 0.55rem; font-size: 0.6rem; }
+  .key { padding-top: 0.35rem; gap: 0.55rem; font-size: 0.6rem; }
   .sw { width: 8px; height: 8px; }
 }
 </style>

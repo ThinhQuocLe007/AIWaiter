@@ -210,7 +210,7 @@ thanh trượt cho vừa với độ ồn của phòng. Không cần SSH, không
 
 1. Bấm **Bắt đầu nghe** → ô `MIC` sáng hổ phách, ghi "đang thu".
 2. Nói: *"cho tôi một tô phở bò tái nạm"*.
-3. Nhìn theo tín hiệu chạy: `VAD` chốt độ dài câu → `STT` hiện số ms của Whisper và câu chép được
+3. Nhìn theo tín hiệu chạy: `VAD` chốt độ dài câu → `STT` hiện số ms chép lời và câu chép được
    → `AGENT` sáng "đang nghĩ" → từng câu trả lời hiện dần ở khung Hội thoại → `TTS` đọc ra loa.
 4. Bấm lần nữa, nói *"thêm một trà đá"* — lượt thứ hai ngắn hơn, **Sổ đo** giờ có 2 thanh để
    so sánh: nhìn là thấy thời gian nằm ở chặng nào.
@@ -233,7 +233,7 @@ khi STT xong nên hai số cộng lại chứ không chồng nhau. Chi tiết:
 | Bấm nghe, hiện "Mic không nhận lệnh" | Jetson vừa rớt kết nối | Danh sách tự làm mới mỗi 5 giây — đợi rồi chọn lại thiết bị |
 | `MIC` đỏ "không nghe thấy" | Sai default source, hoặc nói quá nhỏ/xa | Chạy lại health check, xem 2 dòng mic/loa |
 | Nghe được nhưng không có tiếng trả lời | Loa mute hoặc sai default sink | `pactl set-sink-mute @DEFAULT_SINK@ 0` và `pactl set-sink-volume @DEFAULT_SINK@ 45%` |
-| `STT` đỏ "không dùng được" | Whisper ra rỗng, **hoặc** bộ lọc chặn câu bịa | Bình thường khi có tiếng động lạ. Xem log `[voice] STT bỏ qua…` |
+| `STT` xám "không nghe rõ" | Whisper ra rỗng, **hoặc** bộ lọc chặn câu bịa | Bình thường khi có tiếng động lạ. Xem log `[voice] STT bỏ qua…` (màn hình cố ý không nêu tên model) |
 | `AGENT` sáng mãi | LLM chưa xong hoặc agent chết | Xem terminal `make agent` |
 | Rack đứng im, chỉ `AGENT` sáng | Jetson chạy code cũ, chưa có telemetry | Làm lại [mục 0.3](#03-jetson--đồng-bộ-code-voice-mới) |
 | Hai thanh Loa/Mic mờ, hiện `—` | Jetson chạy code cũ, hoặc không có `pactl` | Làm lại [mục 0.3](#03-jetson--đồng-bộ-code-voice-mới) |

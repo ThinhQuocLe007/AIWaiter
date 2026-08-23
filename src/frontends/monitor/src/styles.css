@@ -7,9 +7,16 @@
    paper) and --lamp-lit is a LIT LED (bright, only ever used as a fill or a halo, never as text).
    Same for --read / --read-lit. Swapping them makes text unreadable on this screen.
 
-   Sizing targets two displays: a desktop browser, and the Jetson's 7" 1024×600 LCD. The 1024×600
-   case is the demo one — see the `max-height: 700px` blocks, which compact every module so the
-   whole rack fits on screen with nothing but the two log panels scrolling. */
+   Fonts: TWO faces, not three. Labels used to be Martian Mono, which has no Vietnamese glyph
+   coverage (no Latin Extended Additional) — every "Diễn biến"/"THIẾT BỊ" was assembled from
+   fallback glyphs and looked broken. Labels are now Be Vietnam Pro, uppercased with tracking so
+   they still read as engraving; JetBrains Mono (which DOES cover Vietnamese) keeps the numbers.
+
+   Layout: the operator's controls live in a RAIL down the right side, not in a strip across the
+   top. This page is driven by fingertip on a 7" 1024×600 touchscreen: the four buttons and the
+   two level sliders are the only things anyone touches mid-demo, so they get real touch-target
+   heights, and the two reading panels give up the width to pay for it. The ledger is a short
+   strip at the bottom of the rail — it earns a glance, not a column. */
 
 :root {
   color-scheme: light;
@@ -25,14 +32,14 @@
   --read: #0b6152; /* readout teal, measured values only */
   --read-lit: #14a08a; /* the same, as a bar fill */
 
-  --clay: #9e3117; /* fault: dropped, cancelled, nothing heard */
+  --clay: #9e3117; /* fault: reserved for the one real failure (agent error) */
   --speech: #8c8172; /* neutral: how long the guest spoke */
 
   --type: #1a1712; /* body type */
   --dim: #6f665a; /* secondary type */
 
   --font-body: 'Be Vietnam Pro', system-ui, sans-serif; /* built for Vietnamese diacritics */
-  --font-label: 'Martian Mono', ui-monospace, monospace; /* module tags, used sparingly */
+  --font-label: 'Be Vietnam Pro', system-ui, sans-serif; /* labels = body face, uppercased */
   --font-data: 'JetBrains Mono', ui-monospace, monospace; /* tabular numerals that don't jitter */
 }
 
@@ -57,9 +64,9 @@ body {
 .rack {
   height: 100%;
   display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr);
-  gap: 1.1rem;
-  padding: 1.4rem clamp(1rem, 3vw, 2.4rem) 1.4rem;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 1rem;
+  padding: 1.2rem clamp(1rem, 3vw, 2.2rem) 1.2rem;
   max-width: 1680px;
   margin: 0 auto;
 }
@@ -71,23 +78,24 @@ body {
   justify-content: space-between;
   gap: 2rem;
   flex-wrap: wrap;
-  padding-bottom: 1rem;
+  padding-bottom: 0.9rem;
   border-bottom: 1px solid var(--rule);
 }
 
 .eyebrow {
   font-family: var(--font-label);
-  font-size: 0.72rem;
-  font-weight: 500;
+  font-size: 0.78rem;
+  font-weight: 700;
   letter-spacing: 0.14em;
+  text-transform: uppercase;
   color: var(--dim);
 }
 
 .masthead h1 {
-  font-size: clamp(1.7rem, 3.2vw, 2.5rem);
-  font-weight: 500;
+  font-size: clamp(1.6rem, 3vw, 2.3rem);
+  font-weight: 600;
   letter-spacing: -0.02em;
-  margin: 0.35rem 0 0.3rem;
+  margin: 0.3rem 0 0.25rem;
   line-height: 1;
 }
 
@@ -100,19 +108,16 @@ body {
 .console {
   display: flex;
   align-items: center;
-  gap: 1.4rem;
+  gap: 1.3rem;
   flex-wrap: wrap;
 }
 
-/* Grey, not clay, when it is down. The WS client reconnects on its own within seconds, so a red
-   alarm here is nearly always wrong by the time anyone has finished reading it — and in front of
-   an audience it is read as "the demo crashed". The real diagnosis is in the title attribute. */
 .link {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.8rem;
-  color: var(--dim);
+  font-size: 0.82rem;
+  color: var(--dim); /* grey when down — the client reconnects itself; red reads as a crash */
 }
 
 .link.on { color: var(--read); }
@@ -131,8 +136,10 @@ body {
   align-items: center;
   gap: 0.5rem;
   font-family: var(--font-label);
-  font-size: 0.6rem;
-  letter-spacing: 0.06em;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--dim);
 }
 
@@ -143,32 +150,74 @@ body {
   background: var(--panel);
   color: var(--type);
   border: 1px solid var(--rule);
-  border-radius: 2px;
-  padding: 0.4rem 0.55rem;
+  border-radius: 3px;
+  padding: 0.45rem 0.55rem;
 }
 
 .pick input { width: 3.8rem; }
 
-/* --- controls ------------------------------------------------------------------------ */
-.controls {
+/* --- the floor: reading panel left, control rail right --------------------------------- */
+.floor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(300px, 36%, 430px);
+  gap: 1rem;
+  min-height: 0;
+}
+
+/* --- the rail -------------------------------------------------------------------------- */
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  min-height: 0;
+}
+
+/* One line that is either the running-turn clock or the last command's ack — never both, and
+   never red: a command that didn't land is nearly always a Jetson that blinked and will be back. */
+.status {
+  min-height: 1.3rem;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.note {
+  font-size: 0.84rem;
+  color: var(--dim);
+}
+
+.live {
+  font-family: var(--font-data);
+  font-size: 0.84rem;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.live.on { color: var(--lamp); font-weight: 500; }
+
+/* The button pad. Sized for a fingertip on a 7" panel, which means real heights, not padding
+   tricks: every target clears 56px. The primary action gets a full-width bar of its own. */
+.pad {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
 }
 
 .act {
   font-family: var(--font-body);
-  font-size: 1.05rem;
-  font-weight: 500;
+  font-size: 1.12rem;
+  font-weight: 600;
   color: var(--type);
   background: var(--panel);
   border: 1px solid var(--rule);
-  border-radius: 2px;
-  padding: 0.7rem 1.3rem;
+  border-radius: 6px;
+  min-height: 3.5rem;
+  padding: 0.4rem 0.9rem;
   cursor: pointer;
   transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
 }
+
+.act.wide { grid-column: 1 / -1; }
 
 .act:hover:not(:disabled) { border-color: var(--dim); }
 
@@ -181,7 +230,8 @@ body {
   background: var(--lamp);
   border-color: var(--lamp);
   color: var(--on-lamp);
-  font-weight: 600;
+  font-size: 1.22rem;
+  min-height: 4rem;
 }
 
 .act.primary:hover:not(:disabled) {
@@ -190,7 +240,7 @@ body {
 
 /* A disabled primary drops the amber entirely. Dimming it was not enough: amber at 45% on this
    background still reads as THE thing to press, so the first thing anyone did with no mic
-   connected was click a dead button and conclude the page was broken. */
+   connected was tap a dead button and conclude the page was broken. */
 .act.primary:disabled {
   background: var(--panel);
   border-color: var(--rule);
@@ -209,48 +259,41 @@ body {
   outline-offset: 2px;
 }
 
-/* Never clay. A command that didn't land is almost always a Jetson that blinked and will be
-   back; the operator needs to see it, the audience must not read it as a failure. */
-.note {
-  font-size: 0.82rem;
-  color: var(--dim);
-}
-
-.spacer { flex: 1; }
-
-.live {
-  font-family: var(--font-data);
-  font-size: 0.8rem;
-  color: var(--dim);
-  font-variant-numeric: tabular-nums;
-}
-
-.live.on { color: var(--lamp); font-weight: 500; }
-
 /* --- speaker / mic dials ---------------------------------------------------------------- */
-/* These move pactl on the Jetson, so they are grouped with the buttons rather than with the
-   readouts: they are controls that change the world, not measurements of it. */
-.dial {
+/* Full-width rows in the rail, one per level. These move pactl on the Jetson — controls that
+   change the world, so they sit with the buttons, and their tracks and knobs are drawn at
+   touch scale rather than browser-default scale. */
+.dials {
   display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.55rem 0.7rem;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+}
+
+.dial {
+  display: grid;
+  grid-template-columns: 2.6rem minmax(0, 1fr) 3.2rem;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0 0.2rem 0 0.7rem;
-  border-left: 1px solid var(--rule);
+  gap: 0.6rem;
 }
 
 .dial .cap {
   font-family: var(--font-label);
-  font-size: 0.6rem;
-  letter-spacing: 0.06em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--dim);
 }
 
 .dial .val {
   font-family: var(--font-data);
-  font-size: 0.82rem;
+  font-size: 0.95rem;
   color: var(--read);
   font-variant-numeric: tabular-nums;
-  min-width: 2.6rem;
   text-align: right;
 }
 
@@ -259,8 +302,8 @@ body {
 .dial input[type='range'] {
   -webkit-appearance: none;
   appearance: none;
-  width: 8rem;
-  height: 22px; /* the touch target, not the track — the track is drawn below */
+  width: 100%;
+  height: 40px; /* the touch target, not the track — the track is drawn below */
   background: transparent;
   cursor: pointer;
   margin: 0;
@@ -269,37 +312,36 @@ body {
 .dial input[type='range']:disabled { cursor: not-allowed; opacity: 0.5; }
 
 .dial input[type='range']::-webkit-slider-runnable-track {
-  height: 5px;
-  border-radius: 3px;
-  background: color-mix(in srgb, var(--rule) 85%, var(--dim));
+  height: 8px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--rule) 80%, var(--dim));
 }
 
 .dial input[type='range']::-moz-range-track {
-  height: 5px;
-  border-radius: 3px;
-  background: color-mix(in srgb, var(--rule) 85%, var(--dim));
+  height: 8px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--rule) 80%, var(--dim));
 }
 
-/* Deliberately a big grabbable knob: on the Jetson's 7" panel this is dragged with a fingertip. */
 .dial input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 18px;
-  height: 18px;
-  margin-top: -6.5px;
+  width: 26px;
+  height: 26px;
+  margin-top: -9px;
   border-radius: 50%;
   background: var(--panel);
-  border: 2px solid var(--lamp);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.15);
+  border: 3px solid var(--lamp);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
 }
 
 .dial input[type='range']::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   background: var(--panel);
-  border: 2px solid var(--lamp);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.15);
+  border: 3px solid var(--lamp);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
 }
 
 .dial.off input[type='range']::-webkit-slider-thumb { border-color: var(--dim); }
@@ -310,30 +352,17 @@ body {
   outline-offset: 2px;
 }
 
-/* --- floor ---------------------------------------------------------------------------- */
-/* Two panels, not three. The conversation and the event log used to sit in separate boxes, which
-   meant reading one turn took two glances and a mental join on the timestamp; they are one feed
-   now, and the ledger gets the whole right column instead of being stacked above a log. */
-.floor {
-  display: grid;
-  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
-  gap: 1.1rem;
-  min-height: 0;
-}
-
-/* Stack only on a screen that is narrow AND tall — a tablet held upright. The 7" panel is also
-   under 1100px wide but only 600px tall, and stacking there would push the event log off the
-   bottom of a screen that cannot scroll comfortably. It gets the compact block below instead. */
+/* A tablet held upright: rail drops under the feed as a normal block. */
 @media (max-width: 1100px) and (min-height: 701px) {
   .rack { height: auto; grid-template-rows: none; }
   .floor { grid-template-columns: 1fr; }
-  .feed .scroll { max-height: 30rem; }
+  .feed .scroll { max-height: 26rem; }
 }
 
 /* --- the Jetson's 7" 1024×600 panel ---------------------------------------------------- */
-/* Everything shrinks; nothing is dropped except the strapline. The rack still has to fit in
-   600px with the two log panels doing all the scrolling, so every vertical rhythm here is
-   budgeted: masthead ~50px, controls ~32px, signal chain ~76px, floor takes the rest. */
+/* The reading panels shrink; the things a finger touches do not. Vertical budget in 600px:
+   masthead ~48px, chain ~76px, the rest belongs to the floor — and inside the rail the ledger
+   is whatever is left after the pad and the dials have taken their full-size share. */
 @media (max-height: 700px) {
   .rack {
     gap: 0.45rem;
@@ -346,37 +375,36 @@ body {
     padding-bottom: 0.4rem;
   }
 
-  .eyebrow { font-size: 0.68rem; letter-spacing: 0.12em; }
+  .eyebrow { font-size: 0.7rem; letter-spacing: 0.12em; }
   .masthead h1 { font-size: 1.25rem; margin: 0.1rem 0 0; }
   .sub { display: none; }
 
   .console { gap: 0.8rem; }
-  .link { font-size: 0.8rem; gap: 0.4rem; }
-  .pick { gap: 0.35rem; font-size: 0.58rem; }
+  .link { font-size: 0.78rem; gap: 0.4rem; }
+  .pick { gap: 0.35rem; font-size: 0.62rem; }
   .pick select,
-  .pick input { font-size: 0.95rem; padding: 0.35rem 0.5rem; }
+  .pick input { font-size: 0.9rem; padding: 0.3rem 0.45rem; }
   .pick input { width: 3.2rem; }
 
-  /* Full size, not shrunk: these four are the only things anyone touches during the demo, and
-     the 7" panel is the screen they get touched ON. The height they cost comes back out of the
-     two text panels below, which are read, not operated. */
-  .controls { gap: 0.4rem; }
-  .act { font-size: 1rem; padding: 0.55rem 1rem; }
+  .floor { gap: 0.45rem; grid-template-columns: minmax(0, 1fr) clamp(300px, 37%, 390px); }
+  .rail { gap: 0.45rem; }
+  .status { min-height: 1.1rem; }
   .note,
-  .live { font-size: 0.74rem; }
+  .live { font-size: 0.76rem; }
 
-  /* Only the track gives up width — the knob stays 18px because it is dragged with a finger,
-     and the row has to hold four buttons plus both dials without wrapping at 1024px. */
-  .dial { gap: 0.4rem; padding-left: 0.5rem; }
+  .pad { gap: 0.4rem; }
+  .act { font-size: 1.05rem; min-height: 3.1rem; border-radius: 5px; }
+  .act.primary { font-size: 1.15rem; min-height: 3.5rem; }
+
+  .dials { gap: 0.3rem; padding: 0.4rem 0.55rem; border-radius: 5px; }
+  .dial { grid-template-columns: 2.3rem minmax(0, 1fr) 3rem; gap: 0.5rem; }
   .dial .cap { font-size: 0.66rem; }
-  .dial .val { font-size: 0.82rem; min-width: 2.5rem; }
-  .dial input[type='range'] { width: 5.2rem; }
-
-  .floor { gap: 0.45rem; }
+  .dial .val { font-size: 0.88rem; }
+  .dial input[type='range'] { height: 34px; }
 }
 
 /* Scrollbars, kept in the rack's own palette rather than the browser's. Narrow, because on the
-   7" panel a default-width bar eats a noticeable slice of a 340px-wide column. */
+   7" panel a default-width bar eats a noticeable slice of the feed column. */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
