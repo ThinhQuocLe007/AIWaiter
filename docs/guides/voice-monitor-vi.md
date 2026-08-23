@@ -33,7 +33,7 @@ Trang tự co theo màn:
 
 | Màn | Cách bố trí |
 |-----|-------------|
-| **Màn rời 7" của Jetson (1024×600)** | Bố cục gọn: bỏ dòng phụ dưới tiêu đề và các dòng chú thích nhỏ, module rack thấp lại, chữ nhỏ hơn một nấc. Toàn bộ rack vừa trong 600px — **cả trang không cuộn**, chỉ ô *Hội thoại* và *Nhật ký* cuộn bên trong. |
+| **Màn rời 7" của Jetson (1024×600)** | Bố cục gọn: bỏ dòng phụ dưới tiêu đề và các dòng chú thích nhỏ, module rack thấp lại, chữ trong ô *Hội thoại* và *Nhật ký* nhỏ đi hai nấc. Ngược lại, **4 nút điều khiển và ô chọn thiết bị giữ nguyên cỡ đầy đủ** — đó là những thứ duy nhất phải bấm, mà màn 7" chính là màn được bấm. Toàn bộ vừa trong 600px, **cả trang không cuộn**, chỉ hai ô kia cuộn bên trong. |
 | **Màn desktop** | Bố cục đầy đủ, 2 cột. |
 | **Màn hẹp mà cao** (tablet dựng đứng, < 1100px rộng) | Xếp chồng 1 cột; rack tự xuống 2 hàng khi dưới 900px. |
 

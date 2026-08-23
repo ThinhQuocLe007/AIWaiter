@@ -185,9 +185,9 @@ h2 {
 /* The 7" panel. Roughly four rows of ledger before it scrolls, which leaves the event log
    underneath enough height to be worth looking at. */
 @media (max-height: 700px) {
-  .ledger { padding: 0.6rem 0.7rem 0.5rem; border-radius: 2px; }
-  .head { margin-bottom: 0.45rem; }
-  h2 { font-size: 0.62rem; }
+  .ledger { padding: 0.45rem 0.55rem 0.45rem; border-radius: 2px; }
+  .head { margin-bottom: 0.35rem; }
+  h2 { font-size: 0.56rem; }
   .hint { display: none; }
   .empty { font-size: 0.72rem; }
 

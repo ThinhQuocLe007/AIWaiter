@@ -101,18 +101,18 @@ h2 {
 /* The 7" panel. The two fixed columns shrink to exactly what they hold — "23:04:11" and
    "THIẾT BỊ" — so the message keeps as much of a ~340px-wide column as it can. */
 @media (max-height: 700px) {
-  .log { padding: 0.6rem 0.7rem; border-radius: 2px; }
-  .head { margin-bottom: 0.4rem; }
-  h2 { font-size: 0.62rem; }
+  .log { padding: 0.45rem 0.55rem; border-radius: 2px; }
+  .head { margin-bottom: 0.3rem; }
+  h2 { font-size: 0.56rem; }
   .hint { display: none; }
-  .empty { font-size: 0.72rem; }
+  .empty { font-size: 0.68rem; }
 
-  .lines { font-size: 0.65rem; line-height: 1.45; }
+  .lines { font-size: 0.58rem; line-height: 1.4; }
   .lines li {
-    grid-template-columns: 3.6rem 3.4rem 1fr;
-    gap: 0.35rem;
-    padding: 0.15rem 0;
+    grid-template-columns: 3.1rem 3.1rem 1fr;
+    gap: 0.3rem;
+    padding: 0.1rem 0;
   }
-  .src { font-size: 0.48rem; }
+  .src { font-size: 0.46rem; }
 }
 </style>

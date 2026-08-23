@@ -197,22 +197,23 @@ h2 {
   font-variant-numeric: tabular-nums;
 }
 
-/* The 7" panel. This is the one column people actually read from across a table, so the spoken
-   text keeps most of its size — the padding and the gaps between turns give up the room instead. */
+/* The 7" panel. Deliberately quieter than the rack and the controls: this panel is read, not
+   operated, and giving it back a couple of steps of type size is what pays for full-size
+   buttons above without pushing the event log off the bottom of a 600px screen. */
 @media (max-height: 700px) {
-  .convo { padding: 0.6rem 0.7rem; border-radius: 2px; }
-  .head { margin-bottom: 0.5rem; }
-  h2 { font-size: 0.62rem; }
+  .convo { padding: 0.45rem 0.55rem; border-radius: 2px; }
+  .head { margin-bottom: 0.35rem; }
+  h2 { font-size: 0.56rem; }
   .hint { display: none; }
-  .empty { font-size: 0.72rem; }
+  .empty { font-size: 0.68rem; }
 
-  .scroll { gap: 0.6rem; }
-  .turn { padding-left: 0.6rem; }
-  .meta { font-size: 0.62rem; gap: 0.45rem; margin-bottom: 0.25rem; }
-  .stage { font-size: 0.52rem; }
-  .said { font-size: 0.88rem; line-height: 1.45; margin-bottom: 0.25rem; }
+  .scroll { gap: 0.45rem; }
+  .turn { padding-left: 0.5rem; }
+  .meta { font-size: 0.56rem; gap: 0.4rem; margin-bottom: 0.2rem; }
+  .stage { font-size: 0.48rem; }
+  .said { font-size: 0.78rem; line-height: 1.4; margin-bottom: 0.15rem; }
   .guest::before,
-  .robot::before { font-size: 0.5rem; margin-right: 0.3rem; }
-  .timing { font-size: 0.62rem; margin-top: 0.3rem; }
+  .robot::before { font-size: 0.46rem; margin-right: 0.28rem; }
+  .timing { font-size: 0.56rem; margin-top: 0.22rem; }
 }
 </style>
