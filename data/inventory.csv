@@ -1,0 +1,19 @@
+sku,item,category,supplier,section,aisle,bin,quantity,unit,min_stock,handling,last_received,barcode,desc
+BM01,Bột mì,Thực phẩm khô,Công ty ABC,A,3,12,120,kg,50,,2026-05-10,8931001,Bột mì đa dụng
+DU03,Đường,Thực phẩm khô,Công ty ABC,A,2,8,200,kg,80,,2026-05-12,8931002,Đường trắng tinh luyện
+GA04,Gạo,Thực phẩm khô,HTX Nông dân,A,4,2,300,kg,100,,2026-05-08,8931003,Gạo tẻ thường
+MU05,Muối,Thực phẩm khô,Công ty ABC,A,1,5,150,kg,40,,2026-04-20,8931004,Muối tinh ăn uống
+BA06,Bánh quy,Thực phẩm khô,Công ty XYZ,A,5,3,90,hộp,30,"Dễ vỡ",2026-05-15,8931005,Bánh quy bơ
+BB02,Thùng bia,Đồ uống,Công ty BeerCo,B,1,5,50,thùng,20,,2026-05-18,8932001,Bia hơi đóng thùng
+NN07,Nước ngọt,Đồ uống,Công ty Beverage,B,2,4,120,chai,40,,2026-05-19,8932002,Nước ngọt có ga
+CA08,Cà phê,Đồ uống,Công ty CafeVN,B,3,6,75,gói,25,,2026-05-11,8932003,Cà phê hòa tan
+TR09,Trà,Đồ uống,Công ty TeaVN,B,4,1,60,gói,20,,2026-05-09,8932004,Trà xanh túi lọc
+SU10,Sữa hộp,Đồ uống,Công ty MilkCo,B,5,2,200,hộp,60,"Bảo quản mát",2026-05-20,8932005,Sữa tươi tiệt trùng
+DA05,Dầu ăn,Gia vị & dầu ăn,Công ty OilCo,C,2,9,80,chai,30,,2026-05-14,8933001,Dầu thực vật nấu ăn
+NM11,Nước mắm,Gia vị & dầu ăn,Công ty FishVN,C,1,3,110,chai,40,,2026-05-06,8933002,Nước mắm truyền thống
+TO12,Tương ớt,Gia vị & dầu ăn,Công ty Sauce,C,3,7,95,chai,35,,2026-05-13,8933003,Tương ớt cay
+MT13,Mắm tôm,Gia vị & dầu ăn,Công ty FishVN,C,4,8,45,hũ,15,"Mùi mạnh",2026-04-28,8933004,Mắm tôm chua
+TC14,Thùng carton,Vật tư đóng gói,Công ty Pack,D,1,1,500,cái,150,,2026-05-16,8934001,Thùng carton 40x30
+BK15,Băng keo,Vật tư đóng gói,Công ty Pack,D,2,2,300,cuộn,100,,2026-05-17,8934002,Băng keo trong suốt
+GL16,Găng tay,Vật tư đóng gói,Công ty Safety,D,3,3,250,đôi,80,,2026-05-05,8934003,Găng tay bảo hộ
+BT17,Bút marker,Vật tư đóng gói,Công ty Office,D,4,4,180,cây,50,,2026-05-01,8934004,Bút đánh dấu kho

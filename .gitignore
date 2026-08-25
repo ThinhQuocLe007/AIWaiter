@@ -122,3 +122,6 @@ pict/
 # Documentation
 *.docx
 *.pdf
+
+# Docs maintained in a separate repository
+docs/

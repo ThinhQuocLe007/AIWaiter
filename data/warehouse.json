@@ -1,0 +1,14 @@
+{
+  "sections": {
+    "A": {"name": "Khu A", "contains": "Thực phẩm khô: bột mì, đường, gạo, muối, bánh quy"},
+    "B": {"name": "Khu B", "contains": "Đồ uống: bia, nước ngọt, cà phê, trà, sữa"},
+    "C": {"name": "Khu C", "contains": "Gia vị & dầu ăn: dầu ăn, nước mắm, tương ớt, mắm tôm"},
+    "D": {"name": "Khu D", "contains": "Vật tư đóng gói: thùng carton, băng keo, găng tay, bút"}
+  },
+  "named_places": {
+    "dock":     {"section": "A", "label": "Cầu cảng"},
+    "charging": {"section": "D", "label": "Trạm sạc"},
+    "qc":       {"section": "B", "label": "Khu kiểm hàng"},
+    "packing":  {"section": "D", "label": "Khu đóng gói"}
+  }
+}

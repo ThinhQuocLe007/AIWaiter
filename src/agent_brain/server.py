@@ -1,24 +1,28 @@
-"""AI Waiter — agent (LLM) HTTP service.
+"""Warehouse brain — agent (LLM) HTTP service (replaces the AI Waiter agent).
 
-Runs on the central server: **the LLM lives here**. The Jetson does only mic → VAD → Whisper and
-TTS (see ``src/edge_voice/main.py``); it POSTs the recognised text to ``POST /chat`` and this
-service runs the LangGraph agent, returning the spoken reply (+ stage) for the Jetson to speak.
+Runs on the central server: the LLM lives here. The Jetson edge voice device
+POSTs the recognised text to ``POST /chat/stream``; this service runs the
+warehouse LangGraph agent (inventory Q&A + navigation token) and streams the
+spoken reply back as SSE, and pushes a ``voice.reply`` event to the orchestrator
+so the server stays in the loop.
 
-It also mirrors each turn to the table's ``customer_ui`` through the orchestrator's voice bridge
-(``POST /voice/event``) so the web UI shows the live conversation and follows the agent's UI
-actions (open the menu / the bill). The agent already *decides* those actions
-(``agent/actions.py``); this service is where the *delivery* to the tablet is wired.
+This is the same contract the old AI Waiter ``agent_brain`` exposed
+(``/chat/stream`` SSE, ``/reset``, ``/cart``, ``/health``), so the existing
+``server_orchestrator`` and ``edge_voice`` keep working unchanged — only the
+domain changed from restaurant ordering to warehouse inventory/location.
 
-Run (on the server, alongside the orchestrator backend) — from the repo root, or just ``make agent``:
+Run (on the server, alongside the orchestrator backend) — from the repo root:
     uv run uvicorn src.agent_brain.server:app --host 0.0.0.0 --port 8100
 """
 
 import asyncio
 import json
 import logging
+import re
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
-from queue import Empty, Queue
+from queue import Queue
+from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
@@ -26,69 +30,47 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from src._shared.types import normalise_table_id
-from src.agent_brain.agent.graph import AIWaiterGraph
-from src.agent_brain.config import settings
-from src.agent_brain.services.conversation_logger import log_turn
+from src.agent_brain.config import settings as agent_settings
 from src.agent_brain.services.orchestrator_client import OrchestratorClient
+from src.agent_brain.warehouse.graph import build_graph
+from src.agent_brain.warehouse.memory.checkpointer import get_checkpointer
+from src.agent_brain.utils import logger as log
 
 load_dotenv()
-log = logging.getLogger(__name__)
+
 
 # Loaded once at startup (the LLM/graph is expensive to build) and shared across requests.
-_agent: AIWaiterGraph | None = None
+_graph = None
 _orchestrator = OrchestratorClient()
 
 
 def _warmup() -> None:
-    """Pre-load every model into memory so the FIRST real turn isn't slow.
-
-    Ollama loads a model into RAM/VRAM lazily — only on the first request — and (without keep_alive)
-    evicts it after 5 idle minutes. The embedding model and faster-whisper are likewise lazy. We pin
-    keep_alive=-1 on the ChatOllama clients (see agent/nodes/*), and here fire one tiny inference
-    through each distinct LLM + the RAG retriever so everything is resident before a guest speaks.
-    Best-effort: a warmup failure (e.g. Ollama not up yet) must not stop the service from starting.
-    """
-    from langchain_ollama import ChatOllama
-
-    model_ids = {settings.ROUTER_MODEL, settings.WORKER_MODEL, settings.RESPONSE_MODEL}
-    for model_id in model_ids:
-        try:
-            log.info("Warming up LLM %s ...", model_id)
-            ChatOllama(
-                model=model_id,
-                num_ctx=settings.LLM_NUM_CTX,
-                keep_alive=settings.llm_keep_alive,
-            ).invoke("ok")
-        except Exception as e:  # noqa: BLE001 — Ollama down / model not pulled — log and carry on
-            log.warning("LLM warmup failed for %s: %s", model_id, e)
-
+    """Pre-load models so the FIRST real turn isn't slow (best-effort)."""
     try:
         log.info("Warming up RAG retriever (embedding model) ...")
-        from src.agent_brain.agent.tools.search_tool import search
+        from src.agent_brain.warehouse.tools.live_tools import get_index
 
-        search.invoke({"query": "khởi động"})
-    except Exception as e:  # noqa: BLE001 — startup time; RAG may fail for any reason at warmup
+        get_index()
+    except Exception as e:  # noqa: BLE001 — startup time; RAG may fail for any reason
         log.warning("Retriever warmup failed: %s", e)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _agent
-    log.info("Loading AI Waiter agent graph...")
-    _agent = AIWaiterGraph()
-    log.info("Agent ready. Warming up models...")
+    global _graph
+    log.info("Loading warehouse brain graph...")
+    _graph = build_graph(get_checkpointer())
+    log.info("Warehouse brain ready. Warming up models...")
     await asyncio.to_thread(_warmup)
     log.info("Warmup complete — models resident.")
     yield
 
 
-app = FastAPI(title="AI Waiter Agent", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="Warehouse Brain Agent", version="0.1.0", lifespan=lifespan)
 
 
 class ChatRequest(BaseModel):
-    # The agent layer speaks "T1"-style table refs (graph.chat / main.py / the LLM prompts); only
-    # the backend keys tables by INT. We keep the agent convention here and convert to the INT id
-    # at the tablet seam via normalise_table_id — matching orchestrator_client.
+    # The edge voice device speaks "T1"-style table refs; the orchestrator keys tables by INT.
     table_id: str = "T1"
     text: str
 
@@ -102,191 +84,147 @@ class ChatResponse(BaseModel):
 
 @app.get("/health")
 def health() -> dict:
-    return {"status": "ok", "agent_loaded": _agent is not None}
-
-
-class ResetRequest(BaseModel):
-    table_id: str = "T1"
+    return {"status": "ok", "agent_loaded": _graph is not None}
 
 
 @app.post("/reset")
-def reset_conversation(req: ResetRequest) -> dict:
-    """"Cuộc trò chuyện mới": drop the table's current conversation thread (messages, stage, cart
-    draft). Forwarded here by the orchestrator's POST /voice/new-chat — the guest's next utterance
-    starts a fresh conversation on the same visit/bill."""
-    thread_id = _agent.reset_thread(req.table_id)
+def reset_conversation(req: ChatRequest) -> dict:
+    """""Cuộc trò chuyện mới": drop the table's conversation thread."""
+    thread_id = req.table_id
+    try:
+        _graph.checkpointer.delete_thread(thread_id)
+    except Exception as e:  # noqa: BLE001 — missing thread is fine
+        log.warning("reset thread %s: %s", thread_id, e)
     return {"status": "ok", "thread_id": thread_id}
 
 
-class CartSyncItem(BaseModel):
-    name: str
-    quantity: int
-    note: str | None = None
-
-
 class CartSyncRequest(BaseModel):
-    """The tablet's cart draft after the guest edited it by hand (+/− on the touch screen).
-
-    Always the WHOLE draft, never a delta: the tablet owns what's on screen, so this replaces the
-    agent's cart wholesale. An empty list means "the guest emptied the cart".
-    """
-
     table_id: str = "T1"
-    items: list[CartSyncItem] = []
+    items: list = []
 
 
 @app.post("/cart")
 def sync_cart(req: CartSyncRequest) -> dict:
-    """Push the tablet's cart draft into the agent's state, so both sides hold ONE cart.
+    """Warehouse has no cart — silent no-op kept so the orchestrator's /voice/cart keeps working."""
+    return {"status": "ok", "thread_id": req.table_id}
 
-    Forwarded here by the orchestrator's POST /voice/cart. Deliberately silent — no voice.reply
-    is emitted: the tablet already shows this cart, and echoing it back would fight the guest's
-    next tap. Without this the agent would keep confirming (and billing) its own stale quantities.
-    """
-    return _agent.set_cart(req.table_id, [i.model_dump() for i in req.items])
+
+def _split_sentences(text: str) -> list[str]:
+    """Split a Vietnamese reply into speakable chunks for TTS streaming."""
+    parts = re.split(r"(?<=[.!?;])\s+|\n+", text)
+    return [p.strip() for p in parts if p.strip()]
+
+
+def _run_turn(text: str, table_id: str) -> dict:
+    """Run the warehouse graph for one utterance; returns the final state dict."""
+    config = {"configurable": {"thread_id": table_id}}
+    inputs = {"user_text": text, "session_id": table_id}
+    result = _graph.invoke(inputs, config)
+    return result
 
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest) -> ChatResponse:
-    """Process one recognised utterance: run the agent, mirror it to the tablet, return the reply.
-
-    Sync on purpose — ``AIWaiterGraph.chat`` is a blocking LangGraph invoke; FastAPI runs this in a
-    threadpool so concurrent tables don't block the event loop.
-    """
+    """Non-streaming variant kept for parity / debugging. The running system uses /chat/stream."""
     text = req.text.strip()
     table_id = req.table_id
-    table_int = normalise_table_id(table_id)  # backend/tablet key tables by INT
+    table_int = normalise_table_id(table_id)
 
-    # Show the guest's words on the tablet right away (user bubble + "thinking") — before the LLM,
-    # which on a local model can take a couple of seconds.
     _orchestrator.post_voice_event(
         {"type": "voice.heard", "table_id": table_int, "text": text}
     )
 
-    result = _agent.chat(query=text, table_id=table_id)
-    response = result["response"]
+    result = _run_turn(text, table_id)
+    reply = result.get("reply", "")
     action = result.get("action")
-    stage = result.get("final_stage", "IDLE")
-    session_id = result.get("session_id")
-    cart = result.get("cart")
-    confirmed = result.get("order_confirmed", False)
-    cart_touched = result.get("cart_touched", False)
+    intent = result.get("intent") or "chat"
+    session_id = table_id
 
-    # Mirror the spoken reply + any UI action (open menu / bill) + the live cart draft to the
-    # tablet, so the web cart stays in sync with what the guest ordered by voice. `confirmed`
-    # marks the one turn the order was sent to the kitchen (tablet moves draft → "đã gửi bếp");
-    # `cart_touched` marks the turns that actually changed the cart, so the tablet leaves a
-    # hand-edited draft alone on every other turn.
     _orchestrator.post_voice_event(
         {
             "type": "voice.reply",
             "table_id": table_int,
-            "text": response,
+            "text": reply,
             "action": action,
-            "stage": stage,
-            "cart": cart,
-            "confirmed": confirmed,
-            "cart_touched": cart_touched,
+            "stage": intent,
+            "cart": None,
+            "confirmed": False,
+            "cart_touched": False,
         }
     )
 
-    # Persist the turn to a JSONL transcript for offline review / eval (best-effort).
-    log_turn(
-        table_id=table_id,
-        session_id=session_id,
-        user_text=text,
-        response=response,
-        stage=stage,
-        action=action,
-    )
-
-    return ChatResponse(
-        response=response,
-        final_stage=stage,
-        action=action,
-        session_id=session_id,
-    )
+    return ChatResponse(response=reply, final_stage=intent, action=action, session_id=session_id)
 
 
 @app.post("/chat/stream")
 def chat_stream(req: ChatRequest):
-    """Sentence-level SSE streaming variant of POST /chat.
+    """Sentence-level SSE streaming variant of POST /chat (matches the AI Waiter edge contract).
 
-    Uses a sync generator — Starlette's ``StreamingResponse`` wraps it in a threadpool
-    via ``iterate_in_threadpool``, so blocking calls (``Queue.get``, httpx, LangGraph invoke)
-    never stall the event loop. The client receives ``progress``, ``sentence`` and ``done``
-    SSE events.
+    Emits ``progress`` → ``sentence``* → ``done`` events. ``sentence`` chunks feed the edge TTS;
+    ``done`` carries the structured ``action`` (e.g. a navigate token) + ``stage`` + ``session_id``.
     """
-    q: Queue = Queue()
+    q: Queue = Queue()  # unused but kept for API symmetry with the old agent
 
     def generate():
         table_id = req.table_id
         table_int = normalise_table_id(table_id)
         text = req.text.strip()
 
-        executor = ThreadPoolExecutor(max_workers=1)
+        _orchestrator.post_voice_event(
+            {"type": "voice.heard", "table_id": table_int, "text": text}
+        )
+        yield f"data: {json.dumps({'event': 'progress', 'text': 'processing'})}\n\n"
+        _orchestrator.post_voice_event(
+            {"type": "voice.progress", "table_id": table_int, "status": "đang xử lý..."}
+        )
+
         try:
-            _orchestrator.post_voice_event(
-                {"type": "voice.heard", "table_id": table_int, "text": text}
-            )
+            result = _run_turn(text, table_id)
+        except Exception as e:  # noqa: BLE001 — never break the voice loop on a bad turn
+            log.exception("warehouse turn failed: %s", e)
+            result = {"reply": "Xin lỗi, tôi gặp lỗi khi xử lý yêu cầu.", "intent": "chat", "action": None}
 
-            yield f"data: {json.dumps({'event': 'progress', 'text': 'processing'})}\n\n"
-            _orchestrator.post_voice_event(
-                {"type": "voice.progress", "table_id": table_int, "status": "đang xử lý..."}
-            )
+        reply = result.get("reply", "")
+        action = result.get("action")
+        intent = result.get("intent") or "chat"
+        session_id = table_id
 
-            future = executor.submit(_agent.chat, text, table_id, None, q)
+        _orchestrator.post_voice_event(
+            {
+                "type": "voice.reply",
+                "table_id": table_int,
+                "text": reply,
+                "action": action,
+                "stage": intent,
+                "cart": None,
+                "confirmed": False,
+                "cart_touched": False,
+            }
+        )
 
-            while True:
-                try:
-                    msg = q.get(timeout=0.1)
-                    event_type, payload = msg
-                    if event_type == "sentence":
-                        yield f"data: {json.dumps({'event': 'sentence', 'text': payload})}\n\n"
-                except Empty:
-                    if future.done():
-                        while True:
-                            try:
-                                msg = q.get_nowait()
-                                if msg[0] == "sentence":
-                                    payload = json.dumps(
-                                        {"event": "sentence", "text": msg[1]}
-                                    )
-                                    yield f"data: {payload}\n\n"
-                            except Empty:
-                                break
-                        break
+        for sentence in _split_sentences(reply):
+            yield f"data: {json.dumps({'event': 'sentence', 'text': sentence})}\n\n"
 
-            result = future.result()
-
-            response = result["response"]
-            action = result.get("action")
-            stage = result.get("final_stage", "IDLE")
-            session_id = result.get("session_id")
-            cart = result.get("cart")
-            confirmed = result.get("order_confirmed", False)
-            cart_touched = result.get("cart_touched", False)
-
-            _orchestrator.post_voice_event({
-                "type": "voice.reply", "table_id": table_int,
-                "text": response, "action": action,
-                "stage": stage, "cart": cart, "confirmed": confirmed,
-                "cart_touched": cart_touched,
-            })
-
-            log_turn(
-                table_id=table_id, session_id=session_id,
-                user_text=text, response=response,
-                stage=stage, action=action,
-            )
-
-            done_data = json.dumps({
-                "event": "done",
-                "action": action, "stage": stage,
-                "session_id": session_id,
-            })
-            yield f"data: {done_data}\n\n"
-        finally:
-            executor.shutdown(wait=False)
+        done_data = json.dumps(
+            {"event": "done", "action": action, "stage": intent, "session_id": session_id}
+        )
+        yield f"data: {done_data}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")
+
+
+def _port() -> int:
+    try:
+        return int(urlparse(agent_settings.AGENT_URL).port)
+    except Exception:  # noqa: BLE001
+        return 8100
+
+
+def main() -> None:
+    import uvicorn
+
+    uvicorn.run("src.agent_brain.server:app", host="0.0.0.0", port=_port())
+
+
+if __name__ == "__main__":
+    main()
