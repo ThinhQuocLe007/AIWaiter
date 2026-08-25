@@ -11,6 +11,10 @@
 #   make install UV_EXTRAS="--extra voice"                               # Jetson robot
 UV_EXTRAS ?=
 
+# The four Vite apps under src/frontends/. `install`, `build` and `frontend` all iterate this —
+# add a new app here ONCE instead of in three places (monitor was missing from `install`).
+FRONTENDS := customer_ui kiosk panel monitor
+
 # The repo-root venv interpreter. Targets that must NOT trigger a `uv sync` (the Jetson voice
 # ones — see the `voice` target) call this instead of `uv run`. Fails loudly if setup never ran.
 VENV_PY := .venv/bin/python
@@ -54,12 +58,12 @@ setup:
 	@./setup.sh
 
 install:
-	@echo "Installing customer_ui dependencies..."
-	@if [ -f "src/frontends/customer_ui/package.json" ]; then cd src/frontends/customer_ui && npm ci; else echo "src/frontends/customer_ui not scaffolded yet, skipping."; fi
-	@echo "Installing kiosk dependencies..."
-	@if [ -f "src/frontends/kiosk/package.json" ]; then cd src/frontends/kiosk && npm install; else echo "src/frontends/kiosk not scaffolded yet, skipping."; fi
-	@echo "Installing panel dependencies..."
-	@if [ -f "src/frontends/panel/package.json" ]; then cd src/frontends/panel && npm install; else echo "src/frontends/panel not scaffolded yet, skipping."; fi
+	@for app in $(FRONTENDS); do \
+		if [ -f "src/frontends/$$app/package.json" ]; then \
+			echo "Installing $$app dependencies..."; \
+			(cd src/frontends/$$app && npm ci) || exit 1; \
+		else echo "src/frontends/$$app not scaffolded yet, skipping."; fi; \
+	done
 	@echo "Installing backend dependencies (root uv env)..."
 	@# --inexact: keep role extras (server/voice/cu12/cu13) already installed instead of
 	@# pruning them. Plain `uv sync` syncs to base-only and would REMOVE uvicorn/torch/etc.
@@ -109,10 +113,7 @@ monitor:
 # after every `git pull`.
 build:
 	@echo "Building customer_ui, kiosk, panel, monitor for production..."
-	@cd src/frontends/customer_ui && npm run build
-	@cd src/frontends/kiosk && npm run build
-	@cd src/frontends/panel && npm run build
-	@cd src/frontends/monitor && npm run build
+	@for app in $(FRONTENDS); do (cd src/frontends/$$app && npm run build) || exit 1; done
 	@echo ""
 	@echo "Done. Restart 'make backend' — it serves:"
 	@echo "    http://<SERVER_IP>:8000/        customer_ui (robot / table tablet)"
