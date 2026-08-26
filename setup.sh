@@ -29,10 +29,13 @@ export NVM_DIR="$HOME/.nvm"
 if [ ! -d "$NVM_DIR" ]; then
     echo -e "${YELLOW}Installing nvm v0.40.4...${NC}"
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash
-    \. "$NVM_DIR/nvm.sh"
+    # `|| true`: on a fresh box with no Node yet, nvm.sh ends by trying `nvm use default`,
+    # finds nothing, and returns 3. Harmless, but `set -e` above turns it into a hard abort
+    # before we ever reach `nvm install` below.
+    \. "$NVM_DIR/nvm.sh" || true
 else
     echo -e "${GREEN}nvm already installed${NC}"
-    \. "$NVM_DIR/nvm.sh"
+    \. "$NVM_DIR/nvm.sh" || true
 fi
 
 # Step 2: Install Node.js version from .nvmrc
