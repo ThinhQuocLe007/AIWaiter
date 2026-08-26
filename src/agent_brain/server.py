@@ -88,9 +88,12 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Warehouse Brain Agent", version="0.1.0", lifespan=lifespan)
 
 
-class ChatRequest(BaseModel):
+class SessionRequest(BaseModel):
     # The edge voice device speaks "T1"-style table refs; the orchestrator keys tables by INT.
     table_id: str = "T1"
+
+
+class ChatRequest(SessionRequest):
     text: str
 
 
@@ -107,7 +110,7 @@ def health() -> dict:
 
 
 @app.post("/reset")
-def reset_conversation(req: ChatRequest) -> dict:
+def reset_conversation(req: SessionRequest) -> dict:
     """""Cuộc trò chuyện mới": drop the table's conversation thread."""
     thread_id = req.table_id
     try:

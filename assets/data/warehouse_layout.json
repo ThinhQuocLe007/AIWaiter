@@ -3,7 +3,7 @@
     "dir": "workshop-main/warehouse_agv_demo/maps",
     "image": "warehouse_lidar.pgm",
     "yaml": "warehouse_lidar.yaml",
-    "fallback_dir": "workshop-main/warehouse_agv_demo/maps"
+    "fallback_dir": "../warehouse_agv_demo/maps"
   },
   "dock": {
     "name": "Dock",
