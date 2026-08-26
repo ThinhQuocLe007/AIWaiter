@@ -14,6 +14,29 @@ Vì sao chia vậy: Jetson chạy ROS 2 Humble, laptop chạy Jazzy — DDS hai 
 nên chặng robot đi UDP thuần. Chặng LLM đi HTTP vì mất một lượt hội thoại là mất câu trả lời, còn
 lệnh dừng thì không được phép nằm chờ TCP gửi lại.
 
+## IP cố định của buổi demo
+
+| Máy | IP | Mạng overlay |
+|---|---|---|
+| PC server (agent + web) | `172.25.223.218` | **ZeroTier** |
+| Jetson (giọng nói) | `100.66.136.17` | **Netbird** |
+| Laptop (Gazebo) | `100.66.149.248` | **Netbird** |
+
+> **Hai mạng overlay khác nhau.** PC server ở ZeroTier (`172.25.x`), Jetson và laptop ở Netbird
+> (`100.66.x`). Netbird **không** định tuyến sang ZeroTier — `netbird status` báo `Networks: -`.
+> Nên **Jetson phải tham gia CẢ HAI mạng**: Netbird để bắn lệnh sang laptop, ZeroTier để gọi LLM
+> trên PC. Thiếu một cái thì triệu chứng nhìn y hệt lỗi phần mềm — robot im lặng hoặc agent không
+> trả lời — và bạn sẽ mò nhầm chỗ.
+>
+> Kiểm 5 giây, chạy trên máy nào cũng được:
+>
+> ```bash
+> make netcheck
+> ```
+>
+> Nó phân biệt được "không tới được máy đó" (lỗi mạng) với "tới được nhưng dịch vụ chưa bật"
+> (chỉ cần chạy `make backend`). Chạy nó **trước** khi nghi ngờ mic, LLM hay robot.
+
 | | Cần cài | Không cần |
 |---|---|---|
 | PC server | uv, Node 22, Ollama, model 14b | ROS, Gazebo |
@@ -116,10 +139,10 @@ Build cả 4 trang (customer_ui, kiosk, panel, **monitor**) ra `dist/`. Sau đó
 phục vụ luôn, **không cần chạy npm lúc demo**:
 
 ```
-http://<IP_PC>:8000/monitor     ← màn hình demo
-http://<IP_PC>:8000/panel
-http://<IP_PC>:8000/kiosk
-http://<IP_PC>:8000/
+http://172.25.223.218:8000/monitor     ← màn hình demo
+http://172.25.223.218:8000/panel
+http://172.25.223.218:8000/kiosk
+http://172.25.223.218:8000/
 ```
 
 Chạy lại `make build` sau mỗi lần `git pull` có đụng `src/frontends/`.
@@ -173,11 +196,11 @@ Trên Jetson **phải sửa 3 dòng** — chú ý đây là **hai địa chỉ k
 
 ```ini
 # LLM + web: qua VPN, tới PC ở nhà
-ORCHESTRATOR_URL=http://100.66.165.221:8000
-AGENT_URL=http://100.66.165.221:8100
+ORCHESTRATOR_URL=http://172.25.223.218:8000
+AGENT_URL=http://172.25.223.218:8100
 
 # Robot: qua LAN tại chỗ demo, tới LAPTOP chạy Gazebo
-ROBOT_UDP_HOST=192.168.1.20        # ← IP LAN của laptop, chạy `ip a` bên đó để lấy
+ROBOT_UDP_HOST=100.66.149.248      # laptop Gazebo, qua Netbird
 ```
 
 Để trống `ROBOT_UDP_HOST` thì Jetson chỉ nghe và trả lời, không điều khiển robot — đúng cho lúc
@@ -195,7 +218,7 @@ Chạy cái này sau mỗi lần reboot hoặc đổi cổng USB. Nó tách bạ
 ## B4. Chạy
 
 ```bash
-make jetson SERVER_HOST=100.66.165.221:8000 ID=robo-1 VOICE=1 WEB=1 STACK=0
+make jetson SERVER_HOST=172.25.223.218:8000 ID=robo-1 VOICE=1 WEB=1 STACK=0
 ```
 
 Một lệnh cho cả buổi: bật voice + mở trình duyệt kiosk vào `/monitor` trên PC.
@@ -349,7 +372,8 @@ khớp từ khóa 76 dòng, docstring tự ghi là bản thay tạm chờ model 
 | Agent trả lời được vài câu rồi 500 | router train từ bộ nhãn cũ | `make train-router` lại |
 | Ollama trả 404 | `LLM_MODEL` không khớp tên đã pull | `ollama list` rồi sửa `.env` cho khớp |
 | `make build` chết ở monitor | thiếu node_modules | `make install` (đã sửa để cài cả monitor) |
-| Nói xong robot không nhúc nhích, Jetson báo `Robot KHÔNG phản hồi` | sai `ROBOT_UDP_HOST`, hoặc cầu chưa chạy | `ip a` trên **host** laptop; `make say TEXT="dừng lại"` để thử lại |
+| Nói xong robot không nhúc nhích, Jetson báo `Robot KHÔNG phản hồi` | cầu chưa chạy, hoặc Jetson không cùng mạng với laptop | `make netcheck` trên Jetson |
+| Jetson gọi agent không được | Jetson chưa vào ZeroTier (PC ở mạng đó) | `make netcheck`; `sudo zerotier-cli listnetworks` trên Jetson |
 | Laptop log `KHÔNG CÓ LỜI GIẢI TỪ BRAIN — tự đọc` | VPN/PC không tới được | robot vẫn chạy bằng nhánh dự phòng; kiểm `AGENT_URL` trên Jetson |
 | Laptop log `KHÔNG LÀM ĐƯỢC: sa bàn không có khu 'D'` | data lệch sa bàn | `make checkmap` trên PC |
 | Nói "dừng lại" mà xe vẫn chạy | cầu chạy ở terminal chưa `source` ROS, hoặc chạy trên host thay vì trong container | lúc khởi động phải in `Giữ tốc độ: publisher … sẵn sàng` |
@@ -382,6 +406,7 @@ Ctrl-C từng cửa sổ. Trên laptop tắt **cầu UDP trước**, `run_demo.s
 | `make probe` | Jetson | thử mic, in text ra màn hình |
 | `./run_demo.sh` | Laptop | Gazebo + Nav2 + V-JEPA |
 | `python3 -m src.robot_link.bridge --demo-dir … --bind 0.0.0.0:45455` | Laptop | cầu UDP |
+| `make netcheck` | bất kỳ | ba máy có thông nhau không |
 | `make checkmap` | bất kỳ | data có khớp sa bàn không |
 | `make caps` | bất kỳ | bảng câu nói → lệnh robot |
 | `make say TEXT="…" [DRY=1]` | Jetson, PC | gõ câu bắn thẳng sang robot |
