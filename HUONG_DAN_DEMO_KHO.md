@@ -18,24 +18,34 @@ lệnh dừng thì không được phép nằm chờ TCP gửi lại.
 
 | Máy | IP | Mạng overlay |
 |---|---|---|
-| PC server (agent + web) | `172.25.223.218` | **ZeroTier** |
-| Jetson (giọng nói) | `100.66.136.17` | **Netbird** |
-| Laptop (Gazebo) | `100.66.149.248` | **Netbird** |
+| PC server (agent + web) | `172.25.223.218` | ZeroTier |
+| Jetson (giọng nói) | `172.25.171.115` | ZeroTier |
+| Jetson — cùng máy đó | `100.66.136.17` | Netbird |
+| Laptop (Gazebo) | `100.66.149.248` | Netbird |
 
-> **Hai mạng overlay khác nhau.** PC server ở ZeroTier (`172.25.x`), Jetson và laptop ở Netbird
-> (`100.66.x`). Netbird **không** định tuyến sang ZeroTier — `netbird status` báo `Networks: -`.
-> Nên **Jetson phải tham gia CẢ HAI mạng**: Netbird để bắn lệnh sang laptop, ZeroTier để gọi LLM
-> trên PC. Thiếu một cái thì triệu chứng nhìn y hệt lỗi phần mềm — robot im lặng hoặc agent không
-> trả lời — và bạn sẽ mò nhầm chỗ.
->
+**Jetson nằm trên cả hai mạng, mỗi chặng đi một mạng khác nhau:**
+
+```
+Jetson ──ZeroTier── PC server 172.25.223.218      LLM + web
+Jetson ──Netbird─── laptop    100.66.149.248      lệnh robot
+```
+
+PC chỉ có mặt trên ZeroTier, laptop chỉ có mặt trên Netbird, và Netbird **không** định tuyến sang
+ZeroTier (`netbird status` báo `Networks: -`). Jetson bắc được cả hai nên chuỗi chạy thông.
+
+Không phải khai IP của chính Jetson ở đâu cả — kernel tự chọn đường theo IP đích. Chỉ cần đặt
+đúng **IP đích** trong `.env`.
+
 > Kiểm 5 giây, chạy trên máy nào cũng được:
 >
 > ```bash
 > make netcheck
 > ```
 >
-> Nó phân biệt được "không tới được máy đó" (lỗi mạng) với "tới được nhưng dịch vụ chưa bật"
-> (chỉ cần chạy `make backend`). Chạy nó **trước** khi nghi ngờ mic, LLM hay robot.
+> Nó in luôn interface mà kernel chọn để đi (`qua zt… (ZeroTier)` / `qua wt0 (Netbird)`), nên gõ
+> nhầm IP của mạng kia là thấy ngay. Và nó phân biệt "không tới được máy đó" (lỗi mạng) với "tới
+> được nhưng dịch vụ chưa bật" (chỉ cần `make backend`). Chạy nó **trước** khi nghi ngờ mic, LLM
+> hay robot.
 
 | | Cần cài | Không cần |
 |---|---|---|
@@ -373,7 +383,7 @@ khớp từ khóa 76 dòng, docstring tự ghi là bản thay tạm chờ model 
 | Ollama trả 404 | `LLM_MODEL` không khớp tên đã pull | `ollama list` rồi sửa `.env` cho khớp |
 | `make build` chết ở monitor | thiếu node_modules | `make install` (đã sửa để cài cả monitor) |
 | Nói xong robot không nhúc nhích, Jetson báo `Robot KHÔNG phản hồi` | cầu chưa chạy, hoặc Jetson không cùng mạng với laptop | `make netcheck` trên Jetson |
-| Jetson gọi agent không được | Jetson chưa vào ZeroTier (PC ở mạng đó) | `make netcheck`; `sudo zerotier-cli listnetworks` trên Jetson |
+| Jetson gọi agent không được | ZeroTier trên Jetson rớt (PC chỉ có ở mạng đó) | `make netcheck` — dòng PC phải ghi `qua zt… (ZeroTier)`; `sudo zerotier-cli listnetworks` |
 | Laptop log `KHÔNG CÓ LỜI GIẢI TỪ BRAIN — tự đọc` | VPN/PC không tới được | robot vẫn chạy bằng nhánh dự phòng; kiểm `AGENT_URL` trên Jetson |
 | Laptop log `KHÔNG LÀM ĐƯỢC: sa bàn không có khu 'D'` | data lệch sa bàn | `make checkmap` trên PC |
 | Nói "dừng lại" mà xe vẫn chạy | cầu chạy ở terminal chưa `source` ROS, hoặc chạy trên host thay vì trong container | lúc khởi động phải in `Giữ tốc độ: publisher … sẵn sàng` |
