@@ -1,7 +1,7 @@
 # Makefile - Convenience commands for AI Waiter project
 # Run 'make help' to see available commands
 
-.PHONY: help setup install update frontend menu kiosk panel monitor backend agent voice probe mockrobot simbridge hwbridge hwstack jetson robotlink checkmap caps say netcheck train-router map build serve kill reset clean
+.PHONY: help setup install update frontend menu kiosk panel monitor backend agent voice probe mockrobot simbridge hwbridge hwstack jetson robotlink checkmap caps say netcheck health train-router map build serve kill reset clean
 
 # Role-specific Python extras for the backend env (see docs/setup-deploy.md). Each machine
 # picks ONLY its role: fastapi/uvicorn live in `--extra server`, STT/TTS in `--extra voice`,
@@ -44,6 +44,7 @@ help:
 	@echo "  make say        - Gõ câu tiếng Việt bắn sang robot: make say TEXT=\"dừng lại\" [DRY=1]"
 	@echo "  make train-router - Train lại bộ phân loại ý định sau khi sửa intents.json"
 	@echo "  make netcheck   - Kiểm PC/Jetson/laptop có thông nhau không"
+	@echo "  make health     - [Jetson] Kiểm mic, loa, màn rời, model, thư viện CUDA"
 	@echo "  make mockrobot  - Start a mock robot WS client (ID=robo-1 ARGS=...) to test the dispatcher"
 	@echo "  make simbridge  - Gazebo robot bridge (sim demo); make backend SIM=1 for the sim map"
 	@echo "  make hwstack    - REAL robot, all-in-one on the Jetson: localization + Nav2 + bridge"
@@ -197,6 +198,12 @@ ORCH ?=
 robotlink:
 	@python3 -m src.robot_link.bridge --demo-dir $(DEMO_DIR) --bind $(UDP_BIND) \
 		$(if $(ORCH),--orchestrator $(ORCH),) $(ARGS)
+
+# [JETSON] Health check phần cứng trước demo: thư viện ctranslate2/CUDA, model đã tải chưa,
+# mic/loa USB có đúng là default sink/source của pulse không, màn rời đã cắm chưa, có trình
+# duyệt kiosk không. Chạy sau MỖI lần boot Jetson.
+health:
+	@bash scripts/jetson_healthcheck.sh
 
 # Kiểm ba máy có nói chuyện được với nhau không. Stdlib thuần, chạy được ở mọi máy kể cả chưa
 # cài venv. Chạy nó TRƯỚC khi nghi ngờ mic, LLM hay robot.

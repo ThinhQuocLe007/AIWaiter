@@ -3,11 +3,11 @@
 Ba máy, mỗi máy một việc. Đọc đúng mục của máy đang ngồi, làm từ trên xuống.
 
 ```
-JETSON (Ubuntu 22)                PC SERVER (ở nhà, VPN)          LAPTOP (Ubuntu 24)
-mic → VAD → Whisper → TTS  ──VPN──►  agent LLM :8100              Gazebo + Nav2 + V-JEPA
-       │                             backend web :8000            cầu UDP nghe :45455
-       │                                    └──► màn hình monitor
-       └────── UDP, LAN tại chỗ demo ──────────────────────────►  AGV chạy
+JETSON (Ubuntu 22)                PC SERVER                       LAPTOP (Ubuntu 24)
+mic → VAD → Whisper → TTS ─ZeroTier─►  agent LLM :8100              Gazebo + Nav2 + V-JEPA
+       │                               backend web :8000            cầu UDP nghe :45455
+       │                                      └──► màn hình monitor
+       └────── UDP qua Netbird ────────────────────────────────►  AGV chạy
 ```
 
 Vì sao chia vậy: Jetson chạy ROS 2 Humble, laptop chạy Jazzy — DDS hai bản không nói chuyện được
@@ -205,18 +205,59 @@ cp .env.template .env
 Trên Jetson **phải sửa 3 dòng** — chú ý đây là **hai địa chỉ khác nhau**, đừng lẫn:
 
 ```ini
-# LLM + web: qua VPN, tới PC ở nhà
+# LLM + web: qua ZeroTier, tới PC server
 ORCHESTRATOR_URL=http://172.25.223.218:8000
 AGENT_URL=http://172.25.223.218:8100
 
-# Robot: qua LAN tại chỗ demo, tới LAPTOP chạy Gazebo
+# Robot: qua Netbird, tới LAPTOP chạy Gazebo
 ROBOT_UDP_HOST=100.66.149.248      # laptop Gazebo, qua Netbird
 ```
 
 Để trống `ROBOT_UDP_HOST` thì Jetson chỉ nghe và trả lời, không điều khiển robot — đúng cho lúc
 test mic hoặc demo web mà chưa mở sa bàn.
 
-## B3. Thử micro trước (không cần server)
+## B3. Health check phần cứng — chạy sau MỖI lần boot
+
+```bash
+make health
+```
+
+Jetson là máy hay hỏng vặt nhất trong ba máy: thư viện `ctranslate2` build tay có thể mất sau khi
+`ldconfig` chạy lại, model có thể chưa tải, và pulse hay tự đổi thiết bị mặc định sau khi cắm/rút
+USB. Script kiểm 5 nhóm:
+
+| Nhóm | Kiểm gì |
+|---|---|
+| Hạ tầng | `libctranslate2.so.4`, `libcudss.so.0`, swapfile 16G |
+| Python env | torch + CUDA, ctranslate2 + CUDA, faster-whisper, deps voice |
+| Model cache | Whisper medium, Silero VAD, Piper TTS — **cần cho chạy offline** |
+| Cấu hình demo | `.env`, mic USB, **default sink/source của pulse**, âm lượng, mute |
+| Màn rời | cổng màn hình đang cắm, trình duyệt kiosk, `curl` |
+
+Cuối cùng in `══ N OK, M LỖI ══`. **Chỉ đi tiếp khi `M = 0`.**
+
+Hai dòng đáng chú ý nhất:
+
+**`default sink/source`** — PortAudio không kê được card USB khi pulse đang giữ nó, nên VAD/TTS rơi
+về `default` → pulse → default sink/source. Tức là **hai giá trị mặc định của pulse chính là đường
+âm thanh thật**. Trỏ sai (mặc định của board là jack analog trống, hoặc HDMI mà màn hình không có
+loa) thì chạy không lỗi, log sạch, mà **câm như hến**. Script in sẵn lệnh sửa:
+
+```bash
+pactl set-default-sink   <tên-sink-USB>
+pactl set-default-source <tên-source-USB>
+```
+
+**Màn rời** — nếu không cổng nào đang cắm, `make jetson WEB=1` sẽ mở trình duyệt vào hư không.
+Không có màn thì chạy `make jetson WEB=0` cho gọn.
+
+Chạy được ở đường dẫn bất kỳ (tự suy ra từ vị trí file). Repo nằm chỗ lạ thì:
+
+```bash
+AIWAITER_ROOT=/duong/dan/toi/AIWaiter make health
+```
+
+## B4. Thử micro (không cần server)
 
 ```bash
 make probe        # nói vào mic, in ra text
@@ -225,7 +266,9 @@ make probe        # nói vào mic, in ra text
 Chạy cái này sau mỗi lần reboot hoặc đổi cổng USB. Nó tách bạch lỗi âm thanh khỏi lỗi mạng —
 đừng đi tiếp khi nó chưa in ra đúng câu bạn nói.
 
-## B4. Chạy
+## B5. Chạy
+
+Chạy `make health` trước, phải ra `0 LỖI` rồi mới bật.
 
 ```bash
 make jetson SERVER_HOST=172.25.223.218:8000 ID=robo-1 VOICE=1 WEB=1 STACK=0
@@ -323,6 +366,8 @@ thời gian nhất.
 
 | Bậc | Ở đâu | Làm gì | Đúng thì thấy |
 |---|---|---|---|
+| 0a | Jetson | `make health` | `══ N OK, 0 LỖI ══` |
+| 0b | Jetson | `make netcheck` | cả ba dòng `[ OK ]` |
 | 1 | PC | `make checkmap` | `KẾT QUẢ: TẤT CẢ KHỚP` |
 | 2 | PC / Jetson | `make say TEXT="dẫn tôi đi lấy thùng bia" DRY=1` | `pick_box.sh --storage B --deliver --color blue` |
 | 3 | Laptop + Jetson | cầu chạy với `--dry-run`, Jetson gõ `make say TEXT="dẫn tôi đi lấy thùng bia"` | Jetson: `✓ Robot đã nhận` · Laptop: `CHẠY pick_box.sh …` |
@@ -390,6 +435,10 @@ khớp từ khóa 76 dòng, docstring tự ghi là bản thay tạm chờ model 
 | Xe nhích nhẹ khi hô dừng | đang ở đoạn camera gắp hàng | nói "hủy chuyến" — xem mục E |
 | Lượt thứ hai không thấy công nhân băng qua | có ai gọi thẳng `run_storage_pick.sh` | cầu luôn gọi `pick_box.sh`, chỉ nó mới reset công nhân |
 | Container báo `make: command not found` | ảnh ROS gọn không có make | gọi thẳng `python3 -m src.robot_link.bridge …` |
+| Robot không phát ra tiếng, log sạch không lỗi | pulse trỏ default sink sang jack/HDMI thay vì loa USB | `make health` — nó in sẵn lệnh `pactl set-default-sink …` |
+| Nói mà không ai nghe | default source không phải mic USB | `make health` → `pactl set-default-source …` |
+| `make jetson` mở trình duyệt rồi không thấy gì | màn rời chưa cắm | `make health` xem có cổng nào `connected` không; không màn thì `make jetson WEB=0` |
+| Whisper chết ngay khi khởi động | `ldconfig` chạy lại làm mất libctranslate2 | `make health` → `sudo ldconfig` |
 | Robot đọc to một câu quảng cáo YouTube | Whisper bịa trên tiếng động ngắn | đã có bộ lọc; kiểm `grep -q "def _is_hallucination" src/edge_voice/perception/stt_phowhisper.py && echo CÓ` |
 | Web monitor đứng ở "Sẵn sàng" suốt lượt | backend không nhận được lượt nói | kiểm `make agent` còn sống và `ORCHESTRATOR_URL` trên Jetson |
 
@@ -416,6 +465,7 @@ Ctrl-C từng cửa sổ. Trên laptop tắt **cầu UDP trước**, `run_demo.s
 | `make probe` | Jetson | thử mic, in text ra màn hình |
 | `./run_demo.sh` | Laptop | Gazebo + Nav2 + V-JEPA |
 | `python3 -m src.robot_link.bridge --demo-dir … --bind 0.0.0.0:45455` | Laptop | cầu UDP |
+| `make health` | Jetson | mic, loa, màn rời, model, thư viện CUDA |
 | `make netcheck` | bất kỳ | ba máy có thông nhau không |
 | `make checkmap` | bất kỳ | data có khớp sa bàn không |
 | `make caps` | bất kỳ | bảng câu nói → lệnh robot |

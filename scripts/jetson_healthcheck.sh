@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 # Health check Jetson trước demo. Chạy sau mỗi lần boot.
-R=/home/orin/AI_voice/AIWaiter; VP=$R/.venv/bin/python; ok=0; bad=0
+#
+# Đường dẫn repo suy ra từ vị trí file này, không hardcode: cắm sai đường dẫn thì mọi kiểm tra
+# .venv/.env/model đều báo LỖI, và cái lỗi đó nhìn hệt như "chưa cài gì" — mất công cài lại từ đầu
+# một máy vốn đã đủ. Ghi đè khi cần:  AIWAITER_ROOT=/duong/dan ./scripts/jetson_healthcheck.sh
+R="${AIWAITER_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+VP=$R/.venv/bin/python; ok=0; bad=0
+echo "Repo: $R"
 p(){ if [ "$1" = 1 ]; then echo "  [OK]   $2"; ok=$((ok+1)); else echo "  [LỖI]  $2"; bad=$((bad+1)); fi; }
 
 echo "── Hạ tầng ──"
@@ -43,6 +49,32 @@ VOL=$(pactl get-sink-volume @DEFAULT_SINK@ 2>/dev/null | grep -o '[0-9]*%' | hea
   && p 1 "âm lượng loa: $VOL" \
   || p 0 "âm lượng loa 0% hoặc không đọc được → pactl set-sink-volume @DEFAULT_SINK@ 45%"
 pactl get-sink-mute @DEFAULT_SINK@ 2>/dev/null | grep -q "no" && p 1 "loa không mute" || p 0 "loa đang MUTE → pactl set-sink-mute @DEFAULT_SINK@ 0"
+echo "── Màn rời + trình duyệt ──"
+# `make jetson WEB=1` mở trình duyệt kiosk vào /monitor trên màn rời. Ba thứ phải có, và thiếu
+# thứ nào cũng chỉ lộ ra lúc script chạy tới dòng cuối — tức là ngay trước mặt khách.
+export DISPLAY="${DISPLAY:-:0}"
+if command -v xrandr >/dev/null 2>&1; then
+	CONNECTED=$(xrandr --query 2>/dev/null | grep -c " connected")
+	if [ "${CONNECTED:-0}" -gt 0 ]; then
+		p 1 "màn hình: $CONNECTED cổng đang cắm (DISPLAY=$DISPLAY)"
+		xrandr --query 2>/dev/null | grep " connected" \
+			| sed 's/^\([^ ]*\) connected[^0-9]*\([0-9x+]*\).*/         \1  \2/'
+	else
+		p 0 "KHÔNG cổng màn hình nào đang cắm → kiểm dây HDMI/DP, hoặc chạy make jetson WEB=0"
+	fi
+else
+	echo "  [info] chưa cài xrandr, bỏ qua kiểm màn (sudo apt install x11-xserver-utils)"
+fi
+BR=""
+for b in firefox chromium-browser chromium google-chrome; do
+	command -v "$b" >/dev/null 2>&1 && { BR="$b"; break; }
+done
+[ -n "$BR" ] && p 1 "trình duyệt kiosk: $BR" \
+	|| p 0 "KHÔNG có firefox/chromium → jetson_run.sh sẽ chỉ in URL ra rồi thôi"
+# jetson_run.sh dùng curl để chờ backend lên trước khi mở kiosk; thiếu curl thì nó chờ hụt.
+command -v curl >/dev/null 2>&1 && p 1 "curl" || p 0 "thiếu curl → sudo apt install curl"
+
+echo "── Thông tin thêm ──"
 echo "  [info] power mode: $(cat /var/lib/nvpmodel/status 2>/dev/null) (0002=MAXN_SUPER là tốt nhất)"
 echo "  [info] governor  : $(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)"
 echo
