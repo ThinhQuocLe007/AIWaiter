@@ -11,12 +11,9 @@ Two kinds of clients share this hub:
   one *specific* robot (`send_to_robot`), and the robot reports back (`task_accepted`, `arrived`,
   `task_done`, `heartbeat`) which the dispatcher acts on. So robot sockets are tracked by id and
   their inbound frames are parsed and routed, not dropped.
-* **Voice devices** (`role=voice-device&robot_id=robo-1`): the mic loop on a robot's Jetson. Keyed
-  by the *same* robot id as the robot socket — one physical robot, two sockets (motion vs mic). The
-  device is reached by *table*, not id: the dispatcher binds `table → robot` when that robot arrives
-  at the table (`bind_table_robot`), so "table 3 wants to talk" resolves to whichever robot is
-  currently standing at table 3. This is the dynamic-dispatch model: a robot isn't tied to a table,
-  it's tied to one *while serving it*.
+* **Voice devices** (`role=voice-device&robot_id=robo-1`): the mic loop on an AGV's Jetson. Keyed
+  by the *same* robot id as the robot socket — one physical AGV, two sockets (motion vs mic). The
+  device is reached by *robot id* (the operator panel names the AGV it wants to talk), not by table.
 
 The socket *registry* lives in ``connection_manager.py`` (the ``manager`` singleton). This
 module owns the ``/ws`` endpoint and the robot-frame dispatcher routing.

@@ -1,9 +1,10 @@
 """Central Orchestrator server settings.
 
-This server is the restaurant "coordination brain" (mục 8 of docs/SYSTEM_ARCHITECTURE.md):
-it owns table/order/payment state and dispatches tasks to robots. It is intentionally
-standalone — it does NOT import src.agent_brain (the LLM Brain that runs on the same
-server but as a separate FastAPI service), so it can later run on its own machine.
+This server is the warehouse "coordination brain": it owns fleet state and
+dispatches navigation tasks to the AGV(s) on command from the warehouse brain
+(``src.agent_brain``). It is intentionally standalone — it does NOT import
+``src.agent_brain`` (the LLM Brain that runs as a separate FastAPI service), so it
+can later run on its own machine.
 """
 
 from pathlib import Path
@@ -18,21 +19,15 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="ORCH_", env_file=".env", extra="ignore")
 
-    # Canonical menu source, shared with the customer UI and the RAG pipeline.
-    menu_path: Path = REPO_ROOT / "assets" / "data" / "menu.json"
-
-    # Orchestrator SQLite file (tables/orders/payments/robots/tasks). Separate from the
-    # per-robot Brain DB under storage/db.
+    # Orchestrator SQLite file (robots/tasks). Separate from the per-robot Brain DB under storage/db.
     db_path: Path = REPO_ROOT / "storage" / "db" / "orchestrator.db"
 
-    # Restaurant geometry: SLAM map + table/dock waypoints (services/floorplan.py). The default is
-    # the REAL robot's file — the very one the robot bridge navigates by, so the dispatcher's
-    # "nearest robot" scoring and the panel minimap can never drift from the robot's own waypoints.
-    # The Gazebo demo is still fully supported: point this at the sim floorplan to run the backend
-    # against the simulated restaurant instead —
-    #   ORCH_FLOORPLAN_PATH=assets/data/floorplan.sim.json   (or: make backend SIM=1)
+    # Warehouse geometry: SLAM map + section/named-place waypoints (services/floorplan.py). The
+    # default is the layout the AGV bridge navigates by, so the dispatcher's "nearest robot"
+    # scoring and the panel minimap can never drift from the robot's own waypoints. Override with
+    #   ORCH_FLOORPLAN_PATH=assets/data/warehouse_layout.json
     # Relative paths resolve from the repo root.
-    floorplan_path: Path = REPO_ROOT / "robot_ws/src/real/tarkbot_robot/config/floorplan.json"
+    floorplan_path: Path = REPO_ROOT / "assets" / "data" / "warehouse_layout.json"
 
     # Allowed CORS origins for the browser frontends. Dev servers normally hit the backend
     # through each app's same-origin Vite proxy (/api -> :8000) so CORS does not bite, but we

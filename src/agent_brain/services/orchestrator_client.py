@@ -83,3 +83,17 @@ class OrchestratorClient:
             "table_id": normalise_table_id(table_id),
             "status": status_text,
         })
+
+    # --- Navigation (warehouse) -------------------------------------------------------
+    def dispatch_navigation(self, token: str, section: str | None = None) -> dict | None:
+        """POST /navigation — ask the orchestrator to send the AGV to a section/place.
+
+        `token` is the geometry-agnostic label the brain emitted (``"A"``, ``"dock"``,
+        ``"Cầu cảng"`` …); the orchestrator's position_parser resolves it to a pose and
+        dispatches the task. Best-effort: a backend/parse failure is logged, not raised.
+        """
+        try:
+            return self._post("/navigation", {"token": token, "section": section})
+        except httpx.HTTPError as e:
+            logger.warning(f"navigation dispatch failed for token {token!r}: {e}")
+            return None

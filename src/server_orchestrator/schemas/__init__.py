@@ -1,133 +1,43 @@
-"""Pydantic request/response models for the Orchestrator API.
+"""Pydantic request/response models for the Orchestrator API (warehouse).
 
-Kept in one module (small for now) so the frontends and — later — the robot Brain share a
-single contract. These mirror the SQLite schema in db.py (mục 8 of SYSTEM_ARCHITECTURE.md).
+Kept in one module (small for now) so the frontends and — later — the robot
+bridge share a single contract. These mirror the SQLite schema in db.py.
 
-Status fields are typed against the cross-role enums in ``src._shared.types`` so the
-orchestrator, the brain, and the voice device all speak the same vocabulary. Update
-(input) fields stay as ``str`` for forward-compat (e.g. legacy clients that send a
-status the orchestrator doesn't know about yet).
+Status fields are typed against the cross-role enums in ``src._shared.types`` so
+the orchestrator, the brain, and the AGV all speak the same vocabulary.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
-from src._shared.types import (
-    OrderItemStatus,
-    OrderStatus,
-    PaymentStatus,
-    RobotStatus,
-    SessionStatus,
-    TableStatus,
-    TaskKind,
-    TaskStatus,
-)
+from src._shared.types import RobotStatus, TaskKind, TaskStatus  # noqa: F401
 
 
-# --- Orders -------------------------------------------------------------------------------
-class OrderItemIn(BaseModel):
-    """One line of a new order as sent by a client (cart item)."""
+# --- Navigation request (brain -> orchestrator) ---------------------------------
+class NavigationRequest(BaseModel):
+    """A brain request to send the AGV to a section/place. `token` is the geometry-agnostic
+    label the brain emits (``"A"``, ``"dock"``, ``"Cầu cảng"`` …). `section` is the raw
+    PositionToken.section when available (optional, used for display)."""
 
-    name: str
-    qty: int = Field(gt=0)
-    price: float = Field(ge=0)
-    dish_id: int | None = None
-    note: str | None = None
-
-
-class OrderCreate(BaseModel):
-    table_id: int
-    items: list[OrderItemIn] = Field(min_length=1)
-
-
-class OrderItemOut(OrderItemIn):
-    id: int
-    status: OrderItemStatus
-
-
-class OrderOut(BaseModel):
-    id: int
-    table_id: int
-    status: OrderStatus
-    total: float
-    created_at: str
-    items: list[OrderItemOut] = []
-
-
-class OrderStatusUpdate(BaseModel):
-    status: str
-
-
-# --- Tables / seatings --------------------------------------------------------------------
-class TableOut(BaseModel):
-    id: int
-    name: str
-    capacity: int
-    status: TableStatus
-    current_order_id: int | None = None
-    party_size: int | None = None
-    seated_at: str | None = None
-
-
-class SeatingCreate(BaseModel):
-    """Seat a party at a table (Kiosk check-in)."""
-
-    table_id: int
-    party_size: int = Field(gt=0)
-
-
-class TableStatusUpdate(BaseModel):
-    """Change a table's serving-lifecycle status (panel: mark paid / end table)."""
-
-    status: str
-
-
-# --- Sessions -----------------------------------------------------------------------------
-class SessionOut(BaseModel):
-    """One serving session (a party's visit). `total` is the gộp bill across its orders."""
-
-    id: int
-    table_id: int
-    status: SessionStatus
-    party_size: int | None = None
-    started_at: str
-    ended_at: str | None = None
-    total: float = 0
-
-
-# --- Payments (mock, gộp theo phiên) ------------------------------------------------------
-class PaymentCreate(BaseModel):
-    """Open a (mock) payment for a table's active session. No real money moves — the tablet shows
-    a VietQR image and the guest taps "I've paid" (→ POST /payments/{id}/verify)."""
-
-    table_id: int
-    method: str = "VIETQR"
-
-
-class PaymentVerify(BaseModel):
-    """Confirm a payment by table (the agent's verify_payment only knows the table)."""
-
-    table_id: int
-
-
-class PaymentOut(BaseModel):
-    id: int
-    session_id: int
-    method: str | None = None
-    amount: float
-    status: PaymentStatus
-    txn_ref: str | None = None
-    qr_url: str | None = None
-    paid_at: str | None = None
+    token: str
+    section: str | None = None
 
 
 # --- Tasks (dispatcher) -------------------------------------------------------------------
+class Pose(BaseModel):
+    """A resolved navigation goal in the warehouse map frame (metres, radians)."""
+
+    x: float
+    y: float
+    yaw: float
+
+
 class TaskOut(BaseModel):
-    """A system task the dispatcher hands to a robot (go_to_table / deliver / call)."""
+    """A system task the dispatcher hands to an AGV (navigate / return / charge)."""
 
     id: int
     kind: TaskKind
-    table_id: int | None = None
-    order_id: int | None = None
+    target_token: str | None = None
+    pose: Pose | None = None
     robot_id: str | None = None
     status: TaskStatus
     created_at: str
@@ -140,8 +50,8 @@ class RobotOut(BaseModel):
     name: str | None = None
     status: RobotStatus
     battery: float | None = None
-    # Human-readable "what it's doing" (e.g. "Đang giao món · Bàn 4", "Đang ở dock") — the panel
-    # shows this on the robot board. Set by the dispatcher for real robots later.
+    # Human-readable "what it's doing" (e.g. "Đang tới Khu A", "Đang ở dock") — the panel
+    # shows this on the robot board. Set by the dispatcher.
     activity: str | None = None
     # Live pose in the world frame (from heartbeats), used to plot the robot on the panel minimap.
     x: float | None = None

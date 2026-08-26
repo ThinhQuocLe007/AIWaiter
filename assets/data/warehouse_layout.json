@@ -1,0 +1,44 @@
+{
+  "map": {
+    "dir": "workshop-main/warehouse_agv_demo/maps",
+    "image": "warehouse_lidar.pgm",
+    "yaml": "warehouse_lidar.yaml",
+    "fallback_dir": "workshop-main/warehouse_agv_demo/maps"
+  },
+  "dock": {
+    "name": "Dock",
+    "approach": { "x": 0.0, "y": 0.0, "yaw_deg": 0.0 }
+  },
+  "sections": [
+    {
+      "id": "A",
+      "name": "Khu A",
+      "contains": "Thực phẩm khô: bột mì, đường, gạo, muối, bánh quy",
+      "pose": { "x": 6.0, "y": 6.0, "yaw_deg": 90.0 }
+    },
+    {
+      "id": "B",
+      "name": "Khu B",
+      "contains": "Đồ uống: bia, nước ngọt, cà phê, trà, sữa",
+      "pose": { "x": 6.0, "y": 0.0, "yaw_deg": 90.0 }
+    },
+    {
+      "id": "C",
+      "name": "Khu C",
+      "contains": "Gia vị & dầu ăn: dầu ăn, nước mắm, tương ớt, mắm tôm",
+      "pose": { "x": 6.0, "y": -6.0, "yaw_deg": 90.0 }
+    },
+    {
+      "id": "D",
+      "name": "Khu D",
+      "contains": "Vật tư đóng gói: thùng carton, băng keo, găng tay, bút",
+      "pose": { "x": 0.0, "y": 6.0, "yaw_deg": 0.0 }
+    }
+  ],
+  "named_places": {
+    "dock":     { "name": "Cầu cảng",          "pose": { "x": 0.0,  "y": 0.0,  "yaw_deg": 0.0 } },
+    "charging": { "name": "Trạm sạc",          "pose": { "x": -2.0, "y": -2.0, "yaw_deg": 0.0 } },
+    "qc":       { "name": "Khu kiểm hàng",     "pose": { "x": 2.0,  "y": 3.0,  "yaw_deg": 90.0 } },
+    "packing":  { "name": "Khu đóng gói",      "pose": { "x": 3.0,  "y": -1.0, "yaw_deg": -90.0 } }
+  }
+}

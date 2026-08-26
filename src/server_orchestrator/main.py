@@ -18,27 +18,25 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from .services import dispatcher, floorplan
 from .config import settings
 from .data.db import init_db
-from .services.menu_loader import seed_dishes, seed_robots, seed_tables
-from .routers import admin, layout, menu, orders, payments, robots, tables, tasks, voice
 from .realtime.ws import router as ws_router
+from .routers import admin, layout, navigation, robots, tasks, voice
+from .services import dispatcher, floorplan
+from .services.menu_loader import seed_robots
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
-    seed_tables()
-    seed_dishes()
     seed_robots()
     # Fresh start: no robot WS is connected yet, so every robot shows "Chưa kích hoạt" until its
     # bridge connects (stale idle/battery rows from a previous run would lie on the panel).
     dispatcher.reset_fleet_offline()
-    # Say which restaurant we are serving: the real robot's waypoints/map, or the sim ones. Getting
-    # this wrong is silent otherwise — tasks dispatch fine but the minimap draws the other floor.
+    # Say which warehouse layout we are serving (sections + SLAM map). Getting this wrong is
+    # silent otherwise — tasks dispatch fine but the minimap draws the wrong floor.
     logging.getLogger(__name__).info(
-        "floorplan: %s (map: %s)", floorplan.path(), floorplan.map_dir()
+        "warehouse layout: %s (map: %s)", floorplan.path(), floorplan.map_dir()
     )
     # Background watchdog: detects robots that went silent (hung) and requeues their tasks.
     watchdog = asyncio.create_task(dispatcher.watchdog_loop())
@@ -56,10 +54,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(menu.router)
-app.include_router(tables.router)
-app.include_router(orders.router)
-app.include_router(payments.router)
+app.include_router(navigation.router)
 app.include_router(robots.router)
 app.include_router(layout.router)
 app.include_router(tasks.router)
@@ -73,7 +68,7 @@ app.include_router(ws_router)
 # /api or every fetch from the built bundles 404s. Bare paths stay for the non-browser callers
 # (agent_brain's voice bridge, the robot clients) which address the backend directly.
 # include_in_schema=False: the alias would otherwise duplicate every operation in /docs.
-for _api_router in (menu, tables, orders, payments, robots, layout, tasks, admin, voice):
+for _api_router in (navigation, robots, layout, tasks, admin, voice):
     app.include_router(_api_router.router, prefix="/api", include_in_schema=False)
 
 

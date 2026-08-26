@@ -17,11 +17,8 @@ Run (on the server, alongside the orchestrator backend) — from the repo root:
 
 import asyncio
 import json
-import logging
 import re
-from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
-from queue import Queue
 from urllib.parse import urlparse
 
 from dotenv import load_dotenv
@@ -32,9 +29,9 @@ from pydantic import BaseModel
 from src._shared.types import normalise_table_id
 from src.agent_brain.config import settings as agent_settings
 from src.agent_brain.services.orchestrator_client import OrchestratorClient
+from src.agent_brain.utils import logger as log
 from src.agent_brain.warehouse.graph import build_graph
 from src.agent_brain.warehouse.memory.checkpointer import get_checkpointer
-from src.agent_brain.utils import logger as log
 
 load_dotenv()
 
@@ -123,6 +120,30 @@ def _run_turn(text: str, table_id: str) -> dict:
     return result
 
 
+def _dispatch_navigation_if_needed(action: dict | None) -> None:
+    """If the brain produced a navigate action, ask the orchestrator to send the AGV there."""
+    if not action or action.get("type") != "navigate":
+        return
+    position = action.get("position") or {}
+    token = position.get("token")
+    if token:
+        log.info("forwarding navigate token %r to orchestrator", token)
+        _orchestrator.dispatch_navigation(token, position.get("section"))
+
+
+def _emit_voice_reply(table_int: int, reply: str, action, intent: str) -> None:
+    """Mirror the turn's reply (and any navigation action) to the operator panel."""
+    _orchestrator.post_voice_event(
+        {
+            "type": "voice.reply",
+            "table_id": table_int,
+            "text": reply,
+            "action": action,
+            "stage": intent,
+        }
+    )
+
+
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest) -> ChatResponse:
     """Non-streaming variant kept for parity / debugging. The running system uses /chat/stream."""
@@ -140,18 +161,8 @@ def chat(req: ChatRequest) -> ChatResponse:
     intent = result.get("intent") or "chat"
     session_id = table_id
 
-    _orchestrator.post_voice_event(
-        {
-            "type": "voice.reply",
-            "table_id": table_int,
-            "text": reply,
-            "action": action,
-            "stage": intent,
-            "cart": None,
-            "confirmed": False,
-            "cart_touched": False,
-        }
-    )
+    _emit_voice_reply(table_int, reply, action, intent)
+    _dispatch_navigation_if_needed(action)
 
     return ChatResponse(response=reply, final_stage=intent, action=action, session_id=session_id)
 
@@ -163,7 +174,6 @@ def chat_stream(req: ChatRequest):
     Emits ``progress`` → ``sentence``* → ``done`` events. ``sentence`` chunks feed the edge TTS;
     ``done`` carries the structured ``action`` (e.g. a navigate token) + ``stage`` + ``session_id``.
     """
-    q: Queue = Queue()  # unused but kept for API symmetry with the old agent
 
     def generate():
         table_id = req.table_id
@@ -182,25 +192,19 @@ def chat_stream(req: ChatRequest):
             result = _run_turn(text, table_id)
         except Exception as e:  # noqa: BLE001 — never break the voice loop on a bad turn
             log.exception("warehouse turn failed: %s", e)
-            result = {"reply": "Xin lỗi, tôi gặp lỗi khi xử lý yêu cầu.", "intent": "chat", "action": None}
+            result = {
+                "reply": "Xin lỗi, tôi gặp lỗi khi xử lý yêu cầu.",
+                "intent": "chat",
+                "action": None,
+            }
 
         reply = result.get("reply", "")
         action = result.get("action")
         intent = result.get("intent") or "chat"
         session_id = table_id
 
-        _orchestrator.post_voice_event(
-            {
-                "type": "voice.reply",
-                "table_id": table_int,
-                "text": reply,
-                "action": action,
-                "stage": intent,
-                "cart": None,
-                "confirmed": False,
-                "cart_touched": False,
-            }
-        )
+        _emit_voice_reply(table_int, reply, action, intent)
+        _dispatch_navigation_if_needed(action)
 
         for sentence in _split_sentences(reply):
             yield f"data: {json.dumps({'event': 'sentence', 'text': sentence})}\n\n"

@@ -58,6 +58,14 @@ def classify(text: str) -> tuple[Intent, float]:
     return get_router().classify(text)
 
 
+def _mentions_section(t: str) -> str | None:
+    """Return the matched section letter if the text mentions 'khu X', else None."""
+    for sec in warehouse_info.section_names():
+        if f"khu {sec.lower()}" in t or f"khu {sec}" in t:
+            return sec
+    return None
+
+
 def route(text: str) -> tuple[Intent, float, bool]:
     """Return (intent, confidence, escalate_to_planner)."""
     t = text.lower()
@@ -66,8 +74,12 @@ def route(text: str) -> tuple[Intent, float, bool]:
         kw in t for kw in _MOVE_KW
     ):
         return Intent.NAVIGATE, 0.95, False
-    # A section mention ("khu A", "khu B có gì") is always an information question.
-    if any(f"khu {sec.lower()}" in t or f"khu {sec}" in t for sec in warehouse_info.section_names()):
+    # A section mention is navigation when it carries a movement cue ("đến/tới/dẫn khu B"),
+    # but an information question when it doesn't ("khu B có gì", "khu B để mặt hàng nào").
+    sec = _mentions_section(t)
+    if sec is not None:
+        if any(kw in t for kw in _MOVE_KW):
+            return Intent.NAVIGATE, 0.95, False
         return Intent.ANSWER, 0.95, False
     intent, conf = classify(text)
     escalate = conf < PLANNER_THRESHOLD
