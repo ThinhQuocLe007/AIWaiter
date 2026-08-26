@@ -23,7 +23,9 @@ class Settings(BaseSettings):
     # queries resolve to nothing instead of a fuzzy neighbour.
     retrieval_min_score: float = 0.0
     llm_base_url: str = "http://localhost:11434/v1"
-    llm_model: str = "qwen2.5:7b-instruct"
+    # Khớp với .env.template. Để mặc định lệch với template thì máy nào quên tạo .env sẽ hỏi
+    # Ollama một model chưa pull và nhận 404 — lỗi rất khó đoán ra nguyên nhân.
+    llm_model: str = "qwen2.5:14b-instruct-q6_K"
     llm_api_key: str = "ollama"
     agent_host: str = "0.0.0.0"
     agent_port: int = 8000

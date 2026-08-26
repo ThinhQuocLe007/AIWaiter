@@ -64,6 +64,10 @@ install:
 	@if [ -f "src/frontends/kiosk/package.json" ]; then cd src/frontends/kiosk && npm install; else echo "src/frontends/kiosk not scaffolded yet, skipping."; fi
 	@echo "Installing panel dependencies..."
 	@if [ -f "src/frontends/panel/package.json" ]; then cd src/frontends/panel && npm install; else echo "src/frontends/panel not scaffolded yet, skipping."; fi
+	@# monitor was missing here while `build` below still built it, so a fresh clone got through
+	@# `make install` cleanly and then died inside `make build` — on the one app that IS the demo.
+	@echo "Installing monitor dependencies..."
+	@if [ -f "src/frontends/monitor/package.json" ]; then cd src/frontends/monitor && npm install; else echo "src/frontends/monitor not scaffolded yet, skipping."; fi
 	@echo "Installing backend dependencies (root uv env)..."
 	@# --inexact: keep role extras (server/voice/cu12/cu13) already installed instead of
 	@# pruning them. Plain `uv sync` syncs to base-only and would REMOVE uvicorn/torch/etc.

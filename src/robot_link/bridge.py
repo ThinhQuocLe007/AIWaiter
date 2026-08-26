@@ -45,9 +45,26 @@ from src.robot_link.protocol import Command, Deduper, decode
 
 logger = logging.getLogger("robot_link.bridge")
 
-# Rate at which the stop hold re-asserts itself. keyboard_cmd_mux.py treats a manual command as
-# stale after 0.12 s, so anything slower than ~10 Hz would let Nav2 back in between ticks.
-HOLD_HZ = 20.0
+# Rate at which the stop hold re-asserts itself. Two constraints set it. keyboard_cmd_mux.py
+# treats a manual command as stale after 0.12 s, so anything slower than ~10 Hz lets Nav2 back in
+# between ticks. And on the second channel (see HOLD_TOPICS) we are outright racing another
+# publisher that runs at 20 Hz, so we have to run several times faster than it to win.
+HOLD_HZ = 50.0
+
+# The AGV is driven from two different places and a stop has to reach both.
+#
+#   /cmd_vel_keyboard   Nav2's aisle driving. Goes through keyboard_cmd_mux, which documents
+#                       "keyboard > Nav2" priority, so a zero here parks the robot cleanly while
+#                       its Nav2 goal stays alive and "đi tiếp" resumes the same goal.
+#
+#   /cmd_vel            The camera-guided final approach at the shelf. vqa_mission.py:516 opens
+#                       its own publisher straight onto /cmd_vel, downstream of the mux and of
+#                       the collision monitor, so nothing on the first channel can reach it.
+#
+# Publishing zeros on /cmd_vel is safe during Nav2 driving too: the collision monitor is feeding
+# that topic the mux's output, which the first channel has already forced to zero, so both
+# publishers agree. During the pick the two disagree and it becomes a race — see _control().
+HOLD_TOPICS = ("/cmd_vel_keyboard", "/cmd_vel")
 
 # Which script runs for which action lives in one declarative table, `robot_link.capabilities`.
 # Re-exported here because scripts/check_warehouse_map.py and older callers import them from the
@@ -70,12 +87,12 @@ class VelocityHold:
         if not rclpy.ok():
             rclpy.init()
         self._node = Node("voice_velocity_hold")
-        self._pub = self._node.create_publisher(Twist, "/cmd_vel_keyboard", 10)
+        self._pubs = [self._node.create_publisher(Twist, t, 10) for t in HOLD_TOPICS]
         self._engaged = threading.Event()
         self._stop = threading.Event()
         threading.Thread(target=self._spin, daemon=True).start()
         threading.Thread(target=self._pump, daemon=True).start()
-        logger.info("Giữ tốc độ: publisher /cmd_vel_keyboard sẵn sàng")
+        logger.info("Giữ tốc độ: publisher %s sẵn sàng", " + ".join(HOLD_TOPICS))
 
     @property
     def engaged(self) -> bool:
@@ -84,7 +101,7 @@ class VelocityHold:
     def engage(self) -> None:
         # Publish once inline before the pump's next tick: the whole point is that the wheels
         # stop on the same millisecond the datagram lands, not up to 50 ms later.
-        self._pub.publish(self._Twist())
+        self._publish_zero()
         self._engaged.set()
 
     def release(self) -> None:
@@ -93,11 +110,16 @@ class VelocityHold:
     def shutdown(self) -> None:
         self._stop.set()
 
+    def _publish_zero(self) -> None:
+        zero = self._Twist()
+        for pub in self._pubs:
+            pub.publish(zero)
+
     def _pump(self) -> None:
         period = 1.0 / HOLD_HZ
         while not self._stop.is_set():
             if self._engaged.is_set():
-                self._pub.publish(self._Twist())
+                self._publish_zero()
             time.sleep(period)
 
     def _spin(self) -> None:
@@ -265,6 +287,14 @@ class RobotBridge:
         if verb == "stop":
             self.hold.engage()
             logger.info("DỪNG (%s) ← %r", origin, cmd.sentence)
+            if self.runner.running():
+                # Honest about the one case this does not fully cover. While the mission is in
+                # its camera-guided pick, vqa_mission.py is publishing its own velocities onto
+                # /cmd_vel at 20 Hz and we are only outvoting it, not silencing it — the AGV may
+                # creep instead of stopping dead. A guaranteed halt there is "hủy chuyến", which
+                # ends the mission process outright.
+                logger.info("      (nếu đang gắp hàng ở kệ: xe có thể nhích nhẹ — "
+                            "muốn dừng hẳn thì nói “hủy chuyến”)")
         elif verb == "resume":
             self.hold.release()
             logger.info("CHẠY TIẾP (%s) ← %r", origin, cmd.sentence)
