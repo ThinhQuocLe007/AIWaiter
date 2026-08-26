@@ -25,6 +25,16 @@ class ConnectionManager:
         self._robots: dict[str, WebSocket] = {}
         # Voice-device (mic) sockets, indexed by robot id — same id as the robot's motion socket.
         self._voice_devices: dict[str, WebSocket] = {}
+        # Robots whose voice device is mid-conversation-turn (listening → LLM → speaking). Only
+        # the monitor reads it, through GET /voice/devices; nothing in the dispatch path depends
+        # on it, so a device that dies mid-turn costs a stale flag at worst — and `disconnect`
+        # below clears even that.
+        self._voice_busy: set[str] = set()
+        # Last speaker/mic levels each device reported, e.g. {"speaker": 45, "mic": 100,
+        # "can_set": True}. Cached only so a monitor page opened AFTER the device connected can
+        # start its sliders at the real values — the device pushes a fresh frame on every change,
+        # so nothing here is ever the authority on what the hardware is actually set to.
+        self._voice_levels: dict[str, dict] = {}
 
     async def connect(
         self,
@@ -52,6 +62,11 @@ class ConnectionManager:
             del self._robots[robot_id]
         if role == "voice-device" and robot_id and self._voice_devices.get(robot_id) is ws:
             del self._voice_devices[robot_id]
+            # The mic is gone, so no turn can still be running on it and its levels describe a
+            # machine we can no longer reach. Drop both rather than let the monitor keep showing
+            # a busy lamp and two steppers for a device that isn't there.
+            self._voice_busy.discard(robot_id)
+            self._voice_levels.pop(robot_id, None)
 
     async def broadcast(self, role: str, message: dict) -> None:
         """Send a JSON message to every socket of `role`; drop ones that error out."""
@@ -74,6 +89,13 @@ class ConnectionManager:
             self._robots.pop(robot_id, None)
             return False
 
+    # Alias giữ lại tên cũ. Bản nhà hàng có HAI đường tới mic: theo bàn (tablet — cần dispatcher
+    # gắn robot vào bàn trước) và theo robot id (monitor — không có bàn nào cả). Kho bỏ hẳn khái
+    # niệm bàn nên chỉ còn đường thứ hai; giữ tên `_by_id` để trang monitor khỏi phải sửa, và để
+    # đọc code vẫn thấy rõ "địa chỉ ở đây là robot id, không phải bàn".
+    async def send_to_voice_device_by_id(self, robot_id: str, message: dict) -> bool:
+        return await self.send_to_voice_device(robot_id, message)
+
     async def send_to_voice_device(self, robot_id: str, message: dict) -> bool:
         """Tell a robot's mic device to do something (e.g. start listening).
 
@@ -88,6 +110,29 @@ class ConnectionManager:
         except Exception:
             self._voice_devices.pop(robot_id, None)
             return False
+
+    def voice_device_ids(self) -> list[str]:
+        """Ids of every mic currently connected — what the monitor lists as available devices."""
+        return sorted(self._voice_devices)
+
+    def set_voice_busy(self, robot_id: str, busy: bool) -> None:
+        """Record whether this robot's voice device is mid-conversation-turn."""
+        if busy:
+            self._voice_busy.add(robot_id)
+        else:
+            self._voice_busy.discard(robot_id)
+
+    def voice_busy(self, robot_id: str) -> bool:
+        """Is this robot still listening / thinking / speaking? False if it has no mic device."""
+        return robot_id in self._voice_busy
+
+    def set_voice_levels(self, robot_id: str, levels: dict) -> None:
+        """Remember the speaker/mic levels a device just reported."""
+        self._voice_levels[robot_id] = levels
+
+    def voice_levels(self, robot_id: str) -> dict:
+        """Last known levels for this mic; empty until it has reported any."""
+        return self._voice_levels.get(robot_id, {})
 
     def connected_robot_ids(self) -> set[str]:
         return set(self._robots)

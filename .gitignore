@@ -74,17 +74,24 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
-# Project-Specific: RAG Databases & Pickled/Vector Indexes
-# Ignore dynamically created SQLite DBs and vector store serialized files
-storage/db/*.db
-storage/db/*.db-shm
-storage/db/*.db-wal
-storage/vector/bm25.pkl
-storage/vector/faiss_index/
-storage/conversations/
-storage/tts/*.onnx
-storage/tts/*.onnx.json
-storage/tts/*.wav
+# Project-Specific: runtime artifacts
+# Everything under storage/ is produced by running the system — conversation checkpoints, vector
+# indexes, downloaded TTS voices, and the trained intent router. The whole directory is ignored
+# rather than a list of patterns: the old list covered storage/db/*.db but not storage/*.db, so
+# checkpoints.db landed one level up and got committed. `storage_path()` in
+# agent_brain/warehouse/paths.py mkdir's it at startup, so nothing needs it to exist in git.
+#
+# storage/router/mlp_router.joblib especially must NOT be tracked. It is trained from
+# router/intents.json, so a committed copy is a snapshot of whatever the label set was that day —
+# clone it onto a new machine and the agent silently loads a router that never predicts the
+# classes added since. Run `make train-router` on the machine that runs `make agent`.
+storage/
+
+# Anh Khôi's robot repo (github.com/AmightyK/workshop), unzipped in here by commit 4e191ca.
+# Kept on disk, out of git: vendoring a repo somebody else is actively developing freezes it —
+# their pushes never arrive and edits made here never reach them. Clone it separately, or add it
+# as a submodule if one checkout really has to bring both.
+workshop-main/
 data/vector_db/
 data/sqlite/
 data/samples/

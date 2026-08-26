@@ -41,6 +41,27 @@ _graph = None
 _orchestrator = OrchestratorClient()
 
 
+def _check_router() -> None:
+    """Fail startup if the intent router was never trained, instead of failing mid-conversation.
+
+    The trained weights are a runtime artifact and are not in git, so a fresh clone has none until
+    `make train-router` runs. Without this check the miss surfaces on the first utterance that
+    reaches the classifier — and only *some* utterances do, because `route()` short-circuits
+    control phrases, named places and section mentions first. The result is an agent that answers
+    two questions, then throws a 500 on the third, which reads as an intermittent fault rather
+    than a missing file. Better to refuse to start and say which command fixes it.
+    """
+    from src.agent_brain.warehouse.router.model import MLPRouter, RouterNotTrained
+
+    try:
+        MLPRouter.load()
+    except RouterNotTrained as e:
+        raise RuntimeError(
+            f"{e}\n"
+            "Chạy trên chính máy chạy `make agent`, sau khi .env đã đặt EMBED_MODEL."
+        ) from e
+
+
 def _warmup() -> None:
     """Pre-load models so the FIRST real turn isn't slow (best-effort)."""
     try:
@@ -55,6 +76,7 @@ def _warmup() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _graph
+    _check_router()
     log.info("Loading warehouse brain graph...")
     _graph = build_graph(get_checkpointer())
     log.info("Warehouse brain ready. Warming up models...")

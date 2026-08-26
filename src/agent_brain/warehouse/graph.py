@@ -2,6 +2,7 @@
 
 Entry: router. Then:
   - low confidence / ambiguous  → planner (LLM)            → validator
+  - control                     → control (phrase match)   → validator
   - chat                        → chat (LLM)               → validator
   - answer | navigate           → retrieval (collect RAG context)
                                   ├─ navigate → navigation → answer
@@ -15,6 +16,7 @@ from langgraph.graph import END, START, StateGraph
 
 from src.agent_brain.warehouse.types import Intent
 from src.agent_brain.warehouse.nodes.chat_worker_node import chat_worker_node
+from src.agent_brain.warehouse.nodes.control_worker_node import control_worker_node
 from src.agent_brain.warehouse.nodes.mlp_router_node import route
 from src.agent_brain.warehouse.nodes.navigation_worker_node import navigation_worker_node
 from src.agent_brain.warehouse.nodes.planner_node import planner_node
@@ -41,6 +43,10 @@ def _router(state: AgentState) -> dict:
 
 
 def _after_router(state: AgentState) -> str:
+    # Control jumps straight out of the graph's retrieval half: "dừng lại" names no item, so
+    # running RAG on it would only burn latency on the one intent that cannot afford any.
+    if state.get("intent") == Intent.CONTROL.value:
+        return "control"
     if state.get("routed_to_planner"):
         return "planner"
     if state.get("intent") == Intent.CHAT.value:
@@ -61,15 +67,17 @@ def build_graph(checkpointer=None):
     g.add_node("navigation", navigation_worker_node)
     g.add_node("answer", response_worker_node)
     g.add_node("chat", chat_worker_node)
+    g.add_node("control", control_worker_node)
     g.add_node("planner", planner_node)
     g.add_node("validator", validator_node)
 
     g.add_edge(START, "router")
-    g.add_conditional_edges("router", _after_router, ["planner", "chat", "retrieval"])
+    g.add_conditional_edges("router", _after_router, ["planner", "chat", "control", "retrieval"])
     g.add_conditional_edges("retrieval", _after_retrieval, ["navigation", "answer"])
     g.add_edge("navigation", "answer")
     g.add_edge("answer", "validator")
     g.add_edge("chat", "validator")
+    g.add_edge("control", "validator")
     g.add_edge("planner", "validator")
     g.add_edge("validator", END)
 

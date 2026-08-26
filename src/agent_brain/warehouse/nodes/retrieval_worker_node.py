@@ -33,7 +33,7 @@ def retrieval_worker_node(state: AgentState) -> dict:
     if items and not sec:
         best = items[0]
         candidates = [
-            {"sku": it.sku, "item": it.item, "section": it.section, "aisle": it.aisle, "bin": it.bin}
+            {"sku": it.sku, "item": it.item, "section": it.section, "slot": it.slot, "color": it.color}
             for it in items
         ]
         data = item_to_dict(best)

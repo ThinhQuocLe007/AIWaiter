@@ -14,7 +14,7 @@ from pathlib import Path
 
 DATA_FILE = Path(__file__).parent / "intents.json"
 
-VALID_INTENTS = {"answer", "navigate", "chat"}
+VALID_INTENTS = {"answer", "navigate", "control", "chat"}
 
 
 def load_handwritten() -> list[dict]:

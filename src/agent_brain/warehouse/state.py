@@ -12,7 +12,7 @@ from typing import Optional, TypedDict
 class AgentState(TypedDict, total=False):
     user_text: str
     session_id: str
-    intent: Optional[str]          # "answer" | "navigate" | "chat"
+    intent: Optional[str]          # "answer" | "navigate" | "control" | "chat"
     confidence: float
     routed_to_planner: bool
     # working item resolved THIS turn (reset each turn)

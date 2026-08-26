@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from typing import Optional
 
+from src.agent_brain.warehouse import control_phrases
 from src.agent_brain.warehouse.types import Intent
 from src.agent_brain.warehouse.router.model import MLPRouter, RouterNotTrained
 from src.agent_brain.warehouse.services import warehouse_info
@@ -21,7 +22,7 @@ _KW: dict[Intent, list[str]] = {
     Intent.NAVIGATE: ["đi", "tới", "đến", "dẫn", "chỉ đường", "đưa tôi", "navigate", "dắt", "ra", "vào"],
     Intent.CHAT: ["xin chào", "chào", "cảm ơn", "tạm biệt", "bạn là ai", "bạn tên", "giúp gì", "khỏe không"],
     Intent.ANSWER: [
-        "ở đâu", "đâu", "vị trí", "chỗ nào", "khu nào", "lối nào", "ngăn nào", "bin nào",
+        "ở đâu", "đâu", "vị trí", "chỗ nào", "khu nào", "ô nào", "ngăn nào", "kệ nào", "màu gì",
         "còn", "bao nhiêu", "tồn kho", "số lượng", "hết chưa", "còn không", "còn lại",
         "nhà cung cấp", "cung cấp", "danh mục", "thuộc", "loại", "lưu ý", "bảo quản",
         "nhập thêm", "đặt thêm", "tối thiểu", "mã", "barcode", "vạch", "khu",
@@ -69,6 +70,12 @@ def _mentions_section(t: str) -> str | None:
 def route(text: str) -> tuple[Intent, float, bool]:
     """Return (intent, confidence, escalate_to_planner)."""
     t = text.lower()
+    # Control first, and by phrase rather than by the MLP. The classifier is trained on three
+    # labels and re-training it is a separate step (`make train-router`); more importantly, a
+    # stop must not depend on an embedding model being loaded and confident. `control_phrases`
+    # is the same matcher the Jetson fast path uses, so both ends agree on what a stop is.
+    if control_phrases.match(text) is not None:
+        return Intent.CONTROL, 0.99, False
     # A named place (dock, charging, qc, …) with a movement cue is always navigation.
     if any(name in t for name in warehouse_info.build_named_places()) and any(
         kw in t for kw in _MOVE_KW

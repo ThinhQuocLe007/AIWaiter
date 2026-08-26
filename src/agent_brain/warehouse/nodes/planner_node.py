@@ -7,8 +7,8 @@ movement, it attaches a navigate action for the best candidate.
 
 from __future__ import annotations
 
-from src.agent_brain.warehouse.types import Action
 from src.agent_brain.warehouse.actions import navigate_action
+from src.agent_brain.warehouse.colors import vi as color_vi
 from src.agent_brain.warehouse.state import AgentState
 from src.agent_brain.warehouse.tools import live_tools
 from src.agent_brain.warehouse.services.llm_client import chat
@@ -29,7 +29,7 @@ def _build_context(items: list[Item], sop: list[str]) -> str:
     for it in items:
         parts.append(
             f"- {it.item} (SKU {it.sku}): {it.desc}. "
-            f"Vị trí: khu {it.section}, lối {it.aisle}, bin {it.bin}. "
+            f"Vị trí: khu {it.section}, ô {it.slot}, hộp màu {color_vi(it.color)}. "
             f"Tồn kho: {it.quantity} {it.unit}."
         )
     for s in sop:
@@ -52,7 +52,7 @@ def planner_node(state: AgentState) -> dict:
         reply = "Xin lỗi, tôi không xử lý được yêu cầu này lúc này."
         return {"reply": reply, "error": str(e), "routed_to_planner": True}
 
-    action: Action | None = None
+    action: dict | None = None
     if items and any(kw in text.lower() for kw in _MOVE_KW):
         action = navigate_action(items[0]).model_dump()
     return {"reply": reply, "action": action, "routed_to_planner": True,

@@ -1,14 +1,12 @@
 {
+  "_comment": "Khớp 1:1 với sa bàn Gazebo (warehouse_agv_demo). Ba khu A/B/C là storage_A/B/C trong config/semantic_tasks.yaml; mỗi khu có đúng 3 ô A01..C03 chứa 3 hộp 3 màu. Không có khu D vì sa bàn không có tuyến AGV tới đó. `token` là nhãn duy nhất mà bridge ROS dịch sang toạ độ — brain không bao giờ phát toạ độ.",
   "sections": {
-    "A": {"name": "Khu A", "contains": "Thực phẩm khô: bột mì, đường, gạo, muối, bánh quy"},
-    "B": {"name": "Khu B", "contains": "Đồ uống: bia, nước ngọt, cà phê, trà, sữa"},
-    "C": {"name": "Khu C", "contains": "Gia vị & dầu ăn: dầu ăn, nước mắm, tương ớt, mắm tôm"},
-    "D": {"name": "Khu D", "contains": "Vật tư đóng gói: thùng carton, băng keo, găng tay, bút"}
+    "A": {"name": "Khu A", "token": "A", "contains": "Thực phẩm khô: bột mì (ô A01, xanh dương), gạo (ô A02, đỏ), đường (ô A03, xanh lá)"},
+    "B": {"name": "Khu B", "token": "B", "contains": "Đồ uống: thùng bia (ô B01, xanh dương), nước ngọt (ô B02, đỏ), trà xanh (ô B03, xanh lá)"},
+    "C": {"name": "Khu C", "token": "C", "contains": "Gia vị & dầu ăn: muối (ô C01, xanh dương), tương ớt (ô C02, đỏ), dầu ăn (ô C03, xanh lá)"}
   },
   "named_places": {
-    "dock":     {"section": "A", "label": "Cầu cảng"},
-    "charging": {"section": "D", "label": "Trạm sạc"},
-    "qc":       {"section": "B", "label": "Khu kiểm hàng"},
-    "packing":  {"section": "D", "label": "Khu đóng gói"}
+    "packing": {"token": "PACK", "label": "Trạm đóng gói", "desc": "Nơi robot hạ hàng sau khi lấy từ kệ. Trên sa bàn là packing_station, ô PACK01."},
+    "dock":    {"token": "DOCK", "label": "Trạm sạc",      "desc": "Điểm xuất phát và về sạc của AGV. Trên sa bàn là dock_exit."}
   }
 }

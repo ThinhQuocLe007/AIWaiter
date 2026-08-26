@@ -1,0 +1,311 @@
+/* Trợ lý Robot Kho — the demo screen.
+   Dark on purpose, and it is a staging decision rather than a taste one: this page is shown on a
+   big screen to a room, next to a physical robot, often under hall lighting. A dark ground lets
+   the robot and the waveform be the only lit things in the frame, the way a stage does. The old
+   monitor was paper-white because it was an instrument rack you read up close; this one is looked
+   AT, from across a room, by people who will never touch it.
+
+   ONE colour is live at a time. `--state` is set on the root element from the phase (grey idle,
+   cyan listening, amber thinking, green answering, red fault) and the halo, the antenna, the chest
+   lamp, the wave and the state pill all inherit it. Nothing else on the page carries colour, so
+   the phase is legible from the back of the room with the text unreadable. */
+
+:root {
+  color-scheme: dark;
+
+  --bg: #060910;
+  --panel: rgba(255, 255, 255, 0.045);
+  --panel-line: rgba(255, 255, 255, 0.1);
+  --type: #eef2f8;
+  --dim: #8996aa;
+  --dimmer: #5d6b80;
+
+  /* Overwritten per-phase inline by App.vue; this is only the pre-mount value. */
+  --state: #64748b;
+  /* The call-to-action's own colour, deliberately NOT --state: the phase is grey at rest and red
+     at fault, and a grey or red "Bắt đầu ra lệnh" is the opposite of an invitation to press it. */
+  --go: #38bdf8;
+
+  --font: 'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; height: 100%; }
+
+body {
+  background: var(--bg);
+  color: var(--type);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden; /* one screen, never a scrollbar: this is a display, not a document */
+}
+
+#app { height: 100%; }
+
+.screen {
+  position: relative;
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: clamp(0.5rem, 1.6vh, 1.2rem);
+  padding: clamp(0.9rem, 2vh, 1.6rem) clamp(1rem, 3vw, 2.4rem);
+}
+
+/* The phase colour also washes the room behind the robot — a single radial that brightens as the
+   robot wakes up. It sits under everything and is never interactive. */
+.screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(60% 55% at 50% 38%, var(--state) 0%, transparent 62%);
+  opacity: 0.16;
+  transition: opacity 0.6s ease, background 0.6s ease;
+  pointer-events: none;
+}
+.screen > * { position: relative; }
+
+/* --- header ---------------------------------------------------------------------------- */
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.ident { display: flex; align-items: center; gap: 0.65rem; }
+
+.mark {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: var(--state);
+  box-shadow: 0 0 14px var(--state);
+  transition: background 0.5s ease, box-shadow 0.5s ease;
+}
+
+.name {
+  font-size: clamp(0.72rem, 1.1vw, 0.9rem);
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: var(--dim);
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: clamp(0.72rem, 1vw, 0.88rem);
+  color: var(--dim);
+}
+
+.pip {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--dimmer);
+}
+.pip.on { background: #34d399; box-shadow: 0 0 10px #34d399; }
+
+.pick {
+  background: var(--panel);
+  border: 1px solid var(--panel-line);
+  border-radius: 0.5rem;
+  color: var(--type);
+  font: inherit;
+  padding: 0.25rem 0.5rem;
+}
+
+/* --- stage ----------------------------------------------------------------------------- */
+.stage {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto auto auto;
+  justify-items: center;
+  align-content: center;
+  gap: clamp(0.4rem, 1.4vh, 1rem);
+}
+
+/* The robot takes every pixel the rest of the stage doesn't need, and it is the only element
+   allowed to do so. `min-height: 0` above is what lets it shrink on a short screen instead of
+   pushing the answer card off the bottom. */
+.bot-wrap {
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--state);
+  transition: color 0.5s ease;
+}
+
+.wave-box {
+  width: min(760px, 82vw);
+  height: clamp(56px, 11vh, 116px);
+  display: block;
+}
+
+.state { text-align: center; }
+
+.state-label {
+  margin: 0;
+  font-size: clamp(1.35rem, 3.2vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--state);
+  transition: color 0.5s ease;
+}
+
+.state-hint {
+  margin: 0.25rem 0 0;
+  font-size: clamp(0.85rem, 1.4vw, 1.05rem);
+  font-weight: 300;
+  color: var(--dim);
+}
+
+/* --- the answer ------------------------------------------------------------------------ */
+.result {
+  width: min(880px, 88vw);
+  padding: clamp(0.9rem, 2vh, 1.5rem) clamp(1.1rem, 2.4vw, 2rem);
+  border: 1px solid var(--panel-line);
+  border-left: 3px solid var(--state);
+  border-radius: 1rem;
+  background: var(--panel);
+  backdrop-filter: blur(8px);
+  text-align: center;
+  transition: border-color 0.5s ease;
+}
+/* While the robot is still speaking the card is visibly "in progress"; when the turn closes the
+   glow goes, which is the screen's way of saying the answer is final. */
+.result.live {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4); /* fallback where color-mix() is unsupported */
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--state) 40%, transparent), 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.heard {
+  margin: 0 0 0.5rem;
+  font-size: clamp(0.8rem, 1.2vw, 0.98rem);
+  font-weight: 300;
+  font-style: italic;
+  color: var(--dimmer);
+}
+
+.answer {
+  margin: 0;
+  font-size: clamp(1.05rem, 2.1vw, 1.7rem);
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.chip {
+  display: inline-block;
+  margin: 0.8rem 0 0;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07); /* fallbacks first: an unsupported */
+  border: 1px solid rgba(255, 255, 255, 0.18); /* color-mix() drops its own line, not these */
+  background: color-mix(in srgb, var(--state) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--state) 45%, transparent);
+  color: var(--state);
+  font-size: clamp(0.75rem, 1.1vw, 0.92rem);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.rise-enter-active { transition: opacity 0.35s ease, transform 0.35s ease; }
+.rise-leave-active { transition: opacity 0.2s ease; }
+.rise-enter-from { opacity: 0; transform: translateY(14px); }
+.rise-leave-to { opacity: 0; }
+
+/* --- controls -------------------------------------------------------------------------- */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.5rem, 1.2vw, 0.9rem);
+  padding-top: clamp(0.4rem, 1vh, 0.9rem);
+  border-top: 1px solid var(--panel-line);
+}
+
+.act {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  /* Real touch targets: this is driven by fingertip on a touchscreen next to the robot. */
+  min-height: 3.25rem;
+  padding: 0 clamp(1rem, 2vw, 1.6rem);
+  border: 1px solid var(--panel-line);
+  border-radius: 0.85rem;
+  background: var(--panel);
+  color: var(--type);
+  font: inherit;
+  font-size: clamp(0.9rem, 1.3vw, 1.05rem);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+.act:hover:not(:disabled) { background: rgba(255, 255, 255, 0.09); }
+.act:active:not(:disabled) { transform: translateY(1px); }
+.act:disabled { opacity: 0.35; cursor: default; }
+
+.act svg { width: 1.25rem; height: 1.25rem; fill: currentColor; stroke: currentColor; }
+
+/* The one button anyone is meant to press. It is the only filled control on the page. */
+.act.go {
+  background: var(--go);
+  border-color: transparent;
+  color: #04121c;
+  font-weight: 700;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--go) 35%, transparent);
+}
+.act.go:hover:not(:disabled) { filter: brightness(1.08); background: var(--go); }
+.act.go:disabled { box-shadow: none; }
+
+.dial {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 3.25rem;
+  padding: 0 0.7rem;
+  border: 1px solid var(--panel-line);
+  border-radius: 0.85rem;
+  background: var(--panel);
+}
+.dial.off { opacity: 0.4; }
+
+.cap {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.step {
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 1px solid var(--panel-line);
+  border-radius: 0.6rem;
+  background: transparent;
+  color: var(--type);
+  font: inherit;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.step:hover:not(:disabled) { background: rgba(255, 255, 255, 0.09); }
+.step:disabled { opacity: 0.4; cursor: default; }
+
+.val {
+  min-width: 3.2rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; }
+}

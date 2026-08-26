@@ -4,8 +4,13 @@ In-memory load of ``data/inventory.csv``. The public methods are the **stable in
 agent tools/workers call. For the demo there is no live DB — this is the single source of truth.
 
 The RAG index only *resolves* a spoken item name to a canonical record; facts (stock, supplier,
-handling, …) come from here. ``position_token`` is the **section** only (e.g. "A") — another team
-maps the section to real coordinates; the brain never emits geometry.
+handling, …) come from here. ``position_token`` is the **section** only (e.g. "A") — the ROS bridge
+maps it to real coordinates; the brain never emits geometry.
+
+Addressing is the sa bàn's, not a generic warehouse's: ``section`` is A/B/C (``storage_A/B/C`` in
+warehouse_agv_demo), ``slot`` is the shelf cell A01..C03, and ``color`` is the colour of the box
+physically sitting in that cell. There is no aisle: each storage is one rack row of three cells.
+Together ``section`` + ``color`` are exactly the two arguments ``storage_pick_mission.py`` takes.
 """
 
 from __future__ import annotations
@@ -22,8 +27,8 @@ class Item:
     item: str
     sku: str
     section: str
-    aisle: str
-    bin: str
+    slot: str
+    color: str
     quantity: float
     unit: str
     desc: str
@@ -60,8 +65,8 @@ class WarehouseData:
                     item=row["item"].strip(),
                     sku=(row.get("sku") or "").strip(),
                     section=(row.get("section") or "").strip(),
-                    aisle=(row.get("aisle") or "").strip(),
-                    bin=(row.get("bin") or "").strip(),
+                    slot=(row.get("slot") or "").strip(),
+                    color=(row.get("color") or "").strip().lower(),
                     quantity=_to_float(row.get("quantity")),
                     unit=(row.get("unit") or "").strip(),
                     desc=(row.get("desc") or "").strip(),
@@ -97,7 +102,7 @@ class WarehouseData:
 
     def get_location(self, sku: str) -> dict | None:
         item = self.get_item_by_sku(sku)
-        return {"section": item.section, "aisle": item.aisle, "bin": item.bin} if item else None
+        return {"section": item.section, "slot": item.slot, "color": item.color} if item else None
 
     def search(self, query: str, limit: int = 5) -> list[Item]:
         q = query.strip().lower()

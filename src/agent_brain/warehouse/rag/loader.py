@@ -13,6 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from src.agent_brain.warehouse.colors import vi as color_vi
 from src.agent_brain.warehouse.paths import ROOT, settings
 from src.agent_brain.warehouse.services.warehouse_data import WarehouseData
 from src.agent_brain.warehouse.services import warehouse_info
@@ -36,7 +37,7 @@ def load_inventory_docs(data: WarehouseData) -> list[Doc]:
         text = (
             f"{it.item} ({it.sku}): {it.desc}. "
             f"Danh mục: {it.category}. Nhà cung cấp: {it.supplier}. "
-            f"Vị trí: khu {it.section}, lối {it.aisle}, bin {it.bin}. "
+            f"Vị trí: khu {it.section}, ô {it.slot}, hộp màu {color_vi(it.color)}. "
             f"Tồn kho: {it.quantity} {it.unit}. Mức tối thiểu: {it.min_stock} {it.unit}.{handling}"
         )
         docs.append(Doc(text=text, meta={"kind": "item", "sku": it.sku, "item": it.item},
@@ -51,7 +52,7 @@ def load_section_docs() -> list[Doc]:
         text = f"Khu {key} ({val.get('name', '')}): {val.get('contains', '')}."
         docs.append(Doc(text=text, meta={"kind": "section", "section": key}, tokens=_tokenize(text)))
     for key, val in info.get("named_places", {}).items():
-        text = f"{val.get('label', key)} nằm ở khu {val.get('section', '')}."
+        text = f"{val.get('label', key)}: {val.get('desc', '')}".strip().rstrip(":")
         docs.append(Doc(text=text, meta={"kind": "named_place", "name": key},
                         tokens=_tokenize(text)))
     return docs
