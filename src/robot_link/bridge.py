@@ -107,6 +107,23 @@ class VelocityHold:
     def release(self) -> None:
         self._engaged.clear()
 
+    def pulse(self, linear: float, angular: float, duration: float = 1.2) -> None:
+        """Drive the AGV one direction for a fixed time — the motion-primitive command.
+
+        Publishes on the same two topics the stop hold uses, so it overrides Nav2 while a goal is
+        active and is a no-op-conflict-free with an idle robot. `HOLD_HZ` ticks keep the command
+        alive for the whole pulse; we then zero the topics so the robot doesn't coast.
+        """
+        twist = self._Twist()
+        twist.linear.x = linear
+        twist.angular.z = angular
+        ticks = max(1, int(duration * HOLD_HZ))
+        for _ in range(ticks):
+            for pub in self._pubs:
+                pub.publish(twist)
+            time.sleep(1.0 / HOLD_HZ)
+        self._publish_zero()
+
     def shutdown(self) -> None:
         self._stop.set()
 
@@ -254,6 +271,8 @@ class RobotBridge:
             return
         if action.get("type") == protocol.KIND_CONTROL:
             self._control(action, cmd, origin)
+        elif action.get("type") == protocol.KIND_MOTION:
+            self._motion(action, cmd, origin)
         else:
             self._run(action, cmd, origin)
 
@@ -309,6 +328,29 @@ class RobotBridge:
             logger.info("HỦY CHUYẾN (%s) ← %r", origin, cmd.sentence)
         else:
             logger.warning("Verb điều khiển lạ: %r", verb)
+
+    # ── motion primitive: a timed velocity pulse, no destination ──────────────
+    def _motion(self, action: dict, cmd: Command, origin: str) -> None:
+        if self.hold is None:
+            logger.warning("Nhận lệnh di chuyển %r nhưng không có ROS — bỏ qua", action.get("direction"))
+            return
+        direction = (action or {}).get("direction", "")
+        lin, ang = 0.0, 0.0
+        if direction == "forward":
+            lin = 0.2
+        elif direction == "back":
+            lin = -0.2
+        elif direction == "left":
+            ang = 0.6
+        elif direction == "right":
+            ang = -0.6
+        else:
+            logger.warning("Hướng di chuyển lạ: %r", direction)
+            return
+        # A stop hold would pin the AGV; lift it so the pulse actually moves the robot.
+        self.hold.release()
+        logger.info("DI CHUYỂN %s (%s) ← %r", direction, origin, cmd.sentence)
+        self.hold.pulse(lin, ang, duration=1.2)
 
     # ── everything that shells out to warehouse_agv_demo ──────────────────────
     def _run(self, action: dict, cmd: Command, origin: str) -> None:

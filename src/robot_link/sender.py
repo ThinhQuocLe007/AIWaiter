@@ -97,6 +97,16 @@ class CommandSender:
             source=source,
         )
 
+    def motion(self, direction: str, sentence: str = "", reply: str = "", source: str = "agent") -> None:
+        """Send a directional primitive (forward / back / left / right)."""
+        self._send(
+            protocol.KIND_MOTION,
+            action={"type": "motion", "direction": direction},
+            sentence=sentence,
+            reply=reply,
+            source=source,
+        )
+
     def send_action(self, action: dict | None, sentence: str = "", reply: str = "") -> bool:
         """Route whatever action a turn produced. Returns True if anything was sent.
 
@@ -111,6 +121,9 @@ class CommandSender:
             return True
         if kind == "control":
             self.control(action.get("verb", ""), sentence, reply, source="agent")
+            return True
+        if kind == "motion":
+            self.motion(action.get("direction", ""), sentence, reply, source="agent")
             return True
         logger.warning("Robot link: bỏ qua action lạ %r", kind)
         return False

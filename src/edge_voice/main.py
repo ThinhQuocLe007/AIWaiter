@@ -37,7 +37,7 @@ from dotenv import load_dotenv
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from src.agent_brain.config import settings
-from src.agent_brain.warehouse import control_phrases
+from src.agent_brain.warehouse import control_phrases, motion_phrases
 from src.edge_voice import audio_levels
 from src.edge_voice.log import log_struct, logger
 from src.edge_voice.output.tts_engine import StreamingPlayer, speak_sentence, speak_streaming, warmup as tts_warmup
@@ -185,6 +185,23 @@ def _capture_and_send_streaming(vad: SileroVAD, agent_client: httpx.Client,
                  agent_ms=0, turn_ms=ms_since(t_start), sentences=1)
         return
 
+    # ── Fast path: motion primitives ("đi thẳng", "lùi", "quẹo trái/phải") ─────
+    # Same reasoning as the control fast path: the round trip to the LLM is several seconds and a
+    # directional pulse should move the robot now, not after the brain agrees. The agent still has a
+    # `motion` intent for phrasings this matcher misses; that path is slower but still moves.
+    direction = motion_phrases.match(text)
+    if direction is not None:
+        if _ROBOT is not None:
+            _ROBOT.motion(direction, sentence=text, reply=motion_phrases.REPLY[direction])
+        reply = motion_phrases.REPLY[direction]
+        print(f"[FASTPATH MOTION {direction.upper()} in {ms_since(t_speech_end)}ms]: {reply}")
+        tel.send("speaking", text=reply, index=0, muted=player.is_muted())
+        if not cancel.is_set() and not player.is_stopped():
+            speak_sentence(reply, player)
+        tel.send("done", dialog_stage="motion",
+                 agent_ms=0, turn_ms=ms_since(t_start), sentences=1)
+        return
+
     t_agent = time.perf_counter()
     spoken = 0
     try:
@@ -224,7 +241,14 @@ def _capture_and_send_streaming(vad: SileroVAD, agent_client: httpx.Client,
                     # control verb the fast path did not catch). Send it after the reply has been
                     # spoken so the robot never starts moving before it has answered.
                     if _ROBOT is not None and not cancel.is_set():
-                        _ROBOT.send_action(data.get("action"), sentence=text)
+                        # A decomposed (compound) turn carries a list of actions; forward each so
+                        # the robot runs them in order. Fall back to the single `action` field.
+                        actions = data.get("actions")
+                        if isinstance(actions, list) and actions:
+                            for act in actions:
+                                _ROBOT.send_action(act, sentence=text)
+                        elif data.get("action"):
+                            _ROBOT.send_action(data.get("action"), sentence=text)
                     tel.send(
                         "done", dialog_stage=data.get("stage"),
                         agent_ms=ms_since(t_agent), turn_ms=ms_since(t_start), sentences=spoken,

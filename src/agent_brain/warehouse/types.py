@@ -21,6 +21,8 @@ class Intent(str, Enum):
     ANSWER = "answer"          # any warehouse-information question (locate/stock/attribute/section/…)
     NAVIGATE = "navigate"      # move to an item or a named place → emit a location token
     CONTROL = "control"        # stop / resume / cancel the run in progress → emit a control verb
+    MOTION = "motion"          # directional primitive: forward / back / left / right (no destination)
+    PLAN = "plan"              # complex/compound/low-confidence → LLM decomposes into atomic steps
     CHAT = "chat"              # general conversation, no warehouse context
 
 
@@ -79,11 +81,27 @@ class LiftAction(BaseModel):
     direction: LiftDirection
 
 
+class MotionDirection(str, Enum):
+    """A directional primitive — drives the AGV a fixed pulse, names no destination."""
+
+    FORWARD = "forward"
+    BACK = "back"
+    LEFT = "left"
+    RIGHT = "right"
+
+
+class MotionAction(BaseModel):
+    """Velocity pulse in one of four directions (demo-grade, no distance/heading)."""
+
+    type: Literal["motion"] = "motion"
+    direction: MotionDirection
+
+
 # Discriminated on `type` rather than one class with nullable fields: a stop must never be
 # mistaken for a navigate whose position failed to resolve. `robot_link.capabilities` switches on
 # `type` (and then on `task`) to pick the exact warehouse_agv_demo command.
 Action = Annotated[
-    Union[NavigateAction, ControlAction, LiftAction], Field(discriminator="type")
+    Union[NavigateAction, ControlAction, LiftAction, MotionAction], Field(discriminator="type")
 ]
 
 

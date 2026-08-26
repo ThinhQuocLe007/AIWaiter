@@ -40,6 +40,7 @@ REPEAT_GAP_S = 0.02
 
 KIND_NAVIGATE = "navigate"
 KIND_CONTROL = "control"
+KIND_MOTION = "motion"
 KIND_PING = "ping"
 # The receiver echoes one of these per datagram it accepts. It carries no instruction — its whole
 # job is to let the sender distinguish "the laptop is ignoring me" from "the laptop never heard
@@ -95,7 +96,7 @@ def decode(raw: bytes) -> Command | None:
     if not isinstance(payload, dict) or payload.get("v") != WIRE_VERSION:
         return None
     kind = payload.get("kind")
-    if kind not in (KIND_NAVIGATE, KIND_CONTROL, KIND_PING, KIND_ACK):
+    if kind not in (KIND_NAVIGATE, KIND_CONTROL, KIND_MOTION, KIND_PING, KIND_ACK):
         return None
     known = Command.__dataclass_fields__.keys()
     return Command(**{k: val for k, val in payload.items() if k in known})

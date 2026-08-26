@@ -22,6 +22,11 @@ class AgentState(TypedDict, total=False):
     # last mentioned section (e.g. after "khu A có gì") — lets "dẫn tôi đến đó" resolve to it
     current_section: Optional[str]
     candidates: list[dict]
+    # The LLM decomposer's output for a complex/compound turn: a list of atomic step dicts.
+    plan: list[dict]
+    # One action per executed step (the executor threads state so steps share context). The single
+    # `action` field carries the last one for the legacy one-command contract.
+    actions: list[dict]
     reply: str
     action: Optional[dict]          # serialized Action / PositionToken
     navigated_place: Optional[str]  # human label when navigating to a named place (dock, qc, …)

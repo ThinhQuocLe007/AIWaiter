@@ -1,214 +1,1386 @@
 [
-  { "intent": "answer", "text": "bột mì ở đâu" },
-  { "intent": "answer", "text": "cho tôi biết vị trí thùng bia" },
-  { "intent": "answer", "text": "tìm giúp tôi chỗ để đường" },
-  { "intent": "answer", "text": "gạo để khu nào" },
-  { "intent": "answer", "text": "dầu ăn nằm lối mấy" },
-  { "intent": "answer", "text": "ngăn nào chứa bột ngọt" },
-  { "intent": "answer", "text": "mì tôm để bin số mấy" },
-  { "intent": "answer", "text": "nước mắm ở đâu nhỉ" },
-  { "intent": "answer", "text": "chỉ giúp tôi vị trí cà phê" },
-  { "intent": "answer", "text": "đường thốt nốt để chỗ nào" },
-  { "intent": "answer", "text": "sữa bỏ khu vực nào" },
-  { "intent": "answer", "text": "trà xanh nằm ở đâu" },
-  { "intent": "answer", "text": "bánh quy để lối nào" },
-  { "intent": "answer", "text": "dầu dừa ở khu mấy" },
-  { "intent": "answer", "text": "muối để ngăn nào" },
-  { "intent": "answer", "text": "hạt điều nằm bin bao nhiêu" },
-  { "intent": "answer", "text": "tôi cần tìm bột năng" },
-  { "intent": "answer", "text": "bột mì để đâu rồi" },
-  { "intent": "answer", "text": "giúp tôi tìm thùng bia" },
-  { "intent": "answer", "text": "kho có bột mì không, ở đâu" },
-  { "intent": "answer", "text": "cho hỏi vị trí mì tôm" },
-  { "intent": "answer", "text": "tôm khô để chỗ nào" },
-  { "intent": "answer", "text": "đâu là chỗ để gạo" },
-  { "intent": "answer", "text": "lối nào chứa dầu ăn" },
-  { "intent": "answer", "text": "khu nào có bột ngọt" },
-  { "intent": "answer", "text": "tìm dùm tôi vị trí đường" },
-  { "intent": "answer", "text": "bột mì với gạo để khu nào" },
-  { "intent": "answer", "text": "chỗ để hàng hóa ở đâu" },
-  { "intent": "answer", "text": "pallet bột mì nằm đâu" },
-  { "intent": "answer", "text": "thùng hàng để lối mấy" },
-  { "intent": "answer", "text": "kệ bột mì ở đâu" },
-  { "intent": "answer", "text": "tìm nhanh giúp tôi bột mì" },
-  { "intent": "answer", "text": "vị trí chính xác của thùng bia là đâu" },
-  { "intent": "answer", "text": "cho tôi xin vị trí dầu ăn" },
-  { "intent": "answer", "text": "bột mì để khu A hay khu B" },
-  { "intent": "answer", "text": "còn bột mì để ở đâu thế" },
-  { "intent": "answer", "text": "làm ơn chỉ chỗ để gạo" },
-  { "intent": "answer", "text": "tôi quên bột mì để đâu rồi" },
-  { "intent": "answer", "text": "bin nào chứa đường" },
-  { "intent": "answer", "text": "còn bao nhiêu bột mì" },
-  { "intent": "answer", "text": "thùng bia tồn kho bao nhiêu" },
-  { "intent": "answer", "text": "kiểm tra số lượng đường" },
-  { "intent": "answer", "text": "gạo còn không" },
-  { "intent": "answer", "text": "dầu ăn hết chưa" },
-  { "intent": "answer", "text": "số lượng tồn của bột ngọt" },
-  { "intent": "answer", "text": "còn lại bao nhiêu mì tôm" },
-  { "intent": "answer", "text": "nước mắm còn mấy thùng" },
-  { "intent": "answer", "text": "tồn kho cà phê là bao nhiêu" },
-  { "intent": "answer", "text": "đường thốt nốt còn không nhỉ" },
-  { "intent": "answer", "text": "sữa còn trong kho không" },
-  { "intent": "answer", "text": "trà xanh còn bao nhiêu gói" },
-  { "intent": "answer", "text": "bánh quy tồn kho mấy cái" },
-  { "intent": "answer", "text": "dầu dừa còn lại bao nhiêu" },
-  { "intent": "answer", "text": "muối còn không" },
-  { "intent": "answer", "text": "hạt điều tồn bao nhiêu kg" },
-  { "intent": "answer", "text": "bột năng còn không" },
-  { "intent": "answer", "text": "tôm khô còn mấy gói" },
-  { "intent": "answer", "text": "cho tôi biết số lượng bột mì" },
-  { "intent": "answer", "text": "báo tồn kho gạo giúp tôi" },
-  { "intent": "answer", "text": "còn hàng bột mì không" },
-  { "intent": "answer", "text": "kiểm tra xem thùng bia hết chưa" },
-  { "intent": "answer", "text": "bột mì còn đủ không" },
-  { "intent": "answer", "text": "đường còn dưới 10 kg không" },
-  { "intent": "answer", "text": "dầu ăn trong kho còn mấy chai" },
-  { "intent": "answer", "text": "tôi muốn biết gạo còn bao nhiêu" },
-  { "intent": "answer", "text": "số lượng hiện tại của nước mắm" },
-  { "intent": "answer", "text": "còn không đường thốt nốt" },
-  { "intent": "answer", "text": "tồn kho hiện giờ của cà phê" },
-  { "intent": "answer", "text": "mì tôm còn bao nhiêu thùng" },
-  { "intent": "answer", "text": "làm ơn check tồn kho bột ngọt" },
-  { "intent": "answer", "text": "bột mì còn lại trong kho bao nhiêu" },
-  { "intent": "answer", "text": "dầu ăn sắp hết chưa" },
-  { "intent": "answer", "text": "hạt điều còn bao nhiêu kg nhỉ" },
-  { "intent": "answer", "text": "trà có còn không" },
-  { "intent": "answer", "text": "cho hỏi tồn kho bánh quy" },
-  { "intent": "answer", "text": "số lượng bột mì hiện tại" },
-  { "intent": "answer", "text": "nhà cung cấp của bột mì là ai" },
-  { "intent": "answer", "text": "ai cung cấp thùng bia" },
-  { "intent": "answer", "text": "bột mì thuộc danh mục nào" },
-  { "intent": "answer", "text": "dầu ăn loại gì" },
-  { "intent": "answer", "text": "có cần nhập thêm đường không" },
-  { "intent": "answer", "text": "đường còn dưới mức tối thiểu chưa" },
-  { "intent": "answer", "text": "khu A có những gì" },
-  { "intent": "answer", "text": "khu B để mặt hàng nào" },
-  { "intent": "answer", "text": "trong khu C có gì" },
-  { "intent": "answer", "text": "danh sách hàng ở khu D" },
-  { "intent": "answer", "text": "bột mì lưu ý gì khi bảo quản" },
-  { "intent": "answer", "text": "mã vạch của gạo là bao nhiêu" },
-  { "intent": "navigate", "text": "đưa tôi đến bột mì" },
-  { "intent": "navigate", "text": "dẫn tôi đi lấy thùng bia" },
-  { "intent": "navigate", "text": "chỉ đường đến đường" },
-  { "intent": "navigate", "text": "đi đến vị trí gạo" },
-  { "intent": "navigate", "text": "tới chỗ để dầu ăn" },
-  { "intent": "navigate", "text": "dắt tôi đến bột ngọt" },
-  { "intent": "navigate", "text": "navigate to mì tôm" },
-  { "intent": "navigate", "text": "tới khu vực nước mắm" },
-  { "intent": "navigate", "text": "đưa tôi tới cà phê" },
-  { "intent": "navigate", "text": "dẫn đường tới đường thốt nốt" },
-  { "intent": "navigate", "text": "giúp tôi tới sữa" },
-  { "intent": "navigate", "text": "cho tôi đến trà xanh" },
-  { "intent": "navigate", "text": "dẫn tôi ra khu A" },
-  { "intent": "navigate", "text": "chỉ đường tới khu B" },
-  { "intent": "navigate", "text": "đi đến khu C" },
-  { "intent": "navigate", "text": "đưa tôi ra cổng" },
-  { "intent": "navigate", "text": "tới trạm sạc đi" },
-  { "intent": "navigate", "text": "dẫn tôi đến dock" },
-  { "intent": "navigate", "text": "navigate to A3" },
-  { "intent": "navigate", "text": "cho tôi tới khu nhập hàng" },
-  { "intent": "navigate", "text": "đi lấy bột mì giúp tôi" },
-  { "intent": "navigate", "text": "tôi muốn đến chỗ để gạo" },
-  { "intent": "navigate", "text": "dắt tôi ra khu đóng gói" },
-  { "intent": "navigate", "text": "chỉ đường ra cổng kho" },
-  { "intent": "navigate", "text": "đưa tôi tới pallet bột mì" },
-  { "intent": "navigate", "text": "dẫn đường tới kệ thùng bia" },
-  { "intent": "navigate", "text": "tới ngay chỗ để đường" },
-  { "intent": "navigate", "text": "giúp tôi đi lấy dầu ăn" },
-  { "intent": "navigate", "text": "cho tôi xin đường tới bột mì" },
-  { "intent": "navigate", "text": "dắt tôi đến vị trí mì tôm" },
-  { "intent": "navigate", "text": "tôi cần đến khu A gấp" },
-  { "intent": "navigate", "text": "dẫn tôi tới trạm sạc" },
-  { "intent": "navigate", "text": "đưa tới chỗ để hạt điều" },
-  { "intent": "navigate", "text": "chỉ đường cho tôi ra dock" },
-  { "intent": "navigate", "text": "đi thẳng tới gạo" },
-  { "intent": "navigate", "text": "dẫn tôi ra cầu cảng" },
-  { "intent": "navigate", "text": "cho tôi đến trạm sạc" },
-  { "intent": "chat", "text": "xin chào" },
-  { "intent": "chat", "text": "chào buổi sáng" },
-  { "intent": "chat", "text": "chào anh" },
-  { "intent": "chat", "text": "chào cô" },
-  { "intent": "chat", "text": "cảm ơn nhé" },
-  { "intent": "chat", "text": "cảm ơn bạn nhiều" },
-  { "intent": "chat", "text": "cảm ơn anh đã giúp" },
-  { "intent": "chat", "text": "tạm biệt" },
-  { "intent": "chat", "text": "tạm biệt nhé" },
-  { "intent": "chat", "text": "bạn là ai" },
-  { "intent": "chat", "text": "robot ơi" },
-  { "intent": "chat", "text": "bạn làm được những gì" },
-  { "intent": "chat", "text": "hôm nay thế nào" },
-  { "intent": "chat", "text": "khỏe không bạn" },
-  { "intent": "chat", "text": "có ai ở đó không" },
-  { "intent": "chat", "text": "bạn giúp gì được cho tôi" },
-  { "intent": "chat", "text": "chào bạn" },
-  { "intent": "chat", "text": "cảm ơn" },
-  { "intent": "chat", "text": "gọi tôi giúp được không" },
-  { "intent": "chat", "text": "bạn tên gì" },
-  { "intent": "chat", "text": "hẹn gặp lại" },
-  { "intent": "chat", "text": "bạn có khỏe không" },
-  { "intent": "chat", "text": "cảm ơn nhiều ạ" },
-  { "intent": "chat", "text": "chào buổi tối" },
-  { "intent": "chat", "text": "bạn đang làm gì vậy" },
-  { "intent": "chat", "text": "tạm biệt bạn" },
-  { "intent": "chat", "text": "xin cảm ơn" },
-  { "intent": "control", "text": "dừng lại" },
-  { "intent": "control", "text": "dừng lại đi" },
-  { "intent": "control", "text": "dừng lại ngay" },
-  { "intent": "control", "text": "robot dừng lại" },
-  { "intent": "control", "text": "khoan đã" },
-  { "intent": "control", "text": "khoan" },
-  { "intent": "control", "text": "đứng lại giùm tôi" },
-  { "intent": "control", "text": "đứng yên đó" },
-  { "intent": "control", "text": "ngừng lại một chút" },
-  { "intent": "control", "text": "dừng xe lại" },
-  { "intent": "control", "text": "phanh lại" },
-  { "intent": "control", "text": "dừng" },
-  { "intent": "control", "text": "đi tiếp đi" },
-  { "intent": "control", "text": "chạy tiếp được rồi" },
-  { "intent": "control", "text": "tiếp tục chạy" },
-  { "intent": "control", "text": "đường thông rồi, đi tiếp" },
-  { "intent": "control", "text": "hết người rồi chạy đi" },
-  { "intent": "control", "text": "đi được rồi" },
-  { "intent": "control", "text": "hủy chuyến này" },
-  { "intent": "control", "text": "hủy lệnh vừa nãy" },
-  { "intent": "control", "text": "thôi khỏi lấy nữa" },
-  { "intent": "control", "text": "không lấy nữa" },
-  { "intent": "control", "text": "hủy nhiệm vụ" },
-  { "intent": "control", "text": "bỏ chuyến đi" },
-  { "intent": "navigate", "text": "đi tới khu A lấy hộp xanh dương" },
-  { "intent": "navigate", "text": "dẫn tôi tới ô A01" },
-  { "intent": "navigate", "text": "qua khu B lấy thùng bia" },
-  { "intent": "navigate", "text": "đổi hướng, sang khu C đi" },
-  { "intent": "navigate", "text": "tới trạm đóng gói" },
-  { "intent": "navigate", "text": "về trạm sạc" },
-  { "intent": "navigate", "text": "lấy giúp tôi hộp màu đỏ ở khu B" },
-  { "intent": "navigate", "text": "đi lấy hộp xanh lá bên khu C" },
-  { "intent": "answer", "text": "kệ nào thiếu đồ" },
-  { "intent": "answer", "text": "khu nào thiếu hàng" },
-  { "intent": "answer", "text": "kệ nào còn đủ hàng" },
-  { "intent": "answer", "text": "mặt hàng nào dưới mức tối thiểu" },
-  { "intent": "answer", "text": "có mặt hàng nào sắp hết không" },
-  { "intent": "answer", "text": "hộp ở ô A01 là màu gì" },
-  { "intent": "answer", "text": "thùng bia màu gì" },
-  { "intent": "answer", "text": "khu C có những gì" },
-  { "intent": "answer", "text": "muối còn bao nhiêu" },
-  { "intent": "answer", "text": "gạo có đủ không" },
-  { "intent": "control", "text": "nâng càng lên" },
-  { "intent": "control", "text": "nâng khay lên" },
-  { "intent": "control", "text": "nâng lên đi" },
-  { "intent": "control", "text": "kích lên giùm" },
-  { "intent": "control", "text": "hạ càng xuống" },
-  { "intent": "control", "text": "hạ khay xuống" },
-  { "intent": "control", "text": "hạ xuống đi" },
-  { "intent": "control", "text": "bỏ hàng xuống" },
-  { "intent": "control", "text": "thả hàng xuống" },
-  { "intent": "navigate", "text": "qua khu C thôi, đừng lấy gì" },
-  { "intent": "navigate", "text": "chỉ chạy tới khu A, khỏi gắp" },
-  { "intent": "navigate", "text": "chạy thử một vòng qua khu C" },
-  { "intent": "navigate", "text": "lấy hộp đỏ rồi giữ trên xe" },
-  { "intent": "navigate", "text": "lấy thùng bia nhưng đừng giao" },
-  { "intent": "navigate", "text": "lấy xong để trên khay cho tôi" },
-  { "intent": "navigate", "text": "mang về đi" },
-  { "intent": "navigate", "text": "đem về trạm đóng gói" },
-  { "intent": "navigate", "text": "giao hàng đi" }
+  {
+    "intent": "answer",
+    "text": "hạt điều tồn bao nhiêu kg"
+  },
+  {
+    "intent": "control",
+    "text": "bỏ chuyến"
+  },
+  {
+    "intent": "answer",
+    "text": "bánh quy nằm lối mấy"
+  },
+  {
+    "intent": "answer",
+    "text": "khu B chứa hàng gì"
+  },
+  {
+    "intent": "answer",
+    "text": "bột năng ở đâu"
+  },
+  {
+    "intent": "navigate",
+    "text": "đi lấy muối"
+  },
+  {
+    "intent": "answer",
+    "text": "tìm gạo"
+  },
+  {
+    "intent": "navigate",
+    "text": "đi đến khu C"
+  },
+  {
+    "intent": "chat",
+    "text": "ban tên gi"
+  },
+  {
+    "intent": "navigate",
+    "text": "lấy cà phê ra"
+  },
+  {
+    "intent": "answer",
+    "text": "mì tôm còn bao nhiêu thùng"
+  },
+  {
+    "intent": "answer",
+    "text": "còn lại bao nhiêu đường thốt nốt"
+  },
+  {
+    "intent": "control",
+    "text": "dưng xe lai"
+  },
+  {
+    "intent": "control",
+    "text": "thôi khoi lây nưa"
+  },
+  {
+    "intent": "navigate",
+    "text": "robot ơi đi lấy giúp tôi cái bia"
+  },
+  {
+    "intent": "chat",
+    "text": "chào tạm biệt"
+  },
+  {
+    "intent": "control",
+    "text": "chạy đi"
+  },
+  {
+    "intent": "control",
+    "text": "ngưng ngay"
+  },
+  {
+    "intent": "answer",
+    "text": "tim muôi"
+  },
+  {
+    "intent": "answer",
+    "text": "tìm hộ tôi trà xanh"
+  },
+  {
+    "intent": "navigate",
+    "text": "chạy tới khu B đi"
+  },
+  {
+    "intent": "chat",
+    "text": "cảm ơn nhiều ạ"
+  },
+  {
+    "intent": "control",
+    "text": "dừng lại ngay"
+  },
+  {
+    "intent": "navigate",
+    "text": "dẫn tôi tới trạm sạc"
+  },
+  {
+    "intent": "navigate",
+    "text": "đưa tôi dầu ăn"
+  },
+  {
+    "intent": "navigate",
+    "text": "đi lấy gạo"
+  },
+  {
+    "intent": "answer",
+    "text": "ngăn nào chứa nước mắm"
+  },
+  {
+    "intent": "navigate",
+    "text": "đi lấy bột mì"
+  },
+  {
+    "intent": "control",
+    "text": "huy chuyên nay"
+  },
+  {
+    "intent": "chat",
+    "text": "tạm biệt robot"
+  },
+  {
+    "intent": "navigate",
+    "text": "dân tôi đi lây nươc ngot"
+  },
+  {
+    "intent": "chat",
+    "text": "nói chuyện đi"
+  },
+  {
+    "intent": "navigate",
+    "text": "tới chỗ dầu ăn"
+  },
+  {
+    "intent": "answer",
+    "text": "hạt điều ở đâu"
+  },
+  {
+    "intent": "answer",
+    "text": "tìm giúp tôi bột ngọt"
+  },
+  {
+    "intent": "answer",
+    "text": "nước mắm thuộc khu nào"
+  },
+  {
+    "intent": "answer",
+    "text": "khu C đê măt hang nao"
+  },
+  {
+    "intent": "control",
+    "text": "banh lai"
+  },
+  {
+    "intent": "control",
+    "text": "đi tiếp"
+  },
+  {
+    "intent": "navigate",
+    "text": "dẫn tôi đi lấy muối"
+  },
+  {
+    "intent": "control",
+    "text": "tha hang xuông nghen"
+  },
+  {
+    "intent": "answer",
+    "text": "khu C chứa hàng gì"
+  },
+  {
+    "intent": "chat",
+    "text": "robot ơi giúp tôi"
+  },
+  {
+    "intent": "answer",
+    "text": "cà phê thuộc khu nào"
+  },
+  {
+    "intent": "answer",
+    "text": "mì tôm còn không"
+  },
+  {
+    "intent": "control",
+    "text": "nâng lên đi"
+  },
+  {
+    "intent": "chat",
+    "text": "bạn làm được gì"
+  },
+  {
+    "intent": "answer",
+    "text": "gạo để đâu"
+  },
+  {
+    "intent": "control",
+    "text": "ngừng lại"
+  },
+  {
+    "intent": "answer",
+    "text": "hạt điều nằm lối mấy"
+  },
+  {
+    "intent": "chat",
+    "text": "cảm ơn"
+  },
+  {
+    "intent": "control",
+    "text": "hạ xuống đi"
+  },
+  {
+    "intent": "chat",
+    "text": "hôm nay vui không"
+  },
+  {
+    "intent": "navigate",
+    "text": "robot đi lấy trà xanh giùm"
+  },
+  {
+    "intent": "answer",
+    "text": "đương con dươi 10 kg không"
+  },
+  {
+    "intent": "answer",
+    "text": "nước ngọt thuộc khu nào"
+  },
+  {
+    "intent": "answer",
+    "text": "ngăn nao chưa tôm khô"
+  },
+  {
+    "intent": "control",
+    "text": "ha cang xuông"
+  },
+  {
+    "intent": "navigate",
+    "text": "lấy dầu ăn giúp tôi"
+  },
+  {
+    "intent": "control",
+    "text": "dừng yên"
+  },
+  {
+    "intent": "navigate",
+    "text": "cho tôi tới khu nhập hàng"
+  },
+  {
+    "intent": "navigate",
+    "text": "mang gạo về đây"
+  },
+  {
+    "intent": "control",
+    "text": "dưng lai đi"
+  },
+  {
+    "intent": "control",
+    "text": "ha khay xuông"
+  },
+  {
+    "intent": "answer",
+    "text": "bột mì để khu A"
+  },
+  {
+    "intent": "answer",
+    "text": "bột năng hết chưa"
+  },
+  {
+    "intent": "navigate",
+    "text": "robot đi lấy sữa giùm"
+  },
+  {
+    "intent": "answer",
+    "text": "ngăn nào chứa bột mì"
+  },
+  {
+    "intent": "control",
+    "text": "chạy tiếp được rồi"
+  },
+  {
+    "intent": "answer",
+    "text": "còn lại bao nhiêu dầu ăn"
+  },
+  {
+    "intent": "chat",
+    "text": "kể chuyện đi"
+  },
+  {
+    "intent": "navigate",
+    "text": "lấy giúp tôi hộp màu đỏ ở khu B"
+  },
+  {
+    "intent": "answer",
+    "text": "khu A chứa hàng gì"
+  },
+  {
+    "intent": "answer",
+    "text": "kiểm tra số lượng dầu dừa"
+  },
+  {
+    "intent": "answer",
+    "text": "tồn kho trà xanh bao nhiêu"
+  },
+  {
+    "intent": "navigate",
+    "text": "lấy bánh quy ra"
+  },
+  {
+    "intent": "navigate",
+    "text": "đưa tôi bột năng"
+  },
+  {
+    "intent": "navigate",
+    "text": "mang bôt mi tơi đây"
+  },
+  {
+    "intent": "answer",
+    "text": "dầu ăn để đâu"
+  },
+  {
+    "intent": "navigate",
+    "text": "di chuyển đến khu A"
+  },
+  {
+    "intent": "answer",
+    "text": "đường thốt nốt để khu A"
+  },
+  {
+    "intent": "chat",
+    "text": "chào robot"
+  },
+  {
+    "intent": "navigate",
+    "text": "về trạm sạc"
+  },
+  {
+    "intent": "answer",
+    "text": "hàng sắp hết là những gì"
+  },
+  {
+    "intent": "answer",
+    "text": "thùng bia ở đâu"
+  },
+  {
+    "intent": "answer",
+    "text": "kiểm tra số lượng bánh quy"
+  },
+  {
+    "intent": "navigate",
+    "text": "bốc bột mì lên xe"
+  },
+  {
+    "intent": "answer",
+    "text": "còn bột mì không nha"
+  },
+  {
+    "intent": "control",
+    "text": "hủy lệnh vừa nãy"
+  },
+  {
+    "intent": "answer",
+    "text": "bột năng còn bao nhiêu"
+  },
+  {
+    "intent": "answer",
+    "text": "tôn kho banh quy bao nhiêu"
+  },
+  {
+    "intent": "navigate",
+    "text": "chạy tới khu C đi"
+  },
+  {
+    "intent": "answer",
+    "text": "mặt hàng nào dưới mức tối thiểu"
+  },
+  {
+    "intent": "navigate",
+    "text": "tới chỗ bột năng"
+  },
+  {
+    "intent": "navigate",
+    "text": "bốc hạt điều lên xe"
+  },
+  {
+    "intent": "answer",
+    "text": "báo tồn kho bột mì giúp tôi"
+  },
+  {
+    "intent": "chat",
+    "text": "hôm nay thê nao"
+  },
+  {
+    "intent": "navigate",
+    "text": "đưa tôi hạt điều"
+  },
+  {
+    "intent": "answer",
+    "text": "báo tồn kho muối giúp tôi"
+  },
+  {
+    "intent": "navigate",
+    "text": "bôc bôt ngot lên xe"
+  },
+  {
+    "intent": "control",
+    "text": "đi tiếp đi nghen"
+  },
+  {
+    "intent": "chat",
+    "text": "chao ban"
+  },
+  {
+    "intent": "answer",
+    "text": "ngăn nào chứa nước ngọt"
+  },
+  {
+    "intent": "chat",
+    "text": "ban co biêt tôi không"
+  },
+  {
+    "intent": "answer",
+    "text": "muối còn không"
+  },
+  {
+    "intent": "answer",
+    "text": "tôm khô thuộc khu nào"
+  },
+  {
+    "intent": "control",
+    "text": "khoan đã"
+  },
+  {
+    "intent": "control",
+    "text": "hủy bỏ nhiệm vụ"
+  },
+  {
+    "intent": "control",
+    "text": "nâng bàng lên"
+  },
+  {
+    "intent": "navigate",
+    "text": "robot đi lấy gạo giùm"
+  },
+  {
+    "intent": "answer",
+    "text": "tìm mì tôm"
+  },
+  {
+    "intent": "control",
+    "text": "đường thông rồi"
+  },
+  {
+    "intent": "navigate",
+    "text": "gọi dầu dừa cho tôi"
+  },
+  {
+    "intent": "control",
+    "text": "resume đi"
+  },
+  {
+    "intent": "navigate",
+    "text": "mang tương ớt về đây"
+  },
+  {
+    "intent": "navigate",
+    "text": "dăt tôi đên vi tri mi tôm"
+  },
+  {
+    "intent": "control",
+    "text": "kích lên giùm"
+  },
+  {
+    "intent": "answer",
+    "text": "kiểm tra số lượng gạo"
+  },
+  {
+    "intent": "answer",
+    "text": "tôm khô hết chưa"
+  },
+  {
+    "intent": "navigate",
+    "text": "chi đương tơi khu B"
+  },
+  {
+    "intent": "navigate",
+    "text": "đi lấy trà xanh"
+  },
+  {
+    "intent": "navigate",
+    "text": "lấy hộp đỏ rồi giữ trên xe nha"
+  },
+  {
+    "intent": "navigate",
+    "text": "lấy gạo ra"
+  },
+  {
+    "intent": "control",
+    "text": "đi đươc rôi"
+  },
+  {
+    "intent": "navigate",
+    "text": "dẫn tôi đến trạm sạc"
+  },
+  {
+    "intent": "answer",
+    "text": "bột mì hết chưa"
+  },
+  {
+    "intent": "answer",
+    "text": "tìm giúp tôi bột năng"
+  },
+  {
+    "intent": "control",
+    "text": "dừng ở đó"
+  },
+  {
+    "intent": "navigate",
+    "text": "gọi nước mắm cho tôi"
+  },
+  {
+    "intent": "chat",
+    "text": "ban lam đươc nhưng gi"
+  },
+  {
+    "intent": "answer",
+    "text": "mã vạch của gạo là bao nhiêu nha"
+  },
+  {
+    "intent": "chat",
+    "text": "cảm ơn nhiều"
+  },
+  {
+    "intent": "navigate",
+    "text": "đưa tôi cà phê"
+  },
+  {
+    "intent": "control",
+    "text": "khôi đi nữa"
+  },
+  {
+    "intent": "answer",
+    "text": "tìm hộ tôi thùng bia"
+  },
+  {
+    "intent": "navigate",
+    "text": "bốc bột năng lên xe"
+  },
+  {
+    "intent": "navigate",
+    "text": "đưa tôi đên bôt mi"
+  },
+  {
+    "intent": "answer",
+    "text": "bảo quản dầu ăn thế nào"
+  },
+  {
+    "intent": "navigate",
+    "text": "mang bột mì về đây"
+  },
+  {
+    "intent": "control",
+    "text": "đứng im lại"
+  },
+  {
+    "intent": "navigate",
+    "text": "gọi sữa cho tôi"
+  },
+  {
+    "intent": "control",
+    "text": "dưng lai ngay"
+  },
+  {
+    "intent": "answer",
+    "text": "kiểm tra số lượng sữa"
+  },
+  {
+    "intent": "navigate",
+    "text": "dẫn tôi đi lấy dầu dừa"
+  },
+  {
+    "intent": "chat",
+    "text": "ban đang lam gi vây"
+  },
+  {
+    "intent": "chat",
+    "text": "bạn làm được những gì"
+  },
+  {
+    "intent": "navigate",
+    "text": "đưa tôi dầu dừa"
+  },
+  {
+    "intent": "navigate",
+    "text": "bốc mì tôm lên xe"
+  },
+  {
+    "intent": "chat",
+    "text": "cảm ơn anh đã giúp"
+  },
+  {
+    "intent": "chat",
+    "text": "tam biêt nhe"
+  },
+  {
+    "intent": "answer",
+    "text": "thung bia ơ đâu"
+  },
+  {
+    "intent": "navigate",
+    "text": "qua khu C thôi, đừng lấy gì"
+  },
+  {
+    "intent": "navigate",
+    "text": "di chuyển đến khu C"
+  },
+  {
+    "intent": "chat",
+    "text": "khỏe không bạn"
+  },
+  {
+    "intent": "navigate",
+    "text": "dân tôi tơi ô A01"
+  },
+  {
+    "intent": "control",
+    "text": "phanh lại"
+  },
+  {
+    "intent": "navigate",
+    "text": "đi lấy cà phê"
+  },
+  {
+    "intent": "navigate",
+    "text": "mang đường thốt nốt về đây"
+  },
+  {
+    "intent": "navigate",
+    "text": "mang nước ngọt về đây"
+  },
+  {
+    "intent": "answer",
+    "text": "còn lại bao nhiêu nước mắm"
+  },
+  {
+    "intent": "answer",
+    "text": "cho tôi biết vị trí dầu dừa"
+  },
+  {
+    "intent": "control",
+    "text": "khoan cái đã"
+  },
+  {
+    "intent": "chat",
+    "text": "hẹn gặp lại"
+  },
+  {
+    "intent": "navigate",
+    "text": "robot đi lấy nước mắm giùm"
+  },
+  {
+    "intent": "navigate",
+    "text": "dẫn tôi đến trạm đóng gói"
+  },
+  {
+    "intent": "navigate",
+    "text": "lấy dầu ăn ra"
+  },
+  {
+    "intent": "navigate",
+    "text": "cho tôi đến trạm sạc"
+  },
+  {
+    "intent": "navigate",
+    "text": "gọi bột ngọt cho tôi"
+  },
+  {
+    "intent": "chat",
+    "text": "tạm biệt nhé"
+  },
+  {
+    "intent": "chat",
+    "text": "ban co khoe không"
+  },
+  {
+    "intent": "navigate",
+    "text": "tới chỗ nước mắm"
+  },
+  {
+    "intent": "control",
+    "text": "đi tiếp đi"
+  },
+  {
+    "intent": "control",
+    "text": "ngừng lại một chút"
+  },
+  {
+    "intent": "answer",
+    "text": "tìm giúp tôi mì tôm"
+  },
+  {
+    "intent": "answer",
+    "text": "tìm giúp tôi bột mì"
+  },
+  {
+    "intent": "chat",
+    "text": "khỏe không"
+  },
+  {
+    "intent": "navigate",
+    "text": "tới chỗ thùng bia"
+  },
+  {
+    "intent": "chat",
+    "text": "xin chào"
+  },
+  {
+    "intent": "navigate",
+    "text": "đi lây tra xanh"
+  },
+  {
+    "intent": "answer",
+    "text": "ngăn nào chứa bột ngọt"
+  },
+  {
+    "intent": "control",
+    "text": "robot dừng ngay"
+  },
+  {
+    "intent": "control",
+    "text": "chạy tiếp"
+  },
+  {
+    "intent": "answer",
+    "text": "kiểm tra số lượng tôm khô"
+  },
+  {
+    "intent": "navigate",
+    "text": "lấy hộp đỏ rồi giữ trên xe"
+  },
+  {
+    "intent": "answer",
+    "text": "kiểm tra số lượng cà phê"
+  },
+  {
+    "intent": "control",
+    "text": "đi tiếp đi em"
+  },
+  {
+    "intent": "chat",
+    "text": "chao cô"
+  },
+  {
+    "intent": "chat",
+    "text": "bạn giúp được gì nào"
+  },
+  {
+    "intent": "answer",
+    "text": "con lai bao nhiêu thung bia"
+  },
+  {
+    "intent": "answer",
+    "text": "mì tôm thuộc khu nào"
+  },
+  {
+    "intent": "navigate",
+    "text": "đưa tôi tương ớt"
+  },
+  {
+    "intent": "navigate",
+    "text": "robot đi lấy dầu dừa giùm"
+  },
+  {
+    "intent": "answer",
+    "text": "còn dầu ăn không"
+  },
+  {
+    "intent": "navigate",
+    "text": "đưa tôi tôm khô"
+  },
+  {
+    "intent": "navigate",
+    "text": "goi dâu dưa cho tôi nghen"
+  },
+  {
+    "intent": "navigate",
+    "text": "robot đi lấy bánh quy giùm"
+  },
+  {
+    "intent": "answer",
+    "text": "khu A có gì"
+  },
+  {
+    "intent": "control",
+    "text": "tiếp tục đi"
+  },
+  {
+    "intent": "chat",
+    "text": "bạn đang làm gì vậy"
+  },
+  {
+    "intent": "answer",
+    "text": "bột mì ở đâu"
+  },
+  {
+    "intent": "chat",
+    "text": "bạn thông minh thật"
+  },
+  {
+    "intent": "chat",
+    "text": "cam ơn ban nhiêu"
+  },
+  {
+    "intent": "answer",
+    "text": "dầu dừa ở đâu"
+  },
+  {
+    "intent": "navigate",
+    "text": "đi tơi khu B"
+  },
+  {
+    "intent": "navigate",
+    "text": "dân tôi ra khu A"
+  },
+  {
+    "intent": "navigate",
+    "text": "tới trạm đóng gói"
+  },
+  {
+    "intent": "answer",
+    "text": "trong khu C có những gì"
+  },
+  {
+    "intent": "answer",
+    "text": "hat điêu con không"
+  },
+  {
+    "intent": "answer",
+    "text": "tim giup tôi muôi"
+  },
+  {
+    "intent": "answer",
+    "text": "bánh quy còn không"
+  },
+  {
+    "intent": "control",
+    "text": "hết người rồi chạy đi"
+  },
+  {
+    "intent": "chat",
+    "text": "khoe không ban"
+  },
+  {
+    "intent": "control",
+    "text": "bỏ hàng xuống"
+  },
+  {
+    "intent": "navigate",
+    "text": "mang trà xanh về đây"
+  },
+  {
+    "intent": "navigate",
+    "text": "dẫn tôi đi lấy gạo"
+  },
+  {
+    "intent": "answer",
+    "text": "cho tôi biết vị trí bột năng"
+  },
+  {
+    "intent": "control",
+    "text": "tha hang xuông"
+  },
+  {
+    "intent": "chat",
+    "text": "giúp gì được cho tôi"
+  },
+  {
+    "intent": "navigate",
+    "text": "đi lây thung bia"
+  },
+  {
+    "intent": "control",
+    "text": "hạ càng xuống"
+  },
+  {
+    "intent": "chat",
+    "text": "hôm nay thế nào"
+  },
+  {
+    "intent": "navigate",
+    "text": "navigate to mì tôm"
+  },
+  {
+    "intent": "chat",
+    "text": "xin cảm ơn"
+  },
+  {
+    "intent": "answer",
+    "text": "màu gì của muối"
+  },
+  {
+    "intent": "control",
+    "text": "không lấy nữa"
+  },
+  {
+    "intent": "navigate",
+    "text": "gọi đường thốt nốt cho tôi"
+  },
+  {
+    "intent": "control",
+    "text": "robot dừng lại"
+  },
+  {
+    "intent": "answer",
+    "text": "sữa còn không"
+  },
+  {
+    "intent": "chat",
+    "text": "tam biêt ban"
+  },
+  {
+    "intent": "chat",
+    "text": "bạn làm được gì nha"
+  },
+  {
+    "intent": "answer",
+    "text": "bột mì thuộc khu nào"
+  },
+  {
+    "intent": "answer",
+    "text": "tương ớt ở đâu"
+  },
+  {
+    "intent": "answer",
+    "text": "nước mắm ở đâu"
+  },
+  {
+    "intent": "navigate",
+    "text": "giao hang đi nha"
+  },
+  {
+    "intent": "answer",
+    "text": "hạt điều hết chưa"
+  },
+  {
+    "intent": "answer",
+    "text": "muối ở đâu"
+  },
+  {
+    "intent": "control",
+    "text": "bỏ chuyến đi"
+  },
+  {
+    "intent": "control",
+    "text": "hạ càng"
+  },
+  {
+    "intent": "navigate",
+    "text": "lấy hạt điều ra"
+  },
+  {
+    "intent": "navigate",
+    "text": "dắt tôi đến vị trí mì tôm"
+  },
+  {
+    "intent": "chat",
+    "text": "hẹn gặp lại nha"
+  },
+  {
+    "intent": "navigate",
+    "text": "đi lấy hàng rồi mang về"
+  },
+  {
+    "intent": "control",
+    "text": "robot ơi dừng lại"
+  },
+  {
+    "intent": "control",
+    "text": "hết người rồi"
+  },
+  {
+    "intent": "answer",
+    "text": "kiểm tra số lượng hạt điều"
+  },
+  {
+    "intent": "chat",
+    "text": "tạm biệt"
+  },
+  {
+    "intent": "control",
+    "text": "đi đi"
+  },
+  {
+    "intent": "answer",
+    "text": "sưa đê khu C"
+  },
+  {
+    "intent": "control",
+    "text": "stop lại đi"
+  },
+  {
+    "intent": "chat",
+    "text": "goi tôi giup đươc không"
+  },
+  {
+    "intent": "control",
+    "text": "đứng yên đó"
+  },
+  {
+    "intent": "navigate",
+    "text": "đưa tôi hạt điều nha"
+  },
+  {
+    "intent": "navigate",
+    "text": "tới chỗ sữa"
+  },
+  {
+    "intent": "control",
+    "text": "tha hàng xuống"
+  },
+  {
+    "intent": "answer",
+    "text": "tồn kho bột ngọt bao nhiêu"
+  },
+  {
+    "intent": "answer",
+    "text": "hạt điều còn không"
+  },
+  {
+    "intent": "control",
+    "text": "đường thông rồi, đi tiếp"
+  },
+  {
+    "intent": "control",
+    "text": "khoan đa"
+  },
+  {
+    "intent": "answer",
+    "text": "tìm giúp tôi dầu dừa"
+  },
+  {
+    "intent": "answer",
+    "text": "khu B có gì"
+  },
+  {
+    "intent": "chat",
+    "text": "hen găp lai nha"
+  },
+  {
+    "intent": "navigate",
+    "text": "bốc bánh quy lên xe"
+  },
+  {
+    "intent": "chat",
+    "text": "chào buổi sáng"
+  },
+  {
+    "intent": "chat",
+    "text": "bạn giúp gì được cho tôi"
+  },
+  {
+    "intent": "navigate",
+    "text": "đi tới khu B"
+  },
+  {
+    "intent": "answer",
+    "text": "con lai bao nhiêu mi tôm"
+  },
+  {
+    "intent": "chat",
+    "text": "chào cô"
+  },
+  {
+    "intent": "answer",
+    "text": "nước mắm để khu A"
+  },
+  {
+    "intent": "chat",
+    "text": "bạn có khỏe không"
+  },
+  {
+    "intent": "answer",
+    "text": "kê nao thiêu đô"
+  },
+  {
+    "intent": "answer",
+    "text": "báo tồn kho bột ngọt giúp tôi"
+  },
+  {
+    "intent": "answer",
+    "text": "tồn kho thùng bia bao nhiêu"
+  },
+  {
+    "intent": "answer",
+    "text": "tôm khô ở đâu"
+  },
+  {
+    "intent": "control",
+    "text": "dưng lai"
+  },
+  {
+    "intent": "chat",
+    "text": "tạm biệt nhé bạn"
+  },
+  {
+    "intent": "control",
+    "text": "thôi không lấy nữa"
+  },
+  {
+    "intent": "chat",
+    "text": "hen găp lai"
+  },
+  {
+    "intent": "navigate",
+    "text": "mang đường về đây"
+  },
+  {
+    "intent": "answer",
+    "text": "bột mì để khu A hay khu B"
+  },
+  {
+    "intent": "answer",
+    "text": "tim giup tôi đương"
+  },
+  {
+    "intent": "chat",
+    "text": "robot ơi"
+  },
+  {
+    "intent": "navigate",
+    "text": "đi lấy bột năng"
+  },
+  {
+    "intent": "answer",
+    "text": "bột ngọt còn không"
+  },
+  {
+    "intent": "control",
+    "text": "bo chuyên đi"
+  },
+  {
+    "intent": "navigate",
+    "text": "robot đi lấy đường giùm"
+  },
+  {
+    "intent": "navigate",
+    "text": "đưa tôi muối"
+  },
+  {
+    "intent": "navigate",
+    "text": "dăt tôi đên bôt ngot"
+  },
+  {
+    "intent": "chat",
+    "text": "mấy giờ rồi"
+  },
+  {
+    "intent": "answer",
+    "text": "báo tồn kho cà phê giúp tô"
+  },
+  {
+    "intent": "chat",
+    "text": "làm quen chút"
+  },
+  {
+    "intent": "answer",
+    "text": "tìm giúp tôi tôm khô"
+  },
+  {
+    "intent": "answer",
+    "text": "cho tôi biết vị trí gạo"
+  },
+  {
+    "intent": "navigate",
+    "text": "lây banh quy da"
+  },
+  {
+    "intent": "answer",
+    "text": "thùng bia còn bao nhiêu"
+  },
+  {
+    "intent": "answer",
+    "text": "tôn kho ca phê bao nhiêu nha"
+  },
+  {
+    "intent": "chat",
+    "text": "mấy giờ rồi nhỉ"
+  },
+  {
+    "intent": "navigate",
+    "text": "robot đi lấy mì tôm giùm"
+  },
+  {
+    "intent": "control",
+    "text": "thôi không lây nưa nghen"
+  },
+  {
+    "intent": "navigate",
+    "text": "gọi dầu ăn cho tôi"
+  },
+  {
+    "intent": "chat",
+    "text": "chào anh"
+  },
+  {
+    "intent": "answer",
+    "text": "khu C có gì"
+  },
+  {
+    "intent": "navigate",
+    "text": "dẫn tôi đi lấy trà xanh"
+  },
+  {
+    "intent": "control",
+    "text": "đi được rồi"
+  },
+  {
+    "intent": "answer",
+    "text": "có mặt hàng nào sắp hết không"
+  },
+  {
+    "intent": "navigate",
+    "text": "robot đi lây bôt năng gium"
+  },
+  {
+    "intent": "navigate",
+    "text": "dẫn tôi đi lấy bánh quy"
+  },
+  {
+    "intent": "control",
+    "text": "dừng ngay lại"
+  },
+  {
+    "intent": "control",
+    "text": "nâng càng lên"
+  },
+  {
+    "intent": "answer",
+    "text": "bánh quy hết chưa"
+  },
+  {
+    "intent": "answer",
+    "text": "muối thuộc khu nào"
+  },
+  {
+    "intent": "answer",
+    "text": "tìm thùng bia"
+  },
+  {
+    "intent": "answer",
+    "text": "cho tôi xin vị trí dầu ăn"
+  },
+  {
+    "intent": "chat",
+    "text": "co ai ơ đo không"
+  },
+  {
+    "intent": "answer",
+    "text": "dâu dưa ơ khu mây"
+  },
+  {
+    "intent": "answer",
+    "text": "kiểm tra số lượng đường"
+  },
+  {
+    "intent": "chat",
+    "text": "cam ơn anh đa giup"
+  },
+  {
+    "intent": "navigate",
+    "text": "tới chỗ cà phê"
+  },
+  {
+    "intent": "navigate",
+    "text": "đi lấy sữa"
+  },
+  {
+    "intent": "control",
+    "text": "tiếp tục chạy"
+  },
+  {
+    "intent": "navigate",
+    "text": "dẫn tôi đi lấy dầu ăn"
+  },
+  {
+    "intent": "navigate",
+    "text": "tơi ngay chô đê đương"
+  },
+  {
+    "intent": "chat",
+    "text": "cảm ơn bạn nhiều"
+  },
+  {
+    "intent": "navigate",
+    "text": "lấy muối giúp tôi"
+  },
+  {
+    "intent": "navigate",
+    "text": "đi tới khu C"
+  },
+  {
+    "intent": "navigate",
+    "text": "lấy nước mắm ra"
+  },
+  {
+    "intent": "navigate",
+    "text": "lấy cà phê ra nghen"
+  },
+  {
+    "intent": "answer",
+    "text": "tìm giúp tôi muối"
+  },
+  {
+    "intent": "control",
+    "text": "dừng"
+  },
+  {
+    "intent": "answer",
+    "text": "dầu dừa để khu A"
+  },
+  {
+    "intent": "chat",
+    "text": "bạn là ai"
+  },
+  {
+    "intent": "chat",
+    "text": "kể cho tôi nghe đi"
+  },
+  {
+    "intent": "answer",
+    "text": "muối để khu B"
+  },
+  {
+    "intent": "navigate",
+    "text": "dẫn tôi đi lấy tôm khô"
+  },
+  {
+    "intent": "chat",
+    "text": "gọi tôi giúp được không"
+  },
+  {
+    "intent": "answer",
+    "text": "nước mắm còn bao nhiêu"
+  },
+  {
+    "intent": "control",
+    "text": "ngưng lai môt chut"
+  },
+  {
+    "intent": "answer",
+    "text": "sữa hết chưa"
+  },
+  {
+    "intent": "chat",
+    "text": "ban la ai"
+  },
+  {
+    "intent": "answer",
+    "text": "màu gì của gạo"
+  },
+  {
+    "intent": "control",
+    "text": "huy bo nhiêm vu"
+  },
+  {
+    "intent": "navigate",
+    "text": "dẫn tôi đi lấy đường"
+  },
+  {
+    "intent": "navigate",
+    "text": "tới chỗ tương ớt"
+  },
+  {
+    "intent": "control",
+    "text": "huy lênh"
+  },
+  {
+    "intent": "navigate",
+    "text": "robot đi lấy bột năng giùm"
+  },
+  {
+    "intent": "answer",
+    "text": "tìm giúp tôi nước mắm"
+  },
+  {
+    "intent": "answer",
+    "text": "nước ngọt còn không"
+  }
 ]

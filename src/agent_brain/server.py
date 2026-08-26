@@ -127,6 +127,7 @@ class ChatResponse(BaseModel):
     response: str
     final_stage: str
     action: dict | None = None
+    actions: list[dict] | None = None
     session_id: str | None = None
 
 
@@ -170,18 +171,19 @@ def _run_turn(text: str, robot_id: str) -> dict:
     return result
 
 
-def _dispatch_navigation_if_needed(action: dict | None) -> None:
-    """If the brain produced a navigate action, ask the orchestrator to send the AGV there."""
-    if not action or action.get("type") != "navigate":
-        return
-    position = action.get("position") or {}
-    token = position.get("token")
-    if token:
-        log.info("forwarding navigate token %r to orchestrator", token)
-        _orchestrator.dispatch_navigation(token, position.get("section"))
+def _dispatch_navigations(actions: list[dict]) -> None:
+    """Forward every navigate action in a (possibly multi-step) turn to the orchestrator."""
+    for action in actions or []:
+        if not action or action.get("type") != "navigate":
+            continue
+        position = action.get("position") or {}
+        token = position.get("token")
+        if token:
+            log.info("forwarding navigate token %r to orchestrator", token)
+            _orchestrator.dispatch_navigation(token, position.get("section"))
 
 
-def _emit_voice_reply(robot_id: str, reply: str, action, intent: str) -> None:
+def _emit_voice_reply(robot_id: str, reply: str, action, intent: str, actions: list[dict] | None = None) -> None:
     """Mirror the turn's reply (and any navigation action) to the operator panel."""
     _orchestrator.post_voice_event(
         {
@@ -189,6 +191,7 @@ def _emit_voice_reply(robot_id: str, reply: str, action, intent: str) -> None:
             "robot_id": robot_id,
             "text": reply,
             "action": action,
+            "actions": actions,
             "stage": intent,
         }
     )
@@ -207,13 +210,15 @@ def chat(req: ChatRequest) -> ChatResponse:
     result = _run_turn(text, robot_id)
     reply = result.get("reply", "")
     action = result.get("action")
+    actions = result.get("actions") or ([action] if action else [])
     intent = result.get("intent") or "chat"
     session_id = robot_id
 
-    _emit_voice_reply(robot_id, reply, action, intent)
-    _dispatch_navigation_if_needed(action)
+    _emit_voice_reply(robot_id, reply, action, intent, actions)
+    _dispatch_navigations(actions)
 
-    return ChatResponse(response=reply, final_stage=intent, action=action, session_id=session_id)
+    return ChatResponse(response=reply, final_stage=intent, action=action,
+                        actions=actions, session_id=session_id)
 
 
 @app.post("/chat/stream")
@@ -244,21 +249,24 @@ def chat_stream(req: ChatRequest):
                 "reply": "Xin lỗi, tôi gặp lỗi khi xử lý yêu cầu.",
                 "intent": "chat",
                 "action": None,
+                "actions": [],
             }
 
         reply = result.get("reply", "")
         action = result.get("action")
+        actions = result.get("actions") or ([action] if action else [])
         intent = result.get("intent") or "chat"
         session_id = robot_id
 
-        _emit_voice_reply(robot_id, reply, action, intent)
-        _dispatch_navigation_if_needed(action)
+        _emit_voice_reply(robot_id, reply, action, intent, actions)
+        _dispatch_navigations(actions)
 
         for sentence in _split_sentences(reply):
             yield f"data: {json.dumps({'event': 'sentence', 'text': sentence})}\n\n"
 
         done_data = json.dumps(
-            {"event": "done", "action": action, "stage": intent, "session_id": session_id}
+            {"event": "done", "action": action, "actions": actions,
+             "stage": intent, "session_id": session_id}
         )
         yield f"data: {done_data}\n\n"
 

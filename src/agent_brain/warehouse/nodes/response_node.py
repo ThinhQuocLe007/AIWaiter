@@ -1,10 +1,12 @@
 """Answer / response worker — phrases the Vietnamese reply for structured intents.
 
 Runs after retrieval for both `answer` and `navigate` intents:
-- `navigate`: deterministic "đang dẫn bạn đến … (khu X, ô Y)" (action set by navigation worker).
-- `answer`: deterministic phrasing for locate / stock / supplier / category / handling / barcode /
-  reorder / stock-audit / "khu X có gì" questions; falls back to the LLM planner for anything
-  ambiguous.
+- `navigate`: deterministic "đang dẫn bạn đến … (khu X, ô Y)" — kept EXACT so the operator and the
+  robot agree on the destination. Never LLM-rephrased.
+- `answer`: a single resolved item is answered by an **LLM grounded in the retrieved facts** (Option B)
+  — natural phrasing, can weave in SOP/handling notes — with the old deterministic template kept as a
+  fallback when the LLM is unavailable. Aggregate questions (stock audit, "khu X có gì") stay
+  deterministic because they have no single item to ground and the structured form is preferable.
 
 The chat/planner already produce their own reply, so this node only fills the gaps.
 """
@@ -16,6 +18,7 @@ from src.agent_brain.warehouse.colors import vi as color_vi
 from src.agent_brain.warehouse.state import AgentState
 from src.agent_brain.warehouse.tools import live_tools
 from src.agent_brain.warehouse.services import warehouse_info
+from src.agent_brain.warehouse.services.llm_client import chat
 
 # A shortage question is warehouse-wide only when it asks *which* — "gạo còn thiếu không" is about
 # one item and belongs to the per-item reorder branch further down. Requiring both halves keeps
@@ -23,6 +26,51 @@ from src.agent_brain.warehouse.services import warehouse_info
 _SHORTAGE_KW = ["thiếu", "đủ hàng", "đủ đồ", "dưới mức", "sắp hết", "hết hàng", "cần nhập"]
 _SCOPE_KW = ["kệ nào", "khu nào", "hàng nào", "mặt hàng nào", "chỗ nào", "cái nào",
              "những gì", "toàn kho", "cả kho", "kiểm kê", "tồn kho thấp"]
+
+
+def _build_item_facts(item: dict) -> str:
+    """Render a resolved item as plain facts for the LLM context (source of truth, not prose)."""
+    lines = [
+        f"- Tên: {item.get('item')}",
+        f"- SKU: {item.get('sku')}",
+        f"- Vị trí: khu {item.get('section')}, ô {item.get('slot')}, hộp màu {color_vi(item.get('color'))}",
+        f"- Tồn kho: {item.get('quantity')} {item.get('unit')} (mức tối thiểu {item.get('min_stock')})",
+    ]
+    if item.get("supplier"):
+        lines.append(f"- Nhà cung cấp: {item['supplier']}")
+    if item.get("category"):
+        lines.append(f"- Danh mục: {item['category']}")
+    if item.get("handling"):
+        lines.append(f"- Lưu ý xử lý: {item['handling']}")
+    if item.get("barcode"):
+        lines.append(f"- Mã vạch: {item['barcode']}")
+    return "\n".join(lines)
+
+
+def _try_llm_answer(state: AgentState, item: dict) -> str | None:
+    """Natural, grounded reply for a single-item question. Returns None on any failure so the
+    caller falls back to the deterministic template."""
+    text = state.get("user_text") or ""
+    ctx = [_build_item_facts(item)]
+    try:
+        sop = live_tools.get_sop(text, k=2)
+    except Exception:  # retrieval of SOP is best-effort
+        sop = []
+    if sop:
+        ctx.append("QUY TRÌNH / LƯU Ý (SOP):\n" + "\n".join(f"- {s}" for s in sop))
+    system = (
+        "Bạn là trợ lý kho. Dưới đây là DỮ LIỆU THỰC TẾ đã truy xuất từ kho. "
+        "Chỉ dùng thông tin này để trả lời nhân viên bằng tiếng Việt, ngắn gọn và tự nhiên. "
+        "Nếu dữ liệu không có, hãy nói là không tìm thấy. Tuyệt đối không bịa số liệu hay vị trí."
+    )
+    user = f"DỮ LIỆU KHO:\n{chr(10).join(ctx)}\n\nCÂU HỎI CỦA NHÂN VIÊN: {text}\n\nTrả lời:"
+    try:
+        return chat([
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ]).strip()
+    except Exception:
+        return None
 
 
 def _stock_audit_reply() -> dict:
@@ -49,11 +97,11 @@ def _answer_reply(state: AgentState) -> dict:
     text = (state.get("user_text") or "").lower()
     item = state.get("item")
 
-    # "kệ nào thiếu đồ" — warehouse-wide stock audit, before any single-item branch.
+    # Warehouse-wide stock audit — aggregate, no single item to ground → deterministic.
     if any(k in text for k in _SHORTAGE_KW) and any(k in text for k in _SCOPE_KW):
         return _stock_audit_reply()
 
-    # "khu X có gì" — list items in a section.
+    # "khu X có gì" — list items in a section → deterministic.
     for sec in warehouse_info.section_names():
         if f"khu {sec.lower()}" in text or f"khu {sec}" in text:
             listed = [
@@ -63,14 +111,15 @@ def _answer_reply(state: AgentState) -> dict:
             if listed:
                 return {"reply": f"Khu {sec} có: " + ", ".join(listed) + "."}
 
+    # Single-item question → prefer a natural LLM reply grounded in the resolved facts.
     if item:
+        llm = _try_llm_answer(state, item)
+        if llm:
+            return {"reply": llm}
+        # Fallback to the deterministic phrasing if the LLM is unreachable.
         name = item["item"]
         section, slot, color, qty, unit = (
-            item["section"],
-            item["slot"],
-            item["color"],
-            item["quantity"],
-            item["unit"],
+            item["section"], item["slot"], item["color"], item["quantity"], item["unit"],
         )
         if any(k in text for k in ["còn", "bao nhiêu", "tồn kho", "số lượng", "hết"]):
             return {"reply": f"{name} hiện còn {qty:g} {unit}."}
@@ -90,7 +139,6 @@ def _answer_reply(state: AgentState) -> dict:
             if qty < mn:
                 return {"reply": f"{name} chỉ còn {qty:g} {unit}, dưới mức tối thiểu {mn:g} {unit}. Cần nhập thêm."}
             return {"reply": f"{name} còn {qty:g} {unit}, trên mức tối thiểu {mn:g} {unit}. Chưa cần nhập thêm."}
-        # default: locate
         return {"reply": f"{name} nằm ở khu {section}, ô {slot}, hộp màu {color_vi(color)}."}
 
     # No warehouse entity and no section matched — graceful out-of-scope / not-found reply
@@ -116,9 +164,8 @@ def _navigate_reply(state: AgentState) -> dict:
 
 
 def response_worker_node(state: AgentState) -> dict:
-    if state.get("reply"):  # chat / planner already produced a reply
+    if state.get("reply"):  # chat / planner / control / motion already produced a reply
         return {}
-
     intent = state.get("intent")
     if intent == Intent.NAVIGATE.value:
         return _navigate_reply(state)
