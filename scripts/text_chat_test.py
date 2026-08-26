@@ -36,7 +36,7 @@ def main():
     print("[TTS] Piper engine ready.\n")
 
     client = httpx.Client(base_url=settings.AGENT_URL, timeout=httpx.Timeout(60.0))
-    table_id = "T1"
+    robot_id = "robo-1"
 
     try:
         while True:
@@ -46,7 +46,7 @@ def main():
             if text.lower() == "quit":
                 break
             if text.lower() == "reset":
-                table_id = "T1"
+                robot_id = "robo-1"
                 print("[RESET] New session.\n")
                 continue
 
@@ -57,7 +57,7 @@ def main():
             try:
                 with client.stream(
                     "POST", "/chat/stream",
-                    json={"table_id": table_id, "text": text}
+                    json={"robot_id": robot_id, "text": text}
                 ) as resp:
                     resp.raise_for_status()
                     for line in resp.iter_lines():

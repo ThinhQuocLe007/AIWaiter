@@ -44,7 +44,7 @@ def main():
     print("[TTS] Engine warmed up.")
 
     client = httpx.Client(base_url=settings.AGENT_URL, timeout=httpx.Timeout(60.0))
-    table_id = "T1"
+    robot_id = "robo-1"
 
     try:
         while True:
@@ -74,7 +74,7 @@ def main():
             try:
                 with client.stream(
                     "POST", "/chat/stream",
-                    json={"table_id": table_id, "text": transcript.text}
+                    json={"robot_id": robot_id, "text": transcript.text}
                 ) as resp:
                     resp.raise_for_status()
                     for line in resp.iter_lines():

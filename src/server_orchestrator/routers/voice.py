@@ -33,7 +33,7 @@ class VoiceEvent(BaseModel):
     """
 
     type: str
-    table_id: int | None = None
+    robot_id: str | None = None
     text: str | None = None
     action: dict | None = None
     stage: str | None = None
@@ -112,7 +112,7 @@ async def voice_new_chat(req: ListenRequest) -> dict:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.post(
                 f"{settings.agent_url.rstrip('/')}/reset",
-                json={"table_id": req.robot_id},
+                json={"robot_id": req.robot_id},
             )
             resp.raise_for_status()
     except httpx.HTTPError:
@@ -170,7 +170,4 @@ async def voice_devices() -> dict:
             }
             for rid in manager.voice_device_ids()
         ],
-        # Monitor không có "bàn" nào cả — nó gửi kèm field này khi mở lượt để agent biết xếp lượt
-        # vào luồng nhớ nào. Giữ nguyên 1 cho khớp với ID mặc định agent dùng.
-        "default_table_id": 1,
     }

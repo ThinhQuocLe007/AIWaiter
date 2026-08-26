@@ -25,7 +25,7 @@ export interface VoiceDevice {
 
 export type AudioTarget = 'speaker' | 'mic'
 
-export async function fetchDevices(): Promise<{ devices: VoiceDevice[]; default_table_id: number }> {
+export async function fetchDevices(): Promise<{ devices: VoiceDevice[] }> {
   const res = await fetch(`${API_URL}/voice/devices`)
   if (!res.ok) throw new Error(`GET /voice/devices → ${res.status}`)
   return res.json()
@@ -34,18 +34,17 @@ export async function fetchDevices(): Promise<{ devices: VoiceDevice[]; default_
 /** `status` is 'ok' when the command reached the mic, 'no_device' when that Jetson isn't connected. */
 type Ack = { status: string }
 
-/** `tableId` is not an address — `robotId` is. It only names the conversation thread the agent
- *  files the turn under; leaving it out lets the backend pick its default. */
-export function startListening(robotId: string, tableId?: number): Promise<Ack & { table_id: number }> {
-  return post('/voice/listen', { robot_id: robotId, table_id: tableId })
+/** `robotId` addresses the mic AND names the agent's conversation thread — one robot, one thread. */
+export function startListening(robotId: string): Promise<Ack> {
+  return post('/voice/listen', { robot_id: robotId })
 }
 
-export function cancelTurn(robotId: string, tableId?: number): Promise<Ack> {
-  return post('/voice/cancel', { robot_id: robotId, table_id: tableId })
+export function cancelTurn(robotId: string): Promise<Ack> {
+  return post('/voice/cancel', { robot_id: robotId })
 }
 
-export function newConversation(robotId: string, tableId?: number): Promise<Ack> {
-  return post('/voice/new-chat', { robot_id: robotId, table_id: tableId })
+export function newConversation(robotId: string): Promise<Ack> {
+  return post('/voice/new-chat', { robot_id: robotId })
 }
 
 /** Move the Jetson's real PulseAudio level. The reply only says the command was delivered —

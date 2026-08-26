@@ -2,11 +2,10 @@
 
 This is NOT an always-on loop anymore. It is a *command-driven* service: it preloads + warms the
 mic/VAD/STT models, connects to the backend WS hub as ``role=voice-device&robot_id=<id>``, then idles
-until a tablet pushes the "talk to AI" button. The device is **table-agnostic** — the dispatcher
-binds it to a table when this robot arrives there, and each ``start_listening`` command carries the
-``table_id`` the guest belongs to. On the command it captures ONE utterance (mic → VAD → Whisper) and
-POSTs the text to the agent (``POST /chat`` tagged with that table). The agent runs the LLM and
-mirrors the turn back to the tablet via the voice bridge, so the web UI shows the conversation — the
+until the monitor pushes the "talk to AI" button. On the command it captures ONE utterance
+(mic → VAD → Whisper) and POSTs the text to the agent (``POST /chat`` tagged with this robot's id,
+which is also the agent's conversation-thread key). The agent runs the LLM and
+mirrors the turn back to the monitor via the voice bridge, so the web UI shows the conversation — the
 browser never touches the microphone (so no HTTPS requirement).
 
 Why a resident service instead of the web spawning it: a browser page can't launch a process on the
@@ -49,9 +48,8 @@ from src.robot_link.sender import CommandSender, build_sender
 load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 # This device's robot identity — the SAME id the robot's motion client uses (mock_robot.py --id).
-# The mic is bound to a *table* dynamically by the server: when the dispatcher sends this robot to a
-# table and it arrives, the backend routes that table's "talk to AI" button here. So this device is
-# table-agnostic; each start_listening command tells it which table the guest belongs to.
+# It addresses this mic on the WS hub AND names the agent's conversation thread: one robot, one
+# thread. Nothing else has to be carried in a command frame or matched up between services.
 ROBOT_ID = os.getenv("VOICE_ROBOT_ID", "robo-1")
 # UDP link to the laptop running Gazebo, built in main(). Module-level because the turn function
 # runs in a worker thread and threading a sender through three call sites buys nothing. Stays None
@@ -111,7 +109,7 @@ def _backend_ws_url() -> str:
     return f"{base}/ws?role=voice-device&robot_id={ROBOT_ID}"
 
 
-def _capture_and_send_streaming(vad: SileroVAD, agent_client: httpx.Client, table_id: int,
+def _capture_and_send_streaming(vad: SileroVAD, agent_client: httpx.Client,
                                  player: StreamingPlayer, cancel: threading.Event,
                                  tel: "Telemetry") -> None:
     """Streaming variant: consumes SSE from POST /chat/stream, plays sentences incrementally.
@@ -131,20 +129,20 @@ def _capture_and_send_streaming(vad: SileroVAD, agent_client: httpx.Client, tabl
 
     vad.begin_listen()
     print("[LISTENING] mời anh/chị nói...")
-    tel.send("listening", table_id=table_id)
+    tel.send("listening")
     if not vad.wait_for_utterance(UTTERANCE_TIMEOUT):
         print("[TIMEOUT] không nghe thấy gì, quay lại chờ.")
-        tel.send("timeout", table_id=table_id, waited_ms=ms_since(t_start))
+        tel.send("timeout", waited_ms=ms_since(t_start))
         return
     if cancel.is_set():  # cancel_listen() releases the wait above immediately
         print("[CANCELLED] khách hủy khi đang nghe.")
-        tel.send("cancelled", table_id=table_id, at="listening")
+        tel.send("cancelled", at="listening")
         return
 
     # Speech ended here; everything from now until the transcript arrives is Whisper's own time,
     # which is the number worth showing separately from "how long the guest talked".
     t_speech_end = time.perf_counter()
-    tel.send("transcribing", table_id=table_id, speech_ms=ms_since(t_start))
+    tel.send("transcribing", speech_ms=ms_since(t_start))
 
     transcript = get_transcript(timeout=TRANSCRIPT_TIMEOUT)
     if transcript is None or not transcript.text.strip():
@@ -152,18 +150,18 @@ def _capture_and_send_streaming(vad: SileroVAD, agent_client: httpx.Client, tabl
         # An empty transcript is also what the hallucination filter produces when it drops a
         # bogus caption line (see perception/stt_phowhisper.py), so the monitor shows this as
         # "nghe nhưng không dùng được" rather than pretending nothing happened.
-        tel.send("empty", table_id=table_id, stt_ms=ms_since(t_speech_end))
+        tel.send("empty", stt_ms=ms_since(t_speech_end))
         return
     if cancel.is_set():
         print("[CANCELLED] khách hủy — không gửi cho agent.")
-        tel.send("cancelled", table_id=table_id, at="transcribed")
+        tel.send("cancelled", at="transcribed")
         return
 
     text = transcript.text
     stt_ms = ms_since(t_speech_end)
-    print(f"[HEARD @ {transcript.timestamp:.1f}s | bàn {table_id}]: {text}")
+    print(f"[HEARD @ {transcript.timestamp:.1f}s]: {text}")
     tel.send(
-        "heard", table_id=table_id, text=text,
+        "heard", text=text,
         stt_ms=stt_ms, audio_s=round(transcript.audio_duration_s or 0.0, 2),
     )
 
@@ -180,10 +178,10 @@ def _capture_and_send_streaming(vad: SileroVAD, agent_client: httpx.Client, tabl
             _ROBOT.control(verb, sentence=text, reply=control_phrases.REPLY[verb])
         reply = control_phrases.REPLY[verb]
         print(f"[FASTPATH {verb.upper()} in {ms_since(t_speech_end)}ms]: {reply}")
-        tel.send("speaking", table_id=table_id, text=reply, index=0, muted=player.is_muted())
+        tel.send("speaking", text=reply, index=0, muted=player.is_muted())
         if not cancel.is_set() and not player.is_stopped():
             speak_sentence(reply, player)
-        tel.send("done", table_id=table_id, dialog_stage="control",
+        tel.send("done", dialog_stage="control",
                  agent_ms=0, turn_ms=ms_since(t_start), sentences=1)
         return
 
@@ -191,13 +189,13 @@ def _capture_and_send_streaming(vad: SileroVAD, agent_client: httpx.Client, tabl
     spoken = 0
     try:
         with agent_client.stream("POST", "/chat/stream", json={
-            "table_id": f"T{table_id}", "text": text
+            "robot_id": ROBOT_ID, "text": text
         }) as resp:
             resp.raise_for_status()
             for line in resp.iter_lines():
                 if cancel.is_set():
                     print("[CANCELLED] dừng nhận trả lời từ agent.")
-                    tel.send("cancelled", table_id=table_id, at="agent")
+                    tel.send("cancelled", at="agent")
                     break
                 if not line or not line.startswith("data: "):
                     continue
@@ -206,7 +204,7 @@ def _capture_and_send_streaming(vad: SileroVAD, agent_client: httpx.Client, tabl
 
                 if ev == "progress":
                     print(f"[WAITER progress]: {data.get('text', '...')}")
-                    tel.send("thinking", table_id=table_id)
+                    tel.send("thinking")
                 elif ev == "sentence":
                     sentence = data["text"]
                     print(f"[WAITER]: {sentence}")
@@ -215,7 +213,7 @@ def _capture_and_send_streaming(vad: SileroVAD, agent_client: httpx.Client, tabl
                         # so reporting after it would show the caption only once the robot had
                         # already finished saying that line.
                         tel.send(
-                            "speaking", table_id=table_id, text=sentence, index=spoken,
+                            "speaking", text=sentence, index=spoken,
                             muted=player.is_muted(),
                         )
                         speak_sentence(sentence, player)
@@ -228,13 +226,13 @@ def _capture_and_send_streaming(vad: SileroVAD, agent_client: httpx.Client, tabl
                     if _ROBOT is not None and not cancel.is_set():
                         _ROBOT.send_action(data.get("action"), sentence=text)
                     tel.send(
-                        "done", table_id=table_id, dialog_stage=data.get("stage"),
+                        "done", dialog_stage=data.get("stage"),
                         agent_ms=ms_since(t_agent), turn_ms=ms_since(t_start), sentences=spoken,
                     )
                     break
     except httpx.HTTPError as e:
         print(f"Agent stream request failed: {e}")
-        tel.send("error", table_id=table_id, detail=str(e)[:200])
+        tel.send("error", detail=str(e)[:200])
 
 
 async def voice_device_loop(vad: SileroVAD, agent_client: httpx.Client, player: StreamingPlayer) -> None:
@@ -307,11 +305,6 @@ async def voice_device_loop(vad: SileroVAD, agent_client: httpx.Client, player: 
                         continue
                     mtype = msg.get("type")
                     if mtype == "start_listening":
-                        # The server tags the command with the table this robot is currently serving.
-                        table_id = msg.get("table_id")
-                        if table_id is None:
-                            print("[WARN] start_listening thiếu table_id, bỏ qua.")
-                            continue
                         # Busy only counts for a turn still doing real work. A CANCELLED turn is a
                         # zombie: it has been told to quit and is just unwinding a blocking read,
                         # which can take as long as the agent takes to answer. Treating it as busy
@@ -325,7 +318,7 @@ async def voice_device_loop(vad: SileroVAD, agent_client: httpx.Client, player: 
                         player.reset()  # clear a leftover interrupt; mute (if on) persists
                         turn_seq += 1
                         turn_task = asyncio.create_task(asyncio.to_thread(
-                            _capture_and_send_streaming, vad, agent_client, table_id, player,
+                            _capture_and_send_streaming, vad, agent_client, player,
                             turn_cancel, tel,
                         ))
                         # Flag busy from the moment we start listening, not from the first spoken

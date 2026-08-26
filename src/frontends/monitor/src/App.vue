@@ -111,7 +111,6 @@ const MAX = { speaker: 100, mic: 150 }
 const connected = ref(false)
 const devices = ref<VoiceDevice[]>([])
 const robotId = ref('')
-const tableId = ref<number | null>(null) // which conversation thread the agent files turns under
 const note = ref('') // transient line replacing the phase hint (command acks)
 
 const phase = ref<Phase>('idle')
@@ -252,7 +251,6 @@ async function refreshDevices() {
     if (robotId.value && !res.devices.some((d) => d.robot_id === robotId.value)) {
       robotId.value = res.devices.length ? res.devices[0].robot_id : ''
     }
-    if (tableId.value == null) tableId.value = res.default_table_id
     // Only until the first real value lands. After that the device's own `levels` frames are the
     // authority — this poll runs every 5 s and must not fight a level the operator just changed.
     if (!levelsKnown.value) {
@@ -274,7 +272,7 @@ async function onListen() {
   // Show "đang nghe" on the press, not when the device's first frame comes back: the round trip
   // is short but visible, and a button that looks dead for 200ms gets pressed twice.
   beginTurn()
-  const res = await startListening(robotId.value, tableId.value ?? undefined)
+  const res = await startListening(robotId.value)
   if (res.status !== 'ok') {
     phase.value = 'idle'
     ack(res, '')
@@ -283,11 +281,11 @@ async function onListen() {
 
 async function onCancel() {
   phase.value = 'idle'
-  ack(await cancelTurn(robotId.value, tableId.value ?? undefined), 'Đã dừng lượt này.')
+  ack(await cancelTurn(robotId.value), 'Đã dừng lượt này.')
 }
 
 async function onNewChat() {
-  const res = await newConversation(robotId.value, tableId.value ?? undefined)
+  const res = await newConversation(robotId.value)
   phase.value = 'idle'
   heardText.value = ''
   resultText.value = ''

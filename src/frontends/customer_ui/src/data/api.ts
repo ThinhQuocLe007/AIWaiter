@@ -29,28 +29,34 @@ export function fetchMenu(): Promise<RawMenuItem[]> {
 }
 
 // --- Voice ------------------------------------------------------------------
-// POST /voice/listen → ask this table's voice device (the Jetson/laptop mic loop) to capture one
+// The voice endpoints address a ROBOT, not a table — robot_id is both the mic's address on the WS
+// hub and the agent's conversation-thread key. This tablet is table-bound and has no robot picker,
+// so it talks to the one robot the demo runs.
+// ponytail: hardcoded single robot; take an id from the table→robot binding if a second is added.
+const VOICE_ROBOT_ID = 'robo-1'
+
+// POST /voice/listen → ask the robot's voice device (the Jetson/laptop mic loop) to capture one
 // utterance. The browser does NOT record audio; the mic lives on the device. status is 'no_device'
-// when no microphone is connected for this table (the panel then shows the assistant is offline).
+// when no microphone is connected (the panel then shows the assistant is offline).
 export interface ListenResult {
   status: 'ok' | 'no_device'
 }
 
-export function startVoiceListen(tableId: number): Promise<ListenResult> {
-  return postJson<ListenResult>('/voice/listen', { table_id: tableId })
+export function startVoiceListen(): Promise<ListenResult> {
+  return postJson<ListenResult>('/voice/listen', { robot_id: VOICE_ROBOT_ID })
 }
 
 // POST /voice/cancel → kill the whole in-flight voice turn on this table's device (the "Hủy"/
 // "Dừng" button): drops an armed capture, stops consuming the agent's reply stream and cuts the
 // robot's TTS mid-sentence.
-export function cancelVoiceListen(tableId: number): Promise<ListenResult> {
-  return postJson<ListenResult>('/voice/cancel', { table_id: tableId })
+export function cancelVoiceListen(): Promise<ListenResult> {
+  return postJson<ListenResult>('/voice/cancel', { robot_id: VOICE_ROBOT_ID })
 }
 
 // POST /voice/mute → mute/unmute the robot's speaker for this table. Muting cuts the sentence
 // currently playing; the agent's replies keep arriving as text bubbles either way.
-export function setVoiceMuted(tableId: number, muted: boolean): Promise<ListenResult> {
-  return postJson<ListenResult>('/voice/mute', { table_id: tableId, muted })
+export function setVoiceMuted(muted: boolean): Promise<ListenResult> {
+  return postJson<ListenResult>('/voice/mute', { robot_id: VOICE_ROBOT_ID, muted })
 }
 
 // POST /voice/new-chat → wipe the agent's conversation memory for this table (fresh LLM thread;
@@ -63,8 +69,8 @@ export interface NewChatResult {
   device?: boolean
 }
 
-export function newVoiceChat(tableId: number): Promise<NewChatResult> {
-  return postJson<NewChatResult>('/voice/new-chat', { table_id: tableId })
+export function newVoiceChat(): Promise<NewChatResult> {
+  return postJson<NewChatResult>('/voice/new-chat', { robot_id: VOICE_ROBOT_ID })
 }
 
 // POST /voice/cart → push this tablet's cart draft to the agent, so the guest's manual +/− is

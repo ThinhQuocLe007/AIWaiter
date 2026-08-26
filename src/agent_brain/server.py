@@ -26,7 +26,6 @@ from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from src._shared.types import normalise_table_id
 from src.agent_brain.config import settings as agent_settings
 from src.agent_brain.services.orchestrator_client import OrchestratorClient
 from src.agent_brain.utils import logger as log
@@ -62,6 +61,28 @@ def _check_router() -> None:
         ) from e
 
 
+def _warmup_llm() -> None:
+    """Pin the Ollama model in VRAM for the life of the service.
+
+    Ollama evicts after 5 min idle by default, so the first `chat`-intent question of a demo
+    would stall ~10-30s reloading 12GB from disk. `keep_alive: -1` = never evict. This goes to
+    Ollama's NATIVE /api/generate, not the OpenAI-compatible /v1 endpoint the client uses —
+    /v1 has no keep_alive field. An empty prompt loads the model and returns immediately.
+    """
+    import httpx
+
+    from src.agent_brain.warehouse.paths import settings as wh_settings
+
+    root = wh_settings.llm_base_url.rstrip("/").removesuffix("/v1")
+    log.info("Warming up LLM %s (keep_alive=-1) ...", wh_settings.llm_model)
+    r = httpx.post(
+        f"{root}/api/generate",
+        json={"model": wh_settings.llm_model, "keep_alive": -1},
+        timeout=180.0,  # cold load of a 14b off a slow disk
+    )
+    r.raise_for_status()
+
+
 def _warmup() -> None:
     """Pre-load models so the FIRST real turn isn't slow (best-effort)."""
     try:
@@ -71,6 +92,10 @@ def _warmup() -> None:
         get_index()
     except Exception as e:  # noqa: BLE001 — startup time; RAG may fail for any reason
         log.warning("Retriever warmup failed: %s", e)
+    try:
+        _warmup_llm()
+    except Exception as e:  # noqa: BLE001 — Ollama down/model not pulled: deterministic paths still work
+        log.warning("LLM warmup failed (chat intent sẽ chậm lượt đầu): %s", e)
 
 
 @asynccontextmanager
@@ -89,8 +114,9 @@ app = FastAPI(title="Warehouse Brain Agent", version="0.1.0", lifespan=lifespan)
 
 
 class SessionRequest(BaseModel):
-    # The edge voice device speaks "T1"-style table refs; the orchestrator keys tables by INT.
-    table_id: str = "T1"
+    # One robot = one conversation thread. There are no tables in a warehouse; the robot id the
+    # device already knows is the only key, so nothing has to invent or carry a second one.
+    robot_id: str = "robo-1"
 
 
 class ChatRequest(SessionRequest):
@@ -111,8 +137,8 @@ def health() -> dict:
 
 @app.post("/reset")
 def reset_conversation(req: SessionRequest) -> dict:
-    """""Cuộc trò chuyện mới": drop the table's conversation thread."""
-    thread_id = req.table_id
+    """""Cuộc trò chuyện mới": drop this robot's conversation thread."""
+    thread_id = req.robot_id
     try:
         _graph.checkpointer.delete_thread(thread_id)
     except Exception as e:  # noqa: BLE001 — missing thread is fine
@@ -120,15 +146,14 @@ def reset_conversation(req: SessionRequest) -> dict:
     return {"status": "ok", "thread_id": thread_id}
 
 
-class CartSyncRequest(BaseModel):
-    table_id: str = "T1"
+class CartSyncRequest(SessionRequest):
     items: list = []
 
 
 @app.post("/cart")
 def sync_cart(req: CartSyncRequest) -> dict:
     """Warehouse has no cart — silent no-op kept so the orchestrator's /voice/cart keeps working."""
-    return {"status": "ok", "thread_id": req.table_id}
+    return {"status": "ok", "thread_id": req.robot_id}
 
 
 def _split_sentences(text: str) -> list[str]:
@@ -137,10 +162,10 @@ def _split_sentences(text: str) -> list[str]:
     return [p.strip() for p in parts if p.strip()]
 
 
-def _run_turn(text: str, table_id: str) -> dict:
+def _run_turn(text: str, robot_id: str) -> dict:
     """Run the warehouse graph for one utterance; returns the final state dict."""
-    config = {"configurable": {"thread_id": table_id}}
-    inputs = {"user_text": text, "session_id": table_id}
+    config = {"configurable": {"thread_id": robot_id}}
+    inputs = {"user_text": text, "session_id": robot_id}
     result = _graph.invoke(inputs, config)
     return result
 
@@ -156,12 +181,12 @@ def _dispatch_navigation_if_needed(action: dict | None) -> None:
         _orchestrator.dispatch_navigation(token, position.get("section"))
 
 
-def _emit_voice_reply(table_int: int, reply: str, action, intent: str) -> None:
+def _emit_voice_reply(robot_id: str, reply: str, action, intent: str) -> None:
     """Mirror the turn's reply (and any navigation action) to the operator panel."""
     _orchestrator.post_voice_event(
         {
             "type": "voice.reply",
-            "table_id": table_int,
+            "robot_id": robot_id,
             "text": reply,
             "action": action,
             "stage": intent,
@@ -173,20 +198,19 @@ def _emit_voice_reply(table_int: int, reply: str, action, intent: str) -> None:
 def chat(req: ChatRequest) -> ChatResponse:
     """Non-streaming variant kept for parity / debugging. The running system uses /chat/stream."""
     text = req.text.strip()
-    table_id = req.table_id
-    table_int = normalise_table_id(table_id)
+    robot_id = req.robot_id
 
     _orchestrator.post_voice_event(
-        {"type": "voice.heard", "table_id": table_int, "text": text}
+        {"type": "voice.heard", "robot_id": robot_id, "text": text}
     )
 
-    result = _run_turn(text, table_id)
+    result = _run_turn(text, robot_id)
     reply = result.get("reply", "")
     action = result.get("action")
     intent = result.get("intent") or "chat"
-    session_id = table_id
+    session_id = robot_id
 
-    _emit_voice_reply(table_int, reply, action, intent)
+    _emit_voice_reply(robot_id, reply, action, intent)
     _dispatch_navigation_if_needed(action)
 
     return ChatResponse(response=reply, final_stage=intent, action=action, session_id=session_id)
@@ -201,20 +225,19 @@ def chat_stream(req: ChatRequest):
     """
 
     def generate():
-        table_id = req.table_id
-        table_int = normalise_table_id(table_id)
+        robot_id = req.robot_id
         text = req.text.strip()
 
         _orchestrator.post_voice_event(
-            {"type": "voice.heard", "table_id": table_int, "text": text}
+            {"type": "voice.heard", "robot_id": robot_id, "text": text}
         )
         yield f"data: {json.dumps({'event': 'progress', 'text': 'processing'})}\n\n"
         _orchestrator.post_voice_event(
-            {"type": "voice.progress", "table_id": table_int, "status": "đang xử lý..."}
+            {"type": "voice.progress", "robot_id": robot_id, "status": "đang xử lý..."}
         )
 
         try:
-            result = _run_turn(text, table_id)
+            result = _run_turn(text, robot_id)
         except Exception as e:  # noqa: BLE001 — never break the voice loop on a bad turn
             log.exception("warehouse turn failed: %s", e)
             result = {
@@ -226,9 +249,9 @@ def chat_stream(req: ChatRequest):
         reply = result.get("reply", "")
         action = result.get("action")
         intent = result.get("intent") or "chat"
-        session_id = table_id
+        session_id = robot_id
 
-        _emit_voice_reply(table_int, reply, action, intent)
+        _emit_voice_reply(robot_id, reply, action, intent)
         _dispatch_navigation_if_needed(action)
 
         for sentence in _split_sentences(reply):

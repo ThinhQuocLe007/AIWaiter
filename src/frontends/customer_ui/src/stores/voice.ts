@@ -65,15 +65,13 @@ export const useVoiceStore = defineStore('voice', () => {
   }
 
   function onEvent(e: WsEvent) {
-    // Only react to voice events meant for the table this tablet is standing in for.
+    // Voice events are keyed by robot_id, not table_id: the demo runs one robot, so every voice
+    // turn on the hub is this tablet's turn. Filter here if a second robot is ever added.
     if (e.type === 'voice.heard') {
-      if (e.table_id !== getStoredTableId()) return
       onHeard(e.text)
     } else if (e.type === 'voice.reply') {
-      if (e.table_id !== getStoredTableId()) return
       onReply(e.text, e.action, e.stage, e.cart, e.confirmed ?? false, e.cart_touched ?? false)
     } else if (e.type === 'voice.progress') {
-      if (e.table_id !== getStoredTableId()) return
       aiState.value = 'thinking'
     } else if (e.type === 'robot.arrived') {
       // The robot is standing at this table now: bring the tablet to the screen matching the
@@ -245,7 +243,7 @@ export const useVoiceStore = defineStore('voice', () => {
     // so a guest at a table with no robot bound saw the icon flip and the speaker keep talking,
     // with nothing on screen explaining why — indistinguishable from a dead button.
     try {
-      const res = await setVoiceMuted(getStoredTableId(), !isSoundEnabled.value)
+      const res = await setVoiceMuted(!isSoundEnabled.value)
       if (res.status === 'no_device') pushMessage('ai', 'Chưa kết nối được loa của robot ạ.')
     } catch {
       pushMessage('ai', 'Chưa đổi được chế độ loa ạ, anh/chị thử lại nhé.')
@@ -263,9 +261,9 @@ export const useVoiceStore = defineStore('voice', () => {
     aiState.value = 'listening'
     // Re-sync the speaker preference first: the device may have (re)connected after the guest
     // toggled it, and its own mute flag lives in device RAM.
-    setVoiceMuted(getStoredTableId(), !isSoundEnabled.value).catch(() => {})
+    setVoiceMuted(!isSoundEnabled.value).catch(() => {})
     try {
-      const res = await startVoiceListen(getStoredTableId())
+      const res = await startVoiceListen()
       if (res.status === 'no_device') {
         aiState.value = 'idle'
         pushMessage('ai', 'Trợ lý giọng nói chưa sẵn sàng ạ, anh/chị thử lại sau nhé.')
@@ -292,7 +290,7 @@ export const useVoiceStore = defineStore('voice', () => {
       // Best-effort device-side abort; harmless if the utterance already left the device. The
       // view is already back to idle either way — but if the command never reached a robot the
       // speaker keeps going, so name that instead of leaving the guest with a silent no-op.
-      cancelVoiceListen(getStoredTableId())
+      cancelVoiceListen()
         .then((res) => {
           if (res.status === 'no_device') pushMessage('ai', 'Chưa kết nối được robot để dừng ạ.')
         })
@@ -311,7 +309,7 @@ export const useVoiceStore = defineStore('voice', () => {
     aiResponse.value = ''
     aiState.value = 'idle'
     try {
-      const res = await newVoiceChat(getStoredTableId()) // also stops any in-flight turn/speech
+      const res = await newVoiceChat() // also stops any in-flight turn/speech
       if (res.status === 'ok') {
         pushMessage('ai', 'Dạ, mình bắt đầu cuộc trò chuyện mới nhé ạ!')
         // Memory wiped, but no robot mic to cut off: it may still be finishing the previous
