@@ -199,11 +199,18 @@ async def cancel_task(task_id: int) -> None:
     """Cancel a task (e.g. operator said "dừng lại" / changed destination).
 
     Marks the task CANCELLED and frees its robot (status -> holding, immediately reassignable) so a
-    new goal can be dispatched. The robot itself is NOT sent a separate abort frame: the contract is
-    "latest ``task.assign`` wins" — the next navigate simply reassigns and the robot drops its current
-    goal for the new one. This keeps the server→robot protocol to a single command type, so no robot
-    bridge (incl. the Gazebo machine) needs a new message handler. Idempotent for DONE/CANCELLED.
+    new goal can be dispatched. Two robot signals cooperate:
+
+    * **Best-effort ``task.cancel`` frame** — tells the robot to abort its current drive. The Gazebo
+      bridge MAY ignore this frame (no change required there); it's only essential for the sim
+      ``mock_robot`` (which aborts its drive) and for any bridge that chooses to honor it.
+    * **"latest ``task.assign`` wins"** — the next navigate reassigns and the robot drops the old
+      goal for the new one. This is what makes redirect work even if ``task.cancel`` is ignored.
+
+    Together, cancel works with OR without the bridge honoring the abort frame, and the Gazebo
+    machine needs no change. Idempotent for DONE/CANCELLED.
     """
+    robot_id = None
     with get_conn() as conn:
         row = conn.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
         if row is None:
@@ -223,6 +230,14 @@ async def cancel_task(task_id: int) -> None:
             )
             await _broadcast_robot(conn, robot_id)
         await _broadcast_task(conn, task_id, "task.updated")
+    # Best-effort abort signal to the robot. Harmless if the bridge ignores it — the redirect
+    # path (next task.assign) covers the case where it does.
+    if robot_id:
+        delivered = await manager.send_to_robot(
+            robot_id, {"type": "task.cancel", "task_id": task_id}
+        )
+        if not delivered:
+            log.warning("robot %s not connected to receive cancel for task %s", robot_id, task_id)
 
 
 async def cancel_robot_task(robot_id: str) -> None:

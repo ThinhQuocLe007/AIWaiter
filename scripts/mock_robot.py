@@ -141,6 +141,16 @@ async def main(args) -> None:
                         with contextlib.suppress(asyncio.CancelledError):
                             await task_runner
                     task_runner = asyncio.create_task(run_task(ws, msg, state))
+                elif msg.get("type") == "task.cancel":
+                    # Server cancelled our current task (operator "hủy" / changed mind). Abort the
+                    # in-flight drive and park where we are. The next task.assign will start a fresh
+                    # one. The Gazebo bridge may ignore this frame — it's only essential for the sim.
+                    print(f"[{args.id}] <- task.cancel (aborting in-flight drive)")
+                    if task_runner and not task_runner.done():
+                        task_runner.cancel()
+                        with contextlib.suppress(asyncio.CancelledError):
+                            await task_runner
+                        task_runner = None
                 else:
                     print(f"[{args.id}] <- {msg}")
         finally:
