@@ -12,29 +12,38 @@ script ──UDP──► RobotBridge (laptop, có Gazebo) ──► run_storage
 
 ## Chuẩn bị
 
-- Máy simulation đã bật Gazebo + cầu UDP (theo mục C guide):
+- **Máy simulation (laptop): KHÔNG cần pull repo.** Chỉ cần giữ nguyên những gì đã bật sáng nay:
+  Gazebo (`run_demo.sh`) và cầu UDP:
   ```bash
   cd ~/workshop/warehouse_agv_demo && ./run_demo.sh
   # terminal riêng, đã source ROS:
   python3 -m src.robot_link.bridge --demo-dir ~/workshop/warehouse_agv_demo --bind 0.0.0.0:45455
   ```
-  Cầu phải in: `Nghe lệnh giọng nói trên udp://0.0.0.0:45455`
-- Script nằm ở `scripts/mock_test_robotlink.py` (đã commit/push lên repo).
+  Cầu phải in: `Nghe lệnh giọng nói trên udp://0.0.0.0:45455`. Nếu sáng nay tắt rồi thì bật lại
+  bằng đúng 2 lệnh đó (đã có sẵn trên laptop, **không đổi code, không pull repo**).
+- **Server PC:** pull repo mới nhất (chứa `scripts/mock_test_robotlink.py`), rồi chạy script ở đó.
+  Code chỉ sửa trên server.
 
-## Chạy — xe thật chạy trên simulation
+## Chạy — trên server PC, xe chạy trên máy simulation
 
-Script phải chạy ở máy **có thể tới được cổng UDP 45455 của bridge** (laptop simulation, hoặc
-Jetson — hai máy này có mặt trên Netbird/ZeroTier tới được laptop).
+Script chạy trên **server PC**, bắn UDP sang bridge trên laptop (cùng ZeroTier nên thông nhau).
+Laptop không cần repo, chỉ cần bridge đang chạy.
 
-**Cách 1 — chạy luôn trên laptop simulation (đơn giản nhất):**
+Cách 1 — set `ROBOT_UDP_HOST` trong `.env` của server PC = IP ZeroTier của laptop:
+```ini
+# .env (trên server PC)
+ROBOT_UDP_HOST=172.25.x.x   # IP ZeroTier của laptop (cùng mạng ZeroTier với PC)
+```
+rồi chạy (không cần truyền tham số):
 ```bash
-uv run python scripts/mock_test_robotlink.py --robot-host 127.0.0.1
+uv run python scripts/mock_test_robotlink.py
 ```
 
-**Cách 2 — chạy trên Jetson (bắn sang laptop qua Netbird):**
+Cách 2 — truyền thẳng IP, không sửa `.env`:
 ```bash
-uv run python scripts/mock_test_robotlink.py --robot-host 100.66.149.248
+uv run python scripts/mock_test_robotlink.py --robot-host <IP_ZeroTier_laptop>
 ```
+(Dùng `127.0.0.1` chỉ khi chạy script ngay trên laptop simulation.)
 
 Script sẽ lần lượt bắn kịch bản, mỗi lệnh chờ vài giây để bạn xem xe di chuyển:
 
@@ -50,7 +59,7 @@ Script sẽ lần lượt bắn kịch bản, mỗi lệnh chờ vài giây đ�
 ```
 
 Xe có chạy thật trên Gazebo hay không là do bạn nhìn máy simulation. Dòng `[NO ACK]` nghĩa là
-bridge không đáp — kiểm bridge có chạy và `--robot-host` đúng IP.
+bridge không đáp — kiểm bridge có chạy trên laptop và `ROBOT_UDP_HOST`/`--robot-host` đúng IP.
 
 ## Các kịch bản có sẵn
 
@@ -80,7 +89,7 @@ uv run python scripts/mock_test_robotlink.py --local
 
 ## Lưu ý mạng
 
-Theo setup demo: PC server chỉ ở ZeroTier, laptop sim ở Netbird, hai mạng không thông nhau. Nên
-script **không chạy được từ PC server bắn thẳng sang laptop**. Chạy script trên laptop simulation
-(`--robot-host 127.0.0.1`) hoặc trên Jetson. (Nếu laptop đã được đưa lên ZeroTier như bạn test
-sáng nay, thì có thể chạy từ bất kỳ máy cùng ZeroTier tới được IP laptop.)
+Laptop đã được đưa lên **ZeroTier** (test sáng nay ổn), còn server PC cũng ở ZeroTier → hai máy
+thông nhau. Nên script **CHẠY TỪ SERVER PC** bắn thẳng sang bridge trên laptop được. Không cần
+chạy script trên laptop, và laptop không cần pull repo — chỉ cần bridge trên laptop đang lắng nghe
+(đã bật sáng nay, với `--bind 0.0.0.0:45455` nên nghe cả interface ZeroTier).

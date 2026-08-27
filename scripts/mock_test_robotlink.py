@@ -26,6 +26,7 @@ logic脚本 trên server không có sim.
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 import threading
@@ -64,8 +65,10 @@ def _send(sender: CommandSender, kind: str, action: dict, sentence: str) -> None
         sender.control(action["verb"], sentence=sentence, source="fastpath")
 
 
-def drive_real(host: str, port: int) -> int:
-    print(f"[setup] gửi kịch bản UDP tới bridge tại {host}:{port}")
+def drive_real(host: str | None, port: int) -> int:
+    # host None -> CommandSender tự đọc env ROBOT_UDP_HOST, rồi 127.0.0.1
+    resolved = host or os.environ.get("ROBOT_UDP_HOST") or "127.0.0.1"
+    print(f"[setup] gửi kịch bản UDP tới bridge tại {resolved}:{port}")
     sender = CommandSender(host=host, port=port, enabled=True)
     results: list[tuple[str, bool]] = []
     try:
@@ -158,8 +161,10 @@ def drive_local() -> int:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Mock test kịch bản: gửi UDP cho simulation chạy.")
-    ap.add_argument("--robot-host", default="127.0.0.1",
-                    help="IP máy bridge (laptop Gazebo). Mặc định 127.0.0.1 (chạy trên máy sim).")
+    ap.add_argument("--robot-host", default=None,
+                    help="IP máy bridge (laptop Gazebo). Nếu không truyền, lấy từ env "
+                         "ROBOT_UDP_HOST, rồi mặc định 127.0.0.1. Chạy trên server PC thì truyền "
+                         "IP ZeroTier của laptop, hoặc set ROBOT_UDP_HOST trong .env của server.")
     ap.add_argument("--robot-port", type=int, default=45455)
     ap.add_argument("--local", action="store_true",
                     help="headless: tự bật bridge dry-run, chỉ kiểm logic dịch lệnh (không cần Gazebo)")
