@@ -45,7 +45,7 @@ STACK="${STACK:-0}"
 if [ "$STACK" = "1" ]; then
 	URL="${URL:-http://$SERVER_HOST/}"
 else
-	URL="${URL:-http://$SERVER_HOST/monitor}"
+	URL="${URL:-http://$SERVER_HOST/monitor/}"
 fi
 ROS_SETUP="${ROS_SETUP:-/opt/ros/humble/setup.sh}"
 
@@ -134,8 +134,34 @@ if [ "$WEB" = "1" ]; then
 			curl -fsS -o /dev/null --max-time 2 "$URL" && break
 			sleep 2
 		done
+		# Chromium/Chrome đã mở sẵn một cửa sổ thường (rất hay, vì máy demo còn dùng để tra cứu)
+		# thì tiến trình mới chỉ đẩy URL sang instance cũ qua singleton lock rồi thoát: --kiosk bị
+		# bỏ qua và trang chỉ hiện ra như một tab bình thường lẫn giữa các tab khác. Ép instance
+		# RIÊNG bằng --user-data-dir. Hồ sơ riêng đó cũng nuốt luôn bong bóng "Restore pages?",
+		# vốn hiện mỗi lần mở vì cleanup() ở trên giết trình duyệt cứng chứ không đóng tử tế.
+		case "$(basename "$BROWSER")" in
+		chromium*|google-chrome*|chrome*)
+			# Bản snap bị nhốt trong interface `home`, không đọc được thư mục ẩn (~/.cache),
+			# nên hồ sơ phải nằm trong vùng riêng của snap.
+			if [ -z "${KIOSK_PROFILE:-}" ]; then
+				case "$(readlink -f "$(command -v "$BROWSER")")" in
+				/snap/*|/usr/bin/snap) KIOSK_PROFILE="$HOME/snap/chromium/common/ai-waiter-kiosk" ;;
+				*) KIOSK_PROFILE="${XDG_CACHE_HOME:-$HOME/.cache}/ai-waiter-kiosk" ;;
+				esac
+			fi
+			mkdir -p "$KIOSK_PROFILE"
+			set -- --kiosk --user-data-dir="$KIOSK_PROFILE" --no-first-run \
+				--noerrdialogs --disable-session-crashed-bubble --disable-infobars "$URL"
+			;;
+		firefox*)
+			set -- --kiosk --new-instance "$URL"
+			;;
+		*)
+			set -- --kiosk "$URL"
+			;;
+		esac
 		echo "mở $BROWSER --kiosk $URL  (thoát kiosk: Ctrl+W / Alt+F4)"
-		exec "$BROWSER" --kiosk "$URL" >/dev/null 2>&1
+		exec "$BROWSER" "$@" >/dev/null 2>&1
 	) 2>&1 | tag web &
 else
 	echo "[run] WEB=0 — không mở trình duyệt."
