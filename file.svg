@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" font-family="Inter, Segoe UI, sans-serif">
+
+  <!-- Background -->
+  <rect width="1200" height="600" fill="#ffffff" rx="4"/>
+
+  <!-- Title -->
+  <text x="600" y="50" text-anchor="middle" fill="#1a1a2e" font-size="28" font-weight="700">AI Waiter</text>
+  <text x="600" y="78" text-anchor="middle" fill="#6b7280" font-size="16">Voice-controlled warehouse AGV</text>
+
+  <!-- ===== INPUT SECTION ===== -->
+  <rect x="40" y="120" width="760" height="140" rx="12" fill="#f8fafc" stroke="#3b82f6" stroke-width="2"/>
+  <text x="60" y="148" fill="#3b82f6" font-size="14" font-weight="600">INPUT</text>
+
+  <!-- Mic -->
+  <rect x="60" y="165" width="160" height="70" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="140" y="195" text-anchor="middle" fill="#1e3a5f" font-size="16" font-weight="600">Microphone</text>
+  <text x="140" y="218" text-anchor="middle" fill="#3b82f6" font-size="11">16kHz audio stream</text>
+
+  <!-- VAD -->
+  <rect x="240" y="165" width="140" height="70" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="310" y="195" text-anchor="middle" fill="#1e3a5f" font-size="16" font-weight="600">VAD</text>
+  <text x="310" y="218" text-anchor="middle" fill="#3b82f6" font-size="11">Silero model</text>
+
+  <!-- STT -->
+  <rect x="400" y="165" width="160" height="70" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="480" y="195" text-anchor="middle" fill="#1e3a5f" font-size="16" font-weight="600">STT</text>
+  <text x="480" y="218" text-anchor="middle" fill="#3b82f6" font-size="11">PhoWhisper (Vietnamese)</text>
+
+  <!-- Arrows -->
+  <line x1="220" y1="200" x2="240" y2="200" stroke="#3b82f6" stroke-width="2"/>
+  <polygon points="238,195 240,200 238,205" fill="#3b82f6"/>
+  <line x1="380" y1="200" x2="400" y2="200" stroke="#3b82f6" stroke-width="2"/>
+  <polygon points="398,195 400,200 398,205" fill="#3b82f6"/>
+  <line x1="560" y1="200" x2="580" y2="200" stroke="#3b82f6" stroke-width="2"/>
+  <polygon points="578,195 580,200 578,205" fill="#3b82f6"/>
+
+  <!-- Text label -->
+  <rect x="580" y="190" width="200" height="22" rx="4" fill="#dbeafe" stroke="#3b82f6" stroke-width="1"/>
+  <text x="680" y="206" text-anchor="middle" fill="#1e3a5f" font-size="11">Vietnamese text</text>
+
+  <!-- ===== AGENT SECTION ===== -->
+  <rect x="40" y="300" width="760" height="248" rx="12" fill="#faf5ff" stroke="#7c3aed" stroke-width="2"/>
+  <text x="60" y="322" fill="#7c3aed" font-size="14" font-weight="600">AGENT BRAIN</text>
+  <text x="195" y="322" fill="#a78bfa" font-size="12">LangGraph: text → intent → RAG/LLM → reply + action</text>
+
+  <!-- Router -->
+  <rect x="330" y="332" width="140" height="40" rx="8" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="400" y="349" text-anchor="middle" fill="#1e1b4b" font-size="14" font-weight="600">Router</text>
+  <text x="400" y="364" text-anchor="middle" fill="#7c3aed" font-size="10">MLP classifier</text>
+
+  <!-- Workers (one box per intent) -->
+  <rect x="55" y="384" width="690" height="48" rx="8" fill="#f3eefe" stroke="#a78bfa" stroke-width="1" stroke-dasharray="4,3"/>
+  <rect x="62"  y="390" width="120" height="36" rx="6" fill="#ede9fe" stroke="#a78bfa" stroke-width="1"/>
+  <text x="122" y="412" text-anchor="middle" fill="#1e1b4b" font-size="13">Chat</text>
+  <rect x="197" y="390" width="120" height="36" rx="6" fill="#ede9fe" stroke="#a78bfa" stroke-width="1"/>
+  <text x="257" y="412" text-anchor="middle" fill="#1e1b4b" font-size="13">Navigate</text>
+  <rect x="332" y="390" width="120" height="36" rx="6" fill="#ede9fe" stroke="#a78bfa" stroke-width="1"/>
+  <text x="392" y="412" text-anchor="middle" fill="#1e1b4b" font-size="13">Control</text>
+  <rect x="467" y="390" width="120" height="36" rx="6" fill="#ede9fe" stroke="#a78bfa" stroke-width="1"/>
+  <text x="527" y="412" text-anchor="middle" fill="#1e1b4b" font-size="13">Motion</text>
+  <rect x="602" y="390" width="120" height="36" rx="6" fill="#ede9fe" stroke="#a78bfa" stroke-width="1"/>
+  <text x="662" y="412" text-anchor="middle" fill="#1e1b4b" font-size="13">Retrieval</text>
+
+  <!-- Tools: RAG + LLM -->
+  <rect x="55" y="446" width="330" height="40" rx="8" fill="#ecfdf5" stroke="#10b981" stroke-width="1.5"/>
+  <text x="220" y="463" text-anchor="middle" fill="#064e3b" font-size="14" font-weight="600">RAG</text>
+  <text x="220" y="478" text-anchor="middle" fill="#10b981" font-size="11">FAISS + BM25 + RRF</text>
+  <rect x="405" y="446" width="340" height="40" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="575" y="463" text-anchor="middle" fill="#78350f" font-size="14" font-weight="600">LLM (Ollama)</text>
+  <text x="575" y="478" text-anchor="middle" fill="#f59e0b" font-size="11">Qwen 2.5 14B</text>
+
+  <!-- Validator -->
+  <rect x="55" y="498" width="690" height="42" rx="8" fill="#fce7f3" stroke="#ec4899" stroke-width="1.5"/>
+  <text x="400" y="515" text-anchor="middle" fill="#831843" font-size="14" font-weight="600">Validator — output contract guard</text>
+  <text x="400" y="531" text-anchor="middle" fill="#ec4899" font-size="10">contract guard → reply + action (JSON)</text>
+
+  <!-- Flow: Router → Workers -->
+  <line x1="400" y1="372" x2="400" y2="384" stroke="#7c3aed" stroke-width="2"/>
+  <polygon points="395,382 400,384 405,382" fill="#7c3aed"/>
+  <text x="410" y="380" fill="#7c3aed" font-size="9">intent</text>
+
+  <!-- Flow: Workers → RAG / LLM -->
+  <line x1="200" y1="432" x2="212" y2="446" stroke="#7c3aed" stroke-width="1.5"/>
+  <polygon points="210,442 212,446 207,445" fill="#7c3aed"/>
+  <line x1="540" y1="432" x2="560" y2="446" stroke="#7c3aed" stroke-width="1.5"/>
+  <polygon points="558,442 560,446 555,445" fill="#7c3aed"/>
+  <text x="378" y="440" text-anchor="middle" fill="#7c3aed" font-size="9">retrieve / generate</text>
+  <text x="688" y="440" fill="#64748b" font-size="9">control / motion skip tools</text>
+
+  <!-- Flow: RAG / LLM → Validator -->
+  <line x1="220" y1="486" x2="220" y2="498" stroke="#ec4899" stroke-width="1.5"/>
+  <polygon points="215,496 220,498 225,496" fill="#ec4899"/>
+  <line x1="575" y1="486" x2="575" y2="498" stroke="#ec4899" stroke-width="1.5"/>
+  <polygon points="570,496 575,498 580,496" fill="#ec4899"/>
+  <text x="397" y="494" text-anchor="middle" fill="#ec4899" font-size="9">reply + action</text>
+
+  <!-- ===== OUTPUT SECTION ===== -->
+  <rect x="840" y="120" width="320" height="380" rx="12" fill="#fef2f2" stroke="#dc2626" stroke-width="2"/>
+  <text x="860" y="148" fill="#dc2626" font-size="14" font-weight="600">OUTPUT</text>
+
+  <!-- Orchestrator -->
+  <rect x="860" y="165" width="280" height="80" rx="10" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="1000" y="195" text-anchor="middle" fill="#7f1d1d" font-size="16" font-weight="600">Orchestrator</text>
+  <text x="1000" y="215" text-anchor="middle" fill="#dc2626" font-size="12">Port :8000 (FastAPI)</text>
+  <text x="1000" y="233" text-anchor="middle" fill="#dc2626" font-size="11">Dispatch task + WS broadcast</text>
+
+  <!-- Robot -->
+  <rect x="860" y="265" width="280" height="90" rx="10" fill="#e0f2fe" stroke="#0284c7" stroke-width="1.5"/>
+  <text x="1000" y="295" text-anchor="middle" fill="#0c4a6e" font-size="16" font-weight="600">AGV Robot</text>
+  <text x="1000" y="315" text-anchor="middle" fill="#0284c7" font-size="12">ROS2 / Nav2 / Gazebo</text>
+  <text x="1000" y="335" text-anchor="middle" fill="#0284c7" font-size="11">UDP :45455 + /cmd_vel</text>
+
+  <!-- Frontend -->
+  <rect x="860" y="375" width="280" height="50" rx="8" fill="#f1f5f9" stroke="#64748b" stroke-width="1"/>
+  <text x="1000" y="400" text-anchor="middle" fill="#1e293b" font-size="14">Frontend</text>
+  <text x="1000" y="418" text-anchor="middle" fill="#64748b" font-size="11">Monitor UI (operator)</text>
+
+  <!-- ===== ARROWS ===== -->
+
+  <!-- Input → Agent (into Router) -->
+  <line x1="400" y1="260" x2="400" y2="300" stroke="#7c3aed" stroke-width="2.5"/>
+  <polygon points="395,298 400,300 405,298" fill="#7c3aed"/>
+  <text x="408" y="284" fill="#7c3aed" font-size="10">user_text (POST /chat/stream)</text>
+
+  <!-- Agent → Output (from Validator) -->
+  <line x1="800" y1="460" x2="860" y2="460" stroke="#dc2626" stroke-width="2.5"/>
+  <polygon points="858,455 860,460 858,465" fill="#dc2626"/>
+  <text x="830" y="453" text-anchor="middle" fill="#dc2626" font-size="10">reply + action (JSON)</text>
+
+  <!-- Orchestrator → Robot -->
+  <line x1="1000" y1="245" x2="1000" y2="265" stroke="#dc2626" stroke-width="2"/>
+  <polygon points="995,263 1000,265 1005,263" fill="#dc2626"/>
+  <text x="1007" y="258" fill="#dc2626" font-size="9">UDP cmd (nav/ctrl/motion)</text>
+
+  <!-- Orchestrator → Frontend (routes around the robot, WS broadcast) -->
+  <path d="M 1000 245 L 1150 245 L 1150 400 L 1140 400" fill="none" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <polygon points="1146,395 1140,400 1146,405" fill="#64748b"/>
+  <text x="980" y="438" fill="#64748b" font-size="9">WS: state + telemetry</text>
+
+  <!-- TTS return -->
+  <path d="M 60 370 Q 30 370 30 150 L 60 150" fill="none" stroke="#3b82f6" stroke-width="2" stroke-dasharray="6,3"/>
+  <polygon points="58,145 60,150 58,155" fill="#3b82f6"/>
+  <text x="10" y="260" fill="#3b82f6" font-size="11" transform="rotate(-90, 10, 260)">Reply stream → edge (SSE)</text>
+
+  <!-- Fast Path: control/motion matched on the Jetson EDGE, UDP straight to the robot.
+       Bypasses the agent brain AND the orchestrator (no LLM round-trip) for sub-50ms safety. -->
+  <line x1="782" y1="201" x2="858" y2="308" stroke="#f59e0b" stroke-width="2.5" stroke-dasharray="6,3"/>
+  <polygon points="854,303 860,308 854,313" fill="#f59e0b"/>
+  <text x="868" y="250" fill="#f59e0b" font-size="11" font-weight="600">FAST PATH → robot (UDP &lt;50ms)</text>
+
+  <!-- Footer -->
+  <text x="600" y="555" text-anchor="middle" fill="#6b7280" font-size="13">Vietnamese speech → Transcribe → Understand → Decide → Robot acts</text>
+  <text x="600" y="580" text-anchor="middle" fill="#9ca3af" font-size="11">Safety commands (stop/resume/motion) bypass LLM for sub-50ms response</text>
+
+</svg>
