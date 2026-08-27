@@ -12,15 +12,23 @@ script ──UDP──► RobotBridge (laptop, có Gazebo) ──► run_storage
 
 ## Chuẩn bị
 
-- **Máy simulation (laptop): KHÔNG cần pull repo.** Chỉ cần giữ nguyên những gì đã bật sáng nay:
-  Gazebo (`run_demo.sh`) và cầu UDP:
+- **Máy simulation (laptop): một lệnh, không cần bật cầu UDP bằng tay.**
   ```bash
   cd ~/workshop/warehouse_agv_demo && ./run_demo.sh
-  # terminal riêng, đã source ROS:
-  python3 -m src.robot_link.bridge --demo-dir ~/workshop/warehouse_agv_demo --bind 0.0.0.0:45455
   ```
-  Cầu phải in: `Nghe lệnh giọng nói trên udp://0.0.0.0:45455`. Nếu sáng nay tắt rồi thì bật lại
-  bằng đúng 2 lệnh đó (đã có sẵn trên laptop, **không đổi code, không pull repo**).
+  `run_demo.sh` tự bật cầu UDP trên `0.0.0.0:45455` cùng lifecycle với sa bàn. Nhưng **phải pull
+  AIWaiter trên laptop**: `run_udp_command_bridge.sh` chỉ dùng bridge AIWaiter khi thấy
+  `../AIWaiter/src/robot_link/bridge.py` (đổi chỗ khác thì set `AIWAITER_DIR`), không thấy thì nó
+  rơi về bản built-in của sa bàn — bản đó không báo trạng thái xe và script sẽ lùi về đếm giờ.
+  Cầu phải in: `Nghe lệnh giọng nói trên udp://0.0.0.0:45455` và `Giữ tốc độ: publisher ... sẵn
+  sàng`. Terminal chạy cầu phải có sẵn cả `ros2` lẫn `gz` trong PATH — `pick_box.sh` gọi cả hai.
+
+  **Chạy đúng bridge.** Sa bàn có sẵn một bridge thứ hai (`warehouse_agv_demo/scripts/
+  udp_command_bridge.py`) nói cùng giao thức nhưng KHÔNG báo trạng thái xe, nên script sẽ không
+  bao giờ thấy `moving` và lùi về đếm giờ như cũ. Nhìn dòng khởi động để biết đang chạy cái nào:
+  `Nghe lệnh giọng nói trên udp://...` là bridge AIWaiter (đúng), `UDP bridge listening on
+  udp://...` là bản built-in. Hai bridge cùng bind được cổng 45455 mà không báo lỗi — cái bind
+  sau nhận hết — nên chỉ bật MỘT.
 - **Server PC:** pull repo mới nhất (chứa `scripts/mock_test_robotlink.py`), rồi chạy script ở đó.
   Code chỉ sửa trên server.
 
@@ -45,36 +53,61 @@ uv run python scripts/mock_test_robotlink.py --robot-host <IP_ZeroTier_laptop>
 ```
 (Dùng `127.0.0.1` chỉ khi chạy script ngay trên laptop simulation.)
 
-Script sẽ lần lượt bắn kịch bản, mỗi lệnh chờ vài giây để bạn xem xe di chuyển:
+Script bám theo robot thật chứ không đếm giờ đoán mò: bridge trả trạng thái AGV (đọc `/odom`)
+trong mỗi ack, nên script đứng chờ tới khi **bánh thật sự quay** rồi mới sang bước sau — Nav2/AMCL
+trên xe này mất 6–8s mới ra path.
 
 ```
 >>> gửi: 'đi tới khu A'   (đi tới khu A)
     [OK] robot nhận lệnh
-    ... chờ 3.0s để xem xe chạy trên simulation
+    [MOVING] sau 7.4s
+    ... xem xe chạy 4.0s rồi sang bước sau
 >>> gửi: 'dừng lại'       (dừng lại giữa đường)
     [OK] robot nhận lệnh
-    ... chờ 2.0s ...
->>> gửi: 'đổi sang khu B'  (đổi sang khu B)
-...
+    [STOPPED] sau 0.5s
+>>> gửi: 'qua khu B lấy hàng rồi mang về trạm đóng gói'
+    [OK] robot nhận lệnh
+    [MOVING] sau 6.9s
+    ... chờ xe làm xong nhiệm vụ (gắp hàng + mang về trạm đóng gói)
+    [XONG] nhiệm vụ kết thúc sau 96s, xe đã về trạm
 ```
 
-Xe có chạy thật trên Gazebo hay không là do bạn nhìn máy simulation. Dòng `[NO ACK]` nghĩa là
-bridge không đáp — kiểm bridge có chạy trên laptop và `ROBOT_UDP_HOST`/`--robot-host` đúng IP.
+Đọc dòng hỏng: `[NO ACK]` = lệnh không tới được bridge (kiểm bridge có chạy và
+`ROBOT_UDP_HOST`/`--robot-host` đúng IP). `[TIMEOUT]` = bridge nhận rồi nhưng xe không vào trạng
+thái đó — xem log terminal bridge và output `pick_box.sh` trên máy sim.
 
-## Các kịch bản có sẵn
+## Kịch bản
 
-Mỗi bước có khoảng chờ riêng (xem `SCENARIOS` trong script), quan trọng là "đi khu A" chỉ chờ
-3s rồi mới "dừng lại" — để lệnh dừng/đổi ý xảy ra ĐÚNG LÚC xe đang chạy giữa đường:
+| # | Câu (script gửi) | Bridge sẽ làm | Script chờ tới khi |
+|---|---|---|---|
+| 1 | đi tới khu A | `pick_box.sh --storage A --route-only` (chạy tới, không gắp) | xe lăn bánh (`moving`), rồi xem chạy 4s |
+| 2 | dừng lại | giữ `/cmd_vel`, xe đứng giữa đường | xe đứng hẳn (`stopped`) |
+| 3 | qua khu B lấy hàng rồi mang về | `pick_box.sh --storage B --deliver` | xe lăn bánh, rồi tới khi xong cả chuyến (`idle`) |
 
-| # | Câu (script gửi) | Bridge sẽ làm |
-|---|---|---|
-| 1 | đi tới khu A | chạy tới Khu A (`--route-only`, không gắp) |
-| 2 | dừng lại | giữ /cmd_vel, xe đứng giữa đường |
-| 3 | đổi sang khu B | hủy chuyến cũ, chạy tới Khu B |
-| 4 | đi tiếp | bỏ giữ, chạy tiếp đích cũ |
-| 5 | đổi sang khu C lấy hộp xanh | chạy tới Khu C, gắp hộp xanh (`--deliver`) |
+Bước 3 đã bao gồm "lấy xong đi về": `--deliver` là gắp rồi mang về trạm đóng gói. Không cần thêm
+lệnh "về trạm sạc" — sa bàn neo trạm sạc chung với trạm đóng gói (xem `make caps`).
 
-Muốn sửa kịch bản: sửa danh sách `SCENARIOS` ở đầu script (thêm/bớt câu, đổi `wait` mỗi bước).
+Muốn sửa kịch bản: sửa `SCENARIOS` ở đầu script. Mỗi dòng là
+`(nhãn, loại, action, câu nói, giây xem xe chạy | None, trạng thái phải đạt)`; `None` nghĩa là chờ
+tới khi nhiệm vụ chạy xong thay vì đếm giây. Máy sim chậm thì `--wait-scale 1.5`.
+
+## Chạy tay từng lệnh (không dùng script kịch bản)
+
+Ba lệnh, chạy trên server PC, gõ tới đâu xem xe tới đó. IP lấy từ `.env`, khỏi truyền tham số.
+
+```bash
+make say TEXT="đi tới khu A" TASK=goto        # 1. chạy tới khu A, không gắp
+make say TEXT="dừng lại"                      # 2. dừng giữa đường (giữ nguyên đích cũ)
+make say TEXT="qua khu B lấy hàng" TASK=fetch # 3. sang khu B gắp hàng rồi mang về trạm đóng gói
+```
+
+`TASK` ép việc ở đích, vì bộ đọc câu luôn đoán `fetch` cho mọi câu có tên khu — không có cách nói
+tiếng Việt nào ra được "chạy tới thôi, đừng gắp". Các giá trị: `goto` (chỉ chạy tới), `fetch`
+(gắp + mang về), `fetch_hold` (gắp, giữ trên khay), `deliver` (hàng đã trên khay, mang về nốt).
+Thêm `DRY=1` để xem lệnh Gazebo sẽ chạy mà không gửi đi đâu.
+
+Khác biệt với script kịch bản: `make say` bắn xong là xong, không chờ xác nhận xe đã lăn bánh —
+nên sau lệnh 1 phải tự nhìn Gazebo, thấy xe chạy rồi mới gõ lệnh 2 (Nav2/AMCL mất 6–8s tìm đường).
 
 ## Chạy headless — không cần Gazebo (`--local`)
 

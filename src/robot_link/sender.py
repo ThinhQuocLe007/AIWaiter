@@ -73,6 +73,8 @@ class CommandSender:
         self._unacked: dict[int, str] = {}
         self._lock = threading.Lock()
         self.last_ack_ts = 0.0
+        # What the laptop said the AGV was doing in its most recent ack (protocol.ST_*).
+        self.last_status = ""
         if enabled:
             self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             # Non-blocking: a full send buffer must not stall the voice loop either.
@@ -106,6 +108,10 @@ class CommandSender:
             reply=reply,
             source=source,
         )
+
+    def ping(self) -> None:
+        """Ask the laptop for a fresh ack. Carries no instruction — the point is `last_status`."""
+        self._send(protocol.KIND_PING, track=False)
 
     def send_action(self, action: dict | None, sentence: str = "", reply: str = "") -> bool:
         """Route whatever action a turn produced. Returns True if anything was sent.
@@ -143,7 +149,9 @@ class CommandSender:
             self._sock = None
 
     # ── internals ─────────────────────────────────────────────────────────────
-    def _send(self, kind: str, **fields) -> None:
+    def _send(self, kind: str, track: bool = True, **fields) -> None:
+        """`track=False` skips the unacked bookkeeping — for pings, which are polled in a loop and
+        whose loss is the caller's business, not a line of log per half-second."""
         if not self.enabled or self._sock is None:
             return
         if not self.send_action_field:
@@ -156,12 +164,16 @@ class CommandSender:
             **fields,
         )
         raw = cmd.encode()
-        with self._lock:
-            self._unacked[cmd.seq] = cmd.sentence[:40]
-        # Give all REPEATS copies time to land before deciding nobody is listening.
-        threading.Timer(1.0, self._check_ack, args=(cmd.seq,)).start()
+        if track:
+            with self._lock:
+                self._unacked[cmd.seq] = cmd.sentence[:40]
+            # Give all REPEATS copies time to land before deciding nobody is listening.
+            threading.Timer(1.0, self._check_ack, args=(cmd.seq,)).start()
         self._sendto(raw)  # copy #1, inline — this is the one that matters
-        threading.Thread(target=self._repeat, args=(raw,), daemon=True).start()
+        if track:
+            threading.Thread(target=self._repeat, args=(raw,), daemon=True).start()
+        if kind == protocol.KIND_PING:
+            return
         logger.info("→ robot [%s/%s] seq=%d %s", kind, cmd.source, cmd.seq, cmd.sentence[:60])
 
     def _repeat(self, raw: bytes) -> None:
@@ -171,12 +183,19 @@ class CommandSender:
 
     def _read_acks(self) -> None:
         """Collect acks on the same socket the commands go out on."""
-        while self._sock is not None:
+        while True:
+            # Chụp socket ra biến cục bộ MỘT lần mỗi vòng: `close()` chỉ gán `self._sock = None`,
+            # và nó chạy đúng lúc thread này đang nằm trong `select` — đọc lại thuộc tính sau đó
+            # là `None.recvfrom`, tức một traceback ném ra màn hình giữa buổi demo dù lệnh đã gửi
+            # xong xuôi. Với biến cục bộ, cùng lắm ta gọi trên một fd đã đóng → OSError, bắt sẵn.
+            sock = self._sock
+            if sock is None:
+                return
             try:
-                ready, _, _ = select.select([self._sock], [], [], 0.5)
+                ready, _, _ = select.select([sock], [], [], 0.5)
                 if not ready:
                     continue
-                raw, _addr = self._sock.recvfrom(512)
+                raw, _addr = sock.recvfrom(512)
             except (OSError, ValueError):
                 return  # socket closed under us during shutdown
             ack = protocol.decode(raw)
@@ -185,6 +204,7 @@ class CommandSender:
             with self._lock:
                 self._unacked.pop(ack.seq, None)
             self.last_ack_ts = time.time()
+            self.last_status = ack.reply or ""
 
     def _check_ack(self, seq: int) -> None:
         with self._lock:

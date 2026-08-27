@@ -47,6 +47,15 @@ KIND_PING = "ping"
 # me", which on a one-way link look identical and cost a demo five minutes of panic.
 KIND_ACK = "ack"
 
+# What the laptop reports back inside each ack's `reply` field. One word, so a sender can wait for
+# "the wheels are actually turning" instead of guessing with a sleep — on this AGV Nav2/AMCL needs
+# 6–8 s to produce a path, and during that time an accepted command looks identical to a lost one.
+ST_MOVING = "moving"        # bánh đang quay (đọc từ /odom)
+ST_PLANNING = "planning"    # nhiệm vụ đang chạy nhưng xe chưa lăn bánh — Nav2/AMCL đang tìm đường
+ST_STOPPED = "stopped"      # đang bị lệnh dừng ghim, xe đứng yên
+ST_IDLE = "idle"            # không có nhiệm vụ nào
+ST_UNKNOWN = "unknown"      # bridge chạy --no-ros: không đọc được odom, đừng chờ trạng thái
+
 
 @dataclass
 class Command:
@@ -102,9 +111,14 @@ def decode(raw: bytes) -> Command | None:
     return Command(**{k: val for k, val in payload.items() if k in known})
 
 
-def ack_for(cmd: "Command") -> bytes:
-    """A minimal datagram acknowledging `cmd`, echoing what identifies it."""
-    return Command(kind=KIND_ACK, session=cmd.session, seq=cmd.seq, robot_id=cmd.robot_id).encode()
+def ack_for(cmd: "Command", status: str = "") -> bytes:
+    """A minimal datagram acknowledging `cmd`, echoing what identifies it.
+
+    `status` rides in the existing `reply` field rather than a new one, so an old sender that
+    never heard of robot states just ignores it and the wire format stays version 1.
+    """
+    return Command(kind=KIND_ACK, session=cmd.session, seq=cmd.seq, robot_id=cmd.robot_id,
+                   reply=status).encode()
 
 
 def new_session() -> str:

@@ -66,6 +66,15 @@ HOLD_HZ = 50.0
 # publishers agree. During the pick the two disagree and it becomes a race — see _control().
 HOLD_TOPICS = ("/cmd_vel_keyboard", "/cmd_vel")
 
+# Where "is it actually rolling?" is read from. /odom, not /cmd_vel: the stop hold publishes zeros
+# onto /cmd_vel itself, so a sender watching commanded velocity would be watching us, not the AGV.
+# Odom is ground truth. Both are knobs because a different sim/robot names them differently.
+ODOM_TOPIC = os.environ.get("ROBOT_ODOM_TOPIC", "/odom")
+# Below this the AGV is parked, not creeping. Gazebo odom is noisy at rest; 0.02 m/s clears it.
+MOVING_EPS = float(os.environ.get("ROBOT_MOVING_EPS", "0.02"))
+# Odom arrives at ~30 Hz; if the last non-zero sample is older than this the wheels have stopped.
+MOVING_STALE_S = 0.5
+
 # Which script runs for which action lives in one declarative table, `robot_link.capabilities`.
 # Re-exported here because scripts/check_warehouse_map.py and older callers import them from the
 # bridge, and because the table is the thing to edit when the robot learns something new.
@@ -80,6 +89,7 @@ class VelocityHold:
     def __init__(self) -> None:
         import rclpy  # imported here so this module stays importable without ROS on the desk
         from geometry_msgs.msg import Twist
+        from nav_msgs.msg import Odometry
         from rclpy.node import Node
 
         self._rclpy = rclpy
@@ -88,6 +98,8 @@ class VelocityHold:
             rclpy.init()
         self._node = Node("voice_velocity_hold")
         self._pubs = [self._node.create_publisher(Twist, t, 10) for t in HOLD_TOPICS]
+        self._last_motion = 0.0
+        self._node.create_subscription(Odometry, ODOM_TOPIC, self._on_odom, 10)
         self._engaged = threading.Event()
         self._stop = threading.Event()
         threading.Thread(target=self._spin, daemon=True).start()
@@ -97,6 +109,16 @@ class VelocityHold:
     @property
     def engaged(self) -> bool:
         return self._engaged.is_set()
+
+    @property
+    def moving(self) -> bool:
+        """Have the wheels turned within the last `MOVING_STALE_S`?"""
+        return (time.time() - self._last_motion) < MOVING_STALE_S
+
+    def _on_odom(self, msg) -> None:
+        twist = msg.twist.twist
+        if abs(twist.linear.x) + abs(twist.angular.z) > MOVING_EPS:
+            self._last_motion = time.time()
 
     def engage(self) -> None:
         # Publish once inline before the pump's next tick: the whole point is that the wheels
@@ -261,6 +283,21 @@ class RobotBridge:
             logger.warning("Không đọc được data/inventory.csv — chế độ dự phòng đọc câu sẽ không "
                            "tra được mặt hàng nào")
 
+    def status(self) -> str:
+        """One word for "what is the AGV doing right now", answered on every ack.
+
+        Lets the sender wait for `moving` instead of sleeping a guess: this AGV's Nav2/AMCL takes
+        6–8 s to plan, and an accepted goal that has not moved yet is indistinguishable from a
+        command nobody received.
+        """
+        if self.hold is None:
+            return protocol.ST_UNKNOWN
+        if self.hold.moving:
+            return protocol.ST_MOVING
+        if self.hold.engaged:
+            return protocol.ST_STOPPED
+        return protocol.ST_PLANNING if self.runner.running() else protocol.ST_IDLE
+
     def handle(self, cmd: Command) -> None:
         if cmd.kind in (protocol.KIND_PING, protocol.KIND_ACK):
             return
@@ -400,7 +437,7 @@ def serve(bridge: RobotBridge, host: str, port: int) -> None:
         # datagram reached this process", which is true the moment it is decoded; delaying it
         # until after a mission launch would make a slow subprocess look like a dead link.
         try:
-            sock.sendto(protocol.ack_for(cmd), addr)
+            sock.sendto(protocol.ack_for(cmd, bridge.status()), addr)
         except OSError:
             pass
         if bridge.dedupe.is_duplicate(cmd):

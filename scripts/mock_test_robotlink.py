@@ -37,25 +37,46 @@ REPO = Path(__file__).resolve().parents[1]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
+from src._shared.paths import load_dotenv_from_repo  # noqa: E402
+from src.robot_link import protocol  # noqa: E402
 from src.robot_link.sender import CommandSender  # noqa: E402
 
+load_dotenv_from_repo()  # ROBOT_UDP_HOST trong .env, như HUONG_DAN_DEMO_KHO.md hứa
 
-# Kịch bản: (nhãn, loại, action dict, câu nói, số giây chờ SAU lệnh để xem xe chạy).
-# Mỗi bước có khoảng chờ riêng — quan trọng: "đi khu A" chỉ chờ 3s (xe đang giữa đường)
-# rồi mới "dừng lại", để kịch bản dừng/đổi ý xảy ra ĐÚNG LÚC xe đang chạy.
+
+# Kịch bản: (nhãn, loại, action, câu nói, giây XEM xe chạy | None, trạng thái phải đạt trước).
+#
+# `wait=None` nghĩa là "chờ tới khi nhiệm vụ chạy xong" (xe về `idle`) thay vì đếm một số giây —
+# dùng cho bước cuối, vì gắp hàng rồi mang về lâu bao nhiêu là do sa bàn quyết, không phải mình.
+#
+# `await_state` là thứ làm kịch bản bám theo robot thật thay vì đoán bằng sleep: bridge trả trạng
+# thái AGV (đọc /odom) trong mỗi ack, nên script đứng chờ tới khi bánh THẬT SỰ quay rồi mới tính
+# giờ. Nav2/AMCL trên xe này mất 6–8s mới ra path — sleep cứng hoặc là hụt (bắn lệnh kế khi xe
+# chưa nhúc nhích) hoặc là thừa (đứng ngó cái xe đã tới nơi từ lâu).
+#
+# `wait` do đó là thời gian xe CHẠY THẬT trước bước sau, không còn gánh phần chờ tìm đường: 4s ở
+# bước 1 nghĩa là "dừng lại" rơi đúng lúc xe đang giữa đường, y như kịch bản muốn.
 SCENARIOS = [
     ("đi tới khu A", "navigate",
-     {"type": "navigate", "task": "goto", "position": {"token": "A"}}, "đi tới khu A", 3.0),
-    ("dừng lại (giữa đường)", "control",
-     {"type": "control", "verb": "stop"}, "dừng lại", 2.0),
-    ("đổi sang khu B", "navigate",
-     {"type": "navigate", "task": "goto", "position": {"token": "B"}}, "đổi sang khu B", 15.0),
-    ("đi tiếp đúng đích cũ", "control",
-     {"type": "control", "verb": "resume"}, "đi tiếp", 2.0),
-    ("đổi sang khu C lấy hộp xanh", "navigate",
-     {"type": "navigate", "task": "fetch", "position": {"token": "C", "color": "green"}},
-     "thôi qua khu C lấy hộp xanh", 15.0),
+     {"type": "navigate", "task": "goto", "position": {"token": "A"}},
+     "đi tới khu A", 4.0, protocol.ST_MOVING),
+    ("dừng lại giữa đường", "control",
+     {"type": "control", "verb": "stop"},
+     "dừng lại", 5.0, protocol.ST_STOPPED),
+    # `fetch` = tới kệ, gắp, RỒI mang về trạm đóng gói (pick_box.sh --deliver). "Đi về" đã nằm
+    # trong lệnh này — thêm một bước "về trạm sạc" nữa là chạy lại đúng chỗ vừa đứng, vì sa bàn
+    # neo trạm sạc chung với trạm đóng gói (xem `make caps`).
+    ("qua khu B lấy hàng rồi mang về", "navigate",
+     {"type": "navigate", "task": "fetch", "position": {"token": "B"}},
+     "qua khu B lấy hàng rồi mang về trạm đóng gói", None, protocol.ST_MOVING),
 ]
+
+# Trần chờ một lệnh biến thành chuyển động. Nav2/AMCL ~6–8s; quá ngần này thì có gì đó hỏng và
+# nói ra hữu ích hơn là treo kịch bản.
+STATE_TIMEOUT_S = 25.0
+# Trần cho cả một chuyến gắp-và-mang-về. Rộng tay, vì đây chỉ là cái phanh khi có gì đó treo.
+MISSION_TIMEOUT_S = 300.0
+POLL_S = 0.5
 
 
 def _send(sender: CommandSender, kind: str, action: dict, sentence: str) -> None:
@@ -65,31 +86,79 @@ def _send(sender: CommandSender, kind: str, action: dict, sentence: str) -> None
         sender.control(action["verb"], sentence=sentence, source="fastpath")
 
 
-def drive_real(host: str | None, port: int) -> int:
+def _await_state(sender: CommandSender, want: str, timeout: float) -> tuple[bool, float, str]:
+    """Ping cho tới khi bridge báo AGV đạt `want`. Trả (đạt?, số giây, trạng thái cuối)."""
+    t0 = time.time()
+    while time.time() - t0 < timeout:
+        sender.ping()
+        time.sleep(POLL_S)
+        state = sender.last_status
+        if state == want:
+            return True, time.time() - t0, state
+        # Hai loại bridge không nói được xe đang làm gì, và cả hai đều KHÔNG phải lý do để treo
+        # kịch bản 25s mỗi bước: bridge chạy --no-ros (không đọc được odom), và bridge cũ / bản
+        # built-in trong warehouse_agv_demo, vốn ack rỗng vì không biết khái niệm trạng thái.
+        if state in (protocol.ST_UNKNOWN, ""):
+            return True, time.time() - t0, state
+    return False, time.time() - t0, sender.last_status
+
+
+def drive_real(host: str | None, port: int, wait_scale: float = 1.0) -> int:
     # host None -> CommandSender tự đọc env ROBOT_UDP_HOST, rồi 127.0.0.1
     resolved = host or os.environ.get("ROBOT_UDP_HOST") or "127.0.0.1"
     print(f"[setup] gửi kịch bản UDP tới bridge tại {resolved}:{port}")
     sender = CommandSender(host=host, port=port, enabled=True)
     results: list[tuple[str, bool]] = []
     try:
-        for label, kind, action, sentence, wait in SCENARIOS:
+        for label, kind, action, sentence, wait, want in SCENARIOS:
             print(f"\n>>> gửi: '{sentence}'  ({label})")
             _send(sender, kind, action, sentence)
             time.sleep(0.4)  # đợi ACK về
             ok = sender.link_ok
-            results.append((label, ok))
             print(f"    [{'OK' if ok else 'NO ACK'}] robot {'nhận lệnh' if ok else 'KHÔNG phản hồi'}")
-            print(f"    ... chờ {wait}s để xem xe chạy trên simulation")
-            time.sleep(wait)
+            if not ok:
+                results.append((label, False))
+                continue
+            reached, took, state = _await_state(sender, want, STATE_TIMEOUT_S)
+            if state == protocol.ST_UNKNOWN:
+                print("    [?] bridge chạy --no-ros: không đọc được odom, không kiểm được xe chạy")
+            elif not state:
+                print("    [?] bridge không báo trạng thái xe — laptop đang chạy bản built-in của "
+                      "sa bàn (hoặc bridge AIWaiter cũ). Đổi sang `src.robot_link.bridge` mới thì "
+                      "script mới chờ được xe lăn bánh; giờ chỉ đếm giờ như trước.")
+            elif reached:
+                print(f"    [{want.upper()}] sau {took:.1f}s")
+            else:
+                print(f"    [TIMEOUT] {took:.0f}s vẫn chưa '{want}' (đang '{state or 'không rõ'}')")
+            results.append((label, reached))
+            if not reached:
+                continue
+            if wait is None:
+                print("    ... chờ xe làm xong nhiệm vụ (gắp hàng + mang về trạm đóng gói)")
+                done, took, state = _await_state(sender, protocol.ST_IDLE,
+                                                 MISSION_TIMEOUT_S * wait_scale)
+                if state == protocol.ST_UNKNOWN or not state:
+                    # Bridge không báo được "xong" — đếm giờ thay, còn hơn cắt ngang chuyến.
+                    time.sleep(30.0 * wait_scale)
+                elif done:
+                    print(f"    [XONG] nhiệm vụ kết thúc sau {took:.0f}s, xe đã về trạm")
+                else:
+                    print(f"    [TIMEOUT] {took:.0f}s chưa xong (đang '{state or 'không rõ'}')")
+                    results[-1] = (label, False)
+            else:
+                wait *= wait_scale
+                print(f"    ... xem xe chạy {wait:.1f}s rồi sang bước sau")
+                time.sleep(wait)
     finally:
         sender.close()
 
     passed = sum(1 for _, ok in results if ok)
     print("\n" + "=" * 70)
-    print(f"KẾT QUẢ: {passed}/{len(results)} lệnh được bridge nhận (ACK)")
-    print("Xe có chạy thật trên Gazebo hay không là do bạn nhìn máy simulation.")
+    print(f"KẾT QUẢ: {passed}/{len(results)} bước robot vào đúng trạng thái mong đợi")
     if passed != len(results):
-        print("Có lệnh KHÔNG tới được bridge — kiểm tra bridge có chạy và --robot-host đúng IP.")
+        print("Bước hỏng: [NO ACK] = không tới được bridge (kiểm --robot-host / bridge);")
+        print("            [TIMEOUT] = bridge nhận rồi nhưng xe không vào trạng thái đó — xem log")
+        print("            terminal bridge và output pick_box.sh trên máy sim.")
     return 0 if passed == len(results) else 1
 
 
@@ -130,10 +199,9 @@ def drive_local() -> int:
         # mỗi label -> danh sách chuỗi con phải có trong log bridge (không phụ thuộc thứ tự argv)
         expect = {
             "đi tới khu A": ["pick_box.sh --storage A", "--route-only"],
-            "đổi sang khu B": ["pick_box.sh --storage B", "--route-only"],
-            "đổi sang khu C lấy hộp xanh": ["pick_box.sh --storage C", "--color green", "--deliver"],
+            "qua khu B lấy hàng rồi mang về": ["pick_box.sh --storage B", "--deliver"],
         }
-        for label, kind, action, sentence, _wait in SCENARIOS:
+        for label, kind, action, sentence, _wait, _want in SCENARIOS:
             _send(sender, kind, action, sentence)
             time.sleep(0.6)
             if kind == "control":
@@ -166,13 +234,15 @@ def main() -> int:
                          "ROBOT_UDP_HOST, rồi mặc định 127.0.0.1. Chạy trên server PC thì truyền "
                          "IP ZeroTier của laptop, hoặc set ROBOT_UDP_HOST trong .env của server.")
     ap.add_argument("--robot-port", type=int, default=45455)
+    ap.add_argument("--wait-scale", type=float, default=1.0,
+                    help="nhân mọi khoảng chờ (máy sim chậm thì --wait-scale 1.5)")
     ap.add_argument("--local", action="store_true",
                     help="headless: tự bật bridge dry-run, chỉ kiểm logic dịch lệnh (không cần Gazebo)")
     args = ap.parse_args()
 
     if args.local:
         return drive_local()
-    return drive_real(args.robot_host, args.robot_port)
+    return drive_real(args.robot_host, args.robot_port, args.wait_scale)
 
 
 if __name__ == "__main__":

@@ -223,11 +223,13 @@ train-router:
 # nhất để tách lỗi robot ra khỏi lỗi âm thanh/mạng.
 #   make say TEXT="dẫn tôi đi lấy thùng bia"
 #   make say TEXT="qua khu C thôi" DRY=1        # chỉ xem sẽ ra lệnh gì, không gửi
+#   make say TEXT="đi tới khu A" TASK=goto      # chạy tới thôi, không gắp (mặc định là fetch)
 TEXT ?=
 DRY ?=
+TASK ?=
 say:
 	@test -n '$(TEXT)' || { echo 'Thiếu TEXT, ví dụ: make say TEXT="dừng lại"'; exit 2; }
-	@python3 -m src.robot_link.say $(if $(DRY),--dry,) '$(TEXT)'
+	@python3 -m src.robot_link.say $(if $(DRY),--dry,) $(if $(TASK),--task $(TASK),) '$(TEXT)'
 
 # Print the whole voice → robot command table (src/robot_link/capabilities.py). Stdlib only.
 caps:
