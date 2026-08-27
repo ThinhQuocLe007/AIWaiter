@@ -266,12 +266,16 @@ simbridge:
 VOICE ?= 1
 WEB ?= 1
 STACK ?= 0
-# SERVER_HOST để trống -> scripts/jetson_run.sh đọc ORCHESTRATOR_URL trong .env, nên IP
-# server chỉ sửa ở .env. Truyền SERVER_HOST=<ip>:8000 để ghi đè cho một lần chạy.
+# scripts/jetson_run.sh đọc ORCHESTRATOR_URL trong .env, nên IP server chỉ sửa ở .env.
+# CHỈ chuyển tiếp SERVER_HOST khi người dùng thật sự khai nó (dòng lệnh hoặc biến môi
+# trường). Không dùng $(origin) mà cứ `$(if $(SERVER_HOST),...)` thì nó vớ luôn cái
+# `SERVER_HOST ?= 127.0.0.1:8000` ở trên — mặc định dành cho các target ROS chạy cùng máy
+# với backend — và màn rời đi hỏi localhost, nơi Jetson không có backend nào.
+SERVER_HOST_GIVEN := $(filter-out file default undefined,$(origin SERVER_HOST))
 jetson: ID := robo-1
 jetson: $(VENV_PY)
 	@ID=$(ID) VOICE=$(VOICE) WEB=$(WEB) STACK=$(STACK) \
-		$(if $(SERVER_HOST),SERVER_HOST=$(SERVER_HOST),) \
+		$(if $(SERVER_HOST_GIVEN),SERVER_HOST=$(SERVER_HOST),) \
 		$(if $(URL),URL=$(URL),) $(if $(KIOSK_BROWSER),KIOSK_BROWSER=$(KIOSK_BROWSER),) \
 		bash scripts/jetson_run.sh
 
