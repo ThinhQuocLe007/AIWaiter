@@ -1,11 +1,23 @@
 <template>
-  <div class="screen" :style="{ '--state': view.color }">
+  <div class="screen" :class="{ speaking: phase === 'speaking' }" :style="{ '--state': view.color }">
     <!-- The header carries everything that is true all the time and interesting to nobody:
          who this is, whether the hub is up, which mic we are driving. It gets one line. -->
     <header class="top">
       <div class="ident">
-        <span class="mark" aria-hidden="true"></span>
-        <span class="name">TRỢ LÝ ROBOT KHO</span>
+        <span class="logo" aria-hidden="true">
+          <svg viewBox="0 0 32 32">
+            <rect x="5" y="11" width="22" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2" />
+            <path d="M5 19h22" stroke="currentColor" stroke-width="2" />
+            <circle cx="11" cy="25" r="2.4" fill="currentColor" />
+            <circle cx="21" cy="25" r="2.4" fill="currentColor" />
+            <rect x="14.5" y="4" width="3" height="7" rx="1.5" fill="currentColor" />
+            <circle cx="16" cy="3.2" r="2.4" fill="currentColor" />
+          </svg>
+        </span>
+        <span class="brand">
+          <span class="eyebrow">AI WAREHOUSE</span>
+          <span class="name">TRỢ LÝ KHO ROBOT</span>
+        </span>
       </div>
 
       <div class="link">
@@ -27,7 +39,29 @@
         <RobotAvatar :phase="phase" />
       </div>
 
+      <!-- Live fleet telemetry — pin/trạng thái/vị trí of the robot this screen is driving, so a
+           demo audience sees the machine is real and where it is, not just a talking head. -->
+      <div class="telemetry" v-if="robot">
+        <span class="t-item">
+          <svg viewBox="0 0 24 24" aria-hidden="true" class="t-ico"><rect x="2" y="7" width="17" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><rect x="4" y="9.5" width="11" height="5" rx="1" :fill="batteryColor"/><rect x="20" y="10" width="2.5" height="4" rx="1" fill="currentColor"/></svg>
+          Pin {{ battery }}%
+        </span>
+        <span class="t-item">{{ activityLabel }}</span>
+        <span class="t-item" v-if="robot.x != null && robot.y != null">Vị trí ({{ robot.x.toFixed(1) }}, {{ robot.y.toFixed(1) }})</span>
+      </div>
+
       <VoiceWave class="wave-box" :phase="phase" :color="view.color" />
+
+      <!-- The big non-text action glyph: a navigate pin / lift arrow / stop sign appears over the
+           robot the moment it is told a job, so a room that never reads the transcript still gets
+           WHAT the robot is doing. -->
+      <Transition name="pop">
+        <ActionGlyph v-if="rawAction" :action="rawAction" class="action-glyph" />
+      </Transition>
+
+      <!-- One-shot success burst: the moment the robot's job is accepted (phase → result), a ring
+           expands from it once. The "xong việc" is felt, not read. -->
+      <div v-if="burstKey" :key="burstKey" class="burst" aria-hidden="true"></div>
 
       <div class="state">
         <p class="state-label">{{ view.label }}</p>
@@ -44,6 +78,17 @@
         </section>
       </Transition>
     </main>
+
+    <!-- Recent commands: a glanceable strip of the last few turns so a demo can replay what the
+         robot was told without scrolling a chat. Newest on the right; capped so it never grows
+         off-screen. -->
+    <div class="history" v-if="history.length">
+      <div class="h-item" v-for="h in history" :key="h.id">
+        <p class="h-heard" v-if="h.heard">“{{ h.heard }}”</p>
+        <p class="h-answer">{{ h.answer }}</p>
+        <p class="h-chip" v-if="h.action">{{ h.action }}</p>
+      </div>
+    </div>
 
     <!-- Everything a finger touches, in one rail across the bottom at demo scale. -->
     <footer class="controls">
@@ -71,17 +116,25 @@
            a ±10 button lands every time, and the number between them still shows the truth the
            Jetson reported back. -->
       <div class="dial" :class="{ off: !levelsKnown }">
-        <span class="cap">Mic</span>
-        <button class="step" :disabled="!levelsKnown" @click="bump('mic', -10)">−</button>
+        <span class="cap"><svg viewBox="0 0 24 24" aria-hidden="true" class="cap-ico"><path d="M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 11a7 7 0 0 0 14 0" fill="none" stroke="currentColor" stroke-width="2"/></svg> Mic</span>
+        <button class="step" :disabled="!levelsKnown" @click="bump('mic', -10)" aria-label="Giảm mic">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+        </button>
         <span class="val">{{ levelsKnown ? `${micLevel}%` : '—' }}</span>
-        <button class="step" :disabled="!levelsKnown" @click="bump('mic', 10)">+</button>
+        <button class="step" :disabled="!levelsKnown" @click="bump('mic', 10)" aria-label="Tăng mic">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+        </button>
       </div>
 
       <div class="dial" :class="{ off: !levelsKnown }">
-        <span class="cap">Loa</span>
-        <button class="step" :disabled="!levelsKnown" @click="bump('speaker', -10)">−</button>
+        <span class="cap"><svg viewBox="0 0 24 24" aria-hidden="true" class="cap-ico"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M16 9a4 4 0 0 1 0 6M18.5 7a7 7 0 0 1 0 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Loa</span>
+        <button class="step" :disabled="!levelsKnown" @click="bump('speaker', -10)" aria-label="Giảm loa">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+        </button>
         <span class="val">{{ levelsKnown ? `${speaker}%` : '—' }}</span>
-        <button class="step" :disabled="!levelsKnown" @click="bump('speaker', 10)">+</button>
+        <button class="step" :disabled="!levelsKnown" @click="bump('speaker', 10)" aria-label="Tăng loa">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+        </button>
       </div>
     </footer>
   </div>
@@ -90,8 +143,10 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { connectEvents, type WsHandle } from '@shared/ws'
+import { fetchRobots, type Robot } from '@shared/rest'
 import RobotAvatar from './components/RobotAvatar.vue'
 import VoiceWave from './components/VoiceWave.vue'
+import ActionGlyph from './components/ActionGlyph.vue'
 import { PHASES, actionLabel, isRunning, type Phase } from './phase'
 import {
   cancelTurn,
@@ -123,16 +178,46 @@ const deviceTurn = ref(false)
 const heardText = ref('')
 const resultText = ref('')
 const action = ref('')
+// The raw structured action (navigate/lift/control) — drives the big non-text glyph so a room
+// that never reads the transcript still sees WHAT the robot was told.
+const rawAction = ref<Record<string, any> | null>(null)
+// Bumped each time a turn completes, so the one-shot success burst replays on every "done" even
+// if two turns both land on the 'result' phase back-to-back.
+const burstKey = ref(0)
 
 const speaker = ref(0)
 const micLevel = ref(0)
 const levelsKnown = ref(false)
 
+// Live fleet telemetry for the robot this screen drives (pin / activity / pose).
+const robot = ref<Robot | null>(null)
+
+// The last few turns, newest last, so a demo audience can see what the robot was told.
+interface HistoryItem {
+  id: number
+  heard: string
+  answer: string
+  action: string
+}
+const history = ref<HistoryItem[]>([])
+let historyId = 0
+
 const view = computed(() => PHASES[phase.value])
 const running = computed(() => isRunning(phase.value))
 
+const battery = computed(() => (robot.value?.battery != null ? Math.round(robot.value.battery) : 0))
+const batteryColor = computed(() =>
+  battery.value > 50 ? 'currentColor' : battery.value > 20 ? '#f59e0b' : '#f87171',
+)
+const activityLabel = computed(() => {
+  const r = robot.value
+  if (!r) return ''
+  return r.activity || r.status || ''
+})
+
 let ws: WsHandle | null = null
 let noteTimer: ReturnType<typeof setTimeout> | undefined
+let robotTimer: ReturnType<typeof setInterval> | undefined
 
 /** Start of a turn: the previous answer comes off the screen so nobody reads a stale one as
  *  the reply to what they just said. */
@@ -142,6 +227,7 @@ function beginTurn() {
   heardText.value = ''
   resultText.value = ''
   action.value = ''
+  rawAction.value = null
   note.value = ''
 }
 
@@ -149,6 +235,13 @@ function say(text: string) {
   note.value = text
   clearTimeout(noteTimer)
   noteTimer = setTimeout(() => (note.value = ''), 4000)
+}
+
+/** Mark the turn complete. Only fires the success burst when we actually enter 'result' (not when
+ *  a device 'done' confirms a result already set by a typed reply), so the room feels one pop. */
+function completeTurn() {
+  if (phase.value !== 'result') burstKey.value++
+  phase.value = 'result'
 }
 
 /** Device telemetry — the half of a turn only the Jetson can see (mic armed, speech ended,
@@ -182,7 +275,7 @@ function onDeviceFrame(ev: Record<string, any>) {
       phase.value = 'speaking'
       break
     case 'done':
-      phase.value = 'result'
+      completeTurn()
       break
     // The next three are the pipeline working correctly on an empty input, not failures — they
     // land on a grey phase, never the red one.
@@ -222,9 +315,14 @@ function onAgentEvent(ev: Record<string, any>) {
     case 'voice.reply':
       resultText.value = String(ev.text ?? '')
       action.value = actionLabel(ev.action ?? null)
+      // Keep the structured action too: the big glyph reads it so a non-reader sees the robot's
+      // job (go to a slot / lift / stop) without a word of the transcript.
+      rawAction.value = (ev.action as Record<string, any>) ?? null
       // The answer goes on screen now — the robot is about to say it — but the turn stays open
       // until the device reports it has finished speaking. See `deviceTurn`.
-      if (!deviceTurn.value) phase.value = 'result'
+      if (!deviceTurn.value) completeTurn()
+      // One line in the command-history strip, so the demo can replay what the robot was told.
+      if (resultText.value.trim()) pushHistory(heardText.value, resultText.value, action.value)
       break
   }
 }
@@ -262,6 +360,18 @@ async function refreshDevices() {
   }
 }
 
+/** Pull the fleet so the telemetry row shows the real robot (pin/activity/pose). The monitor is a
+ *  viewer, so it only reads; driving happens elsewhere. */
+async function refreshRobot() {
+  try {
+    const list = await fetchRobots()
+    const r = robotId.value ? list.find((x) => x.id === robotId.value) : list[0]
+    robot.value = r ?? null
+  } catch {
+    /* telemetry just stays empty — the demo still runs without it */
+  }
+}
+
 /** Deliberately understated, and never red: a command that didn't land is nearly always a Jetson
  *  that blinked, and it resolves itself. The operator sees this; the audience doesn't read it. */
 function ack(res: { status: string }, okText: string) {
@@ -290,6 +400,7 @@ async function onNewChat() {
   heardText.value = ''
   resultText.value = ''
   action.value = ''
+  rawAction.value = null
   ack(res, 'Đã bắt đầu hội thoại mới.')
 }
 
@@ -305,11 +416,19 @@ function bump(target: AudioTarget, delta: number) {
   setAudioLevel(robotId.value, target, next).catch(() => {})
 }
 
+function pushHistory(heard: string, answer: string, act: string) {
+  history.value.push({ id: historyId++, heard, answer, action: act })
+  // Keep the strip bounded: a demo runs for minutes, and an unbounded list would run off-screen.
+  if (history.value.length > 10) history.value.splice(0, history.value.length - 10)
+}
+
 onMounted(() => {
   refreshDevices()
+  refreshRobot()
   // Devices come and go (a Jetson reboot, `make voice` restarted); re-reading keeps the picker
   // honest without needing a page reload mid-demo.
   const poll = setInterval(refreshDevices, 5000)
+  robotTimer = setInterval(refreshRobot, 4000)
   ws = connectEvents(
     'monitor',
     (e: any) => {
@@ -320,6 +439,7 @@ onMounted(() => {
   )
   onUnmounted(() => {
     clearInterval(poll)
+    clearInterval(robotTimer)
     clearTimeout(noteTimer)
     ws?.close()
   })

@@ -11,20 +11,20 @@
    the phase is legible from the back of the room with the text unreadable. */
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  --bg: #060910;
-  --panel: rgba(255, 255, 255, 0.045);
-  --panel-line: rgba(255, 255, 255, 0.1);
-  --type: #eef2f8;
-  --dim: #8996aa;
-  --dimmer: #5d6b80;
+  --bg: #eef2f7;
+  --panel: rgba(15, 23, 42, 0.04);
+  --panel-line: rgba(15, 23, 42, 0.12);
+  --type: #0f172a;
+  --dim: #64748b;
+  --dimmer: #94a3b8;
 
   /* Overwritten per-phase inline by App.vue; this is only the pre-mount value. */
   --state: #64748b;
   /* The call-to-action's own colour, deliberately NOT --state: the phase is grey at rest and red
      at fault, and a grey or red "Bắt đầu ra lệnh" is the opposite of an invitation to press it. */
-  --go: #38bdf8;
+  --go: #0ea5e9;
 
   --font: 'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
 }
@@ -47,7 +47,7 @@ body {
   position: relative;
   height: 100%;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
   gap: clamp(0.5rem, 1.6vh, 1.2rem);
   padding: clamp(0.9rem, 2vh, 1.6rem) clamp(1rem, 3vw, 2.4rem);
 }
@@ -63,6 +63,9 @@ body {
   transition: opacity 0.6s ease, background 0.6s ease;
   pointer-events: none;
 }
+/* While the robot speaks, the whole room lights up with its colour — the voice is felt, not just
+   read. Falls back to the resting wash the instant the turn closes. */
+.screen.speaking::before { opacity: 0.4; }
 .screen > * { position: relative; }
 
 /* --- header ---------------------------------------------------------------------------- */
@@ -73,7 +76,36 @@ body {
   gap: 1rem;
 }
 
-.ident { display: flex; align-items: center; gap: 0.65rem; }
+.ident { display: flex; align-items: center; gap: 0.7rem; }
+
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 0.6rem;
+  background: color-mix(in srgb, var(--go) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--go) 45%, transparent);
+  color: #0284c7;
+}
+.logo svg { width: 1.4rem; height: 1.4rem; }
+
+.brand { display: flex; flex-direction: column; line-height: 1.1; }
+
+.eyebrow {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  color: var(--go);
+}
+
+.name {
+  font-size: clamp(0.78rem, 1.2vw, 1rem);
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: var(--type);
+}
 
 .mark {
   width: 0.7rem;
@@ -82,13 +114,6 @@ body {
   background: var(--state);
   box-shadow: 0 0 14px var(--state);
   transition: background 0.5s ease, box-shadow 0.5s ease;
-}
-
-.name {
-  font-size: clamp(0.72rem, 1.1vw, 0.9rem);
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  color: var(--dim);
 }
 
 .link {
@@ -118,9 +143,10 @@ body {
 
 /* --- stage ----------------------------------------------------------------------------- */
 .stage {
+  position: relative;
   min-height: 0;
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto auto auto;
+  grid-template-rows: minmax(0, 1fr) auto auto auto auto;
   justify-items: center;
   align-content: center;
   gap: clamp(0.4rem, 1.4vh, 1rem);
@@ -144,6 +170,36 @@ body {
   height: clamp(56px, 11vh, 116px);
   display: block;
 }
+
+/* The big action glyph floats over the robot's lower body, centred, so it reads as the job the
+   robot just received. Pointer-events off — it is pure signal, never a control. */
+.action-glyph {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  transform: translate(-50%, -50%);
+  width: clamp(96px, 18vh, 168px);
+  height: clamp(96px, 18vh, 168px);
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* Live fleet telemetry under the robot: pin / activity / pose. Kept on one quiet line so it reads
+   from across a room without competing with the phase caption. */
+.telemetry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.5rem, 1.4vw, 1.1rem);
+  font-size: clamp(0.7rem, 1.1vw, 0.86rem);
+  font-weight: 500;
+  color: var(--dim);
+}
+
+.t-item { display: inline-flex; align-items: center; gap: 0.4rem; }
+
+.t-ico { width: 1.05rem; height: 1.05rem; color: var(--go); }
 
 .state { text-align: center; }
 
@@ -184,17 +240,19 @@ body {
 
 .heard {
   margin: 0 0 0.5rem;
-  font-size: clamp(0.8rem, 1.2vw, 0.98rem);
-  font-weight: 300;
+  font-size: clamp(0.85rem, 1.3vw, 1.05rem);
+  font-weight: 400;
   font-style: italic;
-  color: var(--dimmer);
+  color: var(--dim);
 }
 
 .answer {
   margin: 0;
-  font-size: clamp(1.05rem, 2.1vw, 1.7rem);
-  font-weight: 500;
-  line-height: 1.35;
+  /* Readable from the back of a room: bigger and heavier than the old 1.7rem/500. */
+  font-size: clamp(1.25rem, 2.6vw, 2.1rem);
+  font-weight: 700;
+  line-height: 1.32;
+  color: var(--type);
 }
 
 .chip {
@@ -202,11 +260,9 @@ body {
   margin: 0.8rem 0 0;
   padding: 0.35rem 0.9rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.07); /* fallbacks first: an unsupported */
-  border: 1px solid rgba(255, 255, 255, 0.18); /* color-mix() drops its own line, not these */
-  background: color-mix(in srgb, var(--state) 18%, transparent);
+  background: color-mix(in srgb, var(--state) 14%, transparent);
   border: 1px solid color-mix(in srgb, var(--state) 45%, transparent);
-  color: var(--state);
+  color: var(--type);
   font-size: clamp(0.75rem, 1.1vw, 0.92rem);
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -216,6 +272,88 @@ body {
 .rise-leave-active { transition: opacity 0.2s ease; }
 .rise-enter-from { opacity: 0; transform: translateY(14px); }
 .rise-leave-to { opacity: 0; }
+
+/* Success burst — one expanding ring (plus a delayed second) per completed turn. Pure feel. */
+.burst {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: clamp(120px, 22vh, 220px);
+  height: clamp(120px, 22vh, 220px);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 2;
+}
+.burst::before,
+.burst::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 4px solid var(--state);
+  animation: burst 0.9s ease-out forwards;
+}
+.burst::after { animation-delay: 0.18s; }
+@keyframes burst {
+  0% { transform: scale(0.35); opacity: 0.75; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* Action glyph pop-in/out */
+.pop-enter-active { transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.pop-leave-active { transition: opacity 0.2s ease; }
+.pop-enter-from { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+.pop-leave-to { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
+
+/* --- command history ------------------------------------------------------------------- */
+/* A glanceable strip of the last few turns. Horizontal scroll so it never reflows the controls;
+   newest on the right. */
+.history {
+  display: flex;
+  gap: 0.6rem;
+  overflow-x: auto;
+  padding: 0.1rem 0.2rem 0.4rem;
+  scrollbar-width: thin;
+}
+
+.h-item {
+  flex: 0 0 auto;
+  max-width: 16rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--panel-line);
+  border-left: 3px solid var(--state);
+  border-radius: 0.7rem;
+  background: var(--panel);
+  text-align: left;
+}
+
+.h-heard {
+  margin: 0 0 0.2rem;
+  font-size: 0.74rem;
+  font-style: italic;
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.h-answer {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--type);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.h-chip {
+  margin: 0.3rem 0 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--go);
+}
 
 /* --- controls -------------------------------------------------------------------------- */
 .controls {
@@ -245,13 +383,14 @@ body {
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
 }
-.act:hover:not(:disabled) { background: rgba(255, 255, 255, 0.09); }
+.act:hover:not(:disabled) { background: rgba(15, 23, 42, 0.07); }
 .act:active:not(:disabled) { transform: translateY(1px); }
 .act:disabled { opacity: 0.35; cursor: default; }
 
 .act svg { width: 1.25rem; height: 1.25rem; fill: currentColor; stroke: currentColor; }
 
-/* The one button anyone is meant to press. It is the only filled control on the page. */
+/* The one button anyone is meant to press. It is the only filled control on the page, and when
+   the robot is idle it gently pulses so a fingertip in a demo knows where to land. */
 .act.go {
   background: var(--go);
   border-color: transparent;
@@ -260,8 +399,13 @@ body {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
   box-shadow: 0 10px 30px color-mix(in srgb, var(--go) 35%, transparent);
 }
+.act.go:not(:disabled) { animation: go-pulse 2.2s ease-in-out infinite; }
 .act.go:hover:not(:disabled) { filter: brightness(1.08); background: var(--go); }
-.act.go:disabled { box-shadow: none; }
+.act.go:disabled { box-shadow: none; animation: none; }
+@keyframes go-pulse {
+  0%, 100% { box-shadow: 0 10px 30px color-mix(in srgb, var(--go) 30%, transparent); }
+  50% { box-shadow: 0 10px 42px color-mix(in srgb, var(--go) 60%, transparent); }
+}
 
 .dial {
   display: inline-flex;
@@ -276,6 +420,9 @@ body {
 .dial.off { opacity: 0.4; }
 
 .cap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -283,7 +430,12 @@ body {
   color: var(--dim);
 }
 
+.cap-ico { width: 1.05rem; height: 1.05rem; }
+
 .step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 2.4rem;
   height: 2.4rem;
   border: 1px solid var(--panel-line);
@@ -291,11 +443,10 @@ body {
   background: transparent;
   color: var(--type);
   font: inherit;
-  font-size: 1.3rem;
-  line-height: 1;
   cursor: pointer;
 }
-.step:hover:not(:disabled) { background: rgba(255, 255, 255, 0.09); }
+.step svg { width: 1.25rem; height: 1.25rem; stroke: currentColor; }
+.step:hover:not(:disabled) { background: rgba(15, 23, 42, 0.07); }
 .step:disabled { opacity: 0.4; cursor: default; }
 
 .val {
@@ -308,4 +459,5 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: 0.01ms !important; }
+  .burst::before, .burst::after { animation: none; opacity: 0; }
 }
