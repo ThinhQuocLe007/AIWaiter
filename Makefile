@@ -261,15 +261,17 @@ simbridge:
 #
 #   make jetson STACK=1                                   # thêm RTAB-Map/Nav2 khi cần robot chạy thật
 #   make jetson SERVER_HOST=192.168.1.9:8000 ID=robo-2     # server / robot id khác
-#   make jetson URL=http://100.66.165.221:8000/panel       # chiếu trang khác lên màn rời
+#   make jetson URL=http://172.25.223.218:8000/panel       # chiếu trang khác lên màn rời
 #   make jetson VOICE=0   |   make jetson WEB=0            # bỏ bớt phần nào
 VOICE ?= 1
 WEB ?= 1
 STACK ?= 0
-jetson: SERVER_HOST := 100.66.165.221:8000
+# SERVER_HOST để trống -> scripts/jetson_run.sh đọc ORCHESTRATOR_URL trong .env, nên IP
+# server chỉ sửa ở .env. Truyền SERVER_HOST=<ip>:8000 để ghi đè cho một lần chạy.
 jetson: ID := robo-1
 jetson: $(VENV_PY)
-	@SERVER_HOST=$(SERVER_HOST) ID=$(ID) VOICE=$(VOICE) WEB=$(WEB) STACK=$(STACK) \
+	@ID=$(ID) VOICE=$(VOICE) WEB=$(WEB) STACK=$(STACK) \
+		$(if $(SERVER_HOST),SERVER_HOST=$(SERVER_HOST),) \
 		$(if $(URL),URL=$(URL),) $(if $(KIOSK_BROWSER),KIOSK_BROWSER=$(KIOSK_BROWSER),) \
 		bash scripts/jetson_run.sh
 
