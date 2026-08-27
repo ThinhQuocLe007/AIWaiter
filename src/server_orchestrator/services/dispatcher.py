@@ -123,7 +123,7 @@ def _pick_robot(conn, target: tuple[float, float]) -> str | None:
     online = manager.connected_robot_ids()
     candidates = []
     for r in conn.execute(
-        "SELECT * FROM robots WHERE status IN ('idle', 'returning')"
+        "SELECT * FROM robots WHERE status IN ('idle', 'returning', 'holding')"
     ).fetchall():
         if r["id"] not in online:
             continue
@@ -142,7 +142,13 @@ async def create_task(
     target_token: str | None = None,
     pose: dict | None = None,
 ) -> TaskOut:
-    """Persist a PENDING task for a navigation request, then try to assign it immediately."""
+    """Persist a PENDING task for a navigation request, then try to assign it immediately.
+
+    If no robot is free (the fleet is busy with a prior navigate), the new navigate **preempts**
+    the in-flight one: the oldest active navigate is cancelled and its robot is reassigned to this
+    new goal. This is the "stop the old errand, run the new one" behaviour the operator expects
+    when they change their mind mid-drive (e.g. "đi tới khu A" → "dừng lại" → "đi tới khu B").
+    """
     if pose is None:
         pose = _pose_for(kind, target_token)
     with get_conn() as conn:
@@ -163,7 +169,71 @@ async def create_task(
     await manager.broadcast("panel", {"type": "task.created", "task": task.model_dump()})
     log.info("task %s created kind=%s target=%s", task_id, kind, target_token)
     await try_assign()
+    # Re-fetch: the snapshot above was taken before assignment. If the task is *still* PENDING
+    # (no free robot), preempt one in-flight navigate and reassign its robot. Checking the live
+    # status here (not the stale PENDING snapshot) is what stops us from cancelling the task we
+    # just created.
+    with get_conn() as conn:
+        task = _fetch_task(conn, task_id)
+    if task.status == "PENDING":
+        await _preempt_one_navigate()
+        await try_assign()
+        with get_conn() as conn:
+            task = _fetch_task(conn, task_id)
     return task
+
+
+async def _preempt_one_navigate() -> None:
+    """Cancel the oldest in-flight navigate so its robot can take a new (preempting) goal."""
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT * FROM tasks WHERE kind = 'navigate' "
+            "AND status IN ('ASSIGNED', 'IN_PROGRESS') ORDER BY created_at, id LIMIT 1"
+        ).fetchone()
+    if row is not None:
+        log.info("preempting in-flight navigate task %s for new goal", row["id"])
+        await cancel_task(row["id"])
+
+
+async def cancel_task(task_id: int) -> None:
+    """Cancel a task (e.g. operator said "dừng lại" / changed destination).
+
+    Marks the task CANCELLED and frees its robot (status -> holding, immediately reassignable) so a
+    new goal can be dispatched. The robot itself is NOT sent a separate abort frame: the contract is
+    "latest ``task.assign`` wins" — the next navigate simply reassigns and the robot drops its current
+    goal for the new one. This keeps the server→robot protocol to a single command type, so no robot
+    bridge (incl. the Gazebo machine) needs a new message handler. Idempotent for DONE/CANCELLED.
+    """
+    with get_conn() as conn:
+        row = conn.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
+        if row is None:
+            return
+        if row["status"] in ("DONE", "CANCELLED"):
+            return
+        conn.execute(
+            "UPDATE tasks SET status = 'CANCELLED', updated_at = datetime('now') WHERE id = ?",
+            (task_id,),
+        )
+        robot_id = row["robot_id"]
+        if robot_id:
+            conn.execute(
+                "UPDATE robots SET status = 'holding', current_task_id = NULL, activity = ? "
+                "WHERE id = ?",
+                ("Đã dừng", robot_id),
+            )
+            await _broadcast_robot(conn, robot_id)
+        await _broadcast_task(conn, task_id, "task.updated")
+
+
+async def cancel_robot_task(robot_id: str) -> None:
+    """Cancel whatever task the named robot is currently on (used by "dừng lại")."""
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT current_task_id FROM robots WHERE id = ?", (robot_id,)
+        ).fetchone()
+    task_id = row["current_task_id"] if row else None
+    if task_id is not None:
+        await cancel_task(task_id)
 
 
 async def try_assign() -> None:
@@ -288,7 +358,7 @@ async def on_accepted(robot_id: str, task_id: int | None) -> None:
     with get_conn() as conn:
         conn.execute(
             "UPDATE tasks SET status = 'IN_PROGRESS', updated_at = datetime('now') "
-            "WHERE id = ? AND robot_id = ?",
+            "WHERE id = ? AND robot_id = ? AND status = 'ASSIGNED'",
             (task_id, robot_id),
         )
         await _broadcast_task(conn, task_id, "task.updated")
@@ -301,7 +371,7 @@ async def on_arrived(robot_id: str, task_id: int | None) -> None:
         return
     with get_conn() as conn:
         task = _fetch_task(conn, task_id)
-        if task is None:
+        if task is None or task.status == "CANCELLED":
             return
         target = task.target_token or "đích"
         conn.execute(
@@ -321,7 +391,8 @@ async def on_done(robot_id: str, task_id: int | None) -> None:
     with get_conn() as conn:
         if task_id is not None:
             conn.execute(
-                "UPDATE tasks SET status = 'DONE', updated_at = datetime('now') WHERE id = ?",
+                "UPDATE tasks SET status = 'DONE', updated_at = datetime('now') "
+                "WHERE id = ? AND status != 'CANCELLED'",
                 (task_id,),
             )
             await _broadcast_task(conn, task_id, "task.updated")

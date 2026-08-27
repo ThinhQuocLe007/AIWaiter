@@ -171,16 +171,27 @@ def _run_turn(text: str, robot_id: str) -> dict:
     return result
 
 
-def _dispatch_navigations(actions: list[dict]) -> None:
-    """Forward every navigate action in a (possibly multi-step) turn to the orchestrator."""
+def _dispatch_actions(robot_id: str, actions: list[dict]) -> None:
+    """Forward the turn's actions to the orchestrator.
+
+    * ``navigate`` → dispatch a navigation task (token → pose).
+    * ``control`` with verb ``stop``/``cancel`` → cancel the robot's current task, so the next
+      navigate can preempt it (the operator changed their mind mid-drive).
+    """
     for action in actions or []:
-        if not action or action.get("type") != "navigate":
+        if not action:
             continue
-        position = action.get("position") or {}
-        token = position.get("token")
-        if token:
-            log.info("forwarding navigate token %r to orchestrator", token)
-            _orchestrator.dispatch_navigation(token, position.get("section"))
+        if action.get("type") == "navigate":
+            position = action.get("position") or {}
+            token = position.get("token")
+            if token:
+                log.info("forwarding navigate token %r to orchestrator", token)
+                _orchestrator.dispatch_navigation(token, position.get("section"))
+        elif action.get("type") == "control":
+            verb = action.get("verb")
+            if verb in ("stop", "cancel"):
+                log.info("forwarding control %r → cancel task for %s", verb, robot_id)
+                _orchestrator.cancel_robot_task(robot_id)
 
 
 def _emit_voice_reply(robot_id: str, reply: str, action, intent: str, actions: list[dict] | None = None) -> None:
@@ -215,7 +226,7 @@ def chat(req: ChatRequest) -> ChatResponse:
     session_id = robot_id
 
     _emit_voice_reply(robot_id, reply, action, intent, actions)
-    _dispatch_navigations(actions)
+    _dispatch_actions(robot_id, actions)
 
     return ChatResponse(response=reply, final_stage=intent, action=action,
                         actions=actions, session_id=session_id)
@@ -259,7 +270,7 @@ def chat_stream(req: ChatRequest):
         session_id = robot_id
 
         _emit_voice_reply(robot_id, reply, action, intent, actions)
-        _dispatch_navigations(actions)
+        _dispatch_actions(robot_id, actions)
 
         for sentence in _split_sentences(reply):
             yield f"data: {json.dumps({'event': 'sentence', 'text': sentence})}\n\n"

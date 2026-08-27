@@ -24,11 +24,12 @@ class TaskKind(str, Enum):
 
 
 class TaskStatus(str, Enum):
-    """Task lifecycle (PENDING → ASSIGNED → IN_PROGRESS → DONE)."""
+    """Task lifecycle (PENDING → ASSIGNED → IN_PROGRESS → DONE, or CANCELLED)."""
     PENDING = "PENDING"
     ASSIGNED = "ASSIGNED"
     IN_PROGRESS = "IN_PROGRESS"
     DONE = "DONE"
+    CANCELLED = "CANCELLED"
 
 
 class RobotStatus(str, Enum):
@@ -38,6 +39,9 @@ class RobotStatus(str, Enum):
     # Task finished, driving back to the dock (still assignable — a new task can be queued).
     RETURNING = "returning"
     OFFLINE = "offline"
+    # Mid-task stop ("dừng lại") or preempted by a newer goal: no active task, but the robot is
+    # physically parked somewhere, not at the dock. Still assignable — a new task re-drives it.
+    HOLDING = "holding"
 
 
 # ── Session-id normalisation (the one function the agent & orchestrator both need) ───────

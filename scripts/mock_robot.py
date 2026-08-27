@@ -132,9 +132,14 @@ async def main(args) -> None:
                         print(f"[{args.id}] accepted task {msg['task_id']} then FROZE (hung)")
                         state["hung"] = True
                         continue
+                    # "Latest task.assign wins": a new goal preempts whatever we were doing. This
+                    # mirrors the real bridge (a fresh goal replaces the old one) so the server only
+                    # ever needs to send task.assign — no separate cancel frame, no Gazebo-side change.
                     if task_runner and not task_runner.done():
-                        print(f"[{args.id}] busy, ignoring extra task {msg.get('task_id')}")
-                        continue
+                        print(f"[{args.id}] preempting in-flight task, switching to {msg.get('task_id')}")
+                        task_runner.cancel()
+                        with contextlib.suppress(asyncio.CancelledError):
+                            await task_runner
                     task_runner = asyncio.create_task(run_task(ws, msg, state))
                 else:
                     print(f"[{args.id}] <- {msg}")

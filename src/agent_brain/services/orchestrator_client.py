@@ -97,3 +97,15 @@ class OrchestratorClient:
         except httpx.HTTPError as e:
             logger.warning(f"navigation dispatch failed for token {token!r}: {e}")
             return None
+
+    def cancel_robot_task(self, robot_id: str) -> dict | None:
+        """POST /tasks/cancel — cancel the task the robot is currently running.
+
+        Driven by a ``control`` action with verb ``stop``/``cancel`` (the operator changed their
+        mind mid-drive). Best-effort: a backend failure is logged, not raised.
+        """
+        try:
+            return self._post("/tasks/cancel", {"robot_id": robot_id})
+        except httpx.HTTPError as e:
+            logger.warning(f"cancel failed for robot {robot_id!r}: {e}")
+            return None
